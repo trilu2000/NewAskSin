@@ -56,10 +56,17 @@ class EE {
 
   public:		//---------------------------------------------------------------------------------------------------------
 	EE();																				// class constructor
-	void init(void);
-	void printRegDef(void);																// prints register.h definition on console
-	//uint8t isPeerValid();
-	//uint8t isPairValid();
+	void    init(void);
+	void    testModul(void);															// prints register.h definition on console
+	uint8_t isPairValid (uint8_t *pair);
+
+	void    clearPeers(void);
+	uint8_t isPeerValid (uint8_t *peer);
+
+	uint8_t countFreeSlots(uint8_t cnl);
+	uint8_t getPeerIdx(uint8_t cnl, uint8_t *peer);
+	uint8_t addPeer(uint8_t cnl, uint8_t idx, uint8_t *peer);
+	uint8_t remPeer(uint8_t cnl, uint8_t idx);
 
   private:		//---------------------------------------------------------------------------------------------------------
 	uint8_t getPeerSlots(uint8_t cnl);	
@@ -73,3 +80,4 @@ uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
 
 
 #endif
+

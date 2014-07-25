@@ -20,7 +20,8 @@ void setEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
 	eeprom_write_block((const void*)ptr,(void*)addr,len);
 }
 void clearEEPromBlock(uint16_t addr, uint16_t len) {
+	uint8_t tB=0;
 	for (uint16_t l = 0; l < len; l++) {												// step through the bytes of eeprom
-		//setEeBy(addr+l, 0);																// and write a 0
+		setEEPromBlock(addr+l,1,(void*)&tB);
 	}
 }
