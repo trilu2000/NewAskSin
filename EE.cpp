@@ -57,7 +57,7 @@ void EE::init(void) {
 	
 
 }
-void EE::testModul(void) {															// prints register.h content on console
+void EE::testModul(void) {																// prints register.h content on console
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbg << '\n' << pLine;
 	dbg << F("register.h - lists\n");
@@ -68,77 +68,82 @@ void EE::testModul(void) {															// prints register.h content on console
 	}
 	dbg << pLine;
 	dbg << F("peer database\n");
-	dbg << pLine;
 	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {
 		dbg << F("cnl: ") << _pgmB(&devDef.peerTbl[i].cnl) << F(", peers: ") << _pgmB(&devDef.peerTbl[i].pMax) << '\n';
 	}
 	
 	dbg << pLine;
 	dbg << "HMID: " << pHex(HMID,3) << ", serial: "; dbg.write(HMSR,10);dbg << '\n';
+
 	dbg << pLine;
-
-	dbg << F("\nsome tests...\n");
-	dbg << "check getPeerSlots: " << getPeerSlots(1) << '\n';
-	dbg << "check getPeerSlots: " << getPeerSlots(2) << '\n';
-
-	dbg << F("\ntest eeprom functions...\n");
-	uint8_t aTst1[10] = {'t','l','u','1','0','0','1','2','3','4'};
-	setEEPromBlock(500,10,(void*)&aTst1);
-	_delay_ms(1000);
-	uint8_t aTst2[10];
-	getEEPromBlock(500,10,(void*)&aTst2);
-	dbg << F("tst2: "); dbg.write(aTst2,10); dbg << '\n';		
-	dbg << F("clear eeprom\n");
-	clearEEPromBlock(500,10);
-	_delay_ms(1000);
-	getEEPromBlock(500,10,(void*)&aTst2);
-	dbg << F("tst2: ") << pHex(aTst2,10) << '\n';
-
-	dbg << F("\ntest count, add, rem peers...\n");
-	dbg << F("cnl 2: ") << countFreeSlots(2) << '\n';
-	uint8_t aTst3[4] = {01,02,03,04,};
-	//setEEPromBlock(_pgmB(&devDef.peerTbl[0].pAddr),4,(void*)&aTst3);
-	addPeer(1, 1, aTst3);
-	addPeer(1, 2, aTst3);
-	_delay_ms(500);
-	dbg << F("cnl 1: ") << countFreeSlots(1) << '\n';
-	dbg << F("remove idx2\n");
-	remPeer(1, 2);
-	_delay_ms(500);
-	dbg << F("cnl 1: ") << countFreeSlots(1) << '\n';
-
-	dbg << F("\ntest get peer index...\n");
-	dbg << F("idx 1: ") << getPeerIdx(1,aTst3) << '\n';
-
-	dbg << F("\nis pair valid...\n");
-	dbg << F("0: ") << isPairValid(aTst3) << '\n';
-	dbg << F("1: ") << isPairValid(HMID) << '\n';
-
-	dbg << F("\nis peer valid...\n");
-	dbg << F("0: ") << isPeerValid(HMID) << '\n';
-	dbg << F("1: ") << isPeerValid(aTst3) << '\n';
+	dbg << F("get peer list by slice...\n");
+	// prepare the peer list
+	uint8_t xPeer[4];
+	*(uint32_t*)xPeer = 0x00060700;
+	addPeer(1, 0, xPeer);
+	*(uint32_t*)xPeer = 0x00;
+	addPeer(1, 1, xPeer);
+	*(uint32_t*)xPeer = 0x02060802;
+	addPeer(1, 2, xPeer);
+	*(uint32_t*)xPeer = 0x03050403;
+	addPeer(1, 3, xPeer);
+	*(uint32_t*)xPeer = 0x04070604;
+	addPeer(1, 4, xPeer);
+	*(uint32_t*)xPeer = 0x05060105;
+	addPeer(1, 5, xPeer);
+	_delay_ms(100);
 	
+	// get the strings
+	uint8_t aTst5[16], bReturn, bSlices, bFreeSlots, bTotalSlots;
+	bTotalSlots = getPeerSlots(1);
+	bFreeSlots = countFreeSlots(1);
+	bSlices = countPeerSlc(1);
+	
+	dbg << F("total slots: ") << bTotalSlots << F(", free slots: ") << bFreeSlots << F(", slices: ") << bSlices << '\n';
+	for (uint8_t i = 1; i <= bSlices; i++) {
+		bReturn = getPeerListSlc(1, i, aTst5);
+		dbg << "s" << i << ": " << bReturn << F(" byte, ") << pHex(aTst5,bReturn) << '\n';
+	}
+
+	dbg << pLine;
+	dbg << F("is peer valid...\n");
+	dbg << F("result 1: ") << isPeerValid(xPeer) << '\n';
+	dbg << F("result 0: ") << isPeerValid(HMID) << '\n';
+	
+	dbg << pLine;
+	dbg << F("is pair valid...\n");
+	dbg << F("result 1: ") << isPairValid(HMID) << '\n';
+	dbg << F("result 0: ") << isPairValid(xPeer) << '\n';
+	
+	dbg << pLine;
+	dbg << F("test get index by peer...\n");
+	*(uint32_t*)xPeer = 0x04070604;
+	dbg << F("result 4: ") << getIdxByPeer(1,xPeer) << '\n';
+
+	dbg << pLine;
+	dbg << F("get peer by index...\n");
+	*(uint32_t*)xPeer = 0x00;
+	getPeerByIdx(1,3,xPeer);
+	dbg << F("result 03040503: ") << pHex(xPeer,4) << '\n';
+
 	#endif
 }
 uint8_t EE::isPairValid (uint8_t *pair) {
-	if (pair[0] != HMID[0]) return 0;
+	if (pair[0] != HMID[0]) return 0;													// compares byte by byte
 	if (pair[1] != HMID[1]) return 0;
 	if (pair[2] != HMID[2]) return 0;
-	return 1; 
+	return 1;																			// all bytes are fitting, therefore return true
 }
 
 void    EE::clearPeers(void) {
 	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {										// step through all channels
 		clearEEPromBlock(_pgmB(&devDef.peerTbl[i].pAddr), _pgmB(&devDef.peerTbl[i].pMax) * 4);
-
-		#ifdef EE_DBG																	// only if ee debug is set
-		dbg << F("clear eeprom, addr ") << _pgmB(&devDef.peerTbl[i].pAddr) << F(", len ") << (_pgmB(&devDef.peerTbl[i].pMax) * 4) << '\n';																	// ...and some information
-		#endif
+		//dbg << F("clear eeprom, addr ") << _pgmB(&devDef.peerTbl[i].pAddr) << F(", len ") << (_pgmB(&devDef.peerTbl[i].pMax) * 4) << '\n';																	// ...and some information
 	}
 }
 uint8_t EE::isPeerValid (uint8_t *peer) {
 	for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {										// step through all channels
-		if (getPeerIdx(i, peer) != 0xff) return 1;										// if found a valid peer is found return 1
+		if (getIdxByPeer(i, peer) != 0xff) return 1;									// if found a valid peer is found return 1
 	}
 	return 0;																			// otherwise 0
 }
@@ -148,22 +153,16 @@ uint8_t EE::countFreeSlots(uint8_t cnl) {
 	uint32_t lPeer;
 	
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
-	
-	#ifdef EE_DBG																		// only if ee debug is set
-	dbg << F("cFS: ") << _pgmB(&devDef.peerTbl[cnl-1].pMax) << '\n';
-	#endif
+	//dbg << F("cFS: ") << _pgmB(&devDef.peerTbl[cnl-1].pMax) << '\n';
 	
 	for (uint8_t i = 0; i < _pgmB(&devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
 		getEEPromBlock(_pgmB(&devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);	// get peer from eeprom
 		if (lPeer == 0) bCounter++;														// increase counter if peer slot is empty
-
-		#ifdef EE_DBG																	// only if ee debug is set
-		dbg << F("addr: ") << (_pgmB(&devDef.peerTbl[cnl-1].pAddr)+(i*4)) << F(", lPeer: ") << pHex(((uint8_t*)&lPeer),4) << '\n';
-		#endif
+		//dbg << F("addr: ") << (_pgmB(&devDef.peerTbl[cnl-1].pAddr)+(i*4)) << F(", lPeer: ") << pHex(((uint8_t*)&lPeer),4) << '\n';
 	}
 	return bCounter;																	// return the counter
 }
-uint8_t EE::getPeerIdx(uint8_t cnl, uint8_t *peer) {
+uint8_t EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	uint32_t lPeer;
 	for (uint8_t i = 0; i < _pgmB(&devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
 		getEEPromBlock(_pgmB(&devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);	// get peer from eeprom
@@ -172,11 +171,53 @@ uint8_t EE::getPeerIdx(uint8_t cnl, uint8_t *peer) {
 	}
 	return 0xff;
 }
+uint8_t EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
+	getEEPromBlock(_pgmB(&devDef.peerTbl[cnl-1].pAddr)+(idx*4), 4, (void*)peer);
+}
 uint8_t EE::addPeer(uint8_t cnl, uint8_t idx, uint8_t *peer) {
 	setEEPromBlock(_pgmB(&devDef.peerTbl[cnl-1].pAddr)+(idx*4), 4, (void*)peer);
 }
 uint8_t EE::remPeer(uint8_t cnl, uint8_t idx) {
 	clearEEPromBlock(_pgmB(&devDef.peerTbl[cnl-1].pAddr)+(idx*4), 4);
+}
+uint8_t EE::countPeerSlc(uint8_t cnl) {
+	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
+
+	int16_t lTmp = _pgmB(&devDef.peerTbl[cnl-1].pMax) - countFreeSlots(cnl) + 1;		// get used slots and add one for terminating zeros
+	lTmp = lTmp * 4;																	// 4 bytes per slot
+	
+	uint8_t bMax = 0;																	// size return value
+	while (lTmp > 0) {																	// loop until lTmp gets 0
+		lTmp = lTmp - maxMsgLen;														// reduce by max message len
+		bMax++;																			// count the loops
+	}
+	return bMax;																		// return amount of slices
+}
+uint8_t EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
+	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
+	
+	uint8_t byteCnt = 0, slcCnt = 1;													// start the byte counter
+	
+	for (uint8_t i = 0; i < _pgmB(&devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
+		getEEPromBlock(_pgmB(&devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)buf);		// get peer from eeprom
+		if (*(uint32_t*)buf == 0) continue;												// peer is empty therefor next
+		byteCnt+=4;																		// increase the byte counter
+		//dbg << i << ": " << pHex(buf,4) << ", bC: " << byteCnt  << ", sC: " << slcCnt << '\n';
+
+		if ((slcCnt == slc) && (byteCnt >= maxMsgLen)) {								// we are in the right slice but string is full
+			return byteCnt;																// return the amount of bytes in the string
+			
+		} else if (byteCnt >= maxMsgLen) {												// only counter is full
+			slcCnt++;																	// increase the slice counter
+			byteCnt = 0;																// and reset the byte counter
+
+		} else if (slcCnt == slc) {														// we are in the fitting slice
+			buf+=4;																		// therefore we should increase the string counter
+		}
+	}
+
+	*(uint32_t*)buf = 0;																// add the terminating zeros
+	return byteCnt + 4;																	// return the amount of bytes
 }
 
 

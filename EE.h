@@ -53,20 +53,38 @@ class EE {
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
-
+	#define maxMsgLen 16																// define max message length in byte
+	
   public:		//---------------------------------------------------------------------------------------------------------
 	EE();																				// class constructor
 	void    init(void);
 	void    testModul(void);															// prints register.h definition on console
 	uint8_t isPairValid (uint8_t *pair);
 
+	// peer functions
 	void    clearPeers(void);
 	uint8_t isPeerValid (uint8_t *peer);
 
 	uint8_t countFreeSlots(uint8_t cnl);
-	uint8_t getPeerIdx(uint8_t cnl, uint8_t *peer);
+	uint8_t getIdxByPeer(uint8_t cnl, uint8_t *peer);
+	uint8_t getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);
 	uint8_t addPeer(uint8_t cnl, uint8_t idx, uint8_t *peer);
 	uint8_t remPeer(uint8_t cnl, uint8_t idx);
+	uint8_t countPeerSlc(uint8_t cnl);
+	uint8_t getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);
+	
+	// register functions
+	void    clearRegs(void);
+
+	uint8_t  getListForMsg2(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		// Ok, create the answer of a info request by filling *buf, returns len of buffer, 0 if done and ff on failure
+	uint8_t  getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		// not defined yet
+	uint8_t  setListFromMsg(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t len, uint8_t *buf); // Ok, writes the register information in *buf to eeprom, 1 if all went ok, 0 on failure
+	uint8_t  doesListExist(uint8_t cnl, uint8_t lst);									// check if a list exist
+
+	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t pIdx, uint8_t addr, uint8_t len, uint8_t *buf); // get len reg bytes from specific list by searching for the address byte, returns byte in buffer, 0 if not found and 1 if successfully
+	void     getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							// fill regs struct with respective list3
+	void     setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); // write defaults to regs while a peer was added, works only for list3/4
+	
 
   private:		//---------------------------------------------------------------------------------------------------------
 	uint8_t getPeerSlots(uint8_t cnl);	
