@@ -355,7 +355,6 @@ uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uin
 	}
 }
 
-
 // private:		//---------------------------------------------------------------------------------------------------------
 uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl

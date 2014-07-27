@@ -6,6 +6,7 @@ uint16_t EEMEM eMagicByte;
 uint8_t  EEMEM eHMID[3]  = {0x01,0x02,0x04};
 uint8_t  EEMEM eHMSR[10] = {'t','l','u','1','0','0','1','2','3','4'};
 
+// if HMID and Serial are not set, then eeprom ones will be used
 uint8_t HMID[3] = {0x01,0x02,0x04};
 uint8_t HMSR[10] = {'t','l','u','1','0','0','1','2','3','4'};
 
