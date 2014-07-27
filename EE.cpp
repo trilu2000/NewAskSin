@@ -149,7 +149,11 @@ void    EE::testModul(void) {															// prints register.h content on cons
 	bReturn = getRegListSlc(1, 3, 1, 2, aTst5);
 	dbg << pHex(aTst5, bReturn) << '\n';
 	dbg << (millis()-xtime) << F(" ms\n");
-	
+
+	dbg << pLine;
+	dbg << F("search a reg...\n");
+	dbg << F("result 77: ") << pHexB(getRegAddr(1, 3, 1, 0x07)) << '\n';
+
 	#endif
 }
 uint8_t EE::isPairValid (uint8_t *pair) {
@@ -272,37 +276,23 @@ void    EE::clearRegs(void) {
 }
 
 uint8_t EE::countRegListSlc(uint8_t cnl, uint8_t lst) {
-	uint8_t bMax = 0;
-	int16_t lTmp = 0;
 	
-	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
+	uint8_t xI = getRegListIdx(cnl, lst);
+	if (xI == 0xff) return 0;															// respective line not found
 
-		// check if we are in the right line by comparing channel and list, otherwise try next
-		if ((_pgmB(devDef.cnlTbl[i].cnl) != cnl) || (_pgmB(devDef.cnlTbl[i].lst) != lst)) continue;
-	
-		lTmp = _pgmB(devDef.cnlTbl[i].sLen) * 2;										// get the slice len and multiply by 2 because we need regs and content
-		lTmp += 2;																		// add 2 terminating bytes
+	int16_t lTmp = _pgmB(devDef.cnlTbl[xI].sLen) * 2;									// get the slice len and multiply by 2 because we need regs and content
+	lTmp += 2;																			// add 2 terminating bytes
 		
-		while (lTmp > 0) {																// loop until lTmp gets 0
-			lTmp = lTmp - maxMsgLen;													// reduce by max message len
-			bMax++;																		// count the loops
-		}
-		return bMax;																	// return amount of slices
+	uint8_t bMax = 0;
+	while (lTmp > 0) {																	// loop until lTmp gets 0
+		lTmp = lTmp - maxMsgLen;														// reduce by max message len
+		bMax++;																			// count the loops
 	}
-	return 0;																			// nothing was found
+	return bMax;																		// return amount of slices
 }
 uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf) {
 	
-	uint8_t xI = 0xff;
-
-	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
-
-		// check if we are in the right line by comparing channel and list, otherwise try next
-		if ((_pgmB(devDef.cnlTbl[i].cnl) == cnl) && (_pgmB(devDef.cnlTbl[i].lst) == lst)) {
-			xI = i;
-			break;
-		}
-	}
+	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
 	if (idx >= _pgmB(devDef.peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
 	
@@ -327,17 +317,25 @@ uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, ui
 	
 	return remByte*2;																	// return the byte length
 }
-uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf) {
-	uint8_t xI = 0xff;
+uint8_t EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
 
-	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
+	uint8_t xI = getRegListIdx(cnl, lst);
+	if (xI == 0xff) return 0;															// respective line not found
+	if (idx >= _pgmB(devDef.peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
 
-		// check if we are in the right line by comparing channel and list, otherwise try next
-		if ((_pgmB(devDef.cnlTbl[i].cnl) == cnl) && (_pgmB(devDef.cnlTbl[i].lst) == lst)) {
-			xI = i;
-			break;
+	uint16_t eIdx = _pgmB(devDef.cnlTbl[xI].pAddr) + (_pgmB(devDef.cnlTbl[xI].sLen) * idx);
+	
+	uint8_t retByte;
+	for (uint8_t j = 0; j < _pgmB(devDef.cnlTbl[xI].sLen); j++) {						// search for the right address in cnlAddr
+		if (_pgmB(devDef.cnlAddr[_pgmB(devDef.cnlTbl[xI].sIdx) + j]) == addr) {			// if byte fits
+			getEEPromBlock(eIdx + j, 1, (void*)&retByte);								// get the respective byte from eeprom
+			return retByte;																// and exit
 		}
 	}
+}
+uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf) {
+
+	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
 	if (idx >= _pgmB(devDef.peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
 
@@ -358,6 +356,13 @@ uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uin
 
 
 // private:		//---------------------------------------------------------------------------------------------------------
+uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
+	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
+		// check if we are in the right line by comparing channel and list, otherwise try next
+		if ((_pgmB(devDef.cnlTbl[i].cnl) == cnl) && (_pgmB(devDef.cnlTbl[i].lst) == lst)) return i;
+	}
+	return 0xff;																		// respective line not found
+}
 
 
 

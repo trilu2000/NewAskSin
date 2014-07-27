@@ -69,18 +69,18 @@ class EE {
 
 	uint8_t countRegListSlc(uint8_t cnl, uint8_t lst);
 	uint8_t getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);
+	uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);
 	uint8_t setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);
 
 	//uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		
 	//uint8_t doesListExist(uint8_t cnl, uint8_t lst);									
 
-	//uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t pIdx, uint8_t addr, uint8_t len, uint8_t *buf); 
 	//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							
 	//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); 
 	
 
   private:		//---------------------------------------------------------------------------------------------------------
-
+	uint8_t getRegListIdx(uint8_t cnl, uint8_t lst);
 
 }; 
 extern EE::s_devDef devDef;																// initial register.h
