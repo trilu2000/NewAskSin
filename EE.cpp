@@ -39,12 +39,6 @@ void    EE::init(void) {
 		clearPeers();
 		clearRegs();
 		
-		// store defaults, incl HMID and serial
-		//for (uint8_t i = 0; i < eepDef.nbr; i++) {
-		//	dbg << F("addr: ") << _pgmB(eepDef.eepDefTbl[i].addr) << F(", len: ") << _pgmB(eepDef.eepDefTbl[i].len) << '\n';//<< F(", byte: ") << _pgmB(devDef.cnlTbl[i].sLen) << '\n';
-		//}
-		
-
 		// write magic byte
 		#ifdef EE_DBG																	// only if ee debug is set
 		dbg << F("writing magic byte\n");												// ...and some information
@@ -53,10 +47,17 @@ void    EE::init(void) {
 	}
 
 	// load HMID and serial from eeprom
-	getEEPromBlock(2,3,(void*)&HMID);
-	getEEPromBlock(5,10,(void*)&HMSR);
+	if (*(uint16_t*)&HMID == NULL) getEEPromBlock(2,3,(void*)&HMID);
+	if (*(uint16_t*)&HMSR == NULL) getEEPromBlock(2,3,(void*)&HMSR);
 	
+	// load the master id
+	getMasterID();	
 
+}
+void    EE::getMasterID(void) {
+	MAID[0] = getRegAddr(0, 0, 0, 0x0a);
+	MAID[1] = getRegAddr(0, 0, 0, 0x0b);
+	MAID[2] = getRegAddr(0, 0, 0, 0x0c);
 }
 void    EE::testModul(void) {															// prints register.h content on console
 	#ifdef EE_DBG																		// only if ee debug is set

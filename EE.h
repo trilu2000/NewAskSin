@@ -38,8 +38,9 @@ class EE {
 		const s_peerTbl *peerTbl;														// pointer to peer table
 	};
 	
-	uint8_t HMID[3];	// own ID for communication
-	uint8_t HMSR[10];	// serial ID for pairing, etc
+	//uint8_t HMID[3];	// own ID for communication
+	//uint8_t HMSR[10];	// serial ID for pairing, etc
+	uint8_t MAID[3];	// master id for communication
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
@@ -48,6 +49,7 @@ class EE {
   public:		//---------------------------------------------------------------------------------------------------------
 	EE();																				// class constructor
 	void    init(void);
+	void    getMasterID(void);
 	void    testModul(void);															// prints register.h definition on console
 	uint8_t isPairValid(uint8_t *pair);													// ok, check if a valid pair was given
 
@@ -65,26 +67,24 @@ class EE {
 	uint8_t getPeerSlots(uint8_t cnl);													// ok, returns max peers per channel
 	
 	// register functions
-	void    clearRegs(void);
+	void    clearRegs(void);															// ok, clears register space
 
-	uint8_t countRegListSlc(uint8_t cnl, uint8_t lst);
-	uint8_t getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);
-	uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);
-	uint8_t setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);
+	uint8_t countRegListSlc(uint8_t cnl, uint8_t lst);									// ok, counts the slices for a complete regs transmition
+	uint8_t getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);// ok, generates answer to a channel/list request
+	uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
+	uint8_t setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
 
 	//uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		
-	//uint8_t doesListExist(uint8_t cnl, uint8_t lst);									
-
 	//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							
 	//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); 
-	
 
   private:		//---------------------------------------------------------------------------------------------------------
-	uint8_t getRegListIdx(uint8_t cnl, uint8_t lst);
+	uint8_t getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
 
 }; 
 extern EE::s_devDef devDef;																// initial register.h
-
+extern uint8_t HMID[];
+extern uint8_t HMSR[];
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
