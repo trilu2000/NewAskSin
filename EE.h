@@ -24,11 +24,6 @@ struct s_peerTbl {		// peer table holds information were to find peers in eeprom
 	uint8_t pMax;
 	uint16_t pAddr;
 };
-struct s_eepDefTbl {	// eeprom default table holds information which has to be added at boot time to the eeprom
-	uint16_t addr;
-	uint8_t len;
-	uint8_t *contPtr;
-};
 
 
 //- class definition ------------------------------------------------------------------------------------------------------
@@ -41,10 +36,6 @@ class EE {
 		const uint8_t   *cnlAddr;														// pointer to slice addresses
 		const s_cnlTbl  *cnlTbl;														// pointer to array of elements
 		const s_peerTbl *peerTbl;														// pointer to peer table
-	};
-	struct s_eepDef {	// eeprom default definition table
-		const uint8_t nbr;																// number of lines to add
-		const s_eepDefTbl *eepDefTbl;													// pointer to defaults table
 	};
 	
 	uint8_t HMID[3];	// own ID for communication
@@ -77,15 +68,15 @@ class EE {
 	void    clearRegs(void);
 
 	uint8_t countRegListSlc(uint8_t cnl, uint8_t lst);
-	uint8_t getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t slc, uint8_t idx, uint8_t *buf);
+	uint8_t getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);
+	uint8_t setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);
 
-	uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		
-	uint8_t setListFromMsg(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t len, uint8_t *buf); 
-	uint8_t doesListExist(uint8_t cnl, uint8_t lst);									
+	//uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		
+	//uint8_t doesListExist(uint8_t cnl, uint8_t lst);									
 
-	uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t pIdx, uint8_t addr, uint8_t len, uint8_t *buf); 
-	void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							
-	void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); 
+	//uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t pIdx, uint8_t addr, uint8_t len, uint8_t *buf); 
+	//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							
+	//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); 
 	
 
   private:		//---------------------------------------------------------------------------------------------------------
@@ -93,7 +84,6 @@ class EE {
 
 }; 
 extern EE::s_devDef devDef;																// initial register.h
-extern EE::s_eepDef eepDef;
 
 
 //- some helpers ----------------------------------------------------------------------------------------------------------

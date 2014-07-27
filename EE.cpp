@@ -58,7 +58,7 @@ void    EE::init(void) {
 	
 
 }
-void    EE::testModul(void) {																// prints register.h content on console
+void    EE::testModul(void) {															// prints register.h content on console
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbg << '\n' << pLine;
 	dbg << F("register.h - lists\n");
@@ -135,7 +135,20 @@ void    EE::testModul(void) {																// prints register.h content on con
 		dbg << i << F(", cnl:") << _pgmB(devDef.cnlTbl[i].cnl) << F(", lst: ") << _pgmB(devDef.cnlTbl[i].lst) \
 		    << F(", slc: ") <<  countRegListSlc(_pgmB(devDef.cnlTbl[i].cnl), _pgmB(devDef.cnlTbl[i].lst)) << '\n';
 	}
-
+	
+	uint8_t aTst6[] = {0x04,0x44, 0x05,0x55, 0x06,0x66, 0x07,0x77, 0x08,0x88, 0x09,0x99, 0x0a,0xaa, 0x0b,0xbb,};
+	uint32_t xtime = millis();
+	setListArray(1, 3, 1, 16, aTst6);
+	dbg << (millis()-xtime) << F(" ms\n");
+	
+	xtime = millis();
+	bReturn = getRegListSlc(1, 3, 1, 0, aTst5);
+	dbg << pHex(aTst5, bReturn) << '\n';
+	bReturn = getRegListSlc(1, 3, 1, 1, aTst5);
+	dbg << pHex(aTst5, bReturn) << '\n';
+	bReturn = getRegListSlc(1, 3, 1, 2, aTst5);
+	dbg << pHex(aTst5, bReturn) << '\n';
+	dbg << (millis()-xtime) << F(" ms\n");
 	
 	#endif
 }
@@ -278,8 +291,69 @@ uint8_t EE::countRegListSlc(uint8_t cnl, uint8_t lst) {
 	}
 	return 0;																			// nothing was found
 }
-uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t slc, uint8_t idx, uint8_t *buf) {
+uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf) {
 	
+	uint8_t xI = 0xff;
+
+	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
+
+		// check if we are in the right line by comparing channel and list, otherwise try next
+		if ((_pgmB(devDef.cnlTbl[i].cnl) == cnl) && (_pgmB(devDef.cnlTbl[i].lst) == lst)) {
+			xI = i;
+			break;
+		}
+	}
+	if (xI == 0xff) return 0;															// respective line not found
+	if (idx >= _pgmB(devDef.peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
+	
+	uint8_t slcOffset = slc * maxMsgLen;												// calculate the starting offset	
+	slcOffset /= 2;																		// divided by to because of mixed message, regs + eeprom content
+	uint8_t remByte = _pgmB(devDef.cnlTbl[xI].sLen)	- slcOffset;						// calculate the remaining bytes
+	if (remByte >= (maxMsgLen/2)) remByte = (maxMsgLen/2);								// shorten remaining bytes if necessary
+	
+	uint8_t sIdx = _pgmB(devDef.cnlTbl[xI].sIdx);
+	uint16_t eIdx = _pgmB(devDef.cnlTbl[xI].pAddr) + (_pgmB(devDef.cnlTbl[xI].sLen) * idx);
+	//dbg << slc << ", sO:" << slcOffset << ", rB:" << remByte << ", sIdx:" << pHexB(sIdx) << ", eIdx:" << pHexB(eIdx) << '\n';
+	
+	for (uint8_t i = 0; i < remByte; i++) {												// count through the remaining bytes
+		*buf++ = _pgmB(devDef.cnlAddr[i+sIdx+slcOffset]);								// add the register address
+		getEEPromBlock(i+eIdx+slcOffset, 1, (void*)buf++);								// add the eeprom content
+	}
+
+	if ((remByte*2) < maxMsgLen) {														// if there is space for the terminating zeros
+		*(uint16_t*)buf = 0;															// add them
+		remByte++;																		// and increase byte counter
+	}
+	
+	return remByte*2;																	// return the byte length
+}
+uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf) {
+	uint8_t xI = 0xff;
+
+	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
+
+		// check if we are in the right line by comparing channel and list, otherwise try next
+		if ((_pgmB(devDef.cnlTbl[i].cnl) == cnl) && (_pgmB(devDef.cnlTbl[i].lst) == lst)) {
+			xI = i;
+			break;
+		}
+	}
+	if (xI == 0xff) return 0;															// respective line not found
+	if (idx >= _pgmB(devDef.peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
+
+	uint16_t eIdx = _pgmB(devDef.cnlTbl[xI].pAddr) + (_pgmB(devDef.cnlTbl[xI].sLen) * idx);
+
+	for (uint8_t i = 0; i < len; i+=2) {												// step through the input array	
+		
+		for (uint8_t j = 0; j < _pgmB(devDef.cnlTbl[xI].sLen); j++) {					// search for the right address in cnlAddr
+			if (_pgmB(devDef.cnlAddr[_pgmB(devDef.cnlTbl[xI].sIdx) + j]) == buf[i]) {	// if byte fits
+				setEEPromBlock(eIdx + j, 1, (void*)&buf[i+1]);							// add the eeprom content
+				//dbg << "eI:" << pHexB(eIdx + j) << ", " << pHexB(buf[i+1]) << '\n';
+				break;																	// go to the next i
+			}
+		}
+		
+	}
 }
 
 
