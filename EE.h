@@ -42,12 +42,11 @@ class EE {
 		const s_cnlTbl  *cnlTbl;														// pointer to array of elements
 		const s_peerTbl *peerTbl;														// pointer to peer table
 	};
-
 	struct s_eepDef {	// eeprom default definition table
 		const uint8_t nbr;																// number of lines to add
 		const s_eepDefTbl *eepDefTbl;													// pointer to defaults table
 	};
-
+	
 	uint8_t HMID[3];	// own ID for communication
 	uint8_t HMSR[10];	// serial ID for pairing, etc
 	
@@ -59,38 +58,42 @@ class EE {
 	EE();																				// class constructor
 	void    init(void);
 	void    testModul(void);															// prints register.h definition on console
-	uint8_t isPairValid (uint8_t *pair);
+	uint8_t isPairValid(uint8_t *pair);													// ok, check if a valid pair was given
 
 	// peer functions
-	void    clearPeers(void);
-	uint8_t isPeerValid (uint8_t *peer);
+	void    clearPeers(void);															// ok, clears complete peer database
+	uint8_t isPeerValid (uint8_t *peer);												// ok, checks if a valid peer was given
 
-	uint8_t countFreeSlots(uint8_t cnl);
-	uint8_t getIdxByPeer(uint8_t cnl, uint8_t *peer);
-	uint8_t getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);
-	uint8_t addPeer(uint8_t cnl, uint8_t idx, uint8_t *peer);
-	uint8_t remPeer(uint8_t cnl, uint8_t idx);
-	uint8_t countPeerSlc(uint8_t cnl);
-	uint8_t getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);
+	uint8_t countFreeSlots(uint8_t cnl);												// ok, counts the free peer slots of a channel
+	uint8_t getIdxByPeer(uint8_t cnl, uint8_t *peer);									// ok, find the index of the respective peer
+	uint8_t getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);						// ok, returns the respective peer of the given index
+	uint8_t addPeer(uint8_t cnl, uint8_t idx, uint8_t *peer);							// ok, writes a peer in the database on respective slot 
+	uint8_t remPeer(uint8_t cnl, uint8_t idx);											// ok, writes a zero to the respective slot
+	uint8_t countPeerSlc(uint8_t cnl);													// ok, count the slices for function getPeerListSlc
+	uint8_t getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);						// ok, returns the whole peer database as a string	
+	uint8_t getPeerSlots(uint8_t cnl);													// ok, returns max peers per channel
 	
 	// register functions
 	void    clearRegs(void);
 
-	uint8_t  getListForMsg2(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		// Ok, create the answer of a info request by filling *buf, returns len of buffer, 0 if done and ff on failure
-	uint8_t  getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		// not defined yet
-	uint8_t  setListFromMsg(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t len, uint8_t *buf); // Ok, writes the register information in *buf to eeprom, 1 if all went ok, 0 on failure
-	uint8_t  doesListExist(uint8_t cnl, uint8_t lst);									// check if a list exist
+	uint8_t countRegListSlc(uint8_t cnl, uint8_t lst);
+	uint8_t getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t slc, uint8_t idx, uint8_t *buf);
 
-	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t pIdx, uint8_t addr, uint8_t len, uint8_t *buf); // get len reg bytes from specific list by searching for the address byte, returns byte in buffer, 0 if not found and 1 if successfully
-	void     getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							// fill regs struct with respective list3
-	void     setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); // write defaults to regs while a peer was added, works only for list3/4
+	uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		
+	uint8_t setListFromMsg(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t len, uint8_t *buf); 
+	uint8_t doesListExist(uint8_t cnl, uint8_t lst);									
+
+	uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t pIdx, uint8_t addr, uint8_t len, uint8_t *buf); 
+	void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							
+	void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); 
 	
 
   private:		//---------------------------------------------------------------------------------------------------------
-	uint8_t getPeerSlots(uint8_t cnl);	
+
+
 }; 
 extern EE::s_devDef devDef;																// initial register.h
-extern EE::s_eepDef eepDef; 
+extern EE::s_eepDef eepDef;
 
 
 //- some helpers ----------------------------------------------------------------------------------------------------------

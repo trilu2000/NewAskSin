@@ -23,8 +23,8 @@
 
 
 //- some macros and definitions -------------------------------------------------------------------------------------------
-#define _pgmB pgm_read_byte																// short hand for PROGMEM read
-#define _pgmW pgm_read_word
+#define _pgmB(x) pgm_read_byte(&x)															// short hand for PROGMEM read
+#define _pgmW(x) pgm_read_word(&x)
 
 
 //- some macros for debugging ---------------------------------------------------------------------------------------------
