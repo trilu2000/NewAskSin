@@ -29,7 +29,7 @@ const uint8_t cnlAddr[] PROGMEM = {
 }; // 29 byte
 
 //- channel device list table --------------------------------------------------------------------------------------------
-s_cnlTbl cnlTbl[] PROGMEM = {
+const s_cnlTbl cnlTbl[] PROGMEM = {
 	// cnl, lst, sIdx, sLen, pAddr;
 	{0, 0, 0x00, 6, 0x000F},
 	{1, 1, 0x06, 1, 0x0015},
@@ -37,7 +37,7 @@ s_cnlTbl cnlTbl[] PROGMEM = {
 }; // 18 byte
 
 //- channel device list table --------------------------------------------------------------------------------------------
-s_peerTbl peerTbl[] PROGMEM = {
+const s_peerTbl peerTbl[] PROGMEM = {
 	// cnl, pMax, pAddr;
 	{1, 6, 0x009A}
 }; // 4 byte
