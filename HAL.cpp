@@ -54,7 +54,7 @@ uint8_t ccGDO0() {
 	return gdo0;
 }
 ISR(INT0_vect) {
-	_disableGDO0Int;
+	//_disableGDO0Int;
 	gdo0 = 1;
-	_enableGDO0Int;
+	//_enableGDO0Int;
 }

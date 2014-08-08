@@ -3,7 +3,6 @@
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																	// configuration sheet
 
-uint8_t xt[60];
 
 void setup() {
 	#ifdef SER_DBG
@@ -41,12 +40,9 @@ void setup() {
 }
 
 void loop() {
-	_delay_ms(500);
-	dbg << '.';
-	if (ccGDO0() == 1) {
-		dbg << 'i';
-	}
-	//hm.poll();
+	hm.poll();
+	//_delay_ms(500);
+	//dbg << '.';
 	/* add main program code here */
 
 }
