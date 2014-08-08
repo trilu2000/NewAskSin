@@ -1,6 +1,6 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 // AskSin driver implementation
-// 2013-08-03 <horst@diebittners.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
 //- AskSin eeprom functions ---------------------------------------------------------------------------------------------
 //- with a lot of support from martin876 at FHEM forum

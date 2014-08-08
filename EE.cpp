@@ -1,19 +1,19 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 // AskSin driver implementation
-// 2013-08-03 <horst@diebittners.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
 //- AskSin eeprom functions ---------------------------------------------------------------------------------------------
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define EE_DBG
+//#define EE_DBG
 #include "EE.h"
 
 // public:		//---------------------------------------------------------------------------------------------------------
-
 EE::EE() {
 } 
 
+// general functions
 void    EE::init(void) {
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbg.begin(57600);																	// serial setup
@@ -21,6 +21,8 @@ void    EE::init(void) {
 	dbg << F("EE.\n");																	// ...and some information
 	#endif
 
+	initEEProm();																		// init function if a i2c eeprom is used
+	
 	// check for first time run by checking magic byte, if yes then prepare eeprom and set magic byte
 	uint16_t eepromCRC = 0, flashCRC = 0;												// define variable for storing crc
 	uint8_t  *p = (uint8_t*)devDef.cnlTbl;												// cast devDef to char
@@ -275,7 +277,6 @@ void    EE::clearRegs(void) {
 		//    << (peerMax * _pgmB(devDef.cnlTbl[i].sLen)) << '\n';
 	}
 }
-
 uint8_t EE::countRegListSlc(uint8_t cnl, uint8_t lst) {
 	
 	uint8_t xI = getRegListIdx(cnl, lst);
@@ -363,7 +364,6 @@ uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 	}
 	return 0xff;																		// respective line not found
 }
-
 
 
 //- some helpers ----------------------------------------------------------------------------------------------------------

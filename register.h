@@ -26,7 +26,7 @@ const uint8_t cnlAddr[] PROGMEM = {
 	0x02,0x05,0x0a,0x0b,0x0c,0x12,
 	0x08,
 	0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,
-}; // 29 byte
+};  // 29 byte
 
 //- channel device list table --------------------------------------------------------------------------------------------
 const s_cnlTbl cnlTbl[] PROGMEM = {
@@ -34,16 +34,16 @@ const s_cnlTbl cnlTbl[] PROGMEM = {
 	{0, 0, 0x00, 6, 0x000F},
 	{1, 1, 0x06, 1, 0x0015},
 	{1, 3, 0x07, 22, 0x0016},
-}; // 18 byte
+};  // 18 byte
 
 //- channel device list table --------------------------------------------------------------------------------------------
 const s_peerTbl peerTbl[] PROGMEM = {
 	// cnl, pMax, pAddr;
 	{1, 6, 0x009A}
-}; // 4 byte
+};  // 4 byte
 
 //- handover to AskSin lib -----------------------------------------------------------------------------------------------
 EE::s_devDef devDef = {
 	1, 3, devIdnt, cnlAddr, cnlTbl, peerTbl,
-}; // 10 byte
+};  // 10 byte
 

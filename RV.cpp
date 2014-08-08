@@ -2,26 +2,26 @@
 // AskSin driver implementation
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin protocol functions ---------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
+//- AskSin RF receiver functions ------------------------------------------------------------------------------------------
+//-
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#include "AS.h"
-
+#define RV_DBG
+#include "RV.h"
 
 // public:		//---------------------------------------------------------------------------------------------------------
-AS::AS() {
+RV::RV() {
+} 
+
+void    RV::init(void) {
+	#ifdef RV_DBG																		// only if ee debug is set
+	dbg.begin(57600);																	// serial setup
+	dbg << F("\n....\n");																// ...and some information
+	dbg << F("RV.\n");																	// ...and some information
+	#endif
+
+	//ccInit();																			// rf modul init
 }
+void    RV::poll(void) {
 
-void AS::init(void) {
-	ee.init();																			// eeprom init
-	cc.init();
-	rv.init();
 }
-void AS::poll(void) {
-	rv.poll();
-}
-
-
-AS hm;
-
