@@ -6,13 +6,13 @@
 //- with a lot of copy and paste from culfw firmware
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define CC_DBG
+//#define CC_DBG
 #include "CC.h"
 
 CC::CC() {
 }
 
-void    CC::init(void) {																	// initialize CC1101
+void    CC::init(void) {																// initialize CC1101
 	#ifdef CC_DBG																		// only if cc debug is set
 	dbg.begin(57600);																	// dbg setup
 	dbg << F("\n....\n");																// ...and some information
@@ -169,7 +169,7 @@ uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	//	trx868.rfState = RFSTATE_RX;													// declare to be in Rx state
 
 	#ifdef CC_DBG																		// only if cc debug is set
-	if (buf[0] > 0) dbg << pHexB(buf[0]) << pHexB(buf[1]) << '\n';//pTime();
+	if (buf[0] > 0) dbg << pHex(buf, buf[0]+1) << '\n';//pTime();
 	#endif
 
 	return buf[0];																		// return the data buffer
@@ -207,7 +207,7 @@ uint8_t CC::detectBurst(void) {															// wake up CC1101 from power down 
 	//	return bitRead(hm.cc.monitorStatus(),6);										// return the detected signal
 	return bitRead(getStatus(),6);														// return the detected signal
 }
-void    CC::idle() {																	// put CC1101 into power-down state
+void    CC::setIdle() {																	// put CC1101 into power-down state
 	strobe(CC1101_SIDLE);																// coming from RX state, we need to enter the IDLE state first
 	strobe(CC1101_SFRX);
 	strobe(CC1101_SPWD);																// enter power down state

@@ -7,7 +7,6 @@
 
 #include "HAL.h"
 
-
 //- eeprom functions ------------------------------------------------------------------------------------------------------
 void initEEProm(void) {
 	// place the code to init a i2c eeprom
@@ -25,10 +24,8 @@ void clearEEPromBlock(uint16_t addr, uint16_t len) {
 	}
 }
 
-
 //- cc1100 hardware functions ---------------------------------------------------------------------------------------------
 uint8_t gdo0 = 0;
-
 void ccInitHw(void) {
 	CC1100_IN_DDR &= ~_BV (CC1100_IN_PIN);												// GDO0 input
 	CC1100_CS_DDR |= _BV (CC1100_CS_PIN);												// CS output
@@ -46,7 +43,6 @@ uint8_t ccSendByte(uint8_t data) {
 	return SPDR;
 }
 uint8_t ccGDO0() {
-	//dbg << pHexB(gdo0) << '\n';
 	if (gdo0 == 1) {
 		gdo0 = 0;
 		return 1;

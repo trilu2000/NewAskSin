@@ -16,7 +16,6 @@ void setup() {
 	//setEEPromBlock(5,10,(void*)&xHMSR);
 	
 	hm.init();
-	_enableGDO0Int;
 
 	//hm.ee.testModul();
 	
@@ -31,12 +30,6 @@ void setup() {
 	//hm.ee.addPeer(1, 1, xTmp);
 	//hm.ee.remPeer(1, 1);
 
-
-	//DDRD |= _BV (PD3);			// pin 3 as output
-	//_delay_ms(10);
-	//SET_BIT( PORTD, PD3 );		// pin 3 high
-	//_delay_ms(1000);
-	//CLEAR_BIT( PORTD, PD3 );		// pin 3 low
 }
 
 void loop() {

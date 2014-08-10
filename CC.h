@@ -11,7 +11,6 @@
 
 #include "HAL.h"
 
-
 class CC {
   public:		//---------------------------------------------------------------------------------------------------------
 	#define CC1101_DATA_LEN          60														// maximum length of received bytes
@@ -19,7 +18,6 @@ class CC {
 	uint8_t rssi;																			// signal strength
 	uint8_t lqi;																			// link quality
 
-	// some register definitions for TRX868 communication
 	#define READ_SINGLE              0x80			// type of transfers
 	#define READ_BURST               0xC0
 	#define WRITE_BURST              0x40
@@ -93,12 +91,12 @@ class CC {
 
   public:		//---------------------------------------------------------------------------------------------------------
 	CC();
-	// TRX868 communication functions
+
 	void    init();																			// initialize CC1101
 	uint8_t sndData(uint8_t *buf, uint8_t burst);											// send data packet via RF
 	uint8_t rcvData(uint8_t *buf);															// read data packet from RX FIFO
 	uint8_t detectBurst(void);																// detect burst signal, sleep while no signal, otherwise stay awake
-	void    idle(void);																		// put CC1101 into power-down state
+	void    setIdle(void);																	// put CC1101 into power-down state
 	uint8_t getStatus(void);
 
 	void    strobe(uint8_t cmd);															// send command strobe to the CC1101 IC via SPI
