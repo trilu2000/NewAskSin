@@ -165,6 +165,13 @@ uint8_t EE::isPairValid (uint8_t *pair) {
 	if (pair[2] != HMID[2]) return 0;
 	return 1;																			// all bytes are fitting, therefore return true
 }
+uint8_t EE::isBroadCast(uint8_t *pair) {
+	if (pair[0] != 0) return 0;															// check if all bytes are empty
+	if (pair[1] != 0) return 0;
+	if (pair[2] != 0) return 0;
+	return 1;																			// all bytes are fitting, therefore return true
+}
+
 
 // peer functions 
 void    EE::clearPeers(void) {

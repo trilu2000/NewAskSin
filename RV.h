@@ -16,8 +16,14 @@ class RV {
 	#define MaxDataLen          60																// maximum length of received bytes
 	uint8_t buf[MaxDataLen];																	// buffer for received string
 	uint8_t *HMID;																				// pointer to HMID, 3 byte
+	uint8_t *MAID;																				// pointer to Master ID, 3 byte
+	
+	enum msgTypes {info,pair,peer,bcast};
+	uint8_t forUs;
 	
 	#define hasData             buf[0]?1:0														// check if something is in the buffer
+	#define reID				buf+4															// message comes from
+	#define toID				buf+7															// addressed to us
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
