@@ -25,6 +25,3 @@ void    RV::decode(void) {
 
 	buf[i] ^= buf[2];
 }
-uint8_t RV::hasData(void) {
-	return buf[0]?1:0;
-}

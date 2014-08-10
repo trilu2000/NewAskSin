@@ -23,14 +23,18 @@ void AS::init(void) {
 	
 	ee.init();																			// eeprom init
 	cc.init();																			// init the rf module
-	_enableGDO0Int;																		// enable interrupt to get a signal while receiving data
 
+	rv.HMID = HMID;																		// hand over the pointer to HMID for checking up if a message is for us
+	
+
+	// everything is setuped, enable RF functionality
+	_enableGDO0Int;																		// enable interrupt to get a signal while receiving data
 }
 void AS::poll(void) {
 
 	if (ccGDO0()) {																		// check if something was received
 		cc.rcvData(rv.buf);																// copy the data into the receiver module
-		if (rv.buf[0]?1:0) {
+		if (rv.hasData) {
 			rv.decode();																// decode the string
 			#ifdef AS_DBG																// only if cc debug is set
 			dbg << F("-> ") << pHex(rv.buf,rv.buf[0]+1) << '\n';
