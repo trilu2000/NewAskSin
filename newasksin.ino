@@ -29,12 +29,13 @@ void setup() {
 	//hm.ee.getPeerIdx(1, xTmp);
 	//hm.ee.addPeer(1, 1, xTmp);
 	//hm.ee.remPeer(1, 1);
-
+	millis_init();
 }
 
 void loop() {
 	hm.poll();
-	//_delay_ms(500);
+	//_delay_ms(1000);
+	//dbg << millis_get() << '\n';
 	//dbg << '.';
 	/* add main program code here */
 

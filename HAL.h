@@ -19,6 +19,7 @@
 #include <avr/delay.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/atomic.h>
 
 //#include <avr/power.h>
 //#include <avr/sleep.h>
@@ -79,5 +80,25 @@ void clearEEPromBlock(uint16_t addr, uint16_t len);
 void    ccInitHw(void);
 uint8_t ccSendByte(uint8_t data);
 uint8_t ccGDO0(void);
+
+//- timer functions -------------------------------------------------------------------------------------------------------
+#define REG_TCCRA		TCCR0A
+#define REG_TCCRB		TCCR0B
+#define REG_TIMSK		TIMSK0
+#define REG_OCR			OCR0A
+#define BIT_OCIE		OCIE0A
+#define BIT_WGM			WGM01
+#define CLOCKSEL        (_BV(CS01)|_BV(CS00))
+#define PRESCALER       64
+#define ISR_VECT		TIMER0_COMPA_vect
+
+#define SET_TCCRA()	    (REG_TCCRA = _BV(BIT_WGM))
+#define SET_TCCRB()	    (REG_TCCRB = CLOCKSEL)
+
+typedef unsigned long millis_t;
+void millis_init(void);
+millis_t millis_get(void);
+void millis_add(millis_t ms);
+
 
 #endif 

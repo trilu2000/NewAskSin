@@ -54,3 +54,27 @@ ISR(INT0_vect) {
 	gdo0 = 1;
 	//_enableGDO0Int;
 }
+
+//- timer functions -------------------------------------------------------------------------------------------------------
+static volatile millis_t milliseconds;
+void millis_init() {
+	SET_TCCRA();
+	SET_TCCRB();
+	REG_TIMSK = _BV(BIT_OCIE);
+	REG_OCR = ((F_CPU / PRESCALER) / 1000);
+}
+millis_t millis_get() {
+	millis_t ms;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ms = milliseconds;
+	}
+	return ms;
+}
+void millis_add(millis_t ms) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		milliseconds += ms;
+	}
+}
+ISR(ISR_VECT) {
+	++milliseconds;
+}
