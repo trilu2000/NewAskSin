@@ -48,9 +48,11 @@ class EE {
 	void    init(void);
 	void    getMasterID(void);
 	void    testModul(void);															// prints register.h definition on console
-	uint8_t isPairValid(uint8_t *pair);													// ok, check if a valid pair was given
-	uint8_t isBroadCast(uint8_t *pair);
-	
+	uint8_t isHMIDValid(uint8_t *toID);													// ok, check if a valid pair was given
+	uint8_t isPairValid(uint8_t *reID);													// ok, check if a valid pair was given
+	uint8_t isBroadCast(uint8_t *reID);
+	uint8_t getIntend(uint8_t *reId, uint8_t *toId);
+		
 	// peer functions
 	void    clearPeers(void);															// ok, clears complete peer database
 	uint8_t isPeerValid (uint8_t *peer);												// ok, checks if a valid peer was given

@@ -41,12 +41,10 @@ void AS::poll(void) {
 	}
 }
 void AS::received(void) {
+	uint8_t bIntend = ee.getIntend(rv.reID,rv.toID);
+
 	#ifdef AS_DBG																		// only if AS debug is set
-	if (ee.isBroadCast(rv.reID)) dbg << 'b';
-	else if (ee.isPairValid(rv.reID)) dbg << 'm';
-	else if (ee.isPeerValid(rv.reID)) dbg << 'p';
-	else dbg << '-';
-	dbg << F("> ") << pHex(rv.buf,rv.buf[0]+1) << '\n';
+	dbg << (char)bIntend << F("> ") << pHex(rv.buf,rv.len) << '\n';
 	#endif
 
 

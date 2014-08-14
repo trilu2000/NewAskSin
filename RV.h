@@ -24,6 +24,7 @@ class RV {
 	#define hasData             buf[0]?1:0														// check if something is in the buffer
 	#define reID				buf+4															// message comes from
 	#define toID				buf+7															// addressed to us
+	#define len					buf[0]+1
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
