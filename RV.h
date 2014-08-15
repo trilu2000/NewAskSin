@@ -22,9 +22,12 @@ class RV {
 	uint8_t forUs;
 	
 	#define hasData             buf[0]?1:0														// check if something is in the buffer
-	#define reID				buf+4															// message comes from
-	#define toID				buf+7															// addressed to us
-	#define len					buf[0]+1
+	#define reID                buf+4															// message comes from
+	#define toID                buf+7															// addressed to us
+	#define len                 buf[0]+1
+	#define msgTyp              buf[3]
+	#define by10                buf[10]
+	#define by11                buf[11]
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
