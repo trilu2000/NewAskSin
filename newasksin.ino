@@ -3,6 +3,7 @@
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																	// configuration sheet
 
+MilliTimer timer1;
 
 void setup() {
 	#ifdef SER_DBG
@@ -29,13 +30,16 @@ void setup() {
 	//hm.ee.getPeerIdx(1, xTmp);
 	//hm.ee.addPeer(1, 1, xTmp);
 	//hm.ee.remPeer(1, 1);
-	millis_init();
+	initMillis();																		// start the millis counter
+	//timer1.poll(1000);
 }
 
 void loop() {
 	hm.poll();
+	if (timer1.poll(1000)) dbg << getMillis() << '\n';
+
 	//_delay_ms(1000);
-	//dbg << millis_get() << '\n';
+	//dbg << getMillis() << '\n';
 	//dbg << '.';
 	/* add main program code here */
 

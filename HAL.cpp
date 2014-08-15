@@ -57,20 +57,20 @@ ISR(INT0_vect) {
 
 //- timer functions -------------------------------------------------------------------------------------------------------
 static volatile millis_t milliseconds;
-void millis_init() {
+void     initMillis() {
 	SET_TCCRA();
 	SET_TCCRB();
 	REG_TIMSK = _BV(BIT_OCIE);
 	REG_OCR = ((F_CPU / PRESCALER) / 1000);
 }
-millis_t millis_get() {
+millis_t getMillis() {
 	millis_t ms;
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		ms = milliseconds;
 	}
 	return ms;
 }
-void millis_add(millis_t ms) {
+void     addMillis(millis_t ms) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		milliseconds += ms;
 	}

@@ -82,6 +82,7 @@ uint8_t ccSendByte(uint8_t data);
 uint8_t ccGDO0(void);
 
 //- timer functions -------------------------------------------------------------------------------------------------------
+// https://github.com/zkemble/millis/blob/master/millis/
 #define REG_TCCRA		TCCR0A
 #define REG_TCCRB		TCCR0B
 #define REG_TIMSK		TIMSK0
@@ -95,10 +96,10 @@ uint8_t ccGDO0(void);
 #define SET_TCCRA()	    (REG_TCCRA = _BV(BIT_WGM))
 #define SET_TCCRB()	    (REG_TCCRB = CLOCKSEL)
 
-typedef unsigned long millis_t;
-void millis_init(void);
-millis_t millis_get(void);
-void millis_add(millis_t ms);
+typedef uint32_t millis_t;
+void     initMillis(void);
+millis_t getMillis(void);
+void     addMillis(millis_t ms);
 
 
 #endif 

@@ -53,7 +53,28 @@ void AS::received(void) {
 }
 
 
-
-
 AS hm;
+
+
+
+// public:		//---------------------------------------------------------------------------------------------------------
+uint8_t  MilliTimer::poll(uint16_t ms) {
+	uint8_t ready = 0;
+	if (armed) {
+		uint16_t remain = next - getMillis();
+		if (remain <= 60000) return 0;	
+		ready = -remain;
+	}
+	set(ms);
+	return ready;
+}
+uint16_t MilliTimer::remaining() const {
+	uint16_t remain = armed ? next - getMillis() : 0;
+	return remain <= 60000 ? remain : 0;
+}
+void     MilliTimer::set(uint16_t ms) {
+	armed = ms != 0;
+	if (armed)
+	next = getMillis() + ms - 1;
+}
 

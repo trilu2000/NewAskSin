@@ -45,6 +45,20 @@ class AS {
 };
 extern AS hm;
 
+class MilliTimer {
+	// http://jeelabs.net/pub/docs/jeelib/Ports_8h_source.html
+  private:		//---------------------------------------------------------------------------------------------------------
+	uint16_t next;
+	byte armed;
+
+  public:		//---------------------------------------------------------------------------------------------------------
+	MilliTimer () : armed (0) {}
+
+	uint8_t  poll(uint16_t ms =0);
+	uint16_t remaining() const;
+	uint8_t  idle() const { return !armed; }
+	void     set(uint16_t ms);
+};
 
 #endif
 
