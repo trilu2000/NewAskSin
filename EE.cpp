@@ -160,22 +160,14 @@ void    EE::testModul(void) {															// prints register.h content on cons
 	#endif
 }
 uint8_t EE::isHMIDValid(uint8_t *toID) {
-	if (toID[0] != HMID[0]) return 0;													// compares byte by byte
-	if (toID[1] != HMID[1]) return 0;
-	if (toID[2] != HMID[2]) return 0;
-	return 1;																			// all bytes are fitting, therefore return true
+	return memcmp(toID, HMID, 3)?0:1;
 }
 uint8_t EE::isPairValid (uint8_t *reID) {
-	if (reID[0] != MAID[0]) return 0;													// compares byte by byte
-	if (reID[1] != MAID[1]) return 0;
-	if (reID[2] != MAID[2]) return 0;
-	return 1;																			// all bytes are fitting, therefore return true
+	return memcmp(reID, MAID, 3)?0:1;
 }
-uint8_t EE::isBroadCast(uint8_t *reID) {
-	if (reID[0] != 0) return 0;															// check if all bytes are empty
-	if (reID[1] != 0) return 0;
-	if (reID[2] != 0) return 0;
-	return 1;																			// all bytes are fitting, therefore return true
+uint8_t EE::isBroadCast(uint8_t *toID) {
+	uint8_t zero[3] = {0,0,0};
+	return memcmp(toID, zero, 3)?0:1;
 }
 uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId) {
 	if (isBroadCast(toId)) return 'b';													// broadcast message
@@ -183,7 +175,7 @@ uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId) {
 
 	if (isPairValid(reId)) return 'm';													// coming from master
 	if (isPeerValid(reId)) return 'p';													// coming from a peer
-	return 'x';																			// should never happens
+	return 'u';																			// should never happens
 }
 
 
