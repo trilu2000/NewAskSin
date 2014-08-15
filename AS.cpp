@@ -7,7 +7,7 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #define AS_DBG
-#define AS_DBG_EX
+//#define AS_DBG_EX
 #include "AS.h"
 
 
@@ -28,27 +28,37 @@ void AS::init(void) {
 	rv.HMID = HMID;																		// hand over the pointer to HMID for checking up if a message is for us
 	rv.MAID = ee.MAID;																	// hand over the pointer to Master ID for checking if a message comes from Master
 
+	initMillis();																		// start the millis counter
+
 	// everything is setuped, enable RF functionality
 	_enableGDO0Int;																		// enable interrupt to get a signal while receiving data
 }
 void AS::poll(void) {
 
+	// check if something received
 	if (ccGDO0()) {																		// check if something was received
 		cc.rcvData(rv.buf);																// copy the data into the receiver module
 		if (rv.hasData) {
 			rv.decode();																// decode the string
-			received();
+			received();																	// and jump in the received function
 		}
 	}
+
+	// check if something is to send
+
+	// check if we could go to standby
+	
+	// some sanity poll routines
+	
 }
 void AS::received(void) {
-	uint8_t bIntend = ee.getIntend(rv.reID,rv.toID);
+	uint8_t bIntend = ee.getIntend(rv.reID,rv.toID);									// get the intend of the message
 
+	// some debugs
 	#ifdef AS_DBG																		// only if AS debug is set
 	dbg << (char)bIntend << F("> ") << pHex(rv.buf,rv.len) << '\n';
 	#endif
-
-	#ifdef AS_DBG_EX
+	#ifdef AS_DBG_EX																	// only if extended AS debug is set
 
 	dbg << F("   ");																	// save some byte and send 3 blanks once, instead of having it in every if
 	
@@ -188,9 +198,61 @@ void AS::received(void) {
 	dbg << F("\n\n");
 	#endif
 
+	// filter out unknown or not for us
+	if ((bIntend == 'l') || (bIntend == 'u')) {											// not for us, or sender unknown
+		rv.buf[0] = 0;																	// clear receive buffer
+		return;
+	}
+	
+	// check which type of message was received
+	if         ((rv.msgTyp == 0x01) && (rv.by11 == 0x01)) {								// CONFIG_PEER_ADD
+		//CHANNEL        => "00,2",
+		//PEER_ADDRESS   => "04,6",
+		//PEER_CHANNEL_A => "10,2",
+		//PEER_CHANNEL_B => "12,2", }},
 
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x02)) {								// CONFIG_PEER_REMOVE
+		//CHANNEL        => "00,2",
+		//PEER_ADDRESS   => '04,6,$val=CUL_HM_id2Name($val)',
+		//PEER_CHANNEL_A => "10,2",
+		//PEER_CHANNEL_B => "12,2", } },
 
-	//dbg << ee.isBroadCast(rv.reID) << '\n';
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x03)) {								// CONFIG_PEER_LIST_REQ
+		//CHANNEL => "0,2", },},
+
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x04)) {								// CONFIG_PARAM_REQ
+		//CHANNEL        => "00,2",
+		//PEER_ADDRESS   => "04,6",
+		//PEER_CHANNEL   => "10,2",
+		//PARAM_LIST     => "12,2", },},
+
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x05)) {								// CONFIG_START
+		//CHANNEL        => "00,2",
+		//PEER_ADDRESS   => "04,6",
+		//PEER_CHANNEL   => "10,2",
+		//PARAM_LIST     => "12,2", } },
+
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x06)) {								// CONFIG_END
+		//CHANNEL => "0,2", } },
+
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x07)) {								// CONFIG_WRITE_INDEX
+		//CHANNEL => "0,2",
+		//ADDR => "4,2",
+		//DATA => '6,,$val =~ s/(..)/ $1/g', } },
+
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x08)) {								// CONFIG_WRITE_INDEX
+		//CHANNEL => "0,2",
+		//DATA => '4,,$val =~ s/(..)(..)/ $1:$2/g', } },
+
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x09)) {								// CONFIG_SERIAL_REQ
+
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0A)) {								// PAIR_SERIAL
+		//SERIALNO       => '04,,$val=pack("H*",$val)', } },
+
+	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0E)) {								// CONFIG_STATUS_REQUEST
+		//CHANNEL => "0,2", } },
+
+	}
 }
 
 

@@ -30,7 +30,6 @@ void setup() {
 	//hm.ee.getPeerIdx(1, xTmp);
 	//hm.ee.addPeer(1, 1, xTmp);
 	//hm.ee.remPeer(1, 1);
-	initMillis();																		// start the millis counter
 	//timer1.poll(1000);
 }
 
