@@ -36,11 +36,33 @@ void setup() {
 
 void loop() {
 	hm.poll();
-	if (timer1.poll(1000)) dbg << getMillis() << '\n';
+	//if (timer1.poll(1000)) dbg << getMillis() << '\n';
 
 	//_delay_ms(1000);
 	//dbg << getMillis() << '\n';
 	//dbg << '.';
 	/* add main program code here */
 
+}
+
+void serialEvent() {
+	static uint8_t i = 0;																		// it is a high byte next time
+	while (Serial.available()) {
+		uint8_t inChar = (uint8_t)Serial.read();												// read a byte
+		if (inChar == '\n') {																	// send to receive routine
+			i = 0;
+			hm.received();
+		}
+		
+		if      ((inChar>96) && (inChar<103)) inChar-=87;										// a - f
+		else if ((inChar>64) && (inChar<71))  inChar-=55;										// A - F
+		else if ((inChar>47) && (inChar<58))  inChar-=48;										// 0 - 9
+		else continue;
+		
+		if (i % 2 == 0) hm.rv.buf[i/2] = inChar << 4;											// high byte
+		else hm.rv.buf[i/2] |= inChar;															// low byte
+		
+		//dbg << i << ": " << pHexB(hm.rv.buf[i/2]) << '\n';
+		i++;
+	}
 }
