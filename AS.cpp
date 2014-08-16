@@ -204,6 +204,9 @@ void AS::received(void) {
 		return;
 	}
 	
+	// filter out repeated messages
+	
+	
 	// check which type of message was received
 	if         ((rv.msgTyp == 0x01) && (rv.by11 == 0x01)) {								// CONFIG_PEER_ADD
 		//CHANNEL        => "00,2",
@@ -252,7 +255,80 @@ void AS::received(void) {
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0E)) {								// CONFIG_STATUS_REQUEST
 		//CHANNEL => "0,2", } },
 
+	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x00)) {								// ACK
+		
+	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x01)) {								// ACK_STATUS
+		//CHANNEL        => "02,2",
+		//STATUS         => "04,2",
+		//DOWN           => '06,02,$val=(hex($val)&0x20)?1:0',
+		//UP             => '06,02,$val=(hex($val)&0x10)?1:0',
+		//LOWBAT         => '06,02,$val=(hex($val)&0x80)?1:0',
+		//RSSI           => '08,02,$val=(-1)*(hex($val))', }},
+
+	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x02)) {								// ACK2 - smokeDetector pairing only?
+
+ 	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x04)) {								// ACK-proc - connected to AES??
+		//Para1          => "02,4",
+		//Para2          => "06,4",
+		//Para3          => "10,4",
+		//Para4          => "14,2",}}, # remote?
+ 
+ 	} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x80)) {								// NACK
+		 
+ 	} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x84)) {								// NACK_TARGET_INVALID
+
+	} else if  (rv.msgTyp == 0x12) {													// HAVE_DATA
+		
+	} else if  (rv.msgTyp == 0x3E) {													// SWITCH
+		//DST      => "00,6",
+		//UNKNOWN  => "06,2",
+		//CHANNEL  => "08,2",
+		//COUNTER  => "10,2", } },
+
+	} else if  (rv.msgTyp == 0x3F) {													// TimeStamp
+		//UNKNOWN  => "00,4",
+		//TIME     => "04,2", } },
+
+	} else if  (rv.msgTyp == 0x40) {													// REMOTE
+		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
+		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
+		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
+		//COUNTER  => "02,2", } },
+
+	} else if  (rv.msgTyp == 0x41) {													// Sensor_event
+		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
+		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
+		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
+		//NBR      => '02,2,$val=(hex($val))',
+		//VALUE    => '04,2,$val=(hex($val))',} },
+
+	} else if  (rv.msgTyp == 0x53) {													// SensorData
+		//CMD => "00,2",
+		//Fld1=> "02,2",
+		//Val1=> '04,4,$val=(hex($val))',
+		//Fld2=> "08,2",
+		//Val2=> '10,4,$val=(hex($val))',
+		//Fld3=> "14,2",
+		//Val3=> '16,4,$val=(hex($val))',
+		//Fld4=> "20,2",
+		//Val4=> '24,4,$val=(hex($val))'} },
+
+ 	} else if  (rv.msgTyp == 0x58) {													// ClimateEvent
+		//CMD      => "00,2",
+		//ValvePos => '02,2,$val=(hex($val))', } },
+ 
+ 	} else if  (rv.msgTyp == 0x59) {													// setTeamTemp
+		//CMD      => "00,2",
+		//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
+		//mode     => '02,2,$val=(hex($val) & 0x3)',} },
+
+	} else if  (rv.msgTyp == 0x70) {													// WeatherEvent
+		//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
+		//HUM      => '04,2,$val=(hex($val))', } },
+
 	}
+
+
 }
 
 
