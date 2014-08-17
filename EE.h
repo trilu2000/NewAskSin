@@ -60,7 +60,7 @@ class EE {
 	uint8_t countFreeSlots(uint8_t cnl);												// ok, counts the free peer slots of a channel
 	uint8_t getIdxByPeer(uint8_t cnl, uint8_t *peer);									// ok, find the index of the respective peer
 	uint8_t getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);						// ok, returns the respective peer of the given index
-	uint8_t addPeer(uint8_t cnl, uint8_t idx, uint8_t *peer);							// ok, writes a peer in the database on respective slot 
+	uint8_t addPeer(uint8_t cnl, uint8_t *peer);										// ok, writes a peer in the database on first free slot 
 	uint8_t remPeer(uint8_t cnl, uint8_t idx);											// ok, writes a zero to the respective slot
 	uint8_t countPeerSlc(uint8_t cnl);													// ok, count the slices for function getPeerListSlc
 	uint8_t getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);						// ok, returns the whole peer database as a string	

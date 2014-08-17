@@ -209,10 +209,38 @@ void AS::received(void) {
 	
 	// check which type of message was received
 	if         ((rv.msgTyp == 0x01) && (rv.by11 == 0x01)) {								// CONFIG_PEER_ADD
-		//CHANNEL        => "00,2",
-		//PEER_ADDRESS   => "04,6",
-		//PEER_CHANNEL_A => "10,2",
-		//PEER_CHANNEL_B => "12,2", }},
+		// description --------------------------------------------------------
+		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
+		// l> 10 55 A0 01 63 19 63 1E 7A AD 03   01  1F A6 5C  06         05
+		// do something with the information ----------------------------------
+
+
+		//uint8_t ret, cnt;
+
+		//if      ((rv.buf[15]) && (rv.buf[16])) cnt = 2;									// two peers to write
+		//else if ((rv.buf[15]) || (rv.buf[16])) cnt = 1;									// one peer to write
+		//else cnt = 0;																	// no peer to write
+
+		//if (cnt > ee.countFreeSlots(rv.buf[10])) {										// not enough free slots
+		//	ret = 0;
+		//} else if (cnt == 0) {															// no peer cnl given, nothing to write
+		//	ret = 1;	
+		//} else if ((cnt == 1) && (rv.buf[15])) {										// write peer 1
+		//	ee.addPeer(rv.buf[10],rv.buf+12);											// write peerCnl_A
+		//	ret = 1;
+		//} else if ((cnt == 1) && (rv.buf[16])) {										// write peer 2
+		//	rv.buf[15] = rv.buf[16];													// copy byte 16 to 15
+		//	ee.addPeer(rv.buf[10],rv.buf+12);											// write peerCnl_B
+		//	ret = 1;
+		//} else if (cnt == 2) {															// write both peers
+		//	ee.addPeer(rv.buf[10],rv.buf+12);											// write peerCnl_A
+		//	rv.buf[15] = rv.buf[16];													// copy byte 16 to 15
+		//	ee.addPeer(rv.buf[10],rv.buf+12);											// write peerCnl_B
+		//	ret = 1;
+		//}
+
+		//if (ret) && (rv.ackRq) send_ACK();
+		//else if (rv.ackRq) send_NACK();
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x02)) {								// CONFIG_PEER_REMOVE
 		//CHANNEL        => "00,2",
@@ -328,7 +356,7 @@ void AS::received(void) {
 
 	}
 
-
+	rv.buf[0] = 0;																		// message progressed, nothing do to any more
 }
 
 

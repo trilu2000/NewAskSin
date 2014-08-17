@@ -31,6 +31,23 @@ void setup() {
 	//hm.ee.addPeer(1, 1, xTmp);
 	//hm.ee.remPeer(1, 1);
 	//timer1.poll(1000);
+
+	hm.ee.clearPeers();
+	dbg << "free: " << hm.ee.countFreeSlots(1) << '\n';
+	
+	// add peer
+	uint8_t buf[] = {0x01,0x02,0x03,0x04,0x05};
+	hm.ee.addPeer(1,buf);
+
+	// display peer space
+	uint8_t xuf[20], cnt;
+	uint8_t slc = hm.ee.countPeerSlc(1);
+	
+	for (uint8_t i = 0; i < slc; i++) {
+		cnt = hm.ee.getPeerListSlc(1,i,xuf);
+		dbg << slc << ": " << pHex(xuf,cnt) << '\n';
+	}
+
 }
 
 void loop() {
