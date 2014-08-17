@@ -223,25 +223,35 @@ uint8_t EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
 uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	uint32_t lPeer;
 
-	uint8_t cnt = 0, ret;																// how many peers has to be written
+	// set bit mask against peer cnl
+	uint8_t cnt = 0, ret = 0;
 	if (peer[3]) cnt |= 1;
 	if (peer[4]) cnt |= 2;
+
+	// count free peer slots and check against cnt
+	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
+		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
+		if (lPeer == 0) ret++;															// increase counter if peer slot is empty
+	}
+	if (((peer[3]) && (peer[4])) && (ret < 2)) return 0;
+	if (((peer[3]) || (peer[4])) && (ret < 1)) return 0;
 	
+	// search for free peer slots and write content
 	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
 		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
 
 		if        ((lPeer == 0) && (cnt & 1)) {											// slot is empty and peer cnlA is set
-			ret |= 1; cnt ^= 1;
+			cnt ^= 1;
 			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)peer);
 
 		} else if ((lPeer == 0) && (cnt & 2)) {											// slot is empty and peer cnlB is set
-			ret |= 2; cnt ^= 2;
+			cnt ^= 2;
 			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 3, (void*)peer);	// first 3 bytes
 			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4)+3, 1, (void*)peer+4);// 5th byte
 		
 		}
 	}
-	return ret;
+	return 1;
 }
 uint8_t EE::remPeer(uint8_t cnl, uint8_t idx) {
 	clearEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(idx*4), 4);
