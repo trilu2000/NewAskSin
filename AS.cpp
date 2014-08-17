@@ -295,33 +295,64 @@ void AS::received(void) {
 
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x05)) {								// CONFIG_START
-		//CHANNEL        => "00,2",
-		//PEER_ADDRESS   => "04,6",
-		//PEER_CHANNEL   => "10,2",
-		//PARAM_LIST     => "12,2", } },
+		// description --------------------------------------------------------
+		//                                  Cnl    PeerID    PeerCnl  ParmLst
+		// l> 10 01 A0 01 63 19 63 01 02 04 00  05 00 00 00  00       00
+		// do something with the information ----------------------------------
+
+		cnfFlag.idx = ee.getIdxByPeer(rv.buf[10], rv.buf+12);							// fill structure to remember where to write
+		cnfFlag.cnl = rv.buf[10];
+		cnfFlag.lst = rv.buf[16];
+		if (cnfFlag.idx != 0xff) {
+			cnfFlag.active = 1;															// set active if there is no error on index
+			// set message id flag to config in send module
+		}
+		
+		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
 
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x06)) {								// CONFIG_END
-		//CHANNEL => "0,2", } },
+		// description --------------------------------------------------------
+		//                                  Cnl
+		// l> 0B 01 A0 01 63 19 63 01 02 04 00  06
+		// do something with the information ----------------------------------
+
+		cnfFlag.active = 0;																// set inactive
+		// remove message id flag to config in send module
+		
+		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
+
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x07)) {								// CONFIG_WRITE_INDEX
-		//CHANNEL => "0,2",
-		//ADDR => "4,2",
-		//DATA => '6,,$val =~ s/(..)/ $1/g', } },
+		// sample needed
 
+		
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x08)) {								// CONFIG_WRITE_INDEX
-		//CHANNEL => "0,2",
-		//DATA => '4,,$val =~ s/(..)(..)/ $1:$2/g', } },
+		// description --------------------------------------------------------
+		//                                  Cnl    Data
+		// l> 13 02 A0 01 63 19 63 01 02 04 00  08 02 01 0A 63 0B 19 0C 63
+		// do something with the information ----------------------------------
+
+		if ((cnfFlag.active) && (cnfFlag.cnl == rv.buf[10])) {							// check if we are in config mode and if the channel fit
+			ee.setListArray(cnfFlag.cnl, cnfFlag.lst, cnfFlag.idx, rv.len-11, rv.buf+12);// write the string to eeprom
+		}
+		
+		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
+
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x09)) {								// CONFIG_SERIAL_REQ
+
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0A)) {								// PAIR_SERIAL
 		//SERIALNO       => '04,,$val=pack("H*",$val)', } },
 
+
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0E)) {								// CONFIG_STATUS_REQUEST
 		//CHANNEL => "0,2", } },
 
+
 	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x00)) {								// ACK
+
 		
 	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x01)) {								// ACK_STATUS
 		//CHANNEL        => "02,2",
@@ -331,19 +362,25 @@ void AS::received(void) {
 		//LOWBAT         => '06,02,$val=(hex($val)&0x80)?1:0',
 		//RSSI           => '08,02,$val=(-1)*(hex($val))', }},
 
+
 	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x02)) {								// ACK2 - smokeDetector pairing only?
+
 
  	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x04)) {								// ACK-proc - connected to AES??
 		//Para1          => "02,4",
 		//Para2          => "06,4",
 		//Para3          => "10,4",
 		//Para4          => "14,2",}}, # remote?
+
  
  	} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x80)) {								// NACK
+
 		 
  	} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x84)) {								// NACK_TARGET_INVALID
 
+
 	} else if  (rv.msgTyp == 0x12) {													// HAVE_DATA
+
 		
 	} else if  (rv.msgTyp == 0x3E) {													// SWITCH
 		//DST      => "00,6",
@@ -351,9 +388,11 @@ void AS::received(void) {
 		//CHANNEL  => "08,2",
 		//COUNTER  => "10,2", } },
 
+
 	} else if  (rv.msgTyp == 0x3F) {													// TimeStamp
 		//UNKNOWN  => "00,4",
 		//TIME     => "04,2", } },
+
 
 	} else if  (rv.msgTyp == 0x40) {													// REMOTE
 		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
@@ -361,12 +400,14 @@ void AS::received(void) {
 		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
 		//COUNTER  => "02,2", } },
 
+
 	} else if  (rv.msgTyp == 0x41) {													// Sensor_event
 		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
 		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
 		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
 		//NBR      => '02,2,$val=(hex($val))',
 		//VALUE    => '04,2,$val=(hex($val))',} },
+
 
 	} else if  (rv.msgTyp == 0x53) {													// SensorData
 		//CMD => "00,2",
@@ -379,18 +420,22 @@ void AS::received(void) {
 		//Fld4=> "20,2",
 		//Val4=> '24,4,$val=(hex($val))'} },
 
+
  	} else if  (rv.msgTyp == 0x58) {													// ClimateEvent
 		//CMD      => "00,2",
 		//ValvePos => '02,2,$val=(hex($val))', } },
+ 
  
  	} else if  (rv.msgTyp == 0x59) {													// setTeamTemp
 		//CMD      => "00,2",
 		//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
 		//mode     => '02,2,$val=(hex($val) & 0x3)',} },
 
+
 	} else if  (rv.msgTyp == 0x70) {													// WeatherEvent
 		//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 		//HUM      => '04,2,$val=(hex($val))', } },
+
 
 	}
 

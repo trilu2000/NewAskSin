@@ -41,6 +41,13 @@ class AS {
 		uint8_t lst;
 		uint8_t idx;
 	} slcList;
+
+	struct s_cnfFlag {
+		uint8_t active   :1;
+		uint8_t cnl;
+		uint8_t lst;
+		uint8_t idx;
+	} cnfFlag;
 	
   private:		//---------------------------------------------------------------------------------------------------------
 
