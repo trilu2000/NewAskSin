@@ -28,7 +28,8 @@ class RV {
 	#define msgTyp              buf[3]
 	#define by10                buf[10]
 	#define by11                buf[11]
-
+	#define reCnt				buf[1]
+	
 	#define ackRq				buf[2] & (1<<5)													// check if an ACK is requested
 		
   protected:	//---------------------------------------------------------------------------------------------------------
