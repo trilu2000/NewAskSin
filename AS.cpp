@@ -44,6 +44,8 @@ void AS::poll(void) {
 		}
 	}
 
+	sendSlcList();																		// poll the slice list send function
+	
 	// check if something is to send
 
 	// check if we could go to standby
@@ -51,6 +53,30 @@ void AS::poll(void) {
 	// some sanity poll routines
 	
 }
+
+void AS::sendSlcList(void) {
+	if (!slcList.active) return;
+	
+	// check if send function has a free slot, otherwise return
+	uint8_t xuf[20], cnt;
+
+	if        (slcList.peer) {															// INFO_PEER_LIST
+		cnt = ee.getPeerListSlc(slcList.cnl,slcList.curSlc,xuf);						// get the slice and the amount of bytes	
+		slcList.curSlc++;																// increase slice counter
+		dbg << "peer slc: " << pHex(xuf,cnt) << '\n';									// write to send buffer
+
+	} else if (slcList.reg2) {															// INFO_PARAM_RESPONSE_PAIRS
+
+	} else if (slcList.reg3) {															// INFO_PARAM_RESPONSE_SEQ
+
+	}
+
+	if (slcList.curSlc == slcList.totSlc) {												// if everything is send, we could empty the struct
+		memset((void*)&slcList,0,5);													// by memset
+		//dbg << "end: " << slcList.active << slcList.peer << slcList.reg2 << slcList.reg3 << '\n';
+	}
+}
+
 void AS::received(void) {
 	uint8_t bIntend = ee.getIntend(rv.reID,rv.toID);									// get the intend of the message
 
@@ -211,45 +237,41 @@ void AS::received(void) {
 	if         ((rv.msgTyp == 0x01) && (rv.by11 == 0x01)) {								// CONFIG_PEER_ADD
 		// description --------------------------------------------------------
 		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
-		// l> 10 55 A0 01 63 19 63 1E 7A AD 03   01  1F A6 5C  06         05
+		// l> 10 55 A0 01 63 19 63 01 02 04 01   01  1F A6 5C  06         05
 		// do something with the information ----------------------------------
 
+		// first call remPeer to avoid doubles
+		uint8_t ret = ee.addPeer(rv.buf[10],rv.buf+12);									// send to addPeer function
+		
+		// let module registrations know of the change
 
-		//uint8_t ret, cnt;
+		if ((ret) && (rv.ackRq)) dbg << "ACK\n"; //send_ACK();							// send appropriate answer
+		else if (rv.ackRq)  dbg << "NACK\n"; //send_NACK();
 
-		//if      ((rv.buf[15]) && (rv.buf[16])) cnt = 2;									// two peers to write
-		//else if ((rv.buf[15]) || (rv.buf[16])) cnt = 1;									// one peer to write
-		//else cnt = 0;																	// no peer to write
-
-		//if (cnt > ee.countFreeSlots(rv.buf[10])) {										// not enough free slots
-		//	ret = 0;
-		//} else if (cnt == 0) {															// no peer cnl given, nothing to write
-		//	ret = 1;	
-		//} else if ((cnt == 1) && (rv.buf[15])) {										// write peer 1
-		//	ee.addPeer(rv.buf[10],rv.buf+12);											// write peerCnl_A
-		//	ret = 1;
-		//} else if ((cnt == 1) && (rv.buf[16])) {										// write peer 2
-		//	rv.buf[15] = rv.buf[16];													// copy byte 16 to 15
-		//	ee.addPeer(rv.buf[10],rv.buf+12);											// write peerCnl_B
-		//	ret = 1;
-		//} else if (cnt == 2) {															// write both peers
-		//	ee.addPeer(rv.buf[10],rv.buf+12);											// write peerCnl_A
-		//	rv.buf[15] = rv.buf[16];													// copy byte 16 to 15
-		//	ee.addPeer(rv.buf[10],rv.buf+12);											// write peerCnl_B
-		//	ret = 1;
-		//}
-
-		//if (ret) && (rv.ackRq) send_ACK();
-		//else if (rv.ackRq) send_NACK();
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x02)) {								// CONFIG_PEER_REMOVE
-		//CHANNEL        => "00,2",
-		//PEER_ADDRESS   => '04,6,$val=CUL_HM_id2Name($val)',
-		//PEER_CHANNEL_A => "10,2",
-		//PEER_CHANNEL_B => "12,2", } },
+		// description --------------------------------------------------------
+		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
+		// l> 10 55 A0 01 63 19 63 01 02 04 01   02  1F A6 5C  06         05
+		// do something with the information ----------------------------------
+		
+		uint8_t ret = ee.remPeer(rv.buf[10],rv.buf+12);									// call the remPeer function
+		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
+
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x03)) {								// CONFIG_PEER_LIST_REQ
-		//CHANNEL => "0,2", },},
+		// description --------------------------------------------------------
+		//                                  Cnl
+		// l> 0B 05 A0 01 63 19 63 01 02 04 01  03
+		// do something with the information ----------------------------------
+		
+		slcList.totSlc = ee.countPeerSlc(rv.buf[10]);									// how many slices are need
+		slcList.cnl = rv.buf[10];														// send input to the send peer function
+		slcList.peer = 1;																// set the type of answer
+		slcList.active = 1;																// start the send function
+
+		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
+
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x04)) {								// CONFIG_PARAM_REQ
 		//CHANNEL        => "00,2",

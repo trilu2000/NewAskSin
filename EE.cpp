@@ -57,9 +57,9 @@ void    EE::init(void) {
 
 }
 void    EE::getMasterID(void) {
-	MAID[0] = getRegAddr(0, 0, 0, 0x0a);
-	MAID[1] = getRegAddr(0, 0, 0, 0x0b);
-	MAID[2] = getRegAddr(0, 0, 0, 0x0c);
+	MAID[0] = 0x63; //getRegAddr(0, 0, 0, 0x0a);
+	MAID[1] = 0x19; //getRegAddr(0, 0, 0, 0x0b);
+	MAID[2] = 0x63; //getRegAddr(0, 0, 0, 0x0c);
 }
 void    EE::testModul(void) {															// prints register.h content on console
 	#ifdef EE_DBG																		// only if ee debug is set
@@ -223,6 +223,9 @@ uint8_t EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
 uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	uint32_t lPeer;
 
+	// check if channel exists
+	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
+
 	// set bit mask against peer cnl
 	uint8_t cnt = 0, ret = 0;
 	if (peer[3]) cnt |= 1;
@@ -233,7 +236,7 @@ uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
 		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
 		if (lPeer == 0) ret++;															// increase counter if peer slot is empty
 	}
-	if (((peer[3]) && (peer[4])) && (ret < 2)) return 0;
+	if (((peer[3]) && (peer[4])) && (ret < 2)) return 0;								// not enough space, return failure
 	if (((peer[3]) || (peer[4])) && (ret < 1)) return 0;
 	
 	// search for free peer slots and write content
@@ -251,10 +254,27 @@ uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
 		
 		}
 	}
-	return 1;
+	return 1;																			// everything went fine, return success
 }
-uint8_t EE::remPeer(uint8_t cnl, uint8_t idx) {
-	clearEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(idx*4), 4);
+uint8_t EE::remPeer(uint8_t cnl, uint8_t *peer) {
+	uint32_t lPeer, tPeer;
+
+	// check if channel exists
+	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
+
+	// peerA is given by (uint32_t*)peer, peerB has to be constructed
+	memcpy((void*)&tPeer,peer,3);
+	memcpy((void*)&tPeer+3,peer+4,1);
+	//dbg << "a: " << pHex(peer,4) << ", b: " << pHex(((uint8_t*)&tPeer),4) << '\n'; 
+
+	// search for peers and delete them
+	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
+		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
+		if ((lPeer == *(uint32_t*)peer) || (lPeer == tPeer)) {							// check if something matches
+			clearEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4);				// free the slot
+		}
+	}
+	return 1;
 }
 uint8_t EE::countPeerSlc(uint8_t cnl) {
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
@@ -280,7 +300,7 @@ uint8_t EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 		if (*(uint32_t*)buf == 0) continue;												// peer is empty therefor next
 
 		byteCnt+=4;																		// if we are here, then it is valid and we should increase the byte counter
-		dbg << i << ": " << pHex(buf,4) << ", bC: " << byteCnt  << ", sC: " << slcCnt << '\n';
+		//dbg << i << ": " << pHex(buf,4) << ", bC: " << byteCnt  << ", sC: " << slcCnt << '\n';
 
 		if ((slcCnt == slc) && (byteCnt >= maxMsgLen)) {								// we are in the right slice but string is full
 			return byteCnt;																// return the amount of bytes in the string
