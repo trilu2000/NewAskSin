@@ -14,7 +14,6 @@
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
 }
-
 void AS::init(void) {
 	#ifdef AS_DBG																		// only if cc debug is set
 	dbg.begin(57600);																	// dbg setup
@@ -33,6 +32,8 @@ void AS::init(void) {
 	// everything is setuped, enable RF functionality
 	_enableGDO0Int;																		// enable interrupt to get a signal while receiving data
 }
+
+// - poll functions --------------------------------
 void AS::poll(void) {
 
 	// check if something received
@@ -53,24 +54,23 @@ void AS::poll(void) {
 	// some sanity poll routines
 	
 }
-
 void AS::sendSlcList(void) {
 	if (!slcList.active) return;
 	
 	// check if send function has a free slot, otherwise return
-	uint8_t xuf[20], cnt;
+	uint8_t cnt;
 
 	if        (slcList.peer) {															// INFO_PEER_LIST
-		cnt = ee.getPeerListSlc(slcList.cnl,slcList.curSlc,xuf);						// get the slice and the amount of bytes	
+		cnt = ee.getPeerListSlc(slcList.cnl,slcList.curSlc,sn.buf);						// get the slice and the amount of bytes
 		slcList.curSlc++;																// increase slice counter
-		dbg << "peer slc: " << pHex(xuf,cnt) << '\n';									// write to send buffer
+		dbg << "peer slc: " << pHex(sn.buf,cnt) << '\n';								// write to send buffer
 
-	} else if (slcList.reg2) {															// INFO_PARAM_RESPONSE_PAIRS
-		cnt = ee.getRegListSlc(slcList.cnl,slcList.lst,slcList.idx,slcList.curSlc,xuf);	// get the slice and the amount of bytes	
+		} else if (slcList.reg2) {															// INFO_PARAM_RESPONSE_PAIRS
+		cnt = ee.getRegListSlc(slcList.cnl,slcList.lst,slcList.idx,slcList.curSlc,sn.buf);// get the slice and the amount of bytes
 		slcList.curSlc++;																// increase slice counter
-		dbg << "reg2 slc: " << pHex(xuf,cnt) << '\n';									// write to send buffer
+		dbg << "reg2 slc: " << pHex(sn.buf,cnt) << '\n';								// write to send buffer
 		
-	} else if (slcList.reg3) {															// INFO_PARAM_RESPONSE_SEQ
+		} else if (slcList.reg3) {															// INFO_PARAM_RESPONSE_SEQ
 
 	}
 
@@ -80,6 +80,7 @@ void AS::sendSlcList(void) {
 	}
 }
 
+// - received functions ----------------------------
 void AS::received(void) {
 	uint8_t bIntend = ee.getIntend(rv.reID,rv.toID);									// get the intend of the message
 
@@ -243,16 +244,16 @@ void AS::received(void) {
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   01  1F A6 5C  06         05
 		// do something with the information ----------------------------------
 
-			// first call remPeer to avoid doubles
+		// first call remPeer to avoid doubles
 		uint8_t ret = ee.addPeer(rv.buf[10],rv.buf+12);									// send to addPeer function
 		
-			// let module registrations know of the change
+		// let module registrations know of the change
 
 		if ((ret) && (rv.ackRq)) dbg << "ACK\n"; //send_ACK();							// send appropriate answer
 		else if (rv.ackRq)  dbg << "NACK\n"; //send_NACK();
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x02)) {								// CONFIG_PEER_REMOVE
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x02)) {								// CONFIG_PEER_REMOVE
 		// description --------------------------------------------------------
 		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   02  1F A6 5C  06         05
@@ -262,7 +263,7 @@ void AS::received(void) {
 		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x03)) {								// CONFIG_PEER_LIST_REQ
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x03)) {								// CONFIG_PEER_LIST_REQ
 		// description --------------------------------------------------------
 		//                                  Cnl
 		// l> 0B 05 A0 01 63 19 63 01 02 04 01  03
@@ -276,13 +277,13 @@ void AS::received(void) {
 		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x04)) {								// CONFIG_PARAM_REQ
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x04)) {								// CONFIG_PARAM_REQ
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
 		// do something with the information ----------------------------------
 
-		slcList.idx = ee.getIdxByPeer(rv.buf[10], rv.buf+12);							// fill struct	
+		slcList.idx = ee.getIdxByPeer(rv.buf[10], rv.buf+12);							// fill struct
 		slcList.totSlc = ee.countRegListSlc(rv.buf[10], rv.buf[16]);					// how many slices are need
 		slcList.cnl = rv.buf[10];														// send input to the send peer function
 		slcList.lst = rv.buf[16];														// send input to the send peer function
@@ -294,7 +295,7 @@ void AS::received(void) {
 		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x05)) {								// CONFIG_START
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x05)) {								// CONFIG_START
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 01 A0 01 63 19 63 01 02 04 00  05 00 00 00  00       00
@@ -311,7 +312,7 @@ void AS::received(void) {
 		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x06)) {								// CONFIG_END
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x06)) {								// CONFIG_END
 		// description --------------------------------------------------------
 		//                                  Cnl
 		// l> 0B 01 A0 01 63 19 63 01 02 04 00  06
@@ -323,11 +324,11 @@ void AS::received(void) {
 		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x07)) {								// CONFIG_WRITE_INDEX
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x07)) {								// CONFIG_WRITE_INDEX
 		// sample needed
 
 		
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x08)) {								// CONFIG_WRITE_INDEX
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x08)) {								// CONFIG_WRITE_INDEX
 		// description --------------------------------------------------------
 		//                                  Cnl    Data
 		// l> 13 02 A0 01 63 19 63 01 02 04 00  08 02 01 0A 63 0B 19 0C 63
@@ -340,21 +341,21 @@ void AS::received(void) {
 		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x09)) {								// CONFIG_SERIAL_REQ
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x09)) {								// CONFIG_SERIAL_REQ
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0A)) {								// PAIR_SERIAL
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0A)) {								// PAIR_SERIAL
 		//SERIALNO       => '04,,$val=pack("H*",$val)', } },
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0E)) {								// CONFIG_STATUS_REQUEST
+		} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0E)) {								// CONFIG_STATUS_REQUEST
 		//CHANNEL => "0,2", } },
 
 
-	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x00)) {								// ACK
+		} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x00)) {								// ACK
 
 		
-	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x01)) {								// ACK_STATUS
+		} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x01)) {								// ACK_STATUS
 		//CHANNEL        => "02,2",
 		//STATUS         => "04,2",
 		//DOWN           => '06,02,$val=(hex($val)&0x20)?1:0',
@@ -363,45 +364,45 @@ void AS::received(void) {
 		//RSSI           => '08,02,$val=(-1)*(hex($val))', }},
 
 
-	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x02)) {								// ACK2 - smokeDetector pairing only?
+		} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x02)) {								// ACK2 - smokeDetector pairing only?
 
 
- 	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x04)) {								// ACK-proc - connected to AES??
+		} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x04)) {								// ACK-proc - connected to AES??
 		//Para1          => "02,4",
 		//Para2          => "06,4",
 		//Para3          => "10,4",
 		//Para4          => "14,2",}}, # remote?
 
- 
- 	} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x80)) {								// NACK
-
-		 
- 	} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x84)) {								// NACK_TARGET_INVALID
-
-
-	} else if  (rv.msgTyp == 0x12) {													// HAVE_DATA
+		
+		} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x80)) {								// NACK
 
 		
-	} else if  (rv.msgTyp == 0x3E) {													// SWITCH
+		} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x84)) {								// NACK_TARGET_INVALID
+
+
+		} else if  (rv.msgTyp == 0x12) {													// HAVE_DATA
+
+		
+		} else if  (rv.msgTyp == 0x3E) {													// SWITCH
 		//DST      => "00,6",
 		//UNKNOWN  => "06,2",
 		//CHANNEL  => "08,2",
 		//COUNTER  => "10,2", } },
 
 
-	} else if  (rv.msgTyp == 0x3F) {													// TimeStamp
+		} else if  (rv.msgTyp == 0x3F) {													// TimeStamp
 		//UNKNOWN  => "00,4",
 		//TIME     => "04,2", } },
 
 
-	} else if  (rv.msgTyp == 0x40) {													// REMOTE
+		} else if  (rv.msgTyp == 0x40) {													// REMOTE
 		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
 		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
 		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
 		//COUNTER  => "02,2", } },
 
 
-	} else if  (rv.msgTyp == 0x41) {													// Sensor_event
+		} else if  (rv.msgTyp == 0x41) {													// Sensor_event
 		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
 		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
 		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
@@ -409,7 +410,7 @@ void AS::received(void) {
 		//VALUE    => '04,2,$val=(hex($val))',} },
 
 
-	} else if  (rv.msgTyp == 0x53) {													// SensorData
+		} else if  (rv.msgTyp == 0x53) {													// SensorData
 		//CMD => "00,2",
 		//Fld1=> "02,2",
 		//Val1=> '04,4,$val=(hex($val))',
@@ -421,18 +422,18 @@ void AS::received(void) {
 		//Val4=> '24,4,$val=(hex($val))'} },
 
 
- 	} else if  (rv.msgTyp == 0x58) {													// ClimateEvent
+		} else if  (rv.msgTyp == 0x58) {													// ClimateEvent
 		//CMD      => "00,2",
 		//ValvePos => '02,2,$val=(hex($val))', } },
- 
- 
- 	} else if  (rv.msgTyp == 0x59) {													// setTeamTemp
+		
+		
+		} else if  (rv.msgTyp == 0x59) {													// setTeamTemp
 		//CMD      => "00,2",
 		//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
 		//mode     => '02,2,$val=(hex($val) & 0x3)',} },
 
 
-	} else if  (rv.msgTyp == 0x70) {													// WeatherEvent
+		} else if  (rv.msgTyp == 0x70) {													// WeatherEvent
 		//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 		//HUM      => '04,2,$val=(hex($val))', } },
 
@@ -442,6 +443,125 @@ void AS::received(void) {
 	rv.buf[0] = 0;																		// message progressed, nothing do to any more
 }
 
+// - send functions --------------------------------
+void AS::sendACK(void) {
+	//"02;p01=00"   => { txt => "ACK"},
+}
+void AS::sendACK_STATUS(void) {
+	//"02;p01=01"   => { txt => "ACK_STATUS",  params => {
+	//CHANNEL        => "02,2",
+	//STATUS         => "04,2",
+	//DOWN           => '06,02,$val=(hex($val)&0x20)?1:0',
+	//UP             => '06,02,$val=(hex($val)&0x10)?1:0',
+	//LOWBAT         => '06,02,$val=(hex($val)&0x80)?1:0',
+	//RSSI           => '08,02,$val=(-1)*(hex($val))', }},
+}
+void AS::sendNACK(void) {
+	//"02;p01=80"   => { txt => "NACK"},
+}
+void AS::sendNACK_TARGET_INVALID(void) {
+	//"02;p01=84"   => { txt => "NACK_TARGET_INVALID"},
+}
+void AS::sendINFO_SERIAL(void) {
+	//"10;p01=00"   => { txt => "INFO_SERIAL", params => {
+	//SERIALNO => '02,20,$val=pack("H*",$val)'},},
+}
+void AS::sendINFO_PEER_LIST(void) {
+	//"10;p01=01"   => { txt => "INFO_PEER_LIST", params => {
+	//PEER1 => '02,8,$val=CUL_HM_id2Name($val)',
+	//PEER2 => '10,8,$val=CUL_HM_id2Name($val)',
+	//PEER3 => '18,8,$val=CUL_HM_id2Name($val)',
+	//PEER4 => '26,8,$val=CUL_HM_id2Name($val)'},},
+}
+void AS::sendINFO_PARAM_RESPONSE_PAIRS(void) {
+	//"10;p01=02"   => { txt => "INFO_PARAM_RESPONSE_PAIRS", params => {
+	//DATA => "2,", },},
+}
+void AS::sendINFO_PARAM_RESPONSE_SEQ(void) {
+	//"10;p01=03"   => { txt => "INFO_PARAM_RESPONSE_SEQ", params => {
+	//OFFSET => "2,2",
+	//DATA   => "4,", },},
+}
+void AS::sendINFO_PARAMETER_CHANGE(void) {
+	//"10;p01=04"   => { txt => "INFO_PARAMETER_CHANGE", params => {
+	//CHANNEL => "2,2",
+	//PEER    => '4,8,$val=CUL_HM_id2Name($val)',
+	//PARAM_LIST => "12,2",
+	//DATA => '14,,$val =~ s/(..)(..)/ $1:$2/g', } },
+}
+void AS::sendINFO_ACTUATOR_STATUS(void) {
+	//"10;p01=06"   => { txt => "INFO_ACTUATOR_STATUS", params => {
+	//CHANNEL => "2,2",
+	//STATUS  => '4,2',
+	//UNKNOWN => "6,2",
+	//RSSI    => '08,02,$val=(-1)*(hex($val))' } },
+}
+void AS::sendINFO_TEMP(void) {
+	//"10;p01=0A"   => { txt => "INFO_TEMP", params => {
+	//SET     => '2,4,$val=(hex($val)>>10)&0x3F',
+	//ACT     => '2,4,$val=hex($val)&0x3FF',
+	//ERR     => "6,2",
+	//VALVE   => "6,2",
+	//MODE    => "6,2" } },
+}
+void AS::sendHAVE_DATA(void) {
+	//"12"          => { txt => "HAVE_DATA"},
+}
+void AS::sendSWITCH(void) {
+	//"3E"          => { txt => "SWITCH"      , params => {
+	//DST      => "00,6",
+	//UNKNOWN  => "06,2",
+	//CHANNEL  => "08,2",
+	//COUNTER  => "10,2", } },
+}
+void AS::sendTimeStamp(void) {
+	//"3F"          => { txt => "TimeStamp"   , params => {
+	//UNKNOWN  => "00,4",
+	//TIME     => "04,2", } },
+}
+void AS::sendREMOTE(void) {
+	//"40"          => { txt => "REMOTE"      , params => {
+	//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
+	//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
+	//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
+	//COUNTER  => "02,2", } },
+}
+void AS::sendSensor_event(void) {
+	//"41"          => { txt => "Sensor_event", params => {
+	//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
+	//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
+	//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
+	//NBR      => '02,2,$val=(hex($val))',
+	//VALUE    => '04,2,$val=(hex($val))',} },
+}
+void AS::sendSensorData(void) {
+	//"53"          => { txt => "SensorData"  , params => {
+	//CMD => "00,2",
+	//Fld1=> "02,2",
+	//Val1=> '04,4,$val=(hex($val))',
+	//Fld2=> "08,2",
+	//Val2=> '10,4,$val=(hex($val))',
+	//Fld3=> "14,2",
+	//Val3=> '16,4,$val=(hex($val))',
+	//Fld4=> "20,2",
+	//Val4=> '24,4,$val=(hex($val))'} },
+}
+void AS::sendClimateEvent(void) {
+	//"58"          => { txt => "ClimateEvent", params => {
+	//CMD      => "00,2",
+	//ValvePos => '02,2,$val=(hex($val))', } },
+}
+void AS::sendSetTeamTemp(void) {
+	//"59"          => { txt => "setTeamTemp" , params => {
+	//CMD      => "00,2",
+	//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
+	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
+}
+void AS::sendWeatherEvent(void) {
+	//"70"          => { txt => "WeatherEvent", params => {
+	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
+	//HUM      => '04,2,$val=(hex($val))', } },
+}	
 
 AS hm;
 

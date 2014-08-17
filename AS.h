@@ -13,6 +13,7 @@
 #include "CC.h"
 #include "EE.h"
 #include "RV.h"
+#include "SN.h"
 
 
 //struct s_devPara {
@@ -29,6 +30,8 @@ class AS {
 	EE ee;
 	CC cc;
 	RV rv;
+	SN sn;
+	
   protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_peerList {
 		uint8_t active   :1;
@@ -54,11 +57,35 @@ class AS {
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
 	void init(void);
+
+// - poll functions --------------------------------
 	void poll(void);
-	
 	void sendSlcList(void);
-		
-	void received(void);		
+	
+// - received functions ----------------------------
+	void received(void);
+
+// - send functions --------------------------------
+ 	void sendACK(void);
+ 	void sendACK_STATUS(void);
+ 	void sendNACK(void);
+ 	void sendNACK_TARGET_INVALID(void);
+ 	void sendINFO_SERIAL(void);
+ 	void sendINFO_PEER_LIST(void);
+ 	void sendINFO_PARAM_RESPONSE_PAIRS(void);
+ 	void sendINFO_PARAM_RESPONSE_SEQ(void);
+ 	void sendINFO_PARAMETER_CHANGE(void);
+ 	void sendINFO_ACTUATOR_STATUS(void);
+ 	void sendINFO_TEMP(void);
+ 	void sendHAVE_DATA(void);
+ 	void sendSWITCH(void);
+ 	void sendTimeStamp(void);
+ 	void sendREMOTE(void);
+ 	void sendSensor_event(void);
+ 	void sendSensorData(void);
+ 	void sendClimateEvent(void);
+ 	void sendSetTeamTemp(void);
+ 	void sendWeatherEvent(void);
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
