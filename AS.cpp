@@ -66,13 +66,16 @@ void AS::sendSlcList(void) {
 		dbg << "peer slc: " << pHex(xuf,cnt) << '\n';									// write to send buffer
 
 	} else if (slcList.reg2) {															// INFO_PARAM_RESPONSE_PAIRS
-
+		cnt = ee.getRegListSlc(slcList.cnl,slcList.lst,slcList.idx,slcList.curSlc,xuf);	// get the slice and the amount of bytes	
+		slcList.curSlc++;																// increase slice counter
+		dbg << "reg2 slc: " << pHex(xuf,cnt) << '\n';									// write to send buffer
+		
 	} else if (slcList.reg3) {															// INFO_PARAM_RESPONSE_SEQ
 
 	}
 
 	if (slcList.curSlc == slcList.totSlc) {												// if everything is send, we could empty the struct
-		memset((void*)&slcList,0,5);													// by memset
+		memset((void*)&slcList,0,6);													// by memset
 		//dbg << "end: " << slcList.active << slcList.peer << slcList.reg2 << slcList.reg3 << '\n';
 	}
 }
@@ -240,10 +243,10 @@ void AS::received(void) {
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   01  1F A6 5C  06         05
 		// do something with the information ----------------------------------
 
-		// first call remPeer to avoid doubles
+			// first call remPeer to avoid doubles
 		uint8_t ret = ee.addPeer(rv.buf[10],rv.buf+12);									// send to addPeer function
 		
-		// let module registrations know of the change
+			// let module registrations know of the change
 
 		if ((ret) && (rv.ackRq)) dbg << "ACK\n"; //send_ACK();							// send appropriate answer
 		else if (rv.ackRq)  dbg << "NACK\n"; //send_NACK();
@@ -274,16 +277,29 @@ void AS::received(void) {
 
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x04)) {								// CONFIG_PARAM_REQ
-		//CHANNEL        => "00,2",
-		//PEER_ADDRESS   => "04,6",
-		//PEER_CHANNEL   => "10,2",
-		//PARAM_LIST     => "12,2", },},
+		// description --------------------------------------------------------
+		//                                  Cnl    PeerID    PeerCnl  ParmLst
+		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
+		// do something with the information ----------------------------------
+
+		slcList.idx = ee.getIdxByPeer(rv.buf[10], rv.buf+12);							// fill struct	
+		slcList.totSlc = ee.countRegListSlc(rv.buf[10], rv.buf[16]);					// how many slices are need
+		slcList.cnl = rv.buf[10];														// send input to the send peer function
+		slcList.lst = rv.buf[16];														// send input to the send peer function
+		slcList.reg2 = 1;																// set the type of answer
+		
+		if ((slcList.idx != 0xff) && (slcList.totSlc > 0)) slcList.active = 1;			// only send register content if something is to send															// start the send function
+		else memset((void*)&slcList,0,6);												// otherwise empty variable
+		
+		if (rv.ackRq) dbg << "ACK\n"; //send_ACK();										// send appropriate answer
+
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x05)) {								// CONFIG_START
 		//CHANNEL        => "00,2",
 		//PEER_ADDRESS   => "04,6",
 		//PEER_CHANNEL   => "10,2",
 		//PARAM_LIST     => "12,2", } },
+
 
 	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x06)) {								// CONFIG_END
 		//CHANNEL => "0,2", } },

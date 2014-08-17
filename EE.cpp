@@ -210,6 +210,10 @@ uint8_t EE::countFreeSlots(uint8_t cnl) {
 }
 uint8_t EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	uint32_t lPeer;
+
+	if (cnl == 0) return 0;																// on channel 0 there is no need to search
+	if (cnl > devDef.cnlNbr) return 0xff;												// return if channel is out of range
+	
 	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
 		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
 		if (lPeer == *(uint32_t*)peer) return i;										// if result matches then return slot index
