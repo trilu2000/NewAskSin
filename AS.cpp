@@ -15,37 +15,34 @@
 AS::AS() {
 }
 void AS::init(void) {
-	#ifdef AS_DBG																		// only if cc debug is set
-	dbg.begin(57600);																	// dbg setup
-	dbg << F("\n....\n");																// ...and some information
-	dbg << F("AS.\n");																	// ...and some information
+	#ifdef AS_DBG																			// only if cc debug is set
+	dbg.begin(57600);																		// dbg setup
+	dbg << F("\n....\n");																	// ...and some information
+	dbg << F("AS.\n");																		// ...and some information
 	#endif
 	
-	ee.init();																			// eeprom init
-	cc.init();																			// init the rf module
+	ee.init();																				// eeprom init
+	cc.init();																				// init the rf module
 
-	rv.HMID = HMID;																		// hand over the pointer to HMID for checking up if a message is for us
-	rv.MAID = ee.MAID;																	// hand over the pointer to Master ID for checking if a message comes from Master
-
-	initMillis();																		// start the millis counter
+	initMillis();																			// start the millis counter
 
 	// everything is setuped, enable RF functionality
-	_enableGDO0Int;																		// enable interrupt to get a signal while receiving data
+	_enableGDO0Int;																			// enable interrupt to get a signal while receiving data
 }
 
 // - poll functions --------------------------------
 void AS::poll(void) {
 
 	// check if something received
-	if (ccGDO0()) {																		// check if something was received
-		cc.rcvData(rv.buf);																// copy the data into the receiver module
-		if (rv.hasData) {
-			rv.decode();																// decode the string
-			received();																	// and jump in the received function
+	if (ccGDO0()) {																			// check if something was received
+		cc.rcvData(rcvBuf);																	// copy the data into the receiver module
+		if (rcvHasData) {
+			decode(rcvBuf);																	// decode the string
+			received();																		// and jump in the received function
 		}
 	}
 
-	sendSlcList();																		// poll the slice list send function
+	sendSlcList();																			// poll the slice list send function
 	
 	// check if something is to send
 
@@ -61,16 +58,16 @@ void AS::sendSlcList(void) {
 	uint8_t cnt;
 
 	if        (slcList.peer) {															// INFO_PEER_LIST
-		cnt = ee.getPeerListSlc(slcList.cnl,slcList.curSlc,sn.buf);						// get the slice and the amount of bytes
+		cnt = ee.getPeerListSlc(slcList.cnl,slcList.curSlc,sndBuf);						// get the slice and the amount of bytes
 		slcList.curSlc++;																// increase slice counter
-		dbg << "peer slc: " << pHex(sn.buf,cnt) << '\n';								// write to send buffer
+		dbg << "peer slc: " << pHex(sndBuf,cnt) << '\n';								// write to send buffer
 
-		} else if (slcList.reg2) {														// INFO_PARAM_RESPONSE_PAIRS
-		cnt = ee.getRegListSlc(slcList.cnl,slcList.lst,slcList.idx,slcList.curSlc,sn.buf);// get the slice and the amount of bytes
+	} else if (slcList.reg2) {															// INFO_PARAM_RESPONSE_PAIRS
+		cnt = ee.getRegListSlc(slcList.cnl,slcList.lst,slcList.idx,slcList.curSlc,sndBuf);// get the slice and the amount of bytes
 		slcList.curSlc++;																// increase slice counter
-		dbg << "reg2 slc: " << pHex(sn.buf,cnt) << '\n';								// write to send buffer
+		dbg << "reg2 slc: " << pHex(sndBuf,cnt) << '\n';								// write to send buffer
 		
-		} else if (slcList.reg3) {														// INFO_PARAM_RESPONSE_SEQ
+	} else if (slcList.reg3) {															// INFO_PARAM_RESPONSE_SEQ
 
 	}
 
@@ -82,13 +79,13 @@ void AS::sendSlcList(void) {
 
 // - received functions ----------------------------
 void AS::received(void) {
-	uint8_t bIntend = ee.getIntend(rv.reID,rv.toID);									// get the intend of the message
+	uint8_t bIntend = ee.getIntend(rcv->reID,rcv->toID);									// get the intend of the message
 
 	// some debugs
-	#ifdef AS_DBG																		// only if AS debug is set
-	dbg << (char)bIntend << F("> ") << pHex(rv.buf,rv.len) << '\n';
+	#ifdef AS_DBG																			// only if AS debug is set
+	dbg << (char)bIntend << F("> ") << pHex(rcvBuf,rcvLen) << '\n';
 	#endif
-	#ifdef AS_DBG_EX																	// only if extended AS debug is set
+	#ifdef AS_DBG_EX																		// only if extended AS debug is set
 
 	dbg << F("   ");																	// save some byte and send 3 blanks once, instead of having it in every if
 	
@@ -229,133 +226,134 @@ void AS::received(void) {
 	#endif
 
 	// filter out unknown or not for us
-	if ((bIntend == 'l') || (bIntend == 'u')) {											// not for us, or sender unknown
-		rv.buf[0] = 0;																	// clear receive buffer
+	if ((bIntend == 'l') || (bIntend == 'u')) {												// not for us, or sender unknown
+		rcv->len = 0;																		// clear receive buffer
 		return;
 	}
-	
+
+		
 	// filter out repeated messages
 	
 	
 	// check which type of message was received
-	if         ((rv.msgTyp == 0x01) && (rv.by11 == 0x01)) {								// CONFIG_PEER_ADD
+	if         ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x01)) {								// CONFIG_PEER_ADD
 		// description --------------------------------------------------------
 		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   01  1F A6 5C  06         05
 		// do something with the information ----------------------------------
 
 		// first call remPeer to avoid doubles
-		uint8_t ret = ee.addPeer(rv.buf[10],rv.buf+12);									// send to addPeer function
+		uint8_t ret = ee.addPeer(rcv->by10,rcvBuf+12);										// send to addPeer function
 		
 		// let module registrations know of the change
 
-		if ((ret) && (rv.ackRq)) sendACK();												// send appropriate answer
-		else if (rv.ackRq) sendNACK();
+		if ((ret) && (ackRq)) sendACK();													// send appropriate answer
+		else if (ackRq) sendNACK();
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x02)) {								// CONFIG_PEER_REMOVE
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x02)) {								// CONFIG_PEER_REMOVE
 		// description --------------------------------------------------------
 		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   02  1F A6 5C  06         05
 		// do something with the information ----------------------------------
 		
-		uint8_t ret = ee.remPeer(rv.buf[10],rv.buf+12);									// call the remPeer function
-		if (rv.ackRq) sendACK();														// send appropriate answer
+		uint8_t ret = ee.remPeer(rcv->by10,rcvBuf+12);										// call the remPeer function
+		if (ackRq) sendACK();																// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x03)) {								// CONFIG_PEER_LIST_REQ
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x03)) {								// CONFIG_PEER_LIST_REQ
 		// description --------------------------------------------------------
 		//                                  Cnl
 		// l> 0B 05 A0 01 63 19 63 01 02 04 01  03
 		// do something with the information ----------------------------------
 		
-		slcList.totSlc = ee.countPeerSlc(rv.buf[10]);									// how many slices are need
-		slcList.cnl = rv.buf[10];														// send input to the send peer function
-		slcList.peer = 1;																// set the type of answer
-		slcList.active = 1;																// start the send function
+		slcList.totSlc = ee.countPeerSlc(rcv->by10);										// how many slices are need
+		slcList.cnl = rcv->by10;															// send input to the send peer function
+		slcList.peer = 1;																	// set the type of answer
+		slcList.active = 1;																	// start the send function
 
-		if (rv.ackRq) sendACK();														// send appropriate answer
+		if (ackRq) sendACK();																// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x04)) {								// CONFIG_PARAM_REQ
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x04)) {								// CONFIG_PARAM_REQ
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
 		// do something with the information ----------------------------------
 
-		slcList.idx = ee.getIdxByPeer(rv.buf[10], rv.buf+12);							// fill struct
-		slcList.totSlc = ee.countRegListSlc(rv.buf[10], rv.buf[16]);					// how many slices are need
-		slcList.cnl = rv.buf[10];														// send input to the send peer function
-		slcList.lst = rv.buf[16];														// send input to the send peer function
-		slcList.reg2 = 1;																// set the type of answer
+		slcList.idx = ee.getIdxByPeer(rcv->by10, rcvBuf+12);								// fill struct
+		slcList.totSlc = ee.countRegListSlc(rcv->by10, rcvBuf[16]);							// how many slices are need
+		slcList.cnl = rcv->by10;															// send input to the send peer function
+		slcList.lst = rcvBuf[16];															// send input to the send peer function
+		slcList.reg2 = 1;																	// set the type of answer
 		
-		if ((slcList.idx != 0xff) && (slcList.totSlc > 0)) slcList.active = 1;			// only send register content if something is to send															// start the send function
-		else memset((void*)&slcList,0,6);												// otherwise empty variable
+		if ((slcList.idx != 0xff) && (slcList.totSlc > 0)) slcList.active = 1;				// only send register content if something is to send															// start the send function
+		else memset((void*)&slcList,0,6);													// otherwise empty variable
 		
-		if (rv.ackRq) sendACK();														// send appropriate answer
+		if (ackRq) sendACK();																// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x05)) {								// CONFIG_START
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x05)) {								// CONFIG_START
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 01 A0 01 63 19 63 01 02 04 00  05 00 00 00  00       00
 		// do something with the information ----------------------------------
 
-		cnfFlag.idx = ee.getIdxByPeer(rv.buf[10], rv.buf+12);							// fill structure to remember where to write
-		cnfFlag.cnl = rv.buf[10];
-		cnfFlag.lst = rv.buf[16];
+		cnfFlag.idx = ee.getIdxByPeer(rcv->by10, rcvBuf+12);								// fill structure to remember where to write
+		cnfFlag.cnl = rcv->by10;
+		cnfFlag.lst = rcvBuf[16];
 		if (cnfFlag.idx != 0xff) {
-			cnfFlag.active = 1;															// set active if there is no error on index
+			cnfFlag.active = 1;																// set active if there is no error on index
 			// set message id flag to config in send module
 		}
 		
-		if (rv.ackRq) sendACK();														// send appropriate answer
+		if (ackRq) sendACK();																// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x06)) {								// CONFIG_END
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x06)) {								// CONFIG_END
 		// description --------------------------------------------------------
 		//                                  Cnl
 		// l> 0B 01 A0 01 63 19 63 01 02 04 00  06
 		// do something with the information ----------------------------------
 
-		cnfFlag.active = 0;																// set inactive
+		cnfFlag.active = 0;																	// set inactive
 		// remove message id flag to config in send module
 		
-		if (rv.ackRq) sendACK();														// send appropriate answer
+		if (ackRq) sendACK();																// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x07)) {								// CONFIG_WRITE_INDEX
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x07)) {								// CONFIG_WRITE_INDEX
 		// sample needed
 
 		
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x08)) {								// CONFIG_WRITE_INDEX
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x08)) {								// CONFIG_WRITE_INDEX
 		// description --------------------------------------------------------
 		//                                  Cnl    Data
 		// l> 13 02 A0 01 63 19 63 01 02 04 00  08 02 01 0A 63 0B 19 0C 63
 		// do something with the information ----------------------------------
 
-		if ((cnfFlag.active) && (cnfFlag.cnl == rv.buf[10])) {							// check if we are in config mode and if the channel fit
-			ee.setListArray(cnfFlag.cnl, cnfFlag.lst, cnfFlag.idx, rv.len-11, rv.buf+12);// write the string to eeprom
+		if ((cnfFlag.active) && (cnfFlag.cnl == rcv->by10)) {								// check if we are in config mode and if the channel fit
+			ee.setListArray(cnfFlag.cnl, cnfFlag.lst, cnfFlag.idx, rcvLen-11, rcvBuf+12);	// write the string to eeprom
 		}
 		
-		if (rv.ackRq) sendACK();														// send appropriate answer
+		if (ackRq) sendACK();																// send appropriate answer
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x09)) {								// CONFIG_SERIAL_REQ
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x09)) {								// CONFIG_SERIAL_REQ
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0A)) {								// PAIR_SERIAL
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x0A)) {								// PAIR_SERIAL
 		//SERIALNO       => '04,,$val=pack("H*",$val)', } },
 
 
-	} else if  ((rv.msgTyp == 0x01) && (rv.by11 == 0x0E)) {								// CONFIG_STATUS_REQUEST
+	} else if  ((rcv->msgTyp == 0x01) && (rcv->by11 == 0x0E)) {								// CONFIG_STATUS_REQUEST
 		//CHANNEL => "0,2", } },
 
 
-	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x00)) {								// ACK
+	} else if  ((rcv->msgTyp == 0x02) && (rcv->by10 == 0x00)) {								// ACK
 
 		
-	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x01)) {								// ACK_STATUS
+	} else if  ((rcv->msgTyp == 0x02) && (rcv->by10 == 0x01)) {								// ACK_STATUS
 		//CHANNEL        => "02,2",
 		//STATUS         => "04,2",
 		//DOWN           => '06,02,$val=(hex($val)&0x20)?1:0',
@@ -364,45 +362,45 @@ void AS::received(void) {
 		//RSSI           => '08,02,$val=(-1)*(hex($val))', }},
 
 
-	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x02)) {								// ACK2 - smokeDetector pairing only?
+	} else if  ((rcv->msgTyp == 0x02) && (rcv->by10 == 0x02)) {								// ACK2 - smokeDetector pairing only?
 
 
-	} else if  ((rv.msgTyp == 0x02) && (rv.by10 == 0x04)) {								// ACK-proc - connected to AES??
+	} else if  ((rcv->msgTyp == 0x02) && (rcv->by10 == 0x04)) {								// ACK-proc - connected to AES??
 		//Para1          => "02,4",
 		//Para2          => "06,4",
 		//Para3          => "10,4",
 		//Para4          => "14,2",}}, # remote?
 
 		
-	} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x80)) {								// NACK
+	} else if  ((rcv->msgTyp == 0x02) && (rcv->by11 == 0x80)) {								// NACK
 
 		
-	} else if  ((rv.msgTyp == 0x02) && (rv.by11 == 0x84)) {								// NACK_TARGET_INVALID
+	} else if  ((rcv->msgTyp == 0x02) && (rcv->by11 == 0x84)) {								// NACK_TARGET_INVALID
 
 
-	} else if  (rv.msgTyp == 0x12) {													// HAVE_DATA
+	} else if  (rcv->msgTyp == 0x12) {														// HAVE_DATA
 
 		
-	} else if  (rv.msgTyp == 0x3E) {													// SWITCH
+	} else if  (rcv->msgTyp == 0x3E) {														// SWITCH
 		//DST      => "00,6",
 		//UNKNOWN  => "06,2",
 		//CHANNEL  => "08,2",
 		//COUNTER  => "10,2", } },
 
 
-	} else if  (rv.msgTyp == 0x3F) {													// TimeStamp
+	} else if  (rcv->msgTyp == 0x3F) {														// TimeStamp
 		//UNKNOWN  => "00,4",
 		//TIME     => "04,2", } },
 
 
-	} else if  (rv.msgTyp == 0x40) {													// REMOTE
+	} else if  (rcv->msgTyp == 0x40) {														// REMOTE
 		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
 		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
 		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
 		//COUNTER  => "02,2", } },
 
 
-	} else if  (rv.msgTyp == 0x41) {													// Sensor_event
+	} else if  (rcv->msgTyp == 0x41) {														// Sensor_event
 		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
 		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
 		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
@@ -410,7 +408,7 @@ void AS::received(void) {
 		//VALUE    => '04,2,$val=(hex($val))',} },
 
 
-	} else if  (rv.msgTyp == 0x53) {													// SensorData
+	} else if  (rcv->msgTyp == 0x53) {														// SensorData
 		//CMD => "00,2",
 		//Fld1=> "02,2",
 		//Val1=> '04,4,$val=(hex($val))',
@@ -422,25 +420,25 @@ void AS::received(void) {
 		//Val4=> '24,4,$val=(hex($val))'} },
 
 
-	} else if  (rv.msgTyp == 0x58) {													// ClimateEvent
+	} else if  (rcv->msgTyp == 0x58) {														// ClimateEvent
 		//CMD      => "00,2",
 		//ValvePos => '02,2,$val=(hex($val))', } },
 		
 		
-	} else if  (rv.msgTyp == 0x59) {													// setTeamTemp
+	} else if  (rcv->msgTyp == 0x59) {														// setTeamTemp
 		//CMD      => "00,2",
 		//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
 		//mode     => '02,2,$val=(hex($val) & 0x3)',} },
 
 
-	} else if  (rv.msgTyp == 0x70) {													// WeatherEvent
+	} else if  (rcv->msgTyp == 0x70) {														// WeatherEvent
 		//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 		//HUM      => '04,2,$val=(hex($val))', } },
 
 
 	}
 
-	rv.buf[0] = 0;																		// message progressed, nothing do to any more
+	rcv->len = 0;																			// message progressed, nothing do to any more
 }
 
 // - send functions --------------------------------
@@ -449,15 +447,14 @@ void AS::sendACK(void) {
 	//                reID      toID      ACK      
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  00
 	// do something with the information ----------------------------------
-		
-	sn.buf[0] = 0x0a;
-	sn.buf[1] = rv.reCnt;
-	sn.buf[2] = 0x80;
-	sn.buf[3] = 0x02;
-	memcpy(sn.buf+4,HMID,3);
-	memcpy(sn.buf+7,rv.reID,3);
-	sn.buf[10];
-	dbg << "<- " << pHex(sn.buf,sn.len) << '\n';
+	sndBuf[0] = 0x0a;
+	sndBuf[1] = rcv->reCnt;
+	sndBuf[2] = 0x80;
+	sndBuf[3] = 0x02;
+	memcpy(sndBuf+4,HMID,3);
+	memcpy(sndBuf+7,rcv->reID,3);
+	sndBuf[10];
+//	dbg << "<- " << pHex(sn.buf,sn.len) << '\n';
 }
 void AS::sendACK_STATUS(void) {
 	//"02;p01=01"   => { txt => "ACK_STATUS",  params => {
@@ -474,14 +471,14 @@ void AS::sendNACK(void) {
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
 	// do something with the information ----------------------------------
 	
-	sn.buf[0] = 0x0a;
-	sn.buf[1] = rv.reCnt;
-	sn.buf[2] = 0x80;
-	sn.buf[3] = 0x02;
-	memcpy(sn.buf+4,HMID,3);
-	memcpy(sn.buf+7,rv.reID,3);
-	sn.buf[10];
-	dbg << "<- " << pHex(sn.buf,sn.len) << '\n';
+	sndBuf[0] = 0x0a;
+	sndBuf[1] = rcv->reCnt;
+	sndBuf[2] = 0x80;
+	sndBuf[3] = 0x02;
+	memcpy(sndBuf+4,HMID,3);
+	memcpy(sndBuf+7,rcv->reID,3);
+	sndBuf[10];
+	//dbg << "<- " << pHex(sn.buf,sn.len) << '\n';
 }
 void AS::sendNACK_TARGET_INVALID(void) {
 	//"02;p01=84"   => { txt => "NACK_TARGET_INVALID"},
@@ -587,8 +584,22 @@ void AS::sendWeatherEvent(void) {
 	//HUM      => '04,2,$val=(hex($val))', } },
 }	
 
-AS hm;
+// - homematic specific functions ------------------
+void AS::decode(uint8_t *buf) {
+	uint8_t prev = buf[1];
+	buf[1] = (~buf[1]) ^ 0x89;
 
+	uint8_t i, t;
+	for (i=2; i<buf[0]; i++) {
+		t = buf[i];
+		buf[i] = (prev + 0xdc) ^ buf[i];
+		prev = t;
+	}
+
+	buf[i] ^= buf[2];
+}
+
+AS hm;
 
 
 // public:		//---------------------------------------------------------------------------------------------------------

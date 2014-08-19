@@ -16,21 +16,16 @@
 #include "SN.h"
 
 
-//struct s_devPara {
-//	uint8_t  maxRetr;																	// max send retries
-//	uint16_t timeOut;																	// timeout for ACK sending
-//	const uint8_t  *p;																	// pointer to PROGMEM serial number, etc
-//	uint8_t  MAID[3];																	// master id for further use
-//	uint8_t  HMID[3];																	// own HMID
-//};
-
-
 class AS {
   public:		//---------------------------------------------------------------------------------------------------------
 	EE ee;
 	CC cc;
-	RV rv;
-	SN sn;
+
+	uint8_t rcvBuf[sizeof(s_msgBody)];														// buffer for received string
+	struct s_msgBody *rcv = (s_msgBody*)rcvBuf;												// cast the receive buffer to a struct
+
+	#define MaxDataLen          60															// maximum length of bytes to send
+	uint8_t sndBuf[MaxDataLen];																// buffer for send string
 	
   protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_peerList {
@@ -87,6 +82,10 @@ class AS {
  	void sendSetTeamTemp(void);
  	void sendWeatherEvent(void);
 	
+// - homematic specific functions ------------------
+	void decode(uint8_t *buf);																// decodes the message
+
+
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 

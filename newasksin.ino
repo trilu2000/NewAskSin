@@ -5,6 +5,12 @@
 
 MilliTimer timer1;
 
+struct s_test {
+	uint8_t byte1;
+	uint8_t byte2[3];
+	uint8_t byte3;	
+}stest; 
+
 void setup() {
 	#ifdef SER_DBG
 	Serial.begin(57600);																// serial setup
@@ -46,6 +52,8 @@ void setup() {
 	//	cnt = hm.ee.getPeerListSlc(1,i,xuf);
 	//	dbg << slc << ": " << pHex(xuf,cnt) << '\n';
 	//}
+
+	
 }
 
 void loop() {
@@ -73,21 +81,9 @@ void serialEvent() {
 		else if ((inChar>47) && (inChar<58))  inChar-=48;										// 0 - 9
 		else continue;
 		
-		if (i % 2 == 0) hm.rv.buf[i/2] = inChar << 4;											// high byte
-		else hm.rv.buf[i/2] |= inChar;															// low byte
+		if (i % 2 == 0) hm.rcvBuf[i/2] = inChar << 4;											// high byte
+		else hm.rcvBuf[i/2] |= inChar;															// low byte
 		
 		i++;
 	}
-}
-
-void showPeer() {
-	// display peer space
-	uint8_t xuf[20], cnt;
-	uint8_t slc = hm.ee.countPeerSlc(1);
-		
-	for (uint8_t i = 0; i < slc; i++) {
-		cnt = hm.ee.getPeerListSlc(1,i,xuf);
-		dbg << slc << ": " << pHex(xuf,cnt) << '\n';
-	}
-
 }

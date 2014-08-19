@@ -2,7 +2,7 @@
 // AskSin driver implementation
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin RF receiver functions ------------------------------------------------------------------------------------------
+//- AskSin RF receiver structures -----------------------------------------------------------------------------------------
 //- 
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -11,37 +11,33 @@
 
 #include "HAL.h"
 
-class RV {
-  public:		//---------------------------------------------------------------------------------------------------------
-	#define MaxDataLen          60																// maximum length of received bytes
-	uint8_t buf[MaxDataLen];																	// buffer for received string
-	uint8_t *HMID;																				// pointer to HMID, 3 byte
-	uint8_t *MAID;																				// pointer to Master ID, 3 byte
+	#define MaxDataLen   60						// maximum length of received bytes
+
+	struct s_mFlg {
+		uint8_t RPTEN    :1;					// 0x80: set in every message. Meaning?
+		uint8_t RPTED    :1;					// 0x40: repeated (repeater operation)
+		uint8_t BIDI     :1;					// 0x20: response is expected
+		uint8_t Burst    :1;					// 0x10: set if burst is required by device
+		uint8_t	         :1;
+		uint8_t CFG      :1;					// 0x04: Device in Config mode
+		uint8_t WKMEUP   :1;					// 0x02: awake - hurry up to send messages
+		uint8_t WKUP     :1;					// 0x01: send initially to keep the device awake
+	};
 	
-	enum msgTypes {info,pair,peer,bcast};
-	uint8_t forUs;
-	
-	#define hasData             buf[0]?1:0														// check if something is in the buffer
-	#define reID                buf+4															// message comes from
-	#define toID                buf+7															// addressed to us
-	#define len                 buf[0]+1
-	#define msgTyp              buf[3]
-	#define by10                buf[10]
-	#define by11                buf[11]
-	#define reCnt				buf[1]
-	
-	#define ackRq				buf[2] & (1<<5)													// check if an ACK is requested
+	struct s_msgBody {
+		uint8_t len;
+		uint8_t reCnt;
+		struct s_mFlg mFlg;
+		uint8_t msgTyp;
+		uint8_t reID[3];
+		uint8_t toID[3];
+		uint8_t by10;
+		uint8_t by11;
+		uint8_t payLoad[MaxDataLen-12];
+	};
+
+	#define rcvHasData   rcvBuf[0]?1:0			// check if something is in the buffer
+	#define rcvLen       rcvBuf[0]+1
+	#define ackRq        rcvBuf[2] & (1<<5)		// check if an ACK is requested
 		
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
-
-  public:		//---------------------------------------------------------------------------------------------------------
-	RV();
-	void    decode(void);																		// decodes the message  
-	
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
-
-};
-
 #endif 
