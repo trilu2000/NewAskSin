@@ -21,8 +21,8 @@ class AS {
 	EE ee;
 	CC cc;
 
-	uint8_t rcvBuf[sizeof(s_msgBody)];														// buffer for received string
-	struct s_msgBody *rcv = (s_msgBody*)rcvBuf;												// cast the receive buffer to a struct
+	struct s_msgBody rcv;																	// cast the receive buffer to a struct
+	uint8_t *rcvBuf = (uint8_t*)&rcv;														// buffer for received string
 
 	#define MaxDataLen          60															// maximum length of bytes to send
 	uint8_t sndBuf[MaxDataLen];																// buffer for send string
@@ -85,6 +85,7 @@ class AS {
 // - homematic specific functions ------------------
 	void decode(uint8_t *buf);																// decodes the message
 
+	void explainMessage(uint8_t *buf);
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------

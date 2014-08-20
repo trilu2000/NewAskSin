@@ -25,15 +25,15 @@
 	};
 	
 	struct s_msgBody {
-		uint8_t len;
-		uint8_t reCnt;
+		uint8_t       mLen;
+		uint8_t       rCnt;
 		struct s_mFlg mFlg;
-		uint8_t msgTyp;
-		uint8_t reID[3];
-		uint8_t toID[3];
-		uint8_t by10;
-		uint8_t by11;
-		uint8_t payLoad[MaxDataLen-12];
+		uint8_t       mTyp;
+		uint8_t       reID[3];
+		uint8_t       toID[3];
+		uint8_t       by10;
+		uint8_t       by11;
+		uint8_t       pyLd[MaxDataLen-12];
 	};
 
 	#define rcvHasData   rcvBuf[0]?1:0			// check if something is in the buffer
