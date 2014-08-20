@@ -24,8 +24,8 @@ class AS {
 	struct s_msgBody rcv;																	// cast the receive buffer to a struct
 	uint8_t *rcvBuf = (uint8_t*)&rcv;														// buffer for received string
 
-	#define MaxDataLen          60															// maximum length of bytes to send
-	uint8_t sndBuf[MaxDataLen];																// buffer for send string
+	struct s_msgBody snd;																	// define the send buffer by struct
+	uint8_t *sndBuf = (uint8_t*)&snd;														// buffer for the send string
 	
   protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_peerList {
@@ -46,6 +46,14 @@ class AS {
 		uint8_t lst;
 		uint8_t idx;
 	} cnfFlag;
+
+	struct s_sndStc {
+		uint8_t active   :1;
+		uint8_t timeOut  :1;
+		uint8_t cntr;
+		uint8_t retr;
+		uint8_t mCnt;
+	} sndStc;
 	
   private:		//---------------------------------------------------------------------------------------------------------
 
@@ -55,6 +63,7 @@ class AS {
 
 // - poll functions --------------------------------
 	void poll(void);
+	void sender(void);
 	void sendSlcList(void);
 	
 // - received functions ----------------------------
@@ -84,7 +93,7 @@ class AS {
 	
 // - homematic specific functions ------------------
 	void decode(uint8_t *buf);																// decodes the message
-
+	void encode(uint8_t *buf);																// encodes the message
 	void explainMessage(uint8_t *buf);
 
   protected:	//---------------------------------------------------------------------------------------------------------

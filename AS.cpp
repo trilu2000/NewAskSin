@@ -10,6 +10,7 @@
 //#define AS_DBG_EX
 #include "AS.h"
 
+MilliTimer sndTimer;
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
@@ -42,19 +43,96 @@ void AS::poll(void) {
 		}
 	}
 
+	sender();																				// check if something is to send
 	sendSlcList();																			// poll the slice list send function
-	
-	// check if something is to send
 
 	// check if we could go to standby
 	
 	// some sanity poll routines
 	
 }
-void AS::sendSlcList(void) {
-	if (!slcList.active) return;
+void AS::sender(void) {																		// handles the send queue
+	#define maxRetries    3
+	#define maxTime       300
 	
-	// check if send function has a free slot, otherwise return
+	if (!sndStc.active) return;																// nothing to do
+	
+	if (!sndStc.retr) {																		// first time run, check message type and set retries
+		if (reqACK) sndStc.retr = maxRetries;												// if BIDI is set, we have three retries
+		else sndStc.retr = 1;
+	}
+
+	sndTimer.poll();																		// poll the timer
+
+	// send something while timer is not busy with waiting for an answer and max tries are not done 
+	if ((sndStc.cntr < sndStc.retr) && (sndTimer.idle())) {									// not all sends done and timing is OK
+		// some sanity
+		if (reqACK) sndTimer.set(maxTime);													// set the time out for the message
+		sndStc.timeOut = 0;																	// not timed out because just started
+		sndStc.mCnt = snd.rCnt;																// copy the message count to identify the ACK
+		sndStc.cntr++;																		// increase counter while send out
+
+		// encode and copy the message into the send module
+		#ifdef AS_DBG																		// only if AS debug is set
+		dbg << F("-> ") << pHex(sndBuf,sndLen) << '\n';
+		#endif
+		encode(sndBuf);																		// encode the string
+		// send to communication module
+		decode(sndBuf);																		// decode the string, so it is readable next time
+	}  
+
+	// max tries are done and timer is not waiting any more for an answer
+	if ((sndStc.cntr >= sndStc.retr) && (sndTimer.idle())) {								// max retries achieved, but seems to have no answer
+		sndStc.cntr = 0;
+		sndStc.active = 0;
+		if (!reqACK) return;
+		
+		sndStc.timeOut = 1;																	// set the time out only while an ACK or answer was requested
+
+		#ifdef AS_DBG																		// only if AS debug is set
+		dbg << F("-> ") <<"Time out\n";
+		#endif
+	}
+
+	// answer was received, clean up the structure
+	if (sndStc.cntr == 0xff) {
+		sndStc.timeOut = 0;
+		sndStc.cntr = 0;
+		sndStc.active = 0;
+		sndTimer.set(0);
+	}
+
+
+/*		// here we encode and send the string
+		hm_enc(send.data);																	// encode the string
+		disableIRQ_GDO0();																	// disable interrupt otherwise we could get some new content while we copy the buffer
+
+		cc1101.sendData(send.data,send.burst);												// and send
+		enableIRQ_GDO0();																	// enable the interrupt again
+		hm_dec(send.data);																	// decode the string
+
+		// setting some variables
+		powr.state = 1;																		// remember TRX module status, after sending it is always in RX mode
+		if ((powr.mode > 0) && (powr.nxtTO < (millis() + powr.minTO))) stayAwake(powr.minTO); // stay awake for some time
+
+
+		if (pevt.act == 1) {
+			hm.statusLed.set(STATUSLED_BOTH, STATUSLED_MODE_BLINKFAST, 1);					// blink led 1 and led 2 once after key press
+		}
+	}
+		if (pevt.act == 1) {
+			hm.statusLed.stop(STATUSLED_BOTH);
+			hm.statusLed.set(STATUSLED_2, STATUSLED_MODE_BLINKSLOW, 1);						// blink the led 2 once if keypress before
+		}
+
+		// todo: error handling, here we could jump some were to blink a led or whatever
+*/
+
+}
+void AS::sendSlcList(void) {
+	if (!slcList.active) return;															// nothing to do
+	if (sndStc.active) return;																// check if send function has a free slot, otherwise return
+
 	uint8_t cnt;
 
 	if        (slcList.peer) {																// INFO_PEER_LIST
@@ -200,7 +278,6 @@ void AS::received(void) {
 		if ((cnfFlag.active) && (cnfFlag.cnl == rcv.by10)) {								// check if we are in config mode and if the channel fit
 			ee.setListArray(cnfFlag.cnl, cnfFlag.lst, cnfFlag.idx, rcvLen-11, rcvBuf+12);	// write the string to eeprom
 		}
-		
 		if (ackRq) sendACK();																// send appropriate answer
 
 
@@ -216,6 +293,12 @@ void AS::received(void) {
 
 
 	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x00)) {			// ACK
+		// description --------------------------------------------------------
+		// 
+		// l> 0A 05 80 02 63 19 63 01 02 04 00
+		// do something with the information ----------------------------------
+		
+		if ((sndStc.active) && (rcv.rCnt == sndStc.mCnt)) sndStc.cntr == 0xff;				// was an ACK to an active message
 
 		
 	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x01)) {			// ACK_STATUS
@@ -312,14 +395,15 @@ void AS::sendACK(void) {
 	//                reID      toID      ACK      
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  00
 	// do something with the information ----------------------------------
-	sndBuf[0] = 0x0a;
-	sndBuf[1] = rcv.rCnt;
-	sndBuf[2] = 0x80;
-	sndBuf[3] = 0x02;
-	memcpy(sndBuf+4,HMID,3);
-	memcpy(sndBuf+7,rcv.reID,3);
-	sndBuf[10];
-//	dbg << "<- " << pHex(sn.buf,sn.len) << '\n';
+
+	snd.mLen = 0x0a;
+	snd.rCnt = rcv.rCnt;
+	snd.mFlg.RPTEN = 1;
+	snd.mTyp = 0x02;
+	memcpy(snd.reID,HMID,3);
+	memcpy(snd.toID,rcv.reID,3);
+	snd.by10 = 0x00;
+	sndStc.active = 1;																		// fire the message
 }
 void AS::sendACK_STATUS(void) {
 	//"02;p01=01"   => { txt => "ACK_STATUS",  params => {
@@ -335,15 +419,15 @@ void AS::sendNACK(void) {
 	//                reID      toID      NACK
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
 	// do something with the information ----------------------------------
-	
-	sndBuf[0] = 0x0a;
-	sndBuf[1] = rcv.rCnt;
-	sndBuf[2] = 0x80;
-	sndBuf[3] = 0x02;
-	memcpy(sndBuf+4,HMID,3);
-	memcpy(sndBuf+7,rcv.reID,3);
-	sndBuf[10];
-	//dbg << "<- " << pHex(sn.buf,sn.len) << '\n';
+
+	snd.mLen = 0x0a;
+	snd.rCnt = rcv.rCnt;
+	snd.mFlg.RPTEN = 1;
+	snd.mTyp = 0x02;
+	memcpy(snd.reID,HMID,3);
+	memcpy(snd.toID,rcv.reID,3);
+	snd.by10 = 0x80;
+	sndStc.active = 1;																		// fire the message
 }
 void AS::sendNACK_TARGET_INVALID(void) {
 	//"02;p01=84"   => { txt => "NACK_TARGET_INVALID"},
@@ -463,7 +547,20 @@ void AS::decode(uint8_t *buf) {
 
 	buf[i] ^= buf[2];
 }
+void AS::encode(uint8_t *buf) {
 
+	buf[1] = (~buf[1]) ^ 0x89;
+	uint8_t buf2 = buf[2];
+	uint8_t prev = buf[1];
+
+	uint8_t i;
+	for (i=2; i<buf[0]; i++) {
+		prev = (prev + 0xdc) ^ buf[i];
+		buf[i] = prev;
+	}
+
+	buf[i] ^= buf2;
+}
 void AS::explainMessage(uint8_t *buf) {
 	dbg << F("   ");																		// save some byte and send 3 blanks once, instead of having it in every if
 	
