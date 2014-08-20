@@ -287,7 +287,12 @@ void AS::received(void) {
 
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x09)) {			// CONFIG_SERIAL_REQ
-
+		// description --------------------------------------------------------
+		//                                  
+		// l> 0B 77 A0 01 63 19 63 01 02 04 00 09
+		// do something with the information ----------------------------------
+		sendINFO_SERIAL();																	// jump to create the answer
+		
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x0A)) {			// PAIR_SERIAL
 		//SERIALNO       => '04,,$val=pack("H*",$val)', } },
@@ -435,11 +440,36 @@ void AS::sendNACK(void) {
 	sndStc.active = 1;																		// fire the message
 }
 void AS::sendNACK_TARGET_INVALID(void) {
-	//"02;p01=84"   => { txt => "NACK_TARGET_INVALID"},
+	// description --------------------------------------------------------
+	//                reID      toID      ACK
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  84
+	// do something with the information ----------------------------------
+
+	snd.mLen = 0x0a;
+	snd.rCnt = rcv.rCnt;
+	snd.mFlg.RPTEN = 1;
+	snd.mTyp = 0x02;
+	memcpy(snd.reID,HMID,3);
+	memcpy(snd.toID,rcv.reID,3);
+	snd.by10 = 0x84;
+	sndStc.active = 1;																		// fire the message
 }
 void AS::sendINFO_SERIAL(void) {
-	//"10;p01=00"   => { txt => "INFO_SERIAL", params => {
-	//SERIALNO => '02,20,$val=pack("H*",$val)'},},
+	// description --------------------------------------------------------
+	// l> 0B 77 A0 01 63 19 63 1E 7A AD 00 09
+	//                reID      toID     by10  serial
+	// l> 14 77 80 10 1E 7A AD  63 19 63 00    4A 45 51 30 37 33 31 39 30 35
+	// do something with the information ----------------------------------
+
+	snd.mLen = 0x14;
+	snd.rCnt = rcv.rCnt;
+	snd.mFlg.RPTEN = 1;
+	snd.mTyp = 0x10;
+	memcpy(snd.reID,HMID,3);
+	memcpy(snd.toID,rcv.reID,3);
+	snd.by10 = 0x00;
+	memcpy(sndBuf+11,HMSR,10);
+	sndStc.active = 1;																		// fire the message
 }
 void AS::sendINFO_PEER_LIST(uint8_t len) {
 	// description --------------------------------------------------------
@@ -468,7 +498,6 @@ void AS::sendINFO_PEER_LIST(uint8_t len) {
 	memcpy(snd.toID,slcList.toID,3);
 	snd.by10 = slcList.cnl;
 	sndStc.active = 1;																		// fire the message
-
 }
 void AS::sendINFO_PARAM_RESPONSE_PAIRS(void) {
 	//"10;p01=02"   => { txt => "INFO_PARAM_RESPONSE_PAIRS", params => {

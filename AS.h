@@ -18,8 +18,8 @@
 
 class AS {
   public:		//---------------------------------------------------------------------------------------------------------
-	EE ee;
-	CC cc;
+	EE ee;																					// load eeprom module
+	CC cc;																					// load communication module
 
 	struct s_msgBody rcv;																	// cast the receive buffer to a struct
 	uint8_t *rcvBuf = (uint8_t*)&rcv;														// buffer for received string
