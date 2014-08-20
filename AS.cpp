@@ -10,7 +10,7 @@
 //#define AS_DBG_EX
 #include "AS.h"
 
-MilliTimer sndTimer;
+MilliTimer sndTimer;																		// send timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
@@ -76,6 +76,7 @@ void AS::sender(void) {																		// handles the send queue
 		#ifdef AS_DBG																		// only if AS debug is set
 		dbg << F("-> ") << pHex(sndBuf,sndLen) << '\n';
 		#endif
+
 		encode(sndBuf);																		// encode the string
 		// send to communication module
 		decode(sndBuf);																		// decode the string, so it is readable next time
@@ -103,31 +104,23 @@ void AS::sender(void) {																		// handles the send queue
 	}
 
 
-/*		// here we encode and send the string
-		hm_enc(send.data);																	// encode the string
-		disableIRQ_GDO0();																	// disable interrupt otherwise we could get some new content while we copy the buffer
+/*	// here we encode and send the string
+	disableIRQ_GDO0();																	// disable interrupt otherwise we could get some new content while we copy the buffer
+	cc1101.sendData(send.data,send.burst);												// and send
+	enableIRQ_GDO0();																	// enable the interrupt again
 
-		cc1101.sendData(send.data,send.burst);												// and send
-		enableIRQ_GDO0();																	// enable the interrupt again
-		hm_dec(send.data);																	// decode the string
+	// setting some variables
+	powr.state = 1;																		// remember TRX module status, after sending it is always in RX mode
+	if ((powr.mode > 0) && (powr.nxtTO < (millis() + powr.minTO))) stayAwake(powr.minTO); // stay awake for some time
 
-		// setting some variables
-		powr.state = 1;																		// remember TRX module status, after sending it is always in RX mode
-		if ((powr.mode > 0) && (powr.nxtTO < (millis() + powr.minTO))) stayAwake(powr.minTO); // stay awake for some time
-
-
-		if (pevt.act == 1) {
-			hm.statusLed.set(STATUSLED_BOTH, STATUSLED_MODE_BLINKFAST, 1);					// blink led 1 and led 2 once after key press
-		}
+	if (pevt.act == 1) {
+		hm.statusLed.set(STATUSLED_BOTH, STATUSLED_MODE_BLINKFAST, 1);					// blink led 1 and led 2 once after key press
 	}
-		if (pevt.act == 1) {
-			hm.statusLed.stop(STATUSLED_BOTH);
-			hm.statusLed.set(STATUSLED_2, STATUSLED_MODE_BLINKSLOW, 1);						// blink the led 2 once if keypress before
-		}
 
-		// todo: error handling, here we could jump some were to blink a led or whatever
-*/
-
+	if (pevt.act == 1) {
+		hm.statusLed.stop(STATUSLED_BOTH);
+		hm.statusLed.set(STATUSLED_2, STATUSLED_MODE_BLINKSLOW, 1);						// blink the led 2 once if keypress before
+	}*/
 }
 void AS::sendSlcList(void) {
 	if (!slcList.active) return;															// nothing to do
@@ -157,6 +150,8 @@ void AS::sendSlcList(void) {
 
 // - received functions ----------------------------
 void AS::received(void) {
+	static uint8_t last_rCnt;
+	
 	uint8_t bIntend = ee.getIntend(rcv.reID,rcv.toID);										// get the intend of the message
 
 	// some debugs
@@ -174,10 +169,13 @@ void AS::received(void) {
 		return;
 	}
 
-		
 	// filter out repeated messages
-	
-	
+	if ((rcv.mFlg.RPTED) && (last_rCnt == rcv.rCnt)) {										// check if message was already received
+		rcv.mLen = 0;																		// clear receive buffer
+		return;																				// wait for next message
+	}
+	last_rCnt = rcv.rCnt;
+		
 	// check which type of message was received
 	if         ((rcv.mTyp == 0x01) && (rcv.by11 == 0x01)) {			// CONFIG_PEER_ADD
 		// description --------------------------------------------------------
@@ -278,6 +276,7 @@ void AS::received(void) {
 		if ((cnfFlag.active) && (cnfFlag.cnl == rcv.by10)) {								// check if we are in config mode and if the channel fit
 			ee.setListArray(cnfFlag.cnl, cnfFlag.lst, cnfFlag.idx, rcvLen-11, rcvBuf+12);	// write the string to eeprom
 		}
+		// reload master id while cnl was 0 and lst was 0
 		if (ackRq) sendACK();																// send appropriate answer
 
 
