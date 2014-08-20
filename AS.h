@@ -78,8 +78,8 @@ class AS {
  	void sendNACK_TARGET_INVALID(void);
  	void sendINFO_SERIAL(void);
  	void sendINFO_PEER_LIST(uint8_t len);
- 	void sendINFO_PARAM_RESPONSE_PAIRS(void);
- 	void sendINFO_PARAM_RESPONSE_SEQ(void);
+ 	void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
+ 	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
  	void sendINFO_PARAMETER_CHANGE(void);
  	void sendINFO_ACTUATOR_STATUS(void);
  	void sendINFO_TEMP(void);

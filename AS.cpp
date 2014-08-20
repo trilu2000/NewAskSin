@@ -135,9 +135,10 @@ void AS::sendSlcList(void) {
 		//dbg << "peer slc: " << pHex(sndBuf,cnt) << '\n';									// write to send buffer
 
 	} else if (slcList.reg2) {																// INFO_PARAM_RESPONSE_PAIRS
-		cnt = ee.getRegListSlc(slcList.cnl,slcList.lst,slcList.idx,slcList.curSlc,sndBuf);	// get the slice and the amount of bytes
+		cnt = ee.getRegListSlc(slcList.cnl,slcList.lst,slcList.idx,slcList.curSlc,sndBuf+11);// get the slice and the amount of bytes
+		sendINFO_PARAM_RESPONSE_PAIRS(cnt);	
 		slcList.curSlc++;																	// increase slice counter
-		dbg << "reg2 slc: " << pHex(sndBuf,cnt) << '\n';									// write to send buffer
+		//dbg << "reg2 slc: " << pHex(sndBuf,cnt) << '\n';									// write to send buffer
 		
 	} else if (slcList.reg3) {																// INFO_PARAM_RESPONSE_SEQ
 
@@ -230,14 +231,14 @@ void AS::received(void) {
 
 		slcList.idx = ee.getIdxByPeer(rcv.by10, rcvBuf+12);									// fill struct
 		slcList.totSlc = ee.countRegListSlc(rcv.by10, rcvBuf[16]);							// how many slices are need
+		slcList.mCnt = rcv.rCnt;															// remember the message count
+		memcpy(slcList.toID,rcv.reID,3);
 		slcList.cnl = rcv.by10;																// send input to the send peer function
 		slcList.lst = rcvBuf[16];															// send input to the send peer function
 		slcList.reg2 = 1;																	// set the type of answer
 		
 		if ((slcList.idx != 0xff) && (slcList.totSlc > 0)) slcList.active = 1;				// only send register content if something is to send															// start the send function
-		else memset((void*)&slcList,0,6);													// otherwise empty variable
-		
-		if (ackRq) sendACK();																// send appropriate answer
+		else memset((void*)&slcList,0,10);													// otherwise empty variable
 
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x05)) {			// CONFIG_START
@@ -496,17 +497,42 @@ void AS::sendINFO_PEER_LIST(uint8_t len) {
 	snd.mTyp = 0x10;
 	memcpy(snd.reID,HMID,3);
 	memcpy(snd.toID,slcList.toID,3);
-	snd.by10 = slcList.cnl;
+	snd.by10 = 0x01; //slcList.cnl;
 	sndStc.active = 1;																		// fire the message
 }
-void AS::sendINFO_PARAM_RESPONSE_PAIRS(void) {
-	//"10;p01=02"   => { txt => "INFO_PARAM_RESPONSE_PAIRS", params => {
-	//DATA => "2,", },},
+void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
+	// description --------------------------------------------------------
+	// l> 10 79 B0 01 63 19 63 01 02 04 00 04 00 00 00 00 00
+	//                reID      toID      by10  reg  data  reg  data
+	// l> 16 79 A0 10 01 02 04  63 19 63  02    02   01    05   40 0A 63 0B 19 0C 63 12 69
+	//
+	// l> 0A 79 80 02 63 19 63 01 02 04 00
+	// l> 0C 7A A0 10 01 02 04 63 19 63 02 00 00
+	// l> 0A 7A 80 02 63 19 63 01 02 04 00
+
+	snd.mLen = 10+len;
+	snd.rCnt = slcList.mCnt++;
+	snd.mFlg.RPTEN = 1; snd.mFlg.BIDI = 1;
+	snd.mTyp = 0x10;
+	memcpy(snd.reID,HMID,3);
+	memcpy(snd.toID,slcList.toID,3);
+	snd.by10 = 0x02; //slcList.cnl;
+	sndStc.active = 1;																		// fire the message
+
 }
-void AS::sendINFO_PARAM_RESPONSE_SEQ(void) {
-	//"10;p01=03"   => { txt => "INFO_PARAM_RESPONSE_SEQ", params => {
-	//OFFSET => "2,2",
-	//DATA   => "4,", },},
+void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
+	// description --------------------------------------------------------
+	// l> 10 90 A0 01 63 19 63 01 02 04 01 04 24 88 2D 03 03
+	//                reID      toID      by10  Offset  Data
+	// l> 16 90 A0 10 01 02 04  63 19 63  03    02      00 00 32 64 00 FF 00 FF 01 13 33
+	//
+	// l> 0A 90 80 02 63 19 63 01 02 04 00
+	// l> 16 91 A0 10 01 02 04 63 19 63 03 82 00 00 32 64 00 FF 00 FF 21 13 33
+	// l> 0A 91 80 02 63 19 63 01 02 04 00
+	// l> 0C 92 A0 10 01 02 04 63 19 63 03 00 00
+	// l> 0A 92 80 02 63 19 63 01 02 04 00
+
+
 }
 void AS::sendINFO_PARAMETER_CHANGE(void) {
 	//"10;p01=04"   => { txt => "INFO_PARAMETER_CHANGE", params => {

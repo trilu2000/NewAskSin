@@ -351,14 +351,14 @@ uint8_t EE::countRegListSlc(uint8_t cnl, uint8_t lst) {
 	if (xI == 0xff) return 0;															// respective line not found
 
 	int16_t lTmp = _pgmB(devDef.cnlTbl[xI].sLen) * 2;									// get the slice len and multiply by 2 because we need regs and content
-	lTmp += 2;																			// add 2 terminating bytes
+	//lTmp += 2;																			// add 2 terminating bytes
 		
 	uint8_t bMax = 0;
 	while (lTmp > 0) {																	// loop until lTmp gets 0
 		lTmp = lTmp - maxMsgLen;														// reduce by max message len
 		bMax++;																			// count the loops
 	}
-	return bMax;																		// return amount of slices
+	return bMax+1;																		// return amount of slices
 }
 uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf) {
 	
@@ -368,7 +368,13 @@ uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, ui
 	
 	uint8_t slcOffset = slc * maxMsgLen;												// calculate the starting offset	
 	slcOffset /= 2;																		// divided by to because of mixed message, regs + eeprom content
-	uint8_t remByte = _pgmB(devDef.cnlTbl[xI].sLen)	- slcOffset;						// calculate the remaining bytes
+
+	int8_t remByte = _pgmB(devDef.cnlTbl[xI].sLen)	- slcOffset;						// calculate the remaining bytes
+	if (remByte <= 0) {																	// check if we are in the last slice and add terminating zeros
+		*(uint16_t*)buf = 0;															// add them
+		//dbg << slc << " " << slcOffset << " " << _pgmB(devDef.cnlTbl[xI].sLen) << '\n';
+		return 2;																		// nothing to do anymore
+	}
 	if (remByte >= (maxMsgLen/2)) remByte = (maxMsgLen/2);								// shorten remaining bytes if necessary
 	
 	uint8_t sIdx = _pgmB(devDef.cnlTbl[xI].sIdx);
@@ -380,11 +386,6 @@ uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, ui
 		getEEPromBlock(i+eIdx+slcOffset, 1, (void*)buf++);								// add the eeprom content
 	}
 
-	if ((remByte*2) < maxMsgLen) {														// if there is space for the terminating zeros
-		*(uint16_t*)buf = 0;															// add them
-		remByte++;																		// and increase byte counter
-	}
-	
 	return remByte*2;																	// return the byte length
 }
 uint8_t EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
