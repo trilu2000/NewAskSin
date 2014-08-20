@@ -38,6 +38,8 @@ class AS {
 		uint8_t cnl;
 		uint8_t lst;
 		uint8_t idx;
+		uint8_t mCnt;
+		uint8_t toID[3];
 	} slcList;
 
 	struct s_cnfFlag {
@@ -75,7 +77,7 @@ class AS {
  	void sendNACK(void);
  	void sendNACK_TARGET_INVALID(void);
  	void sendINFO_SERIAL(void);
- 	void sendINFO_PEER_LIST(void);
+ 	void sendINFO_PEER_LIST(uint8_t len);
  	void sendINFO_PARAM_RESPONSE_PAIRS(void);
  	void sendINFO_PARAM_RESPONSE_SEQ(void);
  	void sendINFO_PARAMETER_CHANGE(void);

@@ -91,7 +91,7 @@ void AS::sender(void) {																		// handles the send queue
 		sndStc.timeOut = 1;																	// set the time out only while an ACK or answer was requested
 
 		#ifdef AS_DBG																		// only if AS debug is set
-		dbg << F("-> ") <<"Time out\n";
+		dbg << F("  timed out\n");
 		#endif
 	}
 
@@ -129,9 +129,10 @@ void AS::sendSlcList(void) {
 	uint8_t cnt;
 
 	if        (slcList.peer) {																// INFO_PEER_LIST
-		cnt = ee.getPeerListSlc(slcList.cnl,slcList.curSlc,sndBuf);							// get the slice and the amount of bytes
+		cnt = ee.getPeerListSlc(slcList.cnl,slcList.curSlc,sndBuf+11);						// get the slice and the amount of bytes
+		sendINFO_PEER_LIST(cnt);															// create the body		
 		slcList.curSlc++;																	// increase slice counter
-		dbg << "peer slc: " << pHex(sndBuf,cnt) << '\n';									// write to send buffer
+		//dbg << "peer slc: " << pHex(sndBuf,cnt) << '\n';									// write to send buffer
 
 	} else if (slcList.reg2) {																// INFO_PARAM_RESPONSE_PAIRS
 		cnt = ee.getRegListSlc(slcList.cnl,slcList.lst,slcList.idx,slcList.curSlc,sndBuf);	// get the slice and the amount of bytes
@@ -143,7 +144,7 @@ void AS::sendSlcList(void) {
 	}
 
 	if (slcList.curSlc == slcList.totSlc) {													// if everything is send, we could empty the struct
-		memset((void*)&slcList,0,6);														// by memset
+		memset((void*)&slcList,0,10);														// by memset
 		//dbg << "end: " << slcList.active << slcList.peer << slcList.reg2 << slcList.reg3 << '\n';
 	}
 }
@@ -171,6 +172,10 @@ void AS::received(void) {
 
 	// filter out repeated messages
 	if ((rcv.mFlg.RPTED) && (last_rCnt == rcv.rCnt)) {										// check if message was already received
+		#ifdef AS_DBG																		// only if AS debug is set
+		dbg << F("  repeated message\n");
+		#endif
+
 		rcv.mLen = 0;																		// clear receive buffer
 		return;																				// wait for next message
 	}
@@ -209,11 +214,12 @@ void AS::received(void) {
 		// do something with the information ----------------------------------
 		
 		slcList.totSlc = ee.countPeerSlc(rcv.by10);											// how many slices are need
+		slcList.mCnt = rcv.rCnt;															// remember the message count
+		memcpy(slcList.toID,rcv.reID,3);
 		slcList.cnl = rcv.by10;																// send input to the send peer function
 		slcList.peer = 1;																	// set the type of answer
 		slcList.active = 1;																	// start the send function
-
-		if (ackRq) sendACK();																// send appropriate answer
+		// answer will send from sendSlcList(void)
 
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x04)) {			// CONFIG_PARAM_REQ
@@ -435,12 +441,34 @@ void AS::sendINFO_SERIAL(void) {
 	//"10;p01=00"   => { txt => "INFO_SERIAL", params => {
 	//SERIALNO => '02,20,$val=pack("H*",$val)'},},
 }
-void AS::sendINFO_PEER_LIST(void) {
-	//"10;p01=01"   => { txt => "INFO_PEER_LIST", params => {
-	//PEER1 => '02,8,$val=CUL_HM_id2Name($val)',
-	//PEER2 => '10,8,$val=CUL_HM_id2Name($val)',
-	//PEER3 => '18,8,$val=CUL_HM_id2Name($val)',
-	//PEER4 => '26,8,$val=CUL_HM_id2Name($val)'},},
+void AS::sendINFO_PEER_LIST(uint8_t len) {
+	// description --------------------------------------------------------
+	// l> 0B 44 A0 01 63 19 63 1F B7 4A 01 03
+	//                reID      toID     by10  peer1        peer2
+	// l> 1A 44 A0 10 1F B7 4A 63 19 63  01    22 66 08 02  22 66 08 01  22 66 08 04  22 66 08 03
+	//
+	// l> 0A 44 80 02 63 19 63 1F B7 4A 00
+	// l> 1A 45 A0 10 1F B7 4A 63 19 63 01 24 88 2D 01 24 88 2D 02 24 88 2D 03 24 88 2D 04
+	// l> 0A 45 80 02 63 19 63 1F B7 4A 00
+	// l> 1A 46 A0 10 1F B7 4A 63 19 63 01 23 70 D8 02 23 70 D8 01 23 70 D8 04 23 70 D8 03
+	// l> 0A 46 80 02 63 19 63 1F B7 4A 00
+	// l> 1A 47 A0 10 1F B7 4A 63 19 63 01 23 70 D8 06 23 70 D8 05 22 6C 12 02 22 6C 12 01
+	// l> 0A 47 80 02 63 19 63 1F B7 4A 00
+	// l> 1A 48 A0 10 1F B7 4A 63 19 63 01 23 70 EC 02 23 70 EC 01 23 70 EC 04 23 70 EC 03
+	// l> 0A 48 80 02 63 19 63 1F B7 4A 00
+	// l> 16 49 A0 10 1F B7 4A 63 19 63 01 23 70 EC 06 23 70 EC 05 00 00 00 00
+	// l> 0A 49 80 02 63 19 63 1F B7 4A 00
+	// do something with the information ----------------------------------
+
+	snd.mLen = 10+len;
+	snd.rCnt = slcList.mCnt++;
+	snd.mFlg.RPTEN = 1; snd.mFlg.BIDI = 1;
+	snd.mTyp = 0x10;
+	memcpy(snd.reID,HMID,3);
+	memcpy(snd.toID,slcList.toID,3);
+	snd.by10 = slcList.cnl;
+	sndStc.active = 1;																		// fire the message
+
 }
 void AS::sendINFO_PARAM_RESPONSE_PAIRS(void) {
 	//"10;p01=02"   => { txt => "INFO_PARAM_RESPONSE_PAIRS", params => {
