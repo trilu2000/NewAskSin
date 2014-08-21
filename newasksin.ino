@@ -47,7 +47,7 @@ void setup() {
 	//	cnt = hm.ee.getPeerListSlc(1,i,xuf);
 	//	dbg << slc << ": " << pHex(xuf,cnt) << '\n';
 	//}
-	hm.sendDEVICE_INFO();
+	hm.sendDEVICE_INFO(0);
 	
 }
 

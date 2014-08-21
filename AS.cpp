@@ -196,7 +196,7 @@ void AS::received(void) {
 
 		if ((ret) && (ackRq)) sendACK();													// send appropriate answer
 		else if (ackRq) sendNACK();
-
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x02)) {			// CONFIG_PEER_REMOVE
 		// description --------------------------------------------------------
@@ -206,7 +206,7 @@ void AS::received(void) {
 		
 		uint8_t ret = ee.remPeer(rcv.by10,rcvBuf+12);										// call the remPeer function
 		if (ackRq) sendACK();																// send appropriate answer
-
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x03)) {			// CONFIG_PEER_LIST_REQ
 		// description --------------------------------------------------------
@@ -221,7 +221,7 @@ void AS::received(void) {
 		slcList.peer = 1;																	// set the type of answer
 		slcList.active = 1;																	// start the send function
 		// answer will send from sendSlcList(void)
-
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x04)) {			// CONFIG_PARAM_REQ
 		// description --------------------------------------------------------
@@ -239,7 +239,7 @@ void AS::received(void) {
 		
 		if ((slcList.idx != 0xff) && (slcList.totSlc > 0)) slcList.active = 1;				// only send register content if something is to send															// start the send function
 		else memset((void*)&slcList,0,10);													// otherwise empty variable
-
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x05)) {			// CONFIG_START
 		// description --------------------------------------------------------
@@ -256,7 +256,7 @@ void AS::received(void) {
 		}
 		
 		if (ackRq) sendACK();																// send appropriate answer
-
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x06)) {			// CONFIG_END
 		// description --------------------------------------------------------
@@ -268,7 +268,7 @@ void AS::received(void) {
 		// remove message id flag to config in send module
 		
 		if (ackRq) sendACK();																// send appropriate answer
-
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x07)) {			// CONFIG_WRITE_INDEX
 		// sample needed
@@ -285,7 +285,7 @@ void AS::received(void) {
 		}
 		// reload master id while cnl was 0 and lst was 0
 		if (ackRq) sendACK();																// send appropriate answer
-
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x09)) {			// CONFIG_SERIAL_REQ
 		// description --------------------------------------------------------
@@ -293,11 +293,15 @@ void AS::received(void) {
 		// l> 0B 77 A0 01 63 19 63 01 02 04 00 09
 		// do something with the information ----------------------------------
 		sendINFO_SERIAL();																	// jump to create the answer
-		
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x0A)) {			// PAIR_SERIAL
-		//SERIALNO       => '04,,$val=pack("H*",$val)', } },
-
+		// description --------------------------------------------------------
+		//
+		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
+		// do something with the information ----------------------------------
+		if (memcmp(rcvBuf+12,HMSR,10) == 0) sendDEVICE_INFO(1);								// compare serial and send device info
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x0E)) {			// CONFIG_STATUS_REQUEST
 		//CHANNEL => "0,2", } },
@@ -310,7 +314,7 @@ void AS::received(void) {
 		// do something with the information ----------------------------------
 		
 		if ((sndStc.active) && (rcv.rCnt == sndStc.mCnt)) sndStc.cntr == 0xff;				// was an ACK to an active message
-
+		// --------------------------------------------------------------------
 		
 	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x01)) {			// ACK_STATUS
 		//CHANNEL        => "02,2",
@@ -401,14 +405,17 @@ void AS::received(void) {
 }
 
 // - send functions --------------------------------
-void AS::sendDEVICE_INFO(void) {
+void AS::sendDEVICE_INFO(uint8_t isAnswer) {
 	// description --------------------------------------------------------
 	//                 reID      toID      fw  type   serial                         class  pCnlA  pCnlB  unknown
 	// l> 1A 94 84 00  1F B7 4A  01 02 04  15  00 6C  4B 45 51 30 32 33 37 33 39 36  10     41     01     00
 	// do something with the information ----------------------------------
 
 	snd.mLen = 0x1a;
-	snd.rCnt = sndCnt++;
+
+	if (isAnswer) snd.rCnt = rcv.rCnt;														// send counter - is it an answer or a initial message
+	else snd.rCnt = sndCnt++;
+
 	snd.mFlg.RPTEN = 1; snd.mFlg.CFG = 1;
 	snd.mTyp = 0x00;
 	memcpy(snd.reID,HMID,3);

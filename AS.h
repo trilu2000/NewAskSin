@@ -10,10 +10,9 @@
 #define _AS_H
 
 #include "HAL.h"
-#include "CC.h"
-#include "EE.h"
-#include "RV.h"
-#include "SN.h"
+#include "CC1101.h"
+#include "EEprom.h"
+#include "SndRcv.h"
 
 
 class AS {
@@ -73,7 +72,7 @@ class AS {
 	void received(void);
 
 // - send functions --------------------------------
-	void sendDEVICE_INFO(void);
+	void sendDEVICE_INFO(uint8_t isAnswer);
  	void sendACK(void);
  	void sendACK_STATUS(void);
  	void sendNACK(void);

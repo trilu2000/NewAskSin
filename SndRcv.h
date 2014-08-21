@@ -6,8 +6,8 @@
 //- 
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#ifndef _RV_H
-#define _RV_H
+#ifndef _SNDRCV_H
+#define _SNDRCV_H
 
 #include "HAL.h"
 
@@ -39,5 +39,9 @@
 	#define rcvHasData   rcvBuf[0]?1:0			// check if something is in the buffer
 	#define rcvLen       rcvBuf[0]+1
 	#define ackRq        rcv.mFlg.BIDI			// check if an ACK is requested
+
+	#define sndHasData   sndBuf[0]?1:0			// check if something is in the buffer
+	#define sndLen       sndBuf[0]+1
+	#define reqACK       snd.mFlg.BIDI			// check if an ACK is requested
 		
 #endif 
