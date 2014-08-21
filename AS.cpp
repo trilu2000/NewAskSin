@@ -401,6 +401,24 @@ void AS::received(void) {
 }
 
 // - send functions --------------------------------
+void AS::sendDEVICE_INFO(void) {
+	// description --------------------------------------------------------
+	//                 reID      toID      fw  type   serial                         class  pCnlA  pCnlB  unknown
+	// l> 1A 94 84 00  1F B7 4A  01 02 04  15  00 6C  4B 45 51 30 32 33 37 33 39 36  10     41     01     00
+	// do something with the information ----------------------------------
+
+	snd.mLen = 0x1a;
+	snd.rCnt = sndCnt++;
+	snd.mFlg.RPTEN = 1; snd.mFlg.CFG = 1;
+	snd.mTyp = 0x00;
+	memcpy(snd.reID,HMID,3);
+	memcpy(snd.toID,MAID,3);
+
+	memcpy_P(sndBuf+10,devDef.devIdnt,3);
+	memcpy(sndBuf+13,HMSR,10);
+	memcpy_P(sndBuf+23,devDef.devIdnt,4);
+	sndStc.active = 1;																		// fire the message
+}
 void AS::sendACK(void) {
 	// description --------------------------------------------------------
 	//                reID      toID      ACK      
@@ -518,7 +536,6 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	memcpy(snd.toID,slcList.toID,3);
 	snd.by10 = 0x02; //slcList.cnl;
 	sndStc.active = 1;																		// fire the message
-
 }
 void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
 	// description --------------------------------------------------------

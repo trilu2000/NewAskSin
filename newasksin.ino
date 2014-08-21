@@ -5,11 +5,6 @@
 
 MilliTimer timer1;
 
-struct s_test {
-	uint8_t byte1;
-	uint8_t byte2[3];
-	uint8_t byte3;	
-}stest; 
 
 void setup() {
 	#ifdef SER_DBG
@@ -52,7 +47,7 @@ void setup() {
 	//	cnt = hm.ee.getPeerListSlc(1,i,xuf);
 	//	dbg << slc << ": " << pHex(xuf,cnt) << '\n';
 	//}
-
+	hm.sendDEVICE_INFO();
 	
 }
 

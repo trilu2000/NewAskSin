@@ -25,7 +25,6 @@ struct s_peerTbl {		// peer table holds information were to find peers in eeprom
 	uint16_t pAddr;
 };
 
-
 //- class definition ------------------------------------------------------------------------------------------------------
 class EE {
   public:		//---------------------------------------------------------------------------------------------------------
@@ -37,7 +36,7 @@ class EE {
 		const s_cnlTbl  *cnlTbl;														// pointer to array of elements
 		const s_peerTbl *peerTbl;														// pointer to peer table
 	};
-	uint8_t MAID[3];	// master id for communication
+	//uint8_t MAID[3];	// master id for communication
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
@@ -83,8 +82,12 @@ class EE {
 
 }; 
 extern EE::s_devDef devDef;																// initial register.h
+extern uint8_t MAID[];
 extern uint8_t HMID[];
 extern uint8_t HMSR[];
+
+
+
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a);												// crc function

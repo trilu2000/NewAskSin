@@ -39,6 +39,7 @@
 	#define sndHasData   sndBuf[0]?1:0			// check if something is in the buffer
 	#define sndLen       sndBuf[0]+1
 	#define reqACK       snd.mFlg.BIDI			// check if an ACK is requested
+	
 
 
 #endif 

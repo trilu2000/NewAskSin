@@ -26,7 +26,8 @@ class AS {
 
 	struct s_msgBody snd;																	// define the send buffer by struct
 	uint8_t *sndBuf = (uint8_t*)&snd;														// buffer for the send string
-	
+	uint8_t sndCnt;
+		
   protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_peerList {
 		uint8_t active   :1;
@@ -72,6 +73,7 @@ class AS {
 	void received(void);
 
 // - send functions --------------------------------
+	void sendDEVICE_INFO(void);
  	void sendACK(void);
  	void sendACK_STATUS(void);
  	void sendNACK(void);

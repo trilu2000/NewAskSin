@@ -39,6 +39,5 @@
 	#define rcvHasData   rcvBuf[0]?1:0			// check if something is in the buffer
 	#define rcvLen       rcvBuf[0]+1
 	#define ackRq        rcv.mFlg.BIDI			// check if an ACK is requested
-	//#define ackRq        rcvBuf[2] & (1<<5)		// check if an ACK is requested
 		
 #endif 
