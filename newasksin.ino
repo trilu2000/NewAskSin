@@ -3,7 +3,6 @@
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																	// configuration sheet
 
-MilliTimer timer1;
 
 
 void setup() {
@@ -47,13 +46,12 @@ void setup() {
 	//	cnt = hm.ee.getPeerListSlc(1,i,xuf);
 	//	dbg << slc << ": " << pHex(xuf,cnt) << '\n';
 	//}
-	hm.sendDEVICE_INFO(0);
+	hm.sendDEVICE_INFO();
 	
 }
 
 void loop() {
 	hm.poll();
-	//if (timer1.poll(1000)) dbg << getMillis() << '\n';
 
 	//_delay_ms(1000);
 	//dbg << getMillis() << '\n';

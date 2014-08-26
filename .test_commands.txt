@@ -12,8 +12,27 @@
 // get peer list
 0B 05 A0 01 63 19 63 01 02 04 01 03
 
+// get reg list of cnl 0, lst 0
+10 04 A0 01 63 19 63 01 02 04 00 04 00 00 00 00 00
+
 // get reg list of cnl 1, lst 1
 10 04 A0 01 63 19 63 01 02 04 01 04 00 00 00 00 01
 
 // get reg list of cnl 1, lst 3
 10 04 A0 01 63 19 63 01 02 04 01 04 01 02 03 04 03
+
+// config start cnl 0, lst 0
+10 01 A0 01 63 19 63 01 02 04 00 05 00 00 00 00 00
+
+// config write cnl 0
+13 02 A0 01 63 19 63 01 02 04 00 08 02 01 0A 63 0B 19 0C 63
+
+// config end
+0B 01 A0 01 63 19 63 01 02 04 00 06
+
+// config serial request
+0B 77 A0 01 63 19 63 01 02 04 00 09
+
+
+// pair by serial
+15 92 B4 01 63 19 63 00 00 00 01 0A 74 6C 75 31 30 30 31 32 33 34 

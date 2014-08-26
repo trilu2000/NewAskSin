@@ -69,7 +69,7 @@ void AS::sender(void) {																		// handles the send queue
 		// some sanity
 		if (reqACK) sndTimer.set(maxTime);													// set the time out for the message
 		sndStc.timeOut = 0;																	// not timed out because just started
-		sndStc.mCnt = snd.rCnt;																// copy the message count to identify the ACK
+		sndStc.mCnt = snd.mCnt;																// copy the message count to identify the ACK
 		sndStc.cntr++;																		// increase counter while send out
 
 		// encode and copy the message into the send module
@@ -172,7 +172,7 @@ void AS::received(void) {
 	}
 
 	// filter out repeated messages
-	if ((rcv.mFlg.RPTED) && (last_rCnt == rcv.rCnt)) {										// check if message was already received
+	if ((rcv.mFlg.RPTED) && (last_rCnt == rcv.mCnt)) {										// check if message was already received
 		#ifdef AS_DBG																		// only if AS debug is set
 		dbg << F("  repeated message\n");
 		#endif
@@ -180,7 +180,7 @@ void AS::received(void) {
 		rcv.mLen = 0;																		// clear receive buffer
 		return;																				// wait for next message
 	}
-	last_rCnt = rcv.rCnt;
+	last_rCnt = rcv.mCnt;
 		
 	// check which type of message was received
 	if         ((rcv.mTyp == 0x01) && (rcv.by11 == 0x01)) {			// CONFIG_PEER_ADD
@@ -215,7 +215,7 @@ void AS::received(void) {
 		// do something with the information ----------------------------------
 		
 		slcList.totSlc = ee.countPeerSlc(rcv.by10);											// how many slices are need
-		slcList.mCnt = rcv.rCnt;															// remember the message count
+		slcList.mCnt = rcv.mCnt;															// remember the message count
 		memcpy(slcList.toID,rcv.reID,3);
 		slcList.cnl = rcv.by10;																// send input to the send peer function
 		slcList.peer = 1;																	// set the type of answer
@@ -231,7 +231,7 @@ void AS::received(void) {
 
 		slcList.idx = ee.getIdxByPeer(rcv.by10, rcvBuf+12);									// fill struct
 		slcList.totSlc = ee.countRegListSlc(rcv.by10, rcvBuf[16]);							// how many slices are need
-		slcList.mCnt = rcv.rCnt;															// remember the message count
+		slcList.mCnt = rcv.mCnt;															// remember the message count
 		memcpy(slcList.toID,rcv.reID,3);
 		slcList.cnl = rcv.by10;																// send input to the send peer function
 		slcList.lst = rcvBuf[16];															// send input to the send peer function
@@ -300,7 +300,7 @@ void AS::received(void) {
 		//
 		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
 		// do something with the information ----------------------------------
-		if (memcmp(rcvBuf+12,HMSR,10) == 0) sendDEVICE_INFO(1);								// compare serial and send device info
+		if (memcmp(rcvBuf+12,HMSR,10) == 0) sendDEVICE_INFO();								// compare serial and send device info
 		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x0E)) {			// CONFIG_STATUS_REQUEST
@@ -313,7 +313,7 @@ void AS::received(void) {
 		// l> 0A 05 80 02 63 19 63 01 02 04 00
 		// do something with the information ----------------------------------
 		
-		if ((sndStc.active) && (rcv.rCnt == sndStc.mCnt)) sndStc.cntr == 0xff;				// was an ACK to an active message
+		if ((sndStc.active) && (rcv.mCnt == sndStc.mCnt)) sndStc.cntr == 0xff;				// was an ACK to an active message
 		// --------------------------------------------------------------------
 		
 	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x01)) {			// ACK_STATUS
@@ -405,7 +405,7 @@ void AS::received(void) {
 }
 
 // - send functions --------------------------------
-void AS::sendDEVICE_INFO(uint8_t isAnswer) {
+void AS::sendDEVICE_INFO() {
 	// description --------------------------------------------------------
 	//                 reID      toID      fw  type   serial                         class  pCnlA  pCnlB  unknown
 	// l> 1A 94 84 00  1F B7 4A  01 02 04  15  00 6C  4B 45 51 30 32 33 37 33 39 36  10     41     01     00
@@ -413,8 +413,8 @@ void AS::sendDEVICE_INFO(uint8_t isAnswer) {
 
 	snd.mLen = 0x1a;
 
-	if (isAnswer) snd.rCnt = rcv.rCnt;														// send counter - is it an answer or a initial message
-	else snd.rCnt = sndCnt++;
+	if ((rcv.mTyp == 0x01) && (rcv.by11 == 0x0A)) snd.mCnt = rcv.mCnt;														// send counter - is it an answer or a initial message
+	else snd.mCnt = sndCnt++;
 
 	snd.mFlg.RPTEN = 1; snd.mFlg.CFG = 1;
 	snd.mTyp = 0x00;
@@ -433,7 +433,7 @@ void AS::sendACK(void) {
 	// do something with the information ----------------------------------
 
 	snd.mLen = 0x0a;
-	snd.rCnt = rcv.rCnt;
+	snd.mCnt = rcv.mCnt;
 	snd.mFlg.RPTEN = 1;
 	snd.mTyp = 0x02;
 	memcpy(snd.reID,HMID,3);
@@ -457,7 +457,7 @@ void AS::sendNACK(void) {
 	// do something with the information ----------------------------------
 
 	snd.mLen = 0x0a;
-	snd.rCnt = rcv.rCnt;
+	snd.mCnt = rcv.mCnt;
 	snd.mFlg.RPTEN = 1;
 	snd.mTyp = 0x02;
 	memcpy(snd.reID,HMID,3);
@@ -472,7 +472,7 @@ void AS::sendNACK_TARGET_INVALID(void) {
 	// do something with the information ----------------------------------
 
 	snd.mLen = 0x0a;
-	snd.rCnt = rcv.rCnt;
+	snd.mCnt = rcv.mCnt;
 	snd.mFlg.RPTEN = 1;
 	snd.mTyp = 0x02;
 	memcpy(snd.reID,HMID,3);
@@ -488,7 +488,7 @@ void AS::sendINFO_SERIAL(void) {
 	// do something with the information ----------------------------------
 
 	snd.mLen = 0x14;
-	snd.rCnt = rcv.rCnt;
+	snd.mCnt = rcv.mCnt;
 	snd.mFlg.RPTEN = 1;
 	snd.mTyp = 0x10;
 	memcpy(snd.reID,HMID,3);
@@ -517,7 +517,7 @@ void AS::sendINFO_PEER_LIST(uint8_t len) {
 	// do something with the information ----------------------------------
 
 	snd.mLen = 10+len;
-	snd.rCnt = slcList.mCnt++;
+	snd.mCnt = slcList.mCnt++;
 	snd.mFlg.RPTEN = 1; snd.mFlg.BIDI = 1;
 	snd.mTyp = 0x10;
 	memcpy(snd.reID,HMID,3);
@@ -536,7 +536,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	// l> 0A 7A 80 02 63 19 63 01 02 04 00
 
 	snd.mLen = 10+len;
-	snd.rCnt = slcList.mCnt++;
+	snd.mCnt = slcList.mCnt++;
 	snd.mFlg.RPTEN = 1; snd.mFlg.BIDI = 1;
 	snd.mTyp = 0x10;
 	memcpy(snd.reID,HMID,3);
