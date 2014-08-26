@@ -66,7 +66,7 @@ void serialEvent() {
 		uint8_t inChar = (uint8_t)Serial.read();												// read a byte
 		if (inChar == '\n') {																	// send to receive routine
 			i = 0;
-			hm.received();
+			hm.sndActive = 1;
 		}
 		
 		if      ((inChar>96) && (inChar<103)) inChar-=87;										// a - f
@@ -74,8 +74,8 @@ void serialEvent() {
 		else if ((inChar>47) && (inChar<58))  inChar-=48;										// 0 - 9
 		else continue;
 		
-		if (i % 2 == 0) hm.rcvBuf[i/2] = inChar << 4;											// high byte
-		else hm.rcvBuf[i/2] |= inChar;															// low byte
+		if (i % 2 == 0) hm.sndBuf[i/2] = inChar << 4;											// high byte
+		else hm.sndBuf[i/2] |= inChar;															// low byte
 		
 		i++;
 	}

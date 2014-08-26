@@ -27,6 +27,14 @@ class AS {
 	uint8_t *sndBuf = (uint8_t*)&snd;														// buffer for the send string
 	uint8_t sndCnt;																			// message counter for standard sends, while not answering something
 
+	struct s_sndStc {						// - struct for remember send status, for send function
+		uint8_t active   :1;				// is send module active, 1 indicates yes
+		uint8_t timeOut  :1;				// was last message a timeout
+		uint8_t cntr;						// variable to count how often a message was already send
+		uint8_t retr;						// how often a message has to be send until ACK
+		uint8_t mCnt;						// store of message counter, needed to identify ACK
+	} sndStc;
+
   protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_cnfFlag {						// - remember that we are in config mode, for config start message receive
 		uint8_t active   :1;				// indicates status, 1 if config mode is active
@@ -49,14 +57,6 @@ class AS {
 		uint8_t toID[3];					// to whom to send
 	} slcList;
 
-	struct s_sndStc {						// - struct for remember send status, for send function
-		uint8_t active   :1;				// is send module active, 1 indicates yes
-		uint8_t timeOut  :1;				// was last message a timeout
-		uint8_t cntr;						// variable to count how often a message was already send
-		uint8_t retr;						// how often a message has to be send until ACK
-		uint8_t mCnt;						// store of message counter, needed to identify ACK
-	} sndStc;
-	
   private:		//---------------------------------------------------------------------------------------------------------
 
   public:		//---------------------------------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ class AS {
 	void received(void);																	// receiver function, all answers are generated here
 
 // - send functions --------------------------------
-	void sendDEVICE_INFO();													
+	void sendDEVICE_INFO(void);													
  	void sendACK(void);
  	void sendACK_STATUS(void);
  	void sendNACK(void);

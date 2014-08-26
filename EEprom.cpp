@@ -178,6 +178,7 @@ uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId) {
 
 	if (isPairValid(reId)) return 'm';													// coming from master
 	if (isPeerValid(reId)) return 'p';													// coming from a peer
+	if (isHMIDValid(reId)) return 'i';													// we were the sender, internal message
 	return 'u';																			// should never happens
 }
 

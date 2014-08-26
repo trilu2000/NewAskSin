@@ -57,6 +57,16 @@ void AS::sender(void) {																		// handles the send queue
 	
 	if (!sndStc.active) return;																// nothing to do
 	
+	// check if we should send an internal message
+	if (memcmp(snd.toID,HMID,3) == 0) {
+		//dbg << "internal\n";
+		sndStc.active = 0;
+		memcpy(rcvBuf, sndBuf, sndLen);
+		received();
+		return;
+	}
+	
+	// set right amount of retries
 	if (!sndStc.retr) {																		// first time run, check message type and set retries
 		if (reqACK) sndStc.retr = maxRetries;												// if BIDI is set, we have three retries
 		else sndStc.retr = 1;
