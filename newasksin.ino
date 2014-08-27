@@ -4,7 +4,6 @@
 #include "register.h"																	// configuration sheet
 
 
-
 void setup() {
 	#ifdef SER_DBG
 	Serial.begin(57600);																// serial setup
@@ -47,6 +46,7 @@ void setup() {
 	//	dbg << slc << ": " << pHex(xuf,cnt) << '\n';
 	//}
 	hm.sendDEVICE_INFO();
+
 	
 }
 

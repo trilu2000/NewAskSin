@@ -79,7 +79,8 @@ void clearEEPromBlock(uint16_t addr, uint16_t len);
 
 void    ccInitHw(void);
 uint8_t ccSendByte(uint8_t data);
-uint8_t ccGDO0(void);
+uint8_t ccGetGDO0(void);
+void    ccSetGDO0(void);
 
 //- timer functions -------------------------------------------------------------------------------------------------------
 // https://github.com/zkemble/millis/blob/master/millis/

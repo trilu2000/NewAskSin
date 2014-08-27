@@ -91,6 +91,7 @@ extern uint8_t HMSR[];
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
+uint8_t mycmp(void *x, void *y, uint8_t z);
 
 
 #endif

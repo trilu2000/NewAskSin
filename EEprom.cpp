@@ -163,14 +163,14 @@ void    EE::testModul(void) {															// prints register.h content on cons
 	#endif
 }
 uint8_t EE::isHMIDValid(uint8_t *toID) {
-	return memcmp(toID, HMID, 3)?0:1;
+	return mycmp(toID, HMID, 3);
 }
 uint8_t EE::isPairValid (uint8_t *reID) {
-	return memcmp(reID, MAID, 3)?0:1;
+	return mycmp(reID, MAID, 3);
 }
 uint8_t EE::isBroadCast(uint8_t *toID) {
 	uint8_t zero[3] = {0,0,0};
-	return memcmp(toID, zero, 3)?0:1;
+	return mycmp(toID, zero, 3);
 }
 uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId) {
 	if (isBroadCast(toId)) return 'b';													// broadcast message
@@ -181,7 +181,6 @@ uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId) {
 	if (isHMIDValid(reId)) return 'i';													// we were the sender, internal message
 	return 'u';																			// should never happens
 }
-
 
 // peer functions 
 void    EE::clearPeers(void) {
@@ -451,4 +450,11 @@ uint16_t crc16(uint16_t crc, uint8_t a) {
 		crc = (crc >> 1);
 	}
 	return crc;
+}
+uint8_t mycmp(void *x, void *y, uint8_t z) {
+	do {
+		if (*(uint8_t*)(x+z-1) != *(uint8_t*)(y+z-1)) return 0;
+		z-=1;
+	} while (z>0);
+	return 1;
 }

@@ -35,15 +35,16 @@ void AS::init(void) {
 void AS::poll(void) {
 
 	// check if something received
-	if (ccGDO0()) {																			// check if something was received
+	if (ccGetGDO0()) {																		// check if something was received
 		cc.rcvData(rcvBuf);																	// copy the data into the receiver module
 		if (rcvHasData) {
 			decode(rcvBuf);																	// decode the string
-			received();																		// and jump in the received function
 		}
 	}
 
-	sender();																				// check if something is to send
+	if (rcvHasData) received();																// check if there is something in the received buffer
+	if (sndStc.active) sender();															// check if something is to send
+
 	sendSlcList();																			// poll the slice list send function
 
 	// check if we could go to standby
@@ -55,17 +56,6 @@ void AS::sender(void) {																		// handles the send queue
 	#define maxRetries    3
 	#define maxTime       300
 	
-	if (!sndStc.active) return;																// nothing to do
-	
-	// check if we should send an internal message
-	if (memcmp(snd.toID,HMID,3) == 0) {
-		//dbg << "internal\n";
-		sndStc.active = 0;
-		memcpy(rcvBuf, sndBuf, sndLen);
-		received();
-		return;
-	}
-	
 	// set right amount of retries
 	if (!sndStc.retr) {																		// first time run, check message type and set retries
 		if (reqACK) sndStc.retr = maxRetries;												// if BIDI is set, we have three retries
@@ -76,24 +66,42 @@ void AS::sender(void) {																		// handles the send queue
 
 	// send something while timer is not busy with waiting for an answer and max tries are not done 
 	if ((sndStc.cntr < sndStc.retr) && (sndTimer.idle())) {									// not all sends done and timing is OK
+
 		// some sanity
 		if (reqACK) sndTimer.set(maxTime);													// set the time out for the message
 		sndStc.timeOut = 0;																	// not timed out because just started
 		sndStc.mCnt = snd.mCnt;																// copy the message count to identify the ACK
 		sndStc.cntr++;																		// increase counter while send out
 
-		// encode and copy the message into the send module
+		// check if we should send an internal message
+		if (mycmp(snd.toID,HMID,3)) {														// message is addressed to us
+			memcpy(rcvBuf, sndBuf, sndLen);													// copy send buffer to received buffer
+			sndStc.cntr = 0xff;																// ACK not required, because internal
+						
+			#ifdef AS_DBG																	// only if AS debug is set
+			dbg << F("<i ");
+			#endif
+		} else {																			// send it external
+			encode(sndBuf);																	// encode the string
+			cc.sndData(sndBuf,snd.mFlg.Burst);												// send to communication module
+			decode(sndBuf);																	// decode the string, so it is readable next time
+			
+			#ifdef AS_DBG																	// only if AS debug is set
+			dbg << F("<- ");
+			#endif
+		}
+
 		#ifdef AS_DBG																		// only if AS debug is set
-		dbg << F("-> ") << pHex(sndBuf,sndLen) << '\n';
+		dbg << pHex(sndBuf,sndLen) << '\n';
 		#endif
 
-		encode(sndBuf);																		// encode the string
-		// send to communication module
-		decode(sndBuf);																		// decode the string, so it is readable next time
-	}  
+	} else if (sndStc.cntr == 0xff) {														// answer was received, clean up the structure
+		sndStc.timeOut = 0;
+		sndStc.cntr = 0;
+		sndStc.active = 0;
+		sndTimer.set(0);
 
-	// max tries are done and timer is not waiting any more for an answer
-	if ((sndStc.cntr >= sndStc.retr) && (sndTimer.idle())) {								// max retries achieved, but seems to have no answer
+	} else if ((sndStc.cntr >= sndStc.retr) && (sndTimer.idle())) {							// max retries achieved, but seems to have no answer
 		sndStc.cntr = 0;
 		sndStc.active = 0;
 		if (!reqACK) return;
@@ -105,20 +113,8 @@ void AS::sender(void) {																		// handles the send queue
 		#endif
 	}
 
-	// answer was received, clean up the structure
-	if (sndStc.cntr == 0xff) {
-		sndStc.timeOut = 0;
-		sndStc.cntr = 0;
-		sndStc.active = 0;
-		sndTimer.set(0);
-	}
 
-
-/*	// here we encode and send the string
-	disableIRQ_GDO0();																	// disable interrupt otherwise we could get some new content while we copy the buffer
-	cc1101.sendData(send.data,send.burst);												// and send
-	enableIRQ_GDO0();																	// enable the interrupt again
-
+/*	
 	// setting some variables
 	powr.state = 1;																		// remember TRX module status, after sending it is always in RX mode
 	if ((powr.mode > 0) && (powr.nxtTO < (millis() + powr.minTO))) stayAwake(powr.minTO); // stay awake for some time
@@ -159,7 +155,10 @@ void AS::sendSlcList(void) {
 		//dbg << "end: " << slcList.active << slcList.peer << slcList.reg2 << slcList.reg3 << '\n';
 	}
 }
+void AS::sendPeerMsg(void) {
 
+}
+	
 // - received functions ----------------------------
 void AS::received(void) {
 	static uint8_t last_rCnt;
@@ -310,7 +309,7 @@ void AS::received(void) {
 		//
 		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
 		// do something with the information ----------------------------------
-		if (memcmp(rcvBuf+12,HMSR,10) == 0) sendDEVICE_INFO();								// compare serial and send device info
+		if (mycmp(rcvBuf+12,HMSR,10)) sendDEVICE_INFO();									// compare serial and send device info
 		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x0E)) {			// CONFIG_STATUS_REQUEST
@@ -323,7 +322,8 @@ void AS::received(void) {
 		// l> 0A 05 80 02 63 19 63 01 02 04 00
 		// do something with the information ----------------------------------
 		
-		if ((sndStc.active) && (rcv.mCnt == sndStc.mCnt)) sndStc.cntr == 0xff;				// was an ACK to an active message
+		if ((sndStc.active) && (rcv.mCnt == sndStc.mCnt)) sndStc.cntr = 0xff;				// was an ACK to an active message
+		//dbg << "act:" << sndStc.active << " rC:" << rcv.mCnt << " sC:" << sndStc.mCnt << " cntr:" << sndStc.cntr << '\n';
 		// --------------------------------------------------------------------
 		
 	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x01)) {			// ACK_STATUS
@@ -415,7 +415,7 @@ void AS::received(void) {
 }
 
 // - send functions --------------------------------
-void AS::sendDEVICE_INFO() {
+void AS::sendDEVICE_INFO(void) {
 	// description --------------------------------------------------------
 	//                 reID      toID      fw  type   serial                         class  pCnlA  pCnlB  unknown
 	// l> 1A 94 84 00  1F B7 4A  01 02 04  15  00 6C  4B 45 51 30 32 33 37 33 39 36  10     41     01     00
@@ -605,20 +605,27 @@ void AS::sendTimeStamp(void) {
 	//UNKNOWN  => "00,4",
 	//TIME     => "04,2", } },
 }
-void AS::sendREMOTE(void) {
-	//"40"          => { txt => "REMOTE"      , params => {
-	//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
-	//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
-	//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
-	//COUNTER  => "02,2", } },
+void AS::sendREMOTE(uint8_t cnl, uint8_t *pL) {
+	// description --------------------------------------------------------
+	//                 reID      toID      BLL Cnt
+	// l> 0B 0A A4 40  23 70 EC  1E 7A AD  02  01
+	// l> 0F 0A 80 02 1E 7A AD 23 70 EC 01 01 14 10 32 A4
+	// l> 0B 0B B0 40 23 70 EC 1F B7 4A 02 01
+	// l> 0E 0B 80 02 1F B7 4A 23 70 EC 01 01 C8 80 21
+	// l> 0F 0B A4 10 1E 7A AD 63 19 63 06 01 C8 00 80 C8
+	// l> 0A 0B 80 02 63 19 63 1E 7A AD 00
+	// BUTTON = bit 0 - 5
+	// LONG   = bit 6
+	// LOWBAT = bit 7
 }
-void AS::sendSensor_event(void) {
+void AS::sendSensor_event(uint8_t cnl, uint8_t *pL) {
+	// description --------------------------------------------------------
+	//                 reID      toID      BLL  Cnt  Val
+	// l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200
 	//"41"          => { txt => "Sensor_event", params => {
-	//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
-	//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
-	//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
-	//NBR      => '02,2,$val=(hex($val))',
-	//VALUE    => '04,2,$val=(hex($val))',} },
+	// BUTTON = bit 0 - 5
+	// LONG   = bit 6
+	// LOWBAT = bit 7
 }
 void AS::sendSensorData(void) {
 	//"53"          => { txt => "SensorData"  , params => {
@@ -816,8 +823,9 @@ void AS::explainMessage(uint8_t *buf) {
 	dbg << F("\n\n");
 }
 
-
 AS hm;
+
+
 
 
 // public:		//---------------------------------------------------------------------------------------------------------

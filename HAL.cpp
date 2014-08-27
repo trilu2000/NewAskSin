@@ -26,7 +26,7 @@ void clearEEPromBlock(uint16_t addr, uint16_t len) {
 
 //- cc1100 hardware functions ---------------------------------------------------------------------------------------------
 uint8_t gdo0 = 0;
-void ccInitHw(void) {
+void    ccInitHw(void) {
 	CC1100_IN_DDR &= ~_BV (CC1100_IN_PIN);												// GDO0 input
 	CC1100_CS_DDR |= _BV (CC1100_CS_PIN);												// CS output
 
@@ -42,12 +42,15 @@ uint8_t ccSendByte(uint8_t data) {
 	while (!(SPSR & _BV (SPIF)));														// wait until transfer finished
 	return SPDR;
 }
-uint8_t ccGDO0() {
+uint8_t ccGetGDO0() {
 	if (gdo0 == 1) {
 		gdo0 = 0;
 		return 1;
 	}
 	return gdo0;
+}
+void    ccSetGDO0() {
+	gdo0 = 1;
 }
 ISR(INT0_vect) {
 	//_disableGDO0Int;

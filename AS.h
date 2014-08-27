@@ -56,7 +56,16 @@ class AS {
 		uint8_t mCnt;						// the message counter
 		uint8_t toID[3];					// to whom to send
 	} slcList;
-
+	
+	struct s_peerMsg {
+		uint8_t active   :1;				// indicates status of poll routine, 1 is active
+		uint8_t *pL;						// pointer to payload
+		uint8_t lenPL;						// length of payload
+		uint8_t cnl;						// which channel is the sender
+		uint8_t cnt;						// amount of peer slots
+		//uint8_t slt[64]  :1;				// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
+	} peerMsg;
+	
   private:		//---------------------------------------------------------------------------------------------------------
 
   public:		//---------------------------------------------------------------------------------------------------------
@@ -67,6 +76,7 @@ class AS {
 	void poll(void);																		// poll routine for regular operation
 	void sender(void);																		// send scheduler, to handle all send messages
 	void sendSlcList(void);																	// scheduler to send config messages, peers and regs
+	void sendPeerMsg(void);																	// scheduler for peer messages
 	
 // - received functions ----------------------------
 	void received(void);																	// receiver function, all answers are generated here
@@ -87,8 +97,8 @@ class AS {
  	void sendHAVE_DATA(void);
  	void sendSWITCH(void);
  	void sendTimeStamp(void);
- 	void sendREMOTE(void);
- 	void sendSensor_event(void);
+ 	void sendREMOTE(uint8_t cnl, uint8_t *pL);
+ 	void sendSensor_event(uint8_t cnl, uint8_t *pL);
  	void sendSensorData(void);
  	void sendClimateEvent(void);
  	void sendSetTeamTemp(void);
@@ -104,6 +114,8 @@ class AS {
 
 };
 extern AS hm;
+
+
 
 class MilliTimer {
 	// http://jeelabs.net/pub/docs/jeelib/Ports_8h_source.html
