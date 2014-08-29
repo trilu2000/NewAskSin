@@ -10,7 +10,7 @@
 //#define AS_DBG_EX
 #include "AS.h"
 
-MilliTimer sndTimer;																		// send timer functionality
+waitTimer sndTimer;																			// send timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
@@ -160,6 +160,8 @@ void AS::sendSlcList(void) {
 	}
 }
 void AS::sendPeerMsg(void) {
+	// burst to be implemented - check on 6 Button HM Switch
+	//
 	#define maxRetries    3
 
 	if (sndStc.active) return;															// check if send function has a free slot, otherwise return
@@ -172,12 +174,12 @@ void AS::sendPeerMsg(void) {
 		peerMsg.rnd++;																	// increase the round counter
 		
 		if ((peerMsg.rnd >= maxRetries) || (isEmty(peerMsg.slt,8))) {					// all rounds done or all peers reached
-			dbg << "through\n";
+			//dbg << "through\n";
 			sndCnt++;																	// increase the send message counter
 			memset((void*)&peerMsg, 0, sizeof(s_peerMsg));								// clean out and return
 			
 		} else {																		// start next round
-			dbg << "next round\n";
+			//dbg << "next round\n";
 			peerMsg.curIdx = 0;
 
 		}
@@ -217,9 +219,9 @@ void AS::sendPeerMsg(void) {
 	snd.mCnt = sndCnt;																	// set message counter
 	memcpy((void*)&snd.mFlg, (void*)&peerMsg.mFlg, 1);									// message flag
 	snd.mTyp = peerMsg.mTyp;															// message type
-	uint8_t t1[] = {0x23,0x70,0xD8};
-	memcpy(snd.reID, t1, 3);															// sender id
-	//memcpy(snd.reID, HMID, 3);															// sender id
+	//uint8_t t1[] = {0x23,0x70,0xD8};
+	//memcpy(snd.reID, t1, 3);															// sender id
+	memcpy(snd.reID, HMID, 3);															// sender id
 	memcpy(snd.toID, tPeer, 3);															// receiver id
 	memcpy(sndBuf+10, peerMsg.pL, peerMsg.lenPL);										// payload
 	
@@ -511,7 +513,7 @@ void AS::sendDEVICE_INFO(void) {
 
 	memcpy_P(sndBuf+10,devDef.devIdnt,3);
 	memcpy(sndBuf+13,HMSR,10);
-	memcpy_P(sndBuf+23,devDef.devIdnt,4);
+	memcpy_P(sndBuf+23,devDef.devIdnt+3,4);
 	sndStc.active = 1;																		// fire the message
 }
 void AS::sendACK(void) {
@@ -913,12 +915,6 @@ void AS::explainMessage(uint8_t *buf) {
 }
 
 // - some helpers ----------------------------------
-//void AS::peerSetBitCnt(uint8_t xDec, uint8_t *xBin) {
-//	memset(xBin, 0, 8);
-//	for (uint8_t i = 0; i < xDec; i++) {
-//		xBin[i >> 3] |= (1<<(i & 0x07));
-//	}
-//}
 
 AS hm;
 
@@ -926,7 +922,7 @@ AS hm;
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
-uint8_t  MilliTimer::done(void) {
+uint8_t  waitTimer::done(void) {
 	// todo - check if nexTime is near overflow and we have some delay, so getMillis() goes over 0
 	// to get the correct timer result
 	if (!armed) return 1;
@@ -934,8 +930,8 @@ uint8_t  MilliTimer::done(void) {
 	armed = 0;
 	return 1;
 }
-void     MilliTimer::set(uint32_t ms) {
+void     waitTimer::set(uint32_t ms) {
 	armed = ms?1:0;
-	if (armed) nexTime = getMillis() + ms;
+	if (armed) nexTime = getMillis() + ms -1;
 }
 

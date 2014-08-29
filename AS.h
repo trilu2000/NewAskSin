@@ -114,7 +114,6 @@ class AS {
 	void explainMessage(uint8_t *buf);														// explains message content, part of debug functions
 
 // - some helpers ----------------------------------
-	//void peerSetBitCnt(uint8_t xDec, uint8_t *xBin);
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
@@ -124,14 +123,14 @@ extern AS hm;
 
 
 
-class MilliTimer {
+class waitTimer {
 
   private:		//---------------------------------------------------------------------------------------------------------
 	uint8_t  armed;
 	uint32_t nexTime;
 
   public:		//---------------------------------------------------------------------------------------------------------
-	MilliTimer () {}
+	waitTimer () {}
 
 	uint8_t  done(void);
 	void     set(uint32_t ms);
