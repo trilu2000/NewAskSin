@@ -80,9 +80,10 @@ void AS::sender(void) {																		// handles the send queue
 			dbg << F("<i ");
 			#endif
 		} else {																			// send it external
+			uint8_t tBurst = snd.mFlg.Burst;												// get burst flag, while string will get encoded
 			encode(sndBuf);																	// encode the string
 			_disableGDO0Int
-			cc.sndData(sndBuf,snd.mFlg.Burst);												// send to communication module
+			cc.sndData(sndBuf,tBurst);														// send to communication module
 			_enableGDO0Int
 			decode(sndBuf);																	// decode the string, so it is readable next time
 			
