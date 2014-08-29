@@ -217,7 +217,8 @@ void AS::sendPeerMsg(void) {
 	// l> 0B   0A   A4   40   23 70 EC  1E 7A AD  02 01
 	snd.mLen = peerMsg.lenPL +9;														// set message len
 	snd.mCnt = sndCnt;																	// set message counter
-	memcpy((void*)&snd.mFlg, (void*)&peerMsg.mFlg, 1);									// message flag
+	snd.mFlg.RPTEN = 1; snd.mFlg.CFG = 1; snd.mFlg.BIDI = peerMsg.burst;				// message flag
+
 	snd.mTyp = peerMsg.mTyp;															// message type
 	//uint8_t t1[] = {0x23,0x70,0xD8};
 	//memcpy(snd.reID, t1, 3);															// sender id
@@ -425,8 +426,7 @@ void AS::received(void) {
 		static uint8_t x2[2];
 		x2[0] = 0x02;
 		x2[1] += 1;
-		
-		sendREMOTE(1,x2);
+		sendREMOTE(1,1,x2);
 		
 	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x84)) {			// NACK_TARGET_INVALID
 
@@ -685,7 +685,7 @@ void AS::sendTimeStamp(void) {
 	//UNKNOWN  => "00,4",
 	//TIME     => "04,2", } },
 }
-void AS::sendREMOTE(uint8_t cnl, uint8_t *pL) {
+void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	// description --------------------------------------------------------
 	//                 reID      toID      BLL Cnt
 	// l> 0B 0A A4 40  23 70 EC  1E 7A AD  02  01
@@ -701,15 +701,13 @@ void AS::sendREMOTE(uint8_t cnl, uint8_t *pL) {
 	peerMsg.pL = pL;
 	peerMsg.lenPL = 2;
 	peerMsg.cnl = cnl;
-	peerMsg.mFlg.RPTEN = 1; 
-	peerMsg.mFlg.BIDI = 1;	// if BLL is set as long message, then no repeat is necessary
-	peerMsg.mFlg.Burst = 1;
-	peerMsg.mFlg.CFG = 1;
+	peerMsg.burst = burst;
+	peerMsg.bidi = 1; // depends on BLL, long didn't need ack
 	peerMsg.mTyp = 0x40;
 	peerMsg.active = 1;
 
 }
-void AS::sendSensor_event(uint8_t cnl, uint8_t *pL) {
+void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	// description --------------------------------------------------------
 	//                 reID      toID      BLL  Cnt  Val
 	// l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200

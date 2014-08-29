@@ -60,12 +60,13 @@ class AS {
 	struct s_peerMsg {
 		uint8_t active   :1;				// indicates status of poll routine, 1 is active
 		uint8_t rnd      :3;				// send retries
+		uint8_t burst    :1;				// burst flag for send function
+		uint8_t bidi     :1;				// ack required
 		uint8_t *pL;						// pointer to payload
 		uint8_t lenPL;						// length of payload
 		uint8_t cnl;						// which channel is the sender
 		uint8_t curIdx;						// current peer slots
 		uint8_t maxIdx;						// amount of peer slots
-		struct s_mFlg mFlg;					// message flag
 		uint8_t mTyp;						// message type
 		uint8_t slt[8];						// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
 	} peerMsg;
@@ -101,8 +102,8 @@ class AS {
  	void sendHAVE_DATA(void);
  	void sendSWITCH(void);
  	void sendTimeStamp(void);
- 	void sendREMOTE(uint8_t cnl, uint8_t *pL);
- 	void sendSensor_event(uint8_t cnl, uint8_t *pL);
+ 	void sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL);
+ 	void sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL);
  	void sendSensorData(void);
  	void sendClimateEvent(void);
  	void sendSetTeamTemp(void);

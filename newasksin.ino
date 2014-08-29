@@ -19,43 +19,11 @@ void setup() {
 
 	//hm.ee.testModul();
 	
-	//uint8_t xTmp[4]  = {0x01,0x02,0x03, 0x05};
-	//hm.ee.isPairValid(xTmp);
-
-	//hm.ee.clearPeers();
-	//hm.ee.isPeerValid(xTmp);
-
-	//hm.ee.countFreeSlots(1);
-	//hm.ee.getPeerIdx(1, xTmp);
-	//hm.ee.addPeer(1, 1, xTmp);
-	//hm.ee.remPeer(1, 1);
-	//timer1.poll(1000);
-
-	//hm.ee.clearPeers();
-	
-	// add peer
-	//uint8_t buf[] = {0x01,0x02,0x03,0x04,0x05};
-	//hm.ee.addPeer(1,buf);
-
-	// display peer space
-	//uint8_t xuf[20], cnt;
-	//uint8_t slc = hm.ee.countPeerSlc(1);
-	
-	//for (uint8_t i = 0; i < slc; i++) {
-	//	cnt = hm.ee.getPeerListSlc(1,i,xuf);
-	//	dbg << slc << ": " << pHex(xuf,cnt) << '\n';
-	//}
-	hm.sendDEVICE_INFO();
 	
 }
 
 void loop() {
 	hm.poll();
-
-	//_delay_ms(1000);
-	//dbg << getMillis() << '\n';
-	//dbg << '.';
-	/* add main program code here */
 
 }
 
