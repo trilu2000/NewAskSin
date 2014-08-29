@@ -59,11 +59,15 @@ class AS {
 	
 	struct s_peerMsg {
 		uint8_t active   :1;				// indicates status of poll routine, 1 is active
+		uint8_t rnd      :3;				// send retries
 		uint8_t *pL;						// pointer to payload
 		uint8_t lenPL;						// length of payload
 		uint8_t cnl;						// which channel is the sender
-		uint8_t cnt;						// amount of peer slots
-		//uint8_t slt[64]  :1;				// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
+		uint8_t curIdx;						// current peer slots
+		uint8_t maxIdx;						// amount of peer slots
+		struct s_mFlg mFlg;					// message flag
+		uint8_t mTyp;						// message type
+		uint8_t slt[8];						// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
 	} peerMsg;
 	
   private:		//---------------------------------------------------------------------------------------------------------
@@ -109,6 +113,9 @@ class AS {
 	void encode(uint8_t *buf);																// encodes the message
 	void explainMessage(uint8_t *buf);														// explains message content, part of debug functions
 
+// - some helpers ----------------------------------
+	//void peerSetBitCnt(uint8_t xDec, uint8_t *xBin);
+
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 
@@ -118,18 +125,16 @@ extern AS hm;
 
 
 class MilliTimer {
-	// http://jeelabs.net/pub/docs/jeelib/Ports_8h_source.html
+
   private:		//---------------------------------------------------------------------------------------------------------
-	uint16_t next;
-	byte armed;
+	uint8_t  armed;
+	uint32_t nexTime;
 
   public:		//---------------------------------------------------------------------------------------------------------
-	MilliTimer () : armed (0) {}
+	MilliTimer () {}
 
-	uint8_t  poll(uint16_t ms =0);
-	uint16_t remaining() const;
-	uint8_t  idle() const { return !armed; }
-	void     set(uint16_t ms);
+	uint8_t  done(void);
+	void     set(uint32_t ms);
 };
 
 #endif

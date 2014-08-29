@@ -91,8 +91,8 @@ extern uint8_t HMSR[];
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
-uint8_t mycmp(void *x, void *y, uint8_t z);
-
+uint8_t cmpAry(void *p1, void *p2, uint8_t len);
+uint8_t isEmty(void *p1, uint8_t len);
 
 #endif
 

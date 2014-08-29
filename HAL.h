@@ -37,6 +37,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 #define pHexB(x)  char((x>>4)>9?(x>>4)+55:(x>>4)+48)<< char((x&0xF)>9?(x&0xF)+55:(x&0xF)+48)
 #define pHex(x,y) char(0);for(uint8_t i=0;i<y;i++)dbg<<pHexB(x[i])<<char(i+1<y?32:0);dbg<<char(0)
 #define pLine     char(0);for(uint8_t i=0;i<40;i++)dbg<<'-';dbg<<'\n'
+#define pTime     char(0);dbg<<'('<<getMillis()<<')'
 
 
 //- eeprom functions ------------------------------------------------------------------------------------------------------

@@ -46,7 +46,6 @@ void setup() {
 	//	dbg << slc << ": " << pHex(xuf,cnt) << '\n';
 	//}
 	hm.sendDEVICE_INFO();
-
 	
 }
 

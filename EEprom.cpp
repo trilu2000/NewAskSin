@@ -163,14 +163,15 @@ void    EE::testModul(void) {															// prints register.h content on cons
 	#endif
 }
 uint8_t EE::isHMIDValid(uint8_t *toID) {
-	return mycmp(toID, HMID, 3);
+	return cmpAry(toID, HMID, 3);
 }
 uint8_t EE::isPairValid (uint8_t *reID) {
-	return mycmp(reID, MAID, 3);
+	return cmpAry(reID, MAID, 3);
 }
 uint8_t EE::isBroadCast(uint8_t *toID) {
-	uint8_t zero[3] = {0,0,0};
-	return mycmp(toID, zero, 3);
+	//uint8_t zero[3] = {0,0,0};
+	//return mycmp(toID, zero, 3);
+	return isEmty(toID, 3);
 }
 uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId) {
 	if (isBroadCast(toId)) return 'b';													// broadcast message
@@ -198,28 +199,29 @@ uint8_t EE::isPeerValid (uint8_t *peer) {
 
 uint8_t EE::countFreeSlots(uint8_t cnl) {
 	uint8_t bCounter = 0;																// set counter to zero
-	uint32_t lPeer;
+	uint8_t lPeer[4];
 	
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
 	//dbg << F("cFS: ") << _pgmB(devDef.peerTbl[cnl-1].pMax) << '\n';
 	
 	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
-		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
-		//getPeerByIdx(cnl, i, (uint8_t*)&lPeer);											// get peer from eeprom
-		if (lPeer == 0) bCounter++;														// increase counter if peer slot is empty
+		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, lPeer);				// get peer from eeprom
+		//getPeerByIdx(cnl, i, (uint8_t*)&lPeer);										// get peer from eeprom
+		if (isEmty(lPeer, 4)) bCounter++;												// increase counter if peer slot is empty
 		//dbg << F("addr: ") << (_pgmB(devDef.peerTbl[cnl-1].pAddr)+(i*4)) << F(", lPeer: ") << pHex(((uint8_t*)&lPeer),4) << '\n';
 	}
 	return bCounter;																	// return the counter
 }
 uint8_t EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
-	uint32_t lPeer;
+	//uint32_t lPeer;
+	uint8_t lPeer[4];
 
 	if (cnl == 0) return 0;																// on channel 0 there is no need to search
 	if (cnl > devDef.cnlNbr) return 0xff;												// return if channel is out of range
 	
 	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
-		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
-		if (lPeer == *(uint32_t*)peer) return i;										// if result matches then return slot index
+		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, lPeer);				// get peer from eeprom
+		if (cmpAry(lPeer, peer, 4)) return i;											// if result matches then return slot index
 		//dbg << i << ": " << lPeer << ", s: " << (*(uint32_t*)peer) << '\n';
 	}
 	return 0xff;
@@ -228,8 +230,8 @@ uint8_t EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
 	getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(idx*4), 4, (void*)peer);
 }
 uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
-	uint32_t lPeer;
-
+	uint8_t lPeer[4];
+	
 	// check if channel exists
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
 
@@ -240,44 +242,45 @@ uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
 
 	// count free peer slots and check against cnt
 	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
-		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
-		if (lPeer == 0) ret++;															// increase counter if peer slot is empty
+		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, lPeer);				// get peer from eeprom
+		if (isEmty(lPeer, 4)) ret++;													// increase counter if peer slot is empty
 	}
 	if (((peer[3]) && (peer[4])) && (ret < 2)) return 0;								// not enough space, return failure
 	if (((peer[3]) || (peer[4])) && (ret < 1)) return 0;
 	
 	// search for free peer slots and write content
 	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
-		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
+		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, lPeer);				// get peer from eeprom
 
-		if        ((lPeer == 0) && (cnt & 1)) {											// slot is empty and peer cnlA is set
+		if        (isEmty(lPeer, 4) && (cnt & 1)) {										// slot is empty and peer cnlA is set
 			cnt ^= 1;
-			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)peer);
+			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, peer);
 
-		} else if ((lPeer == 0) && (cnt & 2)) {											// slot is empty and peer cnlB is set
+		} else if (isEmty(lPeer, 4) && (cnt & 2)) {										// slot is empty and peer cnlB is set
 			cnt ^= 2;
-			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 3, (void*)peer);	// first 3 bytes
-			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4)+3, 1, (void*)peer+4);// 5th byte
+			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 3, peer);			// first 3 bytes
+			setEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4)+3, 1, peer+4);		// 5th byte
 		
 		}
 	}
 	return 1;																			// everything went fine, return success
 }
 uint8_t EE::remPeer(uint8_t cnl, uint8_t *peer) {
-	uint32_t lPeer, tPeer;
-
+	uint8_t tPeer[4], lPeer[4];
+	
 	// check if channel exists
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
 
 	// peerA is given by (uint32_t*)peer, peerB has to be constructed
-	memcpy((void*)&tPeer,peer,3);
-	memcpy((void*)&tPeer+3,peer+4,1);
+	memcpy(tPeer, peer, 3);
+	memcpy(tPeer+3, peer+4, 1);
 	//dbg << "a: " << pHex(peer,4) << ", b: " << pHex(((uint8_t*)&tPeer),4) << '\n'; 
 
 	// search for peers and delete them
 	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
-		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)&lPeer);		// get peer from eeprom
-		if ((lPeer == *(uint32_t*)peer) || (lPeer == tPeer)) {							// check if something matches
+		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, lPeer);				// get peer from eeprom
+		//if ((lPeer == *(uint32_t*)peer) || (lPeer == tPeer)) {						// check if something matches
+		if (cmpAry(lPeer, peer, 4) || cmpAry(lPeer ,tPeer, 4)) {						// check if something matches
 			clearEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4);				// free the slot
 		}
 	}
@@ -303,8 +306,8 @@ uint8_t EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 	
 	for (uint8_t i = 0; i < _pgmB(devDef.peerTbl[cnl-1].pMax); i++) {					// step through the possible peer slots
 
-		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, (void*)buf);		// get peer from eeprom
-		if (*(uint32_t*)buf == 0) continue;												// peer is empty therefor next
+		getEEPromBlock(_pgmW(devDef.peerTbl[cnl-1].pAddr)+(i*4), 4, buf);				// get peer from eeprom
+		if (isEmty(buf, 4)) continue;													// peer is empty therefor next
 
 		byteCnt+=4;																		// if we are here, then it is valid and we should increase the byte counter
 		//dbg << i << ": " << pHex(buf,4) << ", bC: " << byteCnt  << ", sC: " << slcCnt << '\n';
@@ -321,7 +324,7 @@ uint8_t EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 		}
 	}
 
-	*(uint32_t*)buf = 0;																// add the terminating zeros
+	memset(buf, 0, 4);																	// add the terminating zeros
 	return byteCnt + 4;																	// return the amount of bytes
 }
 uint8_t EE::getPeerSlots(uint8_t cnl) {													// returns the amount of possible peers
@@ -451,10 +454,18 @@ uint16_t crc16(uint16_t crc, uint8_t a) {
 	}
 	return crc;
 }
-uint8_t mycmp(void *x, void *y, uint8_t z) {
+uint8_t cmpAry(void *ptr1, void *ptr2, uint8_t len) {
+//	do {
+//		if (*(uint8_t*)(ptr1+len-1) != *(uint8_t*)(ptr2+len-1)) return 0;
+//		len-=1;
+//	} while (len>0);
+//	return 1;
+	return memcmp(ptr1, ptr2, len)?0:1;
+}
+uint8_t isEmty(void *ptr, uint8_t len) {
 	do {
-		if (*(uint8_t*)(x+z-1) != *(uint8_t*)(y+z-1)) return 0;
-		z-=1;
-	} while (z>0);
+		if (*(uint8_t*)(ptr+len-1) != 0) return 0;
+		len-=1;
+	} while (len>0);
 	return 1;
 }

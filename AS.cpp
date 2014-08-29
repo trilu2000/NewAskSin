@@ -43,10 +43,11 @@ void AS::poll(void) {
 	}
 
 	if (rcvHasData) received();																// check if there is something in the received buffer
+
 	if (sndStc.active) sender();															// check if something is to send
-
-	sendSlcList();																			// poll the slice list send function
-
+	if (slcList.active) sendSlcList();														// poll the slice list send function
+	if (peerMsg.active) sendPeerMsg();														// poll the peer message sender
+	
 	// check if we could go to standby
 	
 	// some sanity poll routines
@@ -61,20 +62,17 @@ void AS::sender(void) {																		// handles the send queue
 		if (reqACK) sndStc.retr = maxRetries;												// if BIDI is set, we have three retries
 		else sndStc.retr = 1;
 	}
-
-	sndTimer.poll();																		// poll the timer
-
+	
 	// send something while timer is not busy with waiting for an answer and max tries are not done 
-	if ((sndStc.cntr < sndStc.retr) && (sndTimer.idle())) {									// not all sends done and timing is OK
+	if ((sndStc.cntr < sndStc.retr) && (sndTimer.done() )) {								// not all sends done and timing is OK
 
 		// some sanity
-		if (reqACK) sndTimer.set(maxTime);													// set the time out for the message
 		sndStc.timeOut = 0;																	// not timed out because just started
 		sndStc.mCnt = snd.mCnt;																// copy the message count to identify the ACK
 		sndStc.cntr++;																		// increase counter while send out
 
 		// check if we should send an internal message
-		if (mycmp(snd.toID,HMID,3)) {														// message is addressed to us
+		if (cmpAry(snd.toID,HMID,3)) {														// message is addressed to us
 			memcpy(rcvBuf, sndBuf, sndLen);													// copy send buffer to received buffer
 			sndStc.cntr = 0xff;																// ACK not required, because internal
 						
@@ -83,8 +81,12 @@ void AS::sender(void) {																		// handles the send queue
 			#endif
 		} else {																			// send it external
 			encode(sndBuf);																	// encode the string
+			_disableGDO0Int
 			cc.sndData(sndBuf,snd.mFlg.Burst);												// send to communication module
+			_enableGDO0Int
 			decode(sndBuf);																	// decode the string, so it is readable next time
+			
+			if (reqACK) sndTimer.set(maxTime);												// set the time out for the message
 			
 			#ifdef AS_DBG																	// only if AS debug is set
 			dbg << F("<- ");
@@ -92,24 +94,26 @@ void AS::sender(void) {																		// handles the send queue
 		}
 
 		#ifdef AS_DBG																		// only if AS debug is set
-		dbg << pHex(sndBuf,sndLen) << '\n';
+		dbg << pHex(sndBuf,sndLen) << ' ' << pTime << '\n';
 		#endif
 
 	} else if (sndStc.cntr == 0xff) {														// answer was received, clean up the structure
 		sndStc.timeOut = 0;
 		sndStc.cntr = 0;
+		sndStc.retr = 0;
 		sndStc.active = 0;
 		sndTimer.set(0);
 
-	} else if ((sndStc.cntr >= sndStc.retr) && (sndTimer.idle())) {							// max retries achieved, but seems to have no answer
+	} else if ((sndStc.cntr >= sndStc.retr) && (sndTimer.done() )) {						// max retries achieved, but seems to have no answer
 		sndStc.cntr = 0;
+		sndStc.retr = 0;
 		sndStc.active = 0;
 		if (!reqACK) return;
 		
 		sndStc.timeOut = 1;																	// set the time out only while an ACK or answer was requested
 
 		#ifdef AS_DBG																		// only if AS debug is set
-		dbg << F("  timed out\n");
+		dbg << F("  timed out") << ' ' << pTime << '\n';
 		#endif
 	}
 
@@ -129,7 +133,6 @@ void AS::sender(void) {																		// handles the send queue
 	}*/
 }
 void AS::sendSlcList(void) {
-	if (!slcList.active) return;															// nothing to do
 	if (sndStc.active) return;																// check if send function has a free slot, otherwise return
 
 	uint8_t cnt;
@@ -156,7 +159,74 @@ void AS::sendSlcList(void) {
 	}
 }
 void AS::sendPeerMsg(void) {
+	#define maxRetries    3
 
+	if (sndStc.active) return;															// check if send function has a free slot, otherwise return
+	
+	// first run, prepare amount of slots
+	if (!peerMsg.maxIdx) peerMsg.maxIdx = ee.getPeerSlots(peerMsg.cnl);					// get amount of messages of peer channel
+
+	// all slots of channel processed, start next round or end processing
+	if (peerMsg.curIdx >= peerMsg.maxIdx) {												// check if all peer slots are done
+		peerMsg.rnd++;																	// increase the round counter
+		
+		if ((peerMsg.rnd >= maxRetries) || (isEmty(peerMsg.slt,8))) {					// all rounds done or all peers reached
+			dbg << "through\n";
+			sndCnt++;																	// increase the send message counter
+			memset((void*)&peerMsg, 0, sizeof(s_peerMsg));								// clean out and return
+			
+		} else {																		// start next round
+			dbg << "next round\n";
+			peerMsg.curIdx = 0;
+
+		}
+		return;
+
+	} else if ((peerMsg.curIdx) && (!sndStc.timeOut)) {									// peer index is >0, first round done and no timeout
+		peerMsg.slt[(peerMsg.curIdx-1) >> 3] &=  ~(1<<((peerMsg.curIdx-1) & 0x07));		// clear bit, because message got an ACK		
+
+	}
+	
+	// set respective bit to check if ACK was received
+	if (!peerMsg.rnd) peerMsg.slt[peerMsg.curIdx >> 3] |= (1<<(peerMsg.curIdx & 0x07));	// set bit in slt table										// clear bit in slt and increase counter
+
+
+	// exit while bit is not set
+	if (!peerMsg.slt[peerMsg.curIdx >> 3] & (1<<(peerMsg.curIdx & 0x07))) {
+		peerMsg.curIdx++;																// increase counter for next time
+		return;
+	}
+
+	uint8_t tPeer[4];																	// get the respective peer
+	ee.getPeerByIdx(peerMsg.cnl,peerMsg.curIdx,tPeer);
+		
+	if (isEmty(tPeer,4)) {																// if peer is 0, set done bit in slt and skip
+		peerMsg.slt[peerMsg.curIdx >> 3] &=  ~(1<<(peerMsg.curIdx & 0x07));				// remember empty peer in slt table										// clear bit in slt and increase counter
+		peerMsg.curIdx++;																// increase counter for next time
+		return;																			// wait for next round
+	}
+
+	// if we are here, there is something to send
+	//dbg << "cnl:" << peerMsg.cnl << " cIdx:" << peerMsg.curIdx << " mIdx:" << peerMsg.maxIdx << " slt:" << pHex(peerMsg.slt,8) << '\n';
+	
+	// description --------------------------------------------------------
+	//    len  cnt  flg  typ  reID      toID      pl
+	// l> 0B   0A   A4   40   23 70 EC  1E 7A AD  02 01
+	snd.mLen = peerMsg.lenPL +9;														// set message len
+	snd.mCnt = sndCnt;																	// set message counter
+	memcpy((void*)&snd.mFlg, (void*)&peerMsg.mFlg, 1);									// message flag
+	snd.mTyp = peerMsg.mTyp;															// message type
+	uint8_t t1[] = {0x23,0x70,0xD8};
+	memcpy(snd.reID, t1, 3);															// sender id
+	//memcpy(snd.reID, HMID, 3);															// sender id
+	memcpy(snd.toID, tPeer, 3);															// receiver id
+	memcpy(sndBuf+10, peerMsg.pL, peerMsg.lenPL);										// payload
+	
+	sndStc.retr = 1;																	// send only one time
+	sndStc.active = 1;																	// make send active
+	
+	if (!snd.mFlg.BIDI) peerMsg.slt[peerMsg.curIdx >> 3] &=  ~(1<<(peerMsg.curIdx & 0x07));// clear bit, because it is a message without need to be repeated
+	peerMsg.curIdx++;																	// increase counter for next time
 }
 	
 // - received functions ----------------------------
@@ -167,7 +237,7 @@ void AS::received(void) {
 
 	// some debugs
 	#ifdef AS_DBG																			// only if AS debug is set
-	dbg << (char)bIntend << F("> ") << pHex(rcvBuf,rcvLen) << '\n';
+	dbg << (char)bIntend << F("> ") << pHex(rcvBuf,rcvLen) << ' ' << pTime << '\n';
 	#endif
 	
 	#ifdef AS_DBG_EX																		// only if extended AS debug is set
@@ -309,7 +379,7 @@ void AS::received(void) {
 		//
 		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
 		// do something with the information ----------------------------------
-		if (mycmp(rcvBuf+12,HMSR,10)) sendDEVICE_INFO();									// compare serial and send device info
+		if (cmpAry(rcvBuf+12,HMSR,10)) sendDEVICE_INFO();									// compare serial and send device info
 		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x01) && (rcv.by11 == 0x0E)) {			// CONFIG_STATUS_REQUEST
@@ -327,13 +397,15 @@ void AS::received(void) {
 		// --------------------------------------------------------------------
 		
 	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x01)) {			// ACK_STATUS
-		//CHANNEL        => "02,2",
-		//STATUS         => "04,2",
-		//DOWN           => '06,02,$val=(hex($val)&0x20)?1:0',
-		//UP             => '06,02,$val=(hex($val)&0x10)?1:0',
-		//LOWBAT         => '06,02,$val=(hex($val)&0x80)?1:0',
-		//RSSI           => '08,02,$val=(-1)*(hex($val))', }},
-
+		// description --------------------------------------------------------
+		// <- 0B 08 B4 40 23 70 D8 1F B7 4A 02 08
+		//                                      cnl stat DUL RSSI
+		// l> 0E 08 80 02 1F B7 4A 23 70 D8 01  01  C8   80  27
+		// do something with the information ----------------------------------
+		// DUL = UP 10, DOWN 20, LOWBAT 80
+		
+		if ((sndStc.active) && (rcv.mCnt == sndStc.mCnt)) sndStc.cntr = 0xff;				// was an ACK to an active message
+		// --------------------------------------------------------------------
 
 	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x02)) {			// ACK2 - smokeDetector pairing only?
 
@@ -345,10 +417,15 @@ void AS::received(void) {
 		//Para4          => "14,2",}}, # remote?
 
 		
-	} else if  ((rcv.mTyp == 0x02) && (rcv.by11 == 0x80)) {			// NACK
-
+	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x80)) {			// NACK
+		// for test
+		static uint8_t x2[2];
+		x2[0] = 0x02;
+		x2[1] += 1;
 		
-	} else if  ((rcv.mTyp == 0x02) && (rcv.by11 == 0x84)) {			// NACK_TARGET_INVALID
+		sendREMOTE(1,x2);
+		
+	} else if  ((rcv.mTyp == 0x02) && (rcv.by10 == 0x84)) {			// NACK_TARGET_INVALID
 
 
 	} else if  (rcv.mTyp == 0x12) {									// HAVE_DATA
@@ -617,6 +694,17 @@ void AS::sendREMOTE(uint8_t cnl, uint8_t *pL) {
 	// BUTTON = bit 0 - 5
 	// LONG   = bit 6
 	// LOWBAT = bit 7
+
+	peerMsg.pL = pL;
+	peerMsg.lenPL = 2;
+	peerMsg.cnl = cnl;
+	peerMsg.mFlg.RPTEN = 1; 
+	peerMsg.mFlg.BIDI = 1;	// if BLL is set as long message, then no repeat is necessary
+	peerMsg.mFlg.Burst = 1;
+	peerMsg.mFlg.CFG = 1;
+	peerMsg.mTyp = 0x40;
+	peerMsg.active = 1;
+
 }
 void AS::sendSensor_event(uint8_t cnl, uint8_t *pL) {
 	// description --------------------------------------------------------
@@ -823,29 +911,30 @@ void AS::explainMessage(uint8_t *buf) {
 	dbg << F("\n\n");
 }
 
+// - some helpers ----------------------------------
+//void AS::peerSetBitCnt(uint8_t xDec, uint8_t *xBin) {
+//	memset(xBin, 0, 8);
+//	for (uint8_t i = 0; i < xDec; i++) {
+//		xBin[i >> 3] |= (1<<(i & 0x07));
+//	}
+//}
+
 AS hm;
 
 
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
-uint8_t  MilliTimer::poll(uint16_t ms) {
-	uint8_t ready = 0;
-	if (armed) {
-		uint16_t remain = next - getMillis();
-		if (remain <= 60000) return 0;	
-		ready = -remain;
-	}
-	set(ms);
-	return ready;
+uint8_t  MilliTimer::done(void) {
+	// todo - check if nexTime is near overflow and we have some delay, so getMillis() goes over 0
+	// to get the correct timer result
+	if (!armed) return 1;
+	if ( nexTime > getMillis() ) return 0;
+	armed = 0;
+	return 1;
 }
-uint16_t MilliTimer::remaining() const {
-	uint16_t remain = armed ? next - getMillis() : 0;
-	return remain <= 60000 ? remain : 0;
-}
-void     MilliTimer::set(uint16_t ms) {
-	armed = ms != 0;
-	if (armed)
-	next = getMillis() + ms - 1;
+void     MilliTimer::set(uint32_t ms) {
+	armed = ms?1:0;
+	if (armed) nexTime = getMillis() + ms;
 }
 

@@ -122,7 +122,7 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	strobe(CC1101_SFRX);																// flush the RX buffer
 	strobe(CC1101_STX);																	// send a burst
 
-	for(uint8_t i=0; i< 200;++i) {														// after sending out all bytes the chip should go automatically in RX mode
+	for(uint8_t i=0; i< 200; ++i) {														// after sending out all bytes the chip should go automatically in RX mode
 		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_RX)
 			break;																		//now in RX mode, good
 		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_TX) {
