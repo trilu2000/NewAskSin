@@ -455,11 +455,6 @@ uint16_t crc16(uint16_t crc, uint8_t a) {
 	return crc;
 }
 uint8_t cmpAry(void *ptr1, void *ptr2, uint8_t len) {
-//	do {
-//		if (*(uint8_t*)(ptr1+len-1) != *(uint8_t*)(ptr2+len-1)) return 0;
-//		len-=1;
-//	} while (len>0);
-//	return 1;
 	return memcmp(ptr1, ptr2, len)?0:1;
 }
 uint8_t isEmty(void *ptr, uint8_t len) {

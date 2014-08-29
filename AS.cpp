@@ -160,8 +160,6 @@ void AS::sendSlcList(void) {
 	}
 }
 void AS::sendPeerMsg(void) {
-	// burst to be implemented - check on 6 Button HM Switch
-	//
 	#define maxRetries    3
 
 	if (sndStc.active) return;															// check if send function has a free slot, otherwise return
@@ -217,8 +215,11 @@ void AS::sendPeerMsg(void) {
 	// l> 0B   0A   A4   40   23 70 EC  1E 7A AD  02 01
 	snd.mLen = peerMsg.lenPL +9;														// set message len
 	snd.mCnt = sndCnt;																	// set message counter
-	snd.mFlg.RPTEN = 1; snd.mFlg.CFG = 1; snd.mFlg.BIDI = peerMsg.burst;				// message flag
-
+	snd.mFlg.RPTEN = 1; snd.mFlg.CFG = 1; snd.mFlg.BIDI = peerMsg.bidi;					// message flag
+	
+	// rework needed - burst should be send only once
+	peerMsg.burst = peerMsg.burst;
+	
 	snd.mTyp = peerMsg.mTyp;															// message type
 	//uint8_t t1[] = {0x23,0x70,0xD8};
 	//memcpy(snd.reID, t1, 3);															// sender id
@@ -348,6 +349,7 @@ void AS::received(void) {
 		// do something with the information ----------------------------------
 
 		cnfFlag.active = 0;																	// set inactive
+		if ((cnfFlag.cnl == 0) && (cnfFlag.idx == 0)) ee.getMasterID();
 		// remove message id flag to config in send module
 		
 		if (ackRq) sendACK();																// send appropriate answer

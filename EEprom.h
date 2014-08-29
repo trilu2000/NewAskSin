@@ -87,8 +87,6 @@ extern uint8_t HMID[];
 extern uint8_t HMSR[];
 
 
-
-
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
 uint8_t cmpAry(void *p1, void *p2, uint8_t len);
