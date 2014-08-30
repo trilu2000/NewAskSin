@@ -7,7 +7,7 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #define SN_DBG
-#include "Sender.h"
+#include "Send.h"
 #include "AS.h"
 
 #define sndLen       this->buf[0]+1
@@ -21,7 +21,7 @@ SN::SN() {
 
 void    SN::init(AS *ptrMain) {
 	#ifdef SN_DBG																			// only if ee debug is set
-	dbg.begin(57600);																		// serial setup
+	if (!&dbg) dbg.begin(57600);
 	dbg << F("\n....\n");																	// ...and some information
 	dbg << F("SN.\n");																		// ...and some information
 	#endif
@@ -49,7 +49,7 @@ void	SN::poll(void) {
 
 		// check if we should send an internal message
 		if (cmpAry(this->mBdy.toID,HMID,3)) {												// message is addressed to us
-			memcpy(pHM->rcvBuf, this->buf, sndLen);											// copy send buffer to received buffer
+			memcpy(pHM->rv.buf, this->buf, sndLen);											// copy send buffer to received buffer
 			this->retrCnt = 0xff;															// ACK not required, because internal
 						
 			#ifdef SN_DBG																	// only if AS debug is set

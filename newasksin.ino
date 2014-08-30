@@ -33,7 +33,7 @@ void serialEvent() {
 		uint8_t inChar = (uint8_t)Serial.read();												// read a byte
 		if (inChar == '\n') {																	// send to receive routine
 			i = 0;
-			hm.sndActive = 1;
+			hm.sn.active = 1;
 		}
 		
 		if      ((inChar>96) && (inChar<103)) inChar-=87;										// a - f
