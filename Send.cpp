@@ -21,7 +21,7 @@ SN::SN() {
 
 void    SN::init(AS *ptrMain) {
 	#ifdef SN_DBG																			// only if ee debug is set
-	if (!&dbg) dbg.begin(57600);
+	dbg.begin(57600);
 	dbg << F("\n....\n");																	// ...and some information
 	dbg << F("SN.\n");																		// ...and some information
 	#endif

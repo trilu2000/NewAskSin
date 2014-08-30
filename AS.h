@@ -12,7 +12,6 @@
 #include "HAL.h"
 #include "CC1101.h"
 #include "EEprom.h"
-//#include "SndRcv.h"
 #include "Send.h"
 #include "Receive.h"
 
@@ -23,9 +22,6 @@ class AS {
 	CC cc;																					// load communication module
 	SN sn;
 	RV rv;
-	
-	//struct s_msgBody rcv;																	// define the receive buffer as a struct
-	//uint8_t *rv.buf = (uint8_t*)&rcv;														// buffer for received string
 
   protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
