@@ -41,8 +41,8 @@ void serialEvent() {
 		else if ((inChar>47) && (inChar<58))  inChar-=48;										// 0 - 9
 		else continue;
 		
-		if (i % 2 == 0) hm.sndBuf[i/2] = inChar << 4;											// high byte
-		else hm.sndBuf[i/2] |= inChar;															// low byte
+		if (i % 2 == 0) hm.sn.buf[i/2] = inChar << 4;											// high byte
+		else hm.sn.buf[i/2] |= inChar;															// low byte
 		
 		i++;
 	}

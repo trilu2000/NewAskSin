@@ -40,9 +40,9 @@
 	#define rcvLen       rcvBuf[0]+1
 	#define ackRq        rcv.mFlg.BIDI			// check if an ACK is requested
 
-	#define sndHasData   sndBuf[0]?1:0			// check if something is in the buffer
-	#define sndLen       sndBuf[0]+1
-	#define reqACK       snd.mFlg.BIDI			// check if an ACK is requested
+	#define sndHasData   sn.buf[0]?1:0			// check if something is in the buffer
+	#define sndLen       sn.buf[0]+1
+	#define reqACK       sn.mBdy.mFlg.BIDI			// check if an ACK is requested
 
-	#define sndActive    sndStc.active
+	#define sndActive    sn.active
 #endif 

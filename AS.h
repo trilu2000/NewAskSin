@@ -13,37 +13,27 @@
 #include "CC1101.h"
 #include "EEprom.h"
 #include "SndRcv.h"
+#include "Sender.h"
 
 
 class AS {
   public:		//---------------------------------------------------------------------------------------------------------
 	EE ee;																					// load eeprom module
 	CC cc;																					// load communication module
-
+	SN sn;
+	
 	struct s_msgBody rcv;																	// define the receive buffer as a struct
 	uint8_t *rcvBuf = (uint8_t*)&rcv;														// buffer for received string
 
-	struct s_msgBody snd;																	// define the send buffer by struct
-	uint8_t *sndBuf = (uint8_t*)&snd;														// buffer for the send string
-	uint8_t sndCnt;																			// message counter for standard sends, while not answering something
-
-	struct s_sndStc {						// - struct for remember send status, for send function
-		uint8_t active   :1;				// is send module active, 1 indicates yes
-		uint8_t timeOut  :1;				// was last message a timeout
-		uint8_t cntr;						// variable to count how often a message was already send
-		uint8_t retr;						// how often a message has to be send until ACK
-		uint8_t mCnt;						// store of message counter, needed to identify ACK
-	} sndStc;
-
   protected:	//---------------------------------------------------------------------------------------------------------
-	struct s_cnfFlag {						// - remember that we are in config mode, for config start message receive
+	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
 		uint8_t active   :1;				// indicates status, 1 if config mode is active
 		uint8_t cnl;						// channel
 		uint8_t lst;						// list
 		uint8_t idx;						// peer index
-	} cnfFlag;
+	} cFlag;
 
-	struct s_slcList {						// - send peers or reg in slices, store for send slice function
+	struct s_sliceList {					// - send peers or reg in slices, store for send slice function
 		uint8_t active   :1;				// indicates status of poll routine, 1 is active
 		uint8_t peer     :1;				// is it a peer list message
 		uint8_t reg2     :1;				// or a register send
@@ -55,21 +45,21 @@ class AS {
 		uint8_t idx;						// the peer index
 		uint8_t mCnt;						// the message counter
 		uint8_t toID[3];					// to whom to send
-	} slcList;
+	} sList;
 	
-	struct s_peerMsg {
+	struct s_peMsg {
 		uint8_t active   :1;				// indicates status of poll routine, 1 is active
 		uint8_t rnd      :3;				// send retries
 		uint8_t burst    :1;				// burst flag for send function
 		uint8_t bidi     :1;				// ack required
+		uint8_t mTyp;						// message type to build the right message
 		uint8_t *pL;						// pointer to payload
 		uint8_t lenPL;						// length of payload
 		uint8_t cnl;						// which channel is the sender
 		uint8_t curIdx;						// current peer slots
 		uint8_t maxIdx;						// amount of peer slots
-		uint8_t mTyp;						// message type
 		uint8_t slt[8];						// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
-	} peerMsg;
+	} peMsg;
 	
   private:		//---------------------------------------------------------------------------------------------------------
 
@@ -79,8 +69,7 @@ class AS {
 
 // - poll functions --------------------------------
 	void poll(void);																		// poll routine for regular operation
-	void sender(void);																		// send scheduler, to handle all send messages
-	void sendSlcList(void);																	// scheduler to send config messages, peers and regs
+	void sendSliceList(void);																// scheduler to send config messages, peers and regs
 	void sendPeerMsg(void);																	// scheduler for peer messages
 	
 // - received functions ----------------------------
