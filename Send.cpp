@@ -19,16 +19,15 @@ waitTimer sndTmr;																			// send timer functionality
 SN::SN() {
 } 
 
-void    SN::init(AS *ptrMain) {
+void SN::init(AS *ptrMain) {
 	#ifdef SN_DBG																			// only if ee debug is set
-	dbg.begin(57600);
-	dbg << F("\n....\n");																	// ...and some information
+	dbgStart();																				// serial setup
 	dbg << F("SN.\n");																		// ...and some information
 	#endif
 
 	pHM = ptrMain;
 }
-void	SN::poll(void) {
+void SN::poll(void) {
 	#define maxRetries    3
 	#define maxTime       300
 	

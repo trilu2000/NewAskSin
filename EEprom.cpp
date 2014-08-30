@@ -19,8 +19,7 @@ EE::EE() {
 // general functions
 void    EE::init(void) {
 	#ifdef EE_DBG																		// only if ee debug is set
-	dbg.begin(57600);																	// serial setup
-	dbg << F("\n....\n");																// ...and some information
+	dbgStart();																			// serial setup
 	dbg << F("EE.\n");																	// ...and some information
 	#endif
 

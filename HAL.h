@@ -39,6 +39,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 #define pLine     char(0);for(uint8_t i=0;i<40;i++)dbg<<'-';dbg<<'\n'
 #define pTime     char(0);dbg<<'('<<getMillis()<<')'
 
+void dbgStart(void);
 
 //- eeprom functions ------------------------------------------------------------------------------------------------------
 void initEEProm(void);

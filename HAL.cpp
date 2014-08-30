@@ -7,6 +7,13 @@
 
 #include "HAL.h"
 
+//- some macros for debugging ---------------------------------------------------------------------------------------------
+void dbgStart(void) {
+	static uint8_t loaded = 0;
+	if (loaded) return;
+	dbg.begin(57600);
+}
+
 //- eeprom functions ------------------------------------------------------------------------------------------------------
 void initEEProm(void) {
 	// place the code to init a i2c eeprom

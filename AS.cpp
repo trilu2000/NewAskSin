@@ -15,8 +15,7 @@ AS::AS() {
 }
 void AS::init(void) {
 	#ifdef AS_DBG																			// only if cc debug is set
-	dbg.begin(57600);
-	dbg << F("\n....\n");																	// ...and some information
+	dbgStart();																				// serial setup
 	dbg << F("AS.\n");																		// ...and some information
 	#endif
 	
@@ -408,11 +407,12 @@ void AS::sendDEVICE_INFO(void) {
 	// l> 1A 94 84 00  1F B7 4A  01 02 04  15  00 6C  4B 45 51 30 32 33 37 33 39 36  10     41     01     00
 	// do something with the information ----------------------------------
 
+	uint8_t xCnt;
+	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) xCnt = rv.mBdy.mLen;														// send counter - is it an answer or a initial message
+	else xCnt = sn.msgCnt++;
+	
 	sn.mBdy.mLen = 0x1a;
-
-	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) sn.mBdy.mCnt = rv.mBdy.mLen;														// send counter - is it an answer or a initial message
-	else sn.mBdy.mCnt = sn.msgCnt++;
-
+	sn.mBdy.mCnt = xCnt;
 	sn.mBdy.mFlg.CFG = 1;
 	sn.mBdy.mTyp = 0x00;
 	memcpy(sn.mBdy.reID,HMID,3);

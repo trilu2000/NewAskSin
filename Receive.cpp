@@ -19,8 +19,7 @@ RV::RV() {
 void    RV::init(AS *ptrMain) {
 	
 	#ifdef RV_DBG																			// only if ee debug is set
-	dbg.begin(57600);																		// serial setup
-	dbg << F("\n....\n");																	// ...and some information
+	dbgStart();																				// serial setup
 	dbg << F("RV.\n");																		// ...and some information
 	#endif
 
