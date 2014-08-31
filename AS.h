@@ -31,7 +31,7 @@ class AS {
 		uint8_t idx;						// peer index
 	} cFlag;
 
-	struct s_sliceList {					// - send peers or reg in slices, store for send slice function
+	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
 		uint8_t active   :1;				// indicates status of poll routine, 1 is active
 		uint8_t peer     :1;				// is it a peer list message
 		uint8_t reg2     :1;				// or a register send
@@ -43,9 +43,9 @@ class AS {
 		uint8_t idx;						// the peer index
 		uint8_t mCnt;						// the message counter
 		uint8_t toID[3];					// to whom to send
-	} sList;
+	} stcSlice;
 	
-	struct s_peMsg {
+	struct s_stcPeer {
 		uint8_t active   :1;				// indicates status of poll routine, 1 is active
 		uint8_t rnd      :3;				// send retries
 		uint8_t burst    :1;				// burst flag for send function
@@ -57,7 +57,7 @@ class AS {
 		uint8_t curIdx;						// current peer slots
 		uint8_t maxIdx;						// amount of peer slots
 		uint8_t slt[8];						// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
-	} peMsg;
+	} stcPeer;
 	
   private:		//---------------------------------------------------------------------------------------------------------
 
@@ -72,43 +72,8 @@ class AS {
 	void sendPeerMsg(void);																	// scheduler for peer messages
 
 	
-// - receive functions -----------------------------	// by03, by10, by11
-	void recvDEVICE_INFO(void);							//   00
-
-	void recvCONFIG_PEER_ADD(void);						//   01          01
-	void recvCONFIG_PEER_REMOVE(void);					//   01          02
-	void recvCONFIG_PEER_LIST_REQ(void);				//   01          03
-	void recvCONFIG_PARAM_REQ(void);					//   01          04
-	void recvCONFIG_START(void);						//   01          05
-	void recvCONFIG_END(void);							//   01          06
-	void recvCONFIG_WRITE_INDEX(void);					//   01          08
-	void recvCONFIG_SERIAL_REQ(void);					//   01          09
-	void recvPAIR_SERIAL(void);							//   01          0A
-	void recvCONFIG_STATUS_REQUEST(void);				//   01          0E
-	
-	void recvACK(void);									//   02    00
-	void recvACK_STATUS(void);							//   02    01
-	void recvACK2(void);								//   02    02
-	void recvACK_PROC(void);							//   02    04
-	void recvNACK(void);								//   02    80
-	void recvNACK_TARGET_INVALID(void);					//   02    84
-
-	void recvSET(void);									//   11    02
-	void recvSTOP_CHANGE(void);							//   11    03
-	void recvRESET(void);								//   11    04    00
-	void recvLED(void);									//   11    80
-	void recvLEDALL(void);								//   11    81    00
-	void recvLEVEL(void);								//   11    81
-	void recvSLEEPMODE(void);							//   11    82
-
-	void recvHAVE_DATA(void);							//   12
-	void recvSWITCH(void);								//   3E
-	void recvTIMESTAMP(void);							//   3F
-	void recvREMOTE(void);								//   40
-	void recvSENSOR_EVENT(void);						//   41
-	void recvSENSOR_DATA(void);							//   53
-	void recvCLIMATE_EVENT(void);						//   58
-	void recvWEATHER_EVENT(void);						//   70
+// - receive functions -----------------------------
+	void recvMessage(void);
 
 
 // - send functions --------------------------------
