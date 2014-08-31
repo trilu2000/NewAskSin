@@ -37,9 +37,10 @@ void SN::poll(void) {
 		else this->maxRetr = 1;
 	}
 	
+	//dbg << "x:" << this->retrCnt << " y:" << this->maxRetr << " t:" << sndTmr.done() << '\n';
+	
 	// send something while timer is not busy with waiting for an answer and max tries are not done 
 	if ((this->retrCnt < this->maxRetr) && (sndTmr.done() )) {								// not all sends done and timing is OK
-	//dbg << "x\n";
 
 		// some sanity
 		this->mBdy.mFlg.RPTEN = 1;
@@ -48,7 +49,7 @@ void SN::poll(void) {
 		this->retrCnt++;																	// increase counter while send out
 
 		// check if we should send an internal message
-		if (cmpAry(this->mBdy.toID,HMID,3)) {												// message is addressed to us
+		if (cmpAry(this->mBdy.toID, HMID, 3)) {												// message is addressed to us
 			memcpy(pHM->rv.buf, this->buf, sndLen);											// copy send buffer to received buffer
 			this->retrCnt = 0xff;															// ACK not required, because internal
 						
@@ -76,13 +77,6 @@ void SN::poll(void) {
 		dbg << pHex(this->buf,sndLen) << ' ' << pTime << '\n';
 		#endif
 
-	} else if (this->retrCnt == 0xff) {														// answer was received, clean up the structure
-		this->timeOut = 0;
-		this->retrCnt = 0;
-		this->maxRetr = 0;
-		this->active = 0;
-		sndTmr.set(0);
-
 	} else if ((this->retrCnt >= this->maxRetr) && (sndTmr.done() )) {						// max retries achieved, but seems to have no answer
 		this->retrCnt = 0;
 		this->maxRetr = 0;
@@ -96,6 +90,13 @@ void SN::poll(void) {
 		#endif
 	}
 
+	if (this->retrCnt == 0xff) {															// answer was received, clean up the structure
+		this->timeOut = 0;
+		this->retrCnt = 0;
+		this->maxRetr = 0;
+		this->active = 0;
+		sndTmr.set(0);
+	}
 
 /*	
 	// setting some variables

@@ -708,15 +708,13 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl) {
 	sn.mBdy.mTyp = 0x10;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	
 	sn.mBdy.by10 = 0x06;
 	sn.mBdy.by11 = cnl;
 	sn.mBdy.pyLd[0] = modTbl[cnl-1].stat;
 	sn.mBdy.pyLd[1] = modTbl[cnl-1].cng;
 	sn.mBdy.pyLd[2] = 0x44;
 	sn.active = 1;																			// fire the message
-	
-	dbg << "hab dich\n";
-
 	// --------------------------------------------------------------------
 }
 void AS::sendINFO_TEMP(void) {

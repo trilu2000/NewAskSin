@@ -48,4 +48,4 @@ EE::s_devDef devDef = {
 };  // 10 byte
 
 //- module registrar -----------------------------------------------------------------------------------------------------
-RG::s_modTable modTbl[1] = {1,2,3,4};
+RG::s_modTable modTbl[1];
