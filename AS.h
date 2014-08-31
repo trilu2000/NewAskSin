@@ -14,6 +14,7 @@
 #include "EEprom.h"
 #include "Send.h"
 #include "Receive.h"
+#include "Registrar.h"
 
 
 class AS {
@@ -22,7 +23,8 @@ class AS {
 	CC cc;																					// load communication module
 	SN sn;
 	RV rv;
-
+	RG rg;
+	
   protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
 		uint8_t active   :1;				// indicates status, 1 if config mode is active
@@ -65,16 +67,13 @@ class AS {
 	AS();
 	void init(void);																		// init the AS module
 
-
 // - poll functions --------------------------------
 	void poll(void);																		// poll routine for regular operation
 	void sendSliceList(void);																// scheduler to send config messages, peers and regs
 	void sendPeerMsg(void);																	// scheduler for peer messages
-
 	
 // - receive functions -----------------------------
 	void recvMessage(void);
-
 
 // - send functions --------------------------------
 	void sendDEVICE_INFO(void);													
@@ -98,13 +97,11 @@ class AS {
  	void sendClimateEvent(void);
  	void sendSetTeamTemp(void);
  	void sendWeatherEvent(void);
-
 	
 // - homematic specific functions ------------------
 	void decode(uint8_t *buf);																// decodes the message
 	void encode(uint8_t *buf);																// encodes the message
 	void explainMessage(uint8_t *buf);														// explains message content, part of debug functions
-
 
 // - some helpers ----------------------------------
 

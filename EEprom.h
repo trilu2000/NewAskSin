@@ -36,7 +36,6 @@ class EE {
 		const s_cnlTbl  *cnlTbl;														// pointer to array of elements
 		const s_peerTbl *peerTbl;														// pointer to peer table
 	};
-	//uint8_t MAID[3];	// master id for communication
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------

@@ -24,6 +24,7 @@ void AS::init(void) {
 
 	sn.init(this);
 	rv.init(this);
+	rg.init(this);
 
 	initMillis();																			// start the millis counter
 
@@ -45,6 +46,8 @@ void AS::poll(void) {
 
 	if (stcSlice.active) sendSliceList();													// poll the slice list send function
 	if (stcPeer.active) sendPeerMsg();														// poll the peer message sender
+	
+	rg.poll();																				// poll the channel module handler
 	
 	// check if we could go to standby
 	
@@ -155,7 +158,6 @@ void AS::sendPeerMsg(void) {
 
 	stcPeer.curIdx++;																		// increase counter for next time
 }
-
 	
 // - receive functions -----------------------------
 void AS::recvMessage(void) {
@@ -516,7 +518,6 @@ void AS::recvMessage(void) {
 	}
 }
 
-
 // - send functions --------------------------------
 void AS::sendDEVICE_INFO(void) {
 	// description --------------------------------------------------------
@@ -539,6 +540,7 @@ void AS::sendDEVICE_INFO(void) {
 	memcpy(sn.buf+13,HMSR,10);
 	memcpy_P(sn.buf+23,devDef.devIdnt+3,4);
 	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 void AS::sendACK(void) {
 	// description --------------------------------------------------------
@@ -553,6 +555,7 @@ void AS::sendACK(void) {
 	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
 	sn.mBdy.by10 = 0x00;
 	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 void AS::sendACK_STATUS(void) {
 	//"02;p01=01"   => { txt => "ACK_STATUS",  params => {
@@ -562,6 +565,7 @@ void AS::sendACK_STATUS(void) {
 	//UP             => '06,02,$val=(hex($val)&0x10)?1:0',
 	//LOWBAT         => '06,02,$val=(hex($val)&0x80)?1:0',
 	//RSSI           => '08,02,$val=(-1)*(hex($val))', }},
+	// --------------------------------------------------------------------
 }
 void AS::sendNACK(void) {
 	// description --------------------------------------------------------
@@ -576,6 +580,7 @@ void AS::sendNACK(void) {
 	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
 	sn.mBdy.by10 = 0x80;
 	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 void AS::sendNACK_TARGET_INVALID(void) {
 	// description --------------------------------------------------------
@@ -590,6 +595,7 @@ void AS::sendNACK_TARGET_INVALID(void) {
 	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
 	sn.mBdy.by10 = 0x84;
 	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 void AS::sendINFO_SERIAL(void) {
 	// description --------------------------------------------------------
@@ -606,6 +612,7 @@ void AS::sendINFO_SERIAL(void) {
 	sn.mBdy.by10 = 0x00;
 	memcpy(sn.buf+11,HMSR,10);
 	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 void AS::sendINFO_PEER_LIST(uint8_t len) {
 	// description --------------------------------------------------------
@@ -635,6 +642,7 @@ void AS::sendINFO_PEER_LIST(uint8_t len) {
 	sn.mBdy.by10 = 0x01; //stcSlice.cnl;
 	//dbg << "x: " << pHex(sn.buf, sn.mBdy.mLen+1) << '\n';
 	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	// description --------------------------------------------------------
@@ -645,6 +653,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	// l> 0A 79 80 02 63 19 63 01 02 04 00
 	// l> 0C 7A A0 10 01 02 04 63 19 63 02 00 00
 	// l> 0A 7A 80 02 63 19 63 01 02 04 00
+	// do something with the information ----------------------------------
 
 	sn.mBdy.mLen = 10+len;
 	sn.mBdy.mCnt = stcSlice.mCnt++;
@@ -654,6 +663,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
 	sn.mBdy.by10 = 0x02; //sList.cnl;
 	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
 	// description --------------------------------------------------------
@@ -666,8 +676,9 @@ void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
 	// l> 0A 91 80 02 63 19 63 01 02 04 00
 	// l> 0C 92 A0 10 01 02 04 63 19 63 03 00 00
 	// l> 0A 92 80 02 63 19 63 01 02 04 00
+	// do something with the information ----------------------------------
 
-
+	// --------------------------------------------------------------------
 }
 void AS::sendINFO_PARAMETER_CHANGE(void) {
 	//"10;p01=04"   => { txt => "INFO_PARAMETER_CHANGE", params => {
@@ -675,6 +686,7 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 	//PEER    => '4,8,$val=CUL_HM_id2Name($val)',
 	//PARAM_LIST => "12,2",
 	//DATA => '14,,$val =~ s/(..)(..)/ $1:$2/g', } },
+	// --------------------------------------------------------------------
 }
 void AS::sendINFO_ACTUATOR_STATUS(void) {
 	//"10;p01=06"   => { txt => "INFO_ACTUATOR_STATUS", params => {
@@ -682,6 +694,7 @@ void AS::sendINFO_ACTUATOR_STATUS(void) {
 	//STATUS  => '4,2',
 	//UNKNOWN => "6,2",
 	//RSSI    => '08,02,$val=(-1)*(hex($val))' } },
+	// --------------------------------------------------------------------
 }
 void AS::sendINFO_TEMP(void) {
 	//"10;p01=0A"   => { txt => "INFO_TEMP", params => {
@@ -690,9 +703,11 @@ void AS::sendINFO_TEMP(void) {
 	//ERR     => "6,2",
 	//VALVE   => "6,2",
 	//MODE    => "6,2" } },
+	// --------------------------------------------------------------------
 }
 void AS::sendHAVE_DATA(void) {
 	//"12"          => { txt => "HAVE_DATA"},
+	// --------------------------------------------------------------------
 }
 void AS::sendSWITCH(void) {
 	//"3E"          => { txt => "SWITCH"      , params => {
@@ -700,11 +715,13 @@ void AS::sendSWITCH(void) {
 	//UNKNOWN  => "06,2",
 	//CHANNEL  => "08,2",
 	//COUNTER  => "10,2", } },
+	// --------------------------------------------------------------------
 }
 void AS::sendTimeStamp(void) {
 	//"3F"          => { txt => "TimeStamp"   , params => {
 	//UNKNOWN  => "00,4",
 	//TIME     => "04,2", } },
+	// --------------------------------------------------------------------
 }
 void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	// description --------------------------------------------------------
@@ -715,6 +732,7 @@ void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	// l> 0E 0B 80 02 1F B7 4A 23 70 EC 01 01 C8 80 21
 	// l> 0F 0B A4 10 1E 7A AD 63 19 63 06 01 C8 00 80 C8
 	// l> 0A 0B 80 02 63 19 63 1E 7A AD 00
+	// do something with the information ----------------------------------
 	// BUTTON = bit 0 - 5
 	// LONG   = bit 6
 	// LOWBAT = bit 7
@@ -726,16 +744,18 @@ void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
 	stcPeer.mTyp = 0x40;
 	stcPeer.active = 1;
-
+	// --------------------------------------------------------------------
 }
 void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	// description --------------------------------------------------------
 	//                 reID      toID      BLL  Cnt  Val
 	// l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200
+	// do something with the information ----------------------------------
 	//"41"          => { txt => "Sensor_event", params => {
 	// BUTTON = bit 0 - 5
 	// LONG   = bit 6
 	// LOWBAT = bit 7
+	// --------------------------------------------------------------------
 }
 void AS::sendSensorData(void) {
 	//"53"          => { txt => "SensorData"  , params => {
@@ -748,22 +768,26 @@ void AS::sendSensorData(void) {
 	//Val3=> '16,4,$val=(hex($val))',
 	//Fld4=> "20,2",
 	//Val4=> '24,4,$val=(hex($val))'} },
+	// --------------------------------------------------------------------
 }
 void AS::sendClimateEvent(void) {
 	//"58"          => { txt => "ClimateEvent", params => {
 	//CMD      => "00,2",
 	//ValvePos => '02,2,$val=(hex($val))', } },
+	// --------------------------------------------------------------------
 }
 void AS::sendSetTeamTemp(void) {
 	//"59"          => { txt => "setTeamTemp" , params => {
 	//CMD      => "00,2",
 	//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
 	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
+	// --------------------------------------------------------------------
 }
 void AS::sendWeatherEvent(void) {
 	//"70"          => { txt => "WeatherEvent", params => {
 	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 	//HUM      => '04,2,$val=(hex($val))', } },
+	// --------------------------------------------------------------------
 }	
 
 // - homematic specific functions ------------------
