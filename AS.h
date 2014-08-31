@@ -86,7 +86,7 @@ class AS {
  	void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
  	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
  	void sendINFO_PARAMETER_CHANGE(void);
- 	void sendINFO_ACTUATOR_STATUS(void);
+ 	void sendINFO_ACTUATOR_STATUS(uint8_t cnl);
  	void sendINFO_TEMP(void);
  	void sendHAVE_DATA(void);
  	void sendSWITCH(void);

@@ -12,8 +12,15 @@
 
 #include "HAL.h"
 
+
 class RG {
   public:		//---------------------------------------------------------------------------------------------------------
+	struct s_modTable {
+		uint8_t cnl;																		// channel where the module is registered to
+		uint8_t stat;																		// status of the module, important for actuators
+		uint8_t cng;																		// is module in change?, actuators only
+		uint8_t msgCnt;																		// channel message counter
+	};
 
   protected:	//---------------------------------------------------------------------------------------------------------
 	class AS *pHM;							// pointer to main class for function calls
@@ -31,5 +38,6 @@ class RG {
 
 
 };
+extern RG::s_modTable modTbl[];																// initial register.h
 
 #endif

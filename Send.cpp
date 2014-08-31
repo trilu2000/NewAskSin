@@ -39,6 +39,7 @@ void SN::poll(void) {
 	
 	// send something while timer is not busy with waiting for an answer and max tries are not done 
 	if ((this->retrCnt < this->maxRetr) && (sndTmr.done() )) {								// not all sends done and timing is OK
+	//dbg << "x\n";
 
 		// some sanity
 		this->mBdy.mFlg.RPTEN = 1;

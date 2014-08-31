@@ -289,13 +289,14 @@ void AS::recvMessage(void) {
 
 	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0E)) {			// CONFIG_STATUS_REQUEST
 		// description --------------------------------------------------------
-		//
-		// b>
+		//                 reID      toID      cnl 
+		// l> 0B 40 B0 01  63 19 63  1F B7 4A  01  0E (148552)
+		// l> 0E 40 A4 10 1F B7 4A 63 19 63 06 01 00 00 48 (148679)
+		// l> 0A 40 80 02 63 19 63 1F B7 4A 00 (148804)
 		// do something with the information ----------------------------------
 
+			sendINFO_ACTUATOR_STATUS(rv.mBdy.by10);
 		// --------------------------------------------------------------------
-		//CHANNEL => "0,2", } },
-		
 
 	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x00)) {			// ACK
 		// description --------------------------------------------------------
@@ -549,10 +550,10 @@ void AS::sendACK(void) {
 	// do something with the information ----------------------------------
 
 	sn.mBdy.mLen = 0x0a;
-	sn.mBdy.mCnt = rv.mBdy.mLen;
+	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.mTyp = 0x02;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
 	sn.mBdy.by10 = 0x00;
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
@@ -688,12 +689,34 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 	//DATA => '14,,$val =~ s/(..)(..)/ $1:$2/g', } },
 	// --------------------------------------------------------------------
 }
-void AS::sendINFO_ACTUATOR_STATUS(void) {
-	//"10;p01=06"   => { txt => "INFO_ACTUATOR_STATUS", params => {
-	//CHANNEL => "2,2",
-	//STATUS  => '4,2',
-	//UNKNOWN => "6,2",
-	//RSSI    => '08,02,$val=(-1)*(hex($val))' } },
+void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl) {
+	// description --------------------------------------------------------
+	// l> 0B 40 B0 01 63 19 63 1F B7 4A 01 0E (148552)
+	//                 reID      toID          cnl  stat cng  RSSI
+	// l> 0E 40 A4 10  1F B7 4A  63 19 63  06  01   00   00   48 (148679)
+	// l> 0A 40 80 02 63 19 63 1F B7 4A 00 (148804)
+	// do something with the information ----------------------------------
+
+	sn.mBdy.mLen = 0x0e;
+	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0e)) {
+		sn.mBdy.mCnt = rv.mBdy.mCnt;
+	} else {
+		sn.mBdy.mCnt = sn.msgCnt++;
+	}
+	sn.mBdy.mFlg.BIDI = 1;
+	
+	sn.mBdy.mTyp = 0x10;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	sn.mBdy.by10 = 0x06;
+	sn.mBdy.by11 = cnl;
+	sn.mBdy.pyLd[0] = modTbl[cnl-1].stat;
+	sn.mBdy.pyLd[1] = modTbl[cnl-1].cng;
+	sn.mBdy.pyLd[2] = 0x44;
+	sn.active = 1;																			// fire the message
+	
+	dbg << "hab dich\n";
+
 	// --------------------------------------------------------------------
 }
 void AS::sendINFO_TEMP(void) {

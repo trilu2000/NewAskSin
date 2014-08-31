@@ -47,3 +47,5 @@ EE::s_devDef devDef = {
 	1, 3, devIdnt, cnlAddr, cnlTbl, peerTbl,
 };  // 10 byte
 
+//- module registrar -----------------------------------------------------------------------------------------------------
+RG::s_modTable modTbl[1] = {1,2,3,4};
