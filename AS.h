@@ -65,13 +65,51 @@ class AS {
 	AS();
 	void init(void);																		// init the AS module
 
+
 // - poll functions --------------------------------
 	void poll(void);																		// poll routine for regular operation
 	void sendSliceList(void);																// scheduler to send config messages, peers and regs
 	void sendPeerMsg(void);																	// scheduler for peer messages
+
 	
-// - received functions ----------------------------
-	void received(void);																	// receiver function, all answers are generated here
+// - receive functions -----------------------------	// by03, by10, by11
+	void recvDEVICE_INFO(void);							//   00
+
+	void recvCONFIG_PEER_ADD(void);						//   01          01
+	void recvCONFIG_PEER_REMOVE(void);					//   01          02
+	void recvCONFIG_PEER_LIST_REQ(void);				//   01          03
+	void recvCONFIG_PARAM_REQ(void);					//   01          04
+	void recvCONFIG_START(void);						//   01          05
+	void recvCONFIG_END(void);							//   01          06
+	void recvCONFIG_WRITE_INDEX(void);					//   01          08
+	void recvCONFIG_SERIAL_REQ(void);					//   01          09
+	void recvPAIR_SERIAL(void);							//   01          0A
+	void recvCONFIG_STATUS_REQUEST(void);				//   01          0E
+	
+	void recvACK(void);									//   02    00
+	void recvACK_STATUS(void);							//   02    01
+	void recvACK2(void);								//   02    02
+	void recvACK_PROC(void);							//   02    04
+	void recvNACK(void);								//   02    80
+	void recvNACK_TARGET_INVALID(void);					//   02    84
+
+	void recvSET(void);									//   11    02
+	void recvSTOP_CHANGE(void);							//   11    03
+	void recvRESET(void);								//   11    04    00
+	void recvLED(void);									//   11    80
+	void recvLEDALL(void);								//   11    81    00
+	void recvLEVEL(void);								//   11    81
+	void recvSLEEPMODE(void);							//   11    82
+
+	void recvHAVE_DATA(void);							//   12
+	void recvSWITCH(void);								//   3E
+	void recvTIMESTAMP(void);							//   3F
+	void recvREMOTE(void);								//   40
+	void recvSENSOR_EVENT(void);						//   41
+	void recvSENSOR_DATA(void);							//   53
+	void recvCLIMATE_EVENT(void);						//   58
+	void recvWEATHER_EVENT(void);						//   70
+
 
 // - send functions --------------------------------
 	void sendDEVICE_INFO(void);													
@@ -95,11 +133,13 @@ class AS {
  	void sendClimateEvent(void);
  	void sendSetTeamTemp(void);
  	void sendWeatherEvent(void);
+
 	
 // - homematic specific functions ------------------
 	void decode(uint8_t *buf);																// decodes the message
 	void encode(uint8_t *buf);																// encodes the message
 	void explainMessage(uint8_t *buf);														// explains message content, part of debug functions
+
 
 // - some helpers ----------------------------------
 
