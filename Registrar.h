@@ -11,15 +11,23 @@
 #define _RG_H
 
 #include "HAL.h"
+#include "Fastdelegate.h"
 
+//- typedef for delegate to module function
+using namespace fastdelegate;
+typedef FastDelegate5<uint8_t, uint8_t, uint8_t, uint8_t*, uint8_t> s_mod_dlgt;				// void    hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len)
 
 class RG {
   public:		//---------------------------------------------------------------------------------------------------------
+
 	struct s_modTable {
 		uint8_t cnl;																		// channel where the module is registered to
 		uint8_t stat;																		// status of the module, important for actuators
 		uint8_t cng;																		// is module in change?, actuators only
 		uint8_t msgCnt;																		// channel message counter
+		uint8_t *lstCnl;																	// pointer to list0/1
+		uint8_t *lstPeer;																	// pointer to list3/4
+		s_mod_dlgt mDlgt;																	// delegate to the module function
 	};
 
   protected:	//---------------------------------------------------------------------------------------------------------
@@ -32,6 +40,7 @@ class RG {
 	RG();
 	void    init(AS *ptrMain);
 	void    poll(void);
+	void	regInAS(uint8_t cnl, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList);
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------

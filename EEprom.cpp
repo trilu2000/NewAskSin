@@ -51,7 +51,7 @@ void    EE::init(void) {
 	}
 
 	// load HMID and serial from eeprom
-	if (*(uint16_t*)&HMID == NULL) getEEPromBlock(2,3,(void*)&HMID);
+	if (*(uint16_t*)&HMID == NULL) getEEPromBlock(2,3,(void*)&HMID);					// check if HMID variable is set and valid, otherwise load from eeprom
 	if (*(uint16_t*)&HMSR == NULL) getEEPromBlock(2,3,(void*)&HMSR);
 	
 	// load the master id

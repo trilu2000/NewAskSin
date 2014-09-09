@@ -517,6 +517,7 @@ void AS::recvMessage(void) {
 		//HUM      => '04,2,$val=(hex($val))', } },
 
 	}
+
 }
 
 // - send functions --------------------------------

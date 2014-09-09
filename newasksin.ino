@@ -2,6 +2,9 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																	// configuration sheet
+#include "Dummy.h"
+
+Dummy dummy;
 
 
 void setup() {
@@ -16,8 +19,7 @@ void setup() {
 	//setEEPromBlock(5,10,(void*)&xHMSR);
 	
 	hm.init();
-
-	//hm.ee.testModul();
+	dummy.regInHM(1,&hm);
 	
 	
 }

@@ -24,3 +24,9 @@ void    RG::init(AS *ptrMain) {
 }
 void	RG::poll(void) {
 }
+void	RG::regInAS(uint8_t cnl, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList) {
+	modTbl[cnl-1].cnl = cnl;
+	modTbl[cnl-1].mDlgt = delegate;
+	modTbl[cnl-1].lstCnl = mainList;
+	modTbl[cnl-1].lstPeer = peerList;
+}
