@@ -21,7 +21,6 @@ void setup() {
 	hm.init();
 	dummy.regInHM(1,&hm);
 	
-	
 }
 
 void loop() {

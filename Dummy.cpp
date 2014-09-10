@@ -38,16 +38,17 @@ void Dummy::pairStatusReq(void) {
 	dbg << F("pairStatusReq\n");
 	#endif
 	
-	hm->sendINFO_ACTUATOR_STATUS(regCnl); //, modStat, 0);
+	hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, 0);
 }
 void Dummy::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
 	// appropriate answer is an ACK
 	#ifdef DM_DBG
-	dbg << F("peerMsgEvent, type: ")  << pHexB(type) << F(", data: ")  << pHex(data,len) << '\n';
+	dbg << F("peerMsgEvent, type: ")  << pHexB(type) << F(", data: ")  << pHex(data, len) << '\n';
 	#endif
 	
-	hm->sendACK();
+	// todo: sendACK or sendACK_Status 
+	//hm->sendACK();
 }
 
 void Dummy::poll(void) {
@@ -65,6 +66,7 @@ void Dummy::regInHM(uint8_t cnl, AS *instPtr) {
 
 }
 void Dummy::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
+	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
 	if       (by3 == 0x00)                    poll();
 	else if ((by3 == 0x01) && (by11 == 0x06)) configCngEvent();
 	else if ((by3 == 0x11) && (by10 == 0x02)) pairSetEvent(data, len);

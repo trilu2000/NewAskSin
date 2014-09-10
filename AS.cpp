@@ -295,7 +295,12 @@ void AS::recvMessage(void) {
 		// l> 0A 40 80 02 63 19 63 1F B7 4A 00 (148804)
 		// do something with the information ----------------------------------
 
-			sendINFO_ACTUATOR_STATUS(rv.mBdy.by10);
+		// check if a module is registered and send the information, otherwise report an empty status
+		if (modTbl[rv.mBdy.by10 -1].cnl) {
+			modTbl[rv.mBdy.by10 -1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen-11);
+		} else {
+			sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);	
+		}
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x00)) {			// ACK
@@ -427,94 +432,29 @@ void AS::recvMessage(void) {
 	} else if  (rv.mBdy.mTyp == 0x12) {										// HAVE_DATA
 		// description --------------------------------------------------------
 		//
-		// b>
+		// b> 
 		// do something with the information ----------------------------------
 
 		// --------------------------------------------------------------------
 
-	} else if  (rv.mBdy.mTyp == 0x3E) {										// SWITCH
+	} else if  (rv.mBdy.mTyp >= 0x3E) {										// 3E SWITCH, 3F TIMESTAMP, 40 REMOTE, 41 SENSOR_EVENT, 53 SENSOR_DATA, 58 CLIMATE_EVENT, 70 WEATHER_EVENT
 		// description --------------------------------------------------------
 		//
-		// b>
+		// b> 0B 06 84 40 23 70 D8 00 00 00 05 02 - Remote
 		// do something with the information ----------------------------------
 
+		// check if we have the peer in the database to get the channel
+		uint8_t cnl = ee.isPeerValid(rv.mBdy.reID);
+		//dbg << "cnl: " << cnl << " mTyp: " << pHexB(rv.mBdy.mTyp) << " by10: " << pHexB(rv.mBdy.by10)  << " by11: " << pHexB(rv.mBdy.by11) << " data: " << pHex((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
+		cnl = 1; //if (cnl == 0) return;
+		
+		// check if a module is registered and send the information, otherwise report an empty status
+		if (modTbl[cnl-1].cnl) {
+			modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
+		} else {
+			sendACK();
+		}
 		// --------------------------------------------------------------------
-		//DST      => "00,6",
-		//UNKNOWN  => "06,2",
-		//CHANNEL  => "08,2",
-		//COUNTER  => "10,2", } },
-
-	} else if  (rv.mBdy.mTyp == 0x3F) {										// TIMESTAMP
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-		//UNKNOWN  => "00,4",
-		//TIME     => "04,2", } },
-
-	} else if  (rv.mBdy.mTyp == 0x40) {										// REMOTE
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
-		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
-		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
-		//COUNTER  => "02,2", } },
-
-	} else if  (rv.mBdy.mTyp == 0x41) {										// SENSOR_EVENT
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-		//BUTTON   => '00,2,$val=(hex($val)&0x3F)',
-		//LONG     => '00,2,$val=(hex($val)&0x40)?1:0',
-		//LOWBAT   => '00,2,$val=(hex($val)&0x80)?1:0',
-		//NBR      => '02,2,$val=(hex($val))',
-		//VALUE    => '04,2,$val=(hex($val))',} },
-
-	} else if  (rv.mBdy.mTyp == 0x53) {										// SENSOR_DATA
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-		//CMD => "00,2",
-		//Fld1=> "02,2",
-		//Val1=> '04,4,$val=(hex($val))',
-		//Fld2=> "08,2",
-		//Val2=> '10,4,$val=(hex($val))',
-		//Fld3=> "14,2",
-		//Val3=> '16,4,$val=(hex($val))',
-		//Fld4=> "20,2",
-		//Val4=> '24,4,$val=(hex($val))'} },
-
-	} else if  (rv.mBdy.mTyp == 0x58) {										// CLIMATE_EVENT
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-		//CMD      => "00,2",
-		//ValvePos => '02,2,$val=(hex($val))', } },
-
-	} else if  (rv.mBdy.mTyp == 0x70) {										// WEATHER_EVENT
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-		//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
-		//HUM      => '04,2,$val=(hex($val))', } },
 
 	}
 
@@ -690,7 +630,7 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 	//DATA => '14,,$val =~ s/(..)(..)/ $1:$2/g', } },
 	// --------------------------------------------------------------------
 }
-void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl) {
+void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	// description --------------------------------------------------------
 	// l> 0B 40 B0 01 63 19 63 1F B7 4A 01 0E (148552)
 	//                 reID      toID          cnl  stat cng  RSSI
@@ -712,9 +652,10 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl) {
 	
 	sn.mBdy.by10 = 0x06;
 	sn.mBdy.by11 = cnl;
-	sn.mBdy.pyLd[0] = modTbl[cnl-1].stat;
-	sn.mBdy.pyLd[1] = modTbl[cnl-1].cng;
-	sn.mBdy.pyLd[2] = 0x44;
+	sn.mBdy.pyLd[0] = stat;
+	sn.mBdy.pyLd[1] = cng;
+	// todo: get last message RSSI from cc1101
+	sn.mBdy.pyLd[2] = 0x44;  
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }

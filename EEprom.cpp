@@ -191,7 +191,7 @@ void    EE::clearPeers(void) {
 }
 uint8_t EE::isPeerValid (uint8_t *peer) {
 	for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {										// step through all channels
-		if (getIdxByPeer(i, peer) != 0xff) return 1;									// if found a valid peer is found return 1
+		if (getIdxByPeer(i, peer) != 0xff) return i+1;									// if a valid peer is found return the respective channel
 	}
 	return 0;																			// otherwise 0
 }

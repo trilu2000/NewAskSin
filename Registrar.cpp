@@ -8,6 +8,7 @@
 
 //#define RG_DBG
 #include "Registrar.h"
+#include "AS.h"
 
 // public:		//---------------------------------------------------------------------------------------------------------
 RG::RG() {
@@ -23,6 +24,10 @@ void    RG::init(AS *ptrMain) {
 	pHM = ptrMain;
 }
 void	RG::poll(void) {
+	// poll through the module table
+	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {
+		//if (modTbl[i].cnl) modTbl[i].mDlgt(0,0,0,NULL,0);
+	}
 }
 void	RG::regInAS(uint8_t cnl, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList) {
 	modTbl[cnl-1].cnl = cnl;

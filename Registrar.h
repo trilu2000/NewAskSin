@@ -22,8 +22,6 @@ class RG {
 
 	struct s_modTable {
 		uint8_t cnl;																		// channel where the module is registered to
-		uint8_t stat;																		// status of the module, important for actuators
-		uint8_t cng;																		// is module in change?, actuators only
 		uint8_t msgCnt;																		// channel message counter
 		uint8_t *lstCnl;																	// pointer to list0/1
 		uint8_t *lstPeer;																	// pointer to list3/4
