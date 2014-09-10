@@ -11,30 +11,29 @@
 
 #include "HAL.h"
 
-//- struct declaration ----------------------------------------------------------------------------------------------------
-struct s_cnlTbl {		// channel table holds all information regarding channels and lists
-	uint8_t cnl;
-	uint8_t lst;
-	uint8_t sIdx;
-	uint8_t sLen;
-	uint16_t pAddr;
-};
-struct s_peerTbl {		// peer table holds information were to find peers in eeprom
-	uint8_t cnl;
-	uint8_t pMax;
-	uint16_t pAddr;
-};
-
 //- class definition ------------------------------------------------------------------------------------------------------
 class EE {
   public:		//---------------------------------------------------------------------------------------------------------
+
+	struct s_cnlTbl {	// channel table holds all information regarding channels and lists
+		const uint8_t cnl;
+		const uint8_t lst;
+		const uint8_t sIdx;
+		const uint8_t sLen;
+		const uint16_t pAddr;
+	};
+
+	struct s_peerTbl {	// peer table holds information were to find peers in eeprom
+		const uint8_t cnl;
+		const uint8_t pMax;
+		const uint16_t pAddr;
+	};
+
 	struct s_devDef {	// device definition table
 		const uint8_t   cnlNbr;															// number of channels
 		const uint8_t   lstNbr;															// number of lists
 		const uint8_t   *devIdnt;														// pointer to device identifier
 		const uint8_t   *cnlAddr;														// pointer to slice addresses
-		const s_cnlTbl  *cnlTbl;														// pointer to array of elements
-		const s_peerTbl *peerTbl;														// pointer to peer table
 	};
 	
   protected:	//---------------------------------------------------------------------------------------------------------
@@ -80,6 +79,8 @@ class EE {
 	uint8_t getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
 
 }; 
+extern EE::s_cnlTbl cnlTbl[];															// initial register.h
+extern EE::s_peerTbl peerTbl[];															// initial register.h
 extern EE::s_devDef devDef;																// initial register.h
 extern uint8_t MAID[];
 extern uint8_t HMID[];
