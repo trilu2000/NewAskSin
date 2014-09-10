@@ -72,6 +72,7 @@ class Dummy {
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------ 
   public://----------------------------------------------------------------------------------------------------------------
 	uint8_t modStat;																		// module status byte, needed for list3 modules to answer status requests
+	uint8_t modDUL;																			// module down up low battery byte
 	uint8_t regCnl;																			// holds the channel for the module
 
 	AS      *hm;																			// pointer to HM class instance

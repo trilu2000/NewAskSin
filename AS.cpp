@@ -255,7 +255,13 @@ void AS::recvMessage(void) {
 		cFlag.active = 0;																	// set inactive
 		if ((cFlag.cnl == 0) && (cFlag.idx == 0)) ee.getMasterID();
 		// remove message id flag to config in send module
-	
+
+		if ((cFlag.cnl > 0) && (modTbl[cFlag.cnl-1])) {
+			// todo: reload the list1 and list3/4
+			
+			modTbl[cFlag.cnl-1].mDlgt(0x01, 0, 0x06, NULL, 0);								// inform the module of the change
+		}
+		
 		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
@@ -393,7 +399,7 @@ void AS::recvMessage(void) {
 		ee.clearPeers();
 		ee.clearRegs();
 		ee.getMasterID();
-		sendACK_STATUS(); // or sendACK() depending on device
+		// todo: sendACK_STATUS(); // or sendACK() depending on device
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x80)) {			// LED
@@ -446,7 +452,7 @@ void AS::recvMessage(void) {
 		// check if we have the peer in the database to get the channel
 		uint8_t cnl = ee.isPeerValid(rv.mBdy.reID);
 		//dbg << "cnl: " << cnl << " mTyp: " << pHexB(rv.mBdy.mTyp) << " by10: " << pHexB(rv.mBdy.by10)  << " by11: " << pHexB(rv.mBdy.by11) << " data: " << pHex((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
-		cnl = 1; //if (cnl == 0) return;
+		if (cnl == 0) return;
 		
 		// check if a module is registered and send the information, otherwise report an empty status
 		if (modTbl[cnl-1].cnl) {
@@ -499,14 +505,29 @@ void AS::sendACK(void) {
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
-void AS::sendACK_STATUS(void) {
-	//"02;p01=01"   => { txt => "ACK_STATUS",  params => {
-	//CHANNEL        => "02,2",
-	//STATUS         => "04,2",
-	//DOWN           => '06,02,$val=(hex($val)&0x20)?1:0',
-	//UP             => '06,02,$val=(hex($val)&0x10)?1:0',
-	//LOWBAT         => '06,02,$val=(hex($val)&0x80)?1:0',
-	//RSSI           => '08,02,$val=(-1)*(hex($val))', }},
+void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
+	// description --------------------------------------------------------
+	// l> 0B 12 A4 40 23 70 EC 1E 7A AD 01 02 
+	//                 reID      toID      ACK  Cnl  Stat  DUL  RSSI  
+	// l> 0F 12 80 02  1E 7A AD  23 70 EC  01   01   BE    20   27    CC - dimmer
+	// l> 0E 5C 80 02  1F B7 4A  63 19 63  01   01   C8    00   42       - pcb relay 
+	//
+	// b> 0F 13 84 10 1E 7A AD 00 00 00 06 01 00 00 80 00 
+	// - DUL = Down 0x20, UP 0x10, LowBat 0x80
+	// do something with the information ----------------------------------
+
+	sn.mBdy.mLen = 0x0e;
+	sn.mBdy.mCnt = rv.mBdy.mCnt;
+	sn.mBdy.mTyp = 0x02;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	sn.mBdy.by10 = 0x01;
+	sn.mBdy.by11 = cnl;
+	sn.mBdy.pyLd[0] = stat;
+	sn.mBdy.pyLd[1] = dul;
+	// todo: rssi from cc1101 module
+	sn.mBdy.pyLd[2] = 0x00;
+	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
 void AS::sendNACK(void) {

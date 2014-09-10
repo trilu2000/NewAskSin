@@ -78,7 +78,7 @@ class AS {
 // - send functions --------------------------------
 	void sendDEVICE_INFO(void);													
  	void sendACK(void);
- 	void sendACK_STATUS(void);
+ 	void sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul);
  	void sendNACK(void);
  	void sendNACK_TARGET_INVALID(void);
  	void sendINFO_SERIAL(void);

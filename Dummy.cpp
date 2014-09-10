@@ -30,7 +30,7 @@ void Dummy::pairSetEvent(uint8_t *data, uint8_t len) {
 	dbg << '\n';
 	#endif
 		
-	hm->sendACK_STATUS();//regCnl,modStat,0);
+	hm->sendACK_STATUS(regCnl, modStat, modDUL);
 }
 void Dummy::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
@@ -38,7 +38,7 @@ void Dummy::pairStatusReq(void) {
 	dbg << F("pairStatusReq\n");
 	#endif
 	
-	hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, 0);
+	hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);
 }
 void Dummy::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
@@ -48,7 +48,11 @@ void Dummy::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	#endif
 	
 	// todo: sendACK or sendACK_Status 
-	//hm->sendACK();
+	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
+		hm->sendACK_STATUS(regCnl, modStat, modDUL);
+	} else {
+		hm->sendACK();
+	}
 }
 
 void Dummy::poll(void) {
