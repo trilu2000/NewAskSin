@@ -30,7 +30,7 @@ void Dummy::pairSetEvent(uint8_t *data, uint8_t len) {
 	dbg << '\n';
 	#endif
 		
-	hm->sendACK_STATUS(regCnl, modStat, modDUL);
+	hm->sendACK_STATUS(regCnl, data[0], modDUL);
 }
 void Dummy::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
@@ -63,9 +63,9 @@ void Dummy::poll(void) {
 //-------------------------------------------------------------------------------------------------------------------------
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
-void Dummy::regInHM(uint8_t cnl, AS *instPtr) {
+void Dummy::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	hm = instPtr;																			// set pointer to the HM module
-	hm->rg.regInAS(cnl, s_mod_dlgt(this,&Dummy::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
+	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&Dummy::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
 
 }

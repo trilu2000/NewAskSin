@@ -252,11 +252,13 @@ uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
 		if        (isEmty(lPeer, 4) && (cnt & 1)) {										// slot is empty and peer cnlA is set
 			cnt ^= 1;
 			setEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, peer);
-
+			peer[5] = i;																// remember the idx position, add to the buffer
+			
 		} else if (isEmty(lPeer, 4) && (cnt & 2)) {										// slot is empty and peer cnlB is set
 			cnt ^= 2;
 			setEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 3, peer);						// first 3 bytes
 			setEEPromBlock(peerTbl[cnl-1].pAddr+(i*4)+3, 1, peer+4);					// 5th byte
+			peer[6] = i;																// remember the idx position, add to the buffer
 		
 		}
 	}
@@ -432,6 +434,14 @@ uint8_t EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	if (idx >= peerTbl[cnl-1].pMax) return 0;											// check if peer index is in range
 
 	getEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
+	return 1;
+}
+uint8_t EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
+	uint8_t xI = getRegListIdx(cnl, lst);
+	if (xI == 0xff) return 0;															// respective line not found
+	if (idx >= peerTbl[cnl-1].pMax) return 0;											// check if peer index is in range
+
+	setEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
 }
 uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {

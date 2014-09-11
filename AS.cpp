@@ -177,10 +177,13 @@ void AS::recvMessage(void) {
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   01  1F A6 5C  06         05
 		// do something with the information ----------------------------------
 
-		// first call remPeer to avoid doubles
-		uint8_t ret = ee.addPeer(rv.mBdy.by10,rv.buf+12);									// send to addPeer function
-	
+		ee.remPeer(rv.mBdy.by10, rv.buf+12);												// first call remPeer to avoid doubles
+		uint8_t ret = ee.addPeer(rv.mBdy.by10, rv.buf+12);									// send to addPeer function
+
 		// let module registrations know of the change
+		if ((ret) && (modTbl[rv.mBdy.by10 -1].cnl)) {
+			modTbl[rv.mBdy.by10 -1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
+		}
 
 		if ((ret) && (rv.ackRq)) sendACK();													// send appropriate answer
 		else if (rv.ackRq) sendNACK();
@@ -316,7 +319,7 @@ void AS::recvMessage(void) {
 		// l> 0A 05 80 02 63 19 63 01 02 04 00
 		// do something with the information ----------------------------------
 	
-		if ((sn.active) && (rv.mBdy.mLen == sn.lastMsgCnt)) sn.retrCnt = 0xff;				// was an ACK to an active message, message counter is similar - set retrCnt to 255
+		if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt)) sn.retrCnt = 0xff;				// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		//dbg << "act:" << sn.active << " rC:" << rv.mBdy.mLen << " sC:" << sn.lastMsgCnt << " cntr:" << sn.retrCnt << '\n';
 		// --------------------------------------------------------------------
 
@@ -461,11 +464,10 @@ void AS::recvMessage(void) {
 		
 		// check if a module is registered and send the information, otherwise report an empty status
 		if (modTbl[cnl-1].cnl) {
+
 			// check if we have a list3 or list4 and reload to the module item
 			uint8_t pIdx = ee.getIdxByPeer(cnl, rv.mBdy.reID);
-
-			if      (ee.getRegListIdx(cnl, 3) != 0xff) ee.getList(cnl-1, 3, pIdx, modTbl[cnl-1].lstPeer);
-			else if (ee.getRegListIdx(cnl, 4) != 0xff) ee.getList(cnl-1, 4, pIdx, modTbl[cnl-1].lstPeer);
+			ee.getList(cnl-1, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);
 			
 			// call the user module
 			modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
@@ -539,7 +541,7 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	sn.mBdy.pyLd[0] = stat;
 	sn.mBdy.pyLd[1] = dul;
 	// todo: rssi from cc1101 module
-	sn.mBdy.pyLd[2] = 0x00;
+	sn.mBdy.pyLd[2] = 0x80;
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }

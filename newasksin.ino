@@ -19,7 +19,7 @@ void setup() {
 	//setEEPromBlock(5,10,(void*)&xHMSR);
 	
 	hm.init();
-	dummy.regInHM(1,&hm);
+	dummy.regInHM(1, 3, &hm);
 	
 }
 

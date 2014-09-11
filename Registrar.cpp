@@ -29,8 +29,9 @@ void	RG::poll(void) {
 		if (modTbl[i].cnl) modTbl[i].mDlgt(0,0,0,NULL,0);
 	}
 }
-void	RG::regInAS(uint8_t cnl, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList) {
+void	RG::regInAS(uint8_t cnl, uint8_t lst, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList) {
 	modTbl[cnl-1].cnl = cnl;
+	modTbl[cnl-1].lst = lst;
 	modTbl[cnl-1].mDlgt = delegate;
 	modTbl[cnl-1].lstCnl = mainList;
 	modTbl[cnl-1].lstPeer = peerList;
