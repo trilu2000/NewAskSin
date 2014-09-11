@@ -426,8 +426,14 @@ uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uin
 		
 	}
 }
+uint8_t EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
+	uint8_t xI = getRegListIdx(cnl, lst);
+	if (xI == 0xff) return 0;															// respective line not found
+	if (idx >= peerTbl[cnl-1].pMax) return 0;											// check if peer index is in range
 
-// private:		//---------------------------------------------------------------------------------------------------------
+	getEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
+	return 1;
+}
 uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
 		// check if we are in the right line by comparing channel and list, otherwise try next
@@ -435,6 +441,7 @@ uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 	}
 	return 0xff;																		// respective line not found
 }
+// private:		//---------------------------------------------------------------------------------------------------------
 
 
 //- some helpers ----------------------------------------------------------------------------------------------------------

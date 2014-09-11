@@ -70,13 +70,15 @@ class EE {
 	uint8_t getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);// ok, generates answer to a channel/list request
 	uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 	uint8_t setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
-
+	uint8_t getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in a given buffer
+	
 	//uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		
 	//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							
 	//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); 
 
-  private:		//---------------------------------------------------------------------------------------------------------
 	uint8_t getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
+  protected:	//---------------------------------------------------------------------------------------------------------
+  private:	    //---------------------------------------------------------------------------------------------------------
 
 }; 
 extern EE::s_cnlTbl cnlTbl[];															// initial register.h

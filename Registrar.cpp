@@ -34,4 +34,6 @@ void	RG::regInAS(uint8_t cnl, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *p
 	modTbl[cnl-1].mDlgt = delegate;
 	modTbl[cnl-1].lstCnl = mainList;
 	modTbl[cnl-1].lstPeer = peerList;
+
+	pHM->ee.getList(cnl,1,0,modTbl[cnl-1].lstCnl);											// load list1 in the respective buffer
 }

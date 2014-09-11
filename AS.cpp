@@ -229,7 +229,7 @@ void AS::recvMessage(void) {
 		else memset((void*)&stcSlice, 0, 10);												// otherwise empty variable
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x04)) {			// CONFIG_START
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x05)) {			// CONFIG_START
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 01 A0 01 63 19 63 01 02 04 00  05 00 00 00  00       00
@@ -256,9 +256,10 @@ void AS::recvMessage(void) {
 		if ((cFlag.cnl == 0) && (cFlag.idx == 0)) ee.getMasterID();
 		// remove message id flag to config in send module
 
-		if ((cFlag.cnl > 0) && (modTbl[cFlag.cnl-1])) {
-			// todo: reload the list1 and list3/4
-			
+		if ((cFlag.cnl > 0) && (modTbl[cFlag.cnl-1].cnl)) {
+			// check if a new list1 was written and reload, no need for reload list3/4 because they will be loaded on an peer event
+			if (cFlag.cnl == 1) 
+				ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cFlag.cnl-1].lstCnl);			// load list1 in the respective buffer
 			modTbl[cFlag.cnl-1].mDlgt(0x01, 0, 0x06, NULL, 0);								// inform the module of the change
 		}
 		
@@ -375,10 +376,14 @@ void AS::recvMessage(void) {
 
 	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x02)) {			// SET
 		// description --------------------------------------------------------
-		//
-		// b>
+		//                                      cnl  stat  ramp  dura
+		// l> 0E 5E B0 11 63 19 63 1F B7 4A 02  01   C8    00    00 
+		// l> 0E 5E 80 02 1F B7 4A 63 19 63 01 01 C8 80 41 
 		// do something with the information ----------------------------------
 
+		if (modTbl[rv.mBdy.by11-1].cnl) {
+			modTbl[rv.mBdy.by11-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
+		}
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x03)) {			// STOP_CHANGE
@@ -456,7 +461,15 @@ void AS::recvMessage(void) {
 		
 		// check if a module is registered and send the information, otherwise report an empty status
 		if (modTbl[cnl-1].cnl) {
+			// check if we have a list3 or list4 and reload to the module item
+			uint8_t pIdx = ee.getIdxByPeer(cnl, rv.mBdy.reID);
+
+			if      (ee.getRegListIdx(cnl, 3) != 0xff) ee.getList(cnl-1, 3, pIdx, modTbl[cnl-1].lstPeer);
+			else if (ee.getRegListIdx(cnl, 4) != 0xff) ee.getList(cnl-1, 4, pIdx, modTbl[cnl-1].lstPeer);
+			
+			// call the user module
 			modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
+
 		} else {
 			sendACK();
 		}

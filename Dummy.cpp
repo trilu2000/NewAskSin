@@ -16,7 +16,7 @@
 void Dummy::configCngEvent(void) {
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
 	#ifdef DM_DBG
-	dbg << F("configCngEvent\n");
+	dbg << F("CCE, lst1: ") << pHex(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
 }
 void Dummy::pairSetEvent(uint8_t *data, uint8_t len) {
@@ -24,7 +24,7 @@ void Dummy::pairSetEvent(uint8_t *data, uint8_t len) {
 	// 1st byte = value; 2nd byte = ramp time; 3rd byte = duration time;
 	// after setting the new value we have to send an enhanced ACK (<- 0E E7 80 02 1F B7 4A 63 19 63 01 01 C8 00 54)
 	#ifdef DM_DBG
-	dbg << F("pairSetEvent, value:") << pHexB(data[0]);
+	dbg << F("PSE, value:") << pHexB(data[0]);
 	if (len > 1) dbg << F(", rampTime: ") << pHexB(data[1]);
 	if (len > 2) dbg << F(", duraTime: ") << pHexB(data[2]);
 	dbg << '\n';
@@ -35,7 +35,7 @@ void Dummy::pairSetEvent(uint8_t *data, uint8_t len) {
 void Dummy::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	#ifdef DM_DBG
-	dbg << F("pairStatusReq\n");
+	dbg << F("PSR\n");
 	#endif
 	
 	hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);
@@ -44,7 +44,7 @@ void Dummy::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
 	// appropriate answer is an ACK
 	#ifdef DM_DBG
-	dbg << F("peerMsgEvent, type: ")  << pHexB(type) << F(", data: ")  << pHex(data, len) << '\n';
+	dbg << F("PME, type: ")  << pHexB(type) << F(", data: ")  << pHex(data, len) << '\n';
 	#endif
 	
 	// todo: sendACK or sendACK_Status 
