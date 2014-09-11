@@ -154,8 +154,11 @@ uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 			buf[0] = 0;																	// discard packet
 		else {
 			readBurst(&buf[1], CC1101_RXFIFO, buf[0]);									// read data packet
-			readReg(CC1101_RXFIFO, CC1101_CONFIG);										// read RSSI
-
+			rssi = readReg(CC1101_RXFIFO, CC1101_CONFIG);								// read RSSI
+			
+			if (rssi >= 128) rssi = 255 - rssi;
+			rssi /= 2; rssi += 72;
+			
 			uint8_t val = readReg(CC1101_RXFIFO, CC1101_CONFIG);						// read LQI and CRC_OK
 			lqi = val & 0x7F;
 			crc_ok = bitRead(val, 7);

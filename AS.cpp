@@ -541,7 +541,7 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	sn.mBdy.pyLd[0] = stat;
 	sn.mBdy.pyLd[1] = dul;
 	// todo: rssi from cc1101 module
-	sn.mBdy.pyLd[2] = 0x80;
+	sn.mBdy.pyLd[2] = cc.rssi;
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
@@ -691,7 +691,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	sn.mBdy.pyLd[0] = stat;
 	sn.mBdy.pyLd[1] = cng;
 	// todo: get last message RSSI from cc1101
-	sn.mBdy.pyLd[2] = 0x44;  
+	sn.mBdy.pyLd[2] = cc.rssi;  
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }

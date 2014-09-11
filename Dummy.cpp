@@ -19,6 +19,7 @@ void Dummy::configCngEvent(void) {
 	dbg << F("CCE, lst1: ") << pHex(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
 }
+
 void Dummy::pairSetEvent(uint8_t *data, uint8_t len) {
 	// we received a message from master to set a new value, typical you will find three bytes in data
 	// 1st byte = value; 2nd byte = ramp time; 3rd byte = duration time;
@@ -32,6 +33,7 @@ void Dummy::pairSetEvent(uint8_t *data, uint8_t len) {
 		
 	hm->sendACK_STATUS(regCnl, data[0], modDUL);
 }
+
 void Dummy::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	#ifdef DM_DBG
@@ -40,6 +42,7 @@ void Dummy::pairStatusReq(void) {
 	
 	hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);
 }
+
 void Dummy::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
 	// appropriate answer is an ACK
@@ -67,7 +70,6 @@ void Dummy::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	hm = instPtr;																			// set pointer to the HM module
 	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&Dummy::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
-
 }
 void Dummy::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
