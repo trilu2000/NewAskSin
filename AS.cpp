@@ -459,7 +459,7 @@ void AS::recvMessage(void) {
 
 		// check if we have the peer in the database to get the channel
 		uint8_t cnl = ee.isPeerValid(rv.mBdy.reID);
-		//dbg << "cnl: " << cnl << " mTyp: " << pHexB(rv.mBdy.mTyp) << " by10: " << pHexB(rv.mBdy.by10)  << " by11: " << pHexB(rv.mBdy.by11) << " data: " << pHex((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
+		dbg << "cnl: " << cnl << " mTyp: " << pHexB(rv.mBdy.mTyp) << " by10: " << pHexB(rv.mBdy.by10)  << " by11: " << pHexB(rv.mBdy.by11) << " data: " << pHex((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
 		if (cnl == 0) return;
 		
 		// check if a module is registered and send the information, otherwise report an empty status
