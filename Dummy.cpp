@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define DM_DBG																				// debug message flag
+//#define DM_DBG																				// debug message flag
 #include "Dummy.h"
 
 
