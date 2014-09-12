@@ -50,7 +50,6 @@ void Dummy::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	dbg << F("PME, type: ")  << pHexB(type) << F(", data: ")  << pHex(data, len) << '\n';
 	#endif
 	
-	// todo: sendACK or sendACK_Status 
 	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
 		hm->sendACK_STATUS(regCnl, modStat, modDUL);
 	} else {

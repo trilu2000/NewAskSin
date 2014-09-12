@@ -132,16 +132,22 @@ void AS::sendPeerMsg(void) {
 	// if we are here, there is something to send
 	//dbg << "cnl:" << stcPeer.cnl << " cIdx:" << stcPeer.curIdx << " mIdx:" << stcPeer.maxIdx << " slt:" << pHex(stcPeer.slt,8) << '\n';
 	
+	// todo: get the respective list4 entries and take care while sending the message
+	// peerNeedsBurst  =>{a=>  1.0,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"peer expects burst",lit=>{off=>0,on=>1}},
+	// expectAES       =>{a=>  1.7,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"expect AES"        ,lit=>{off=>0,on=>1}},
+	// fillLvlUpThr    =>{a=>  4.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level upper threshold"},
+	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
+	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.cnl, 4, stcPeer.curIdx, 0x01);
+	
+
 	// description --------------------------------------------------------
 	//    len  cnt  flg  typ  reID      toID      pl
 	// l> 0B   0A   A4   40   23 70 EC  1E 7A AD  02 01
 	sn.mBdy.mLen = stcPeer.lenPL +9;														// set message len
 	sn.mBdy.mCnt = sn.msgCnt;																// set message counter
-	//sn.mBdy.mFlg.RPTEN = 1; 
-	sn.mBdy.mFlg.CFG = 1; sn.mBdy.mFlg.BIDI = stcPeer.bidi;		// message flag
-	
-	// rework needed - burst should be send only once
-	sn.mBdy.mFlg.BURST = stcPeer.burst;
+
+	sn.mBdy.mFlg.CFG = 1; sn.mBdy.mFlg.BIDI = stcPeer.bidi;									// message flag
+	sn.mBdy.mFlg.BURST = l4_0x01.peerNeedsBurst;
 	
 	sn.mBdy.mTyp = stcPeer.mTyp;															// message type
 	//uint8_t t1[] = {0x23,0x70,0xD8};
@@ -459,7 +465,7 @@ void AS::recvMessage(void) {
 
 		// check if we have the peer in the database to get the channel
 		uint8_t cnl = ee.isPeerValid(rv.mBdy.reID);
-		dbg << "cnl: " << cnl << " mTyp: " << pHexB(rv.mBdy.mTyp) << " by10: " << pHexB(rv.mBdy.by10)  << " by11: " << pHexB(rv.mBdy.by11) << " data: " << pHex((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
+		//dbg << "cnl: " << cnl << " mTyp: " << pHexB(rv.mBdy.mTyp) << " by10: " << pHexB(rv.mBdy.by10)  << " by11: " << pHexB(rv.mBdy.by11) << " data: " << pHex((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
 		if (cnl == 0) return;
 		
 		// check if a module is registered and send the information, otherwise report an empty status
@@ -540,7 +546,6 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	sn.mBdy.by11 = cnl;
 	sn.mBdy.pyLd[0] = stat;
 	sn.mBdy.pyLd[1] = dul;
-	// todo: rssi from cc1101 module
 	sn.mBdy.pyLd[2] = cc.rssi;
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
@@ -690,7 +695,6 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	sn.mBdy.by11 = cnl;
 	sn.mBdy.pyLd[0] = stat;
 	sn.mBdy.pyLd[1] = cng;
-	// todo: get last message RSSI from cc1101
 	sn.mBdy.pyLd[2] = cc.rssi;  
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
