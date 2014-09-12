@@ -4,9 +4,10 @@
 #include "register.h"																	// configuration sheet
 #include "Dummy.h"
 
+AS hm;
 Dummy dummy;
 
-//12266
+
 void setup() {
 	#ifdef SER_DBG
 	Serial.begin(57600);																// serial setup

@@ -43,7 +43,8 @@ void SN::poll(void) {
 	if ((this->retrCnt < this->maxRetr) && (sndTmr.done() )) {								// not all sends done and timing is OK
 
 		// some sanity
-		this->mBdy.mFlg.RPTEN = 1;
+		this->mBdy.mFlg.RPTEN = 1;															// every message need this flag
+		if (pHM->cFlag.active) this->mBdy.mFlg.CFG = pHM->cFlag.active;						// set the respective flag while we are in config mode
 		this->timeOut = 0;																	// not timed out because just started
 		this->lastMsgCnt = this->mBdy.mCnt;													// copy the message count to identify the ACK
 		this->retrCnt++;																	// increase counter while send out

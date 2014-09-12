@@ -25,7 +25,6 @@ class AS {
 	RV rv;
 	RG rg;
 	
-  protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
 		uint8_t active   :1;				// indicates status, 1 if config mode is active
 		uint8_t cnl;						// channel
@@ -33,6 +32,7 @@ class AS {
 		uint8_t idx;						// peer index
 	} cFlag;
 
+  protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
 		uint8_t active   :1;				// indicates status of poll routine, 1 is active
 		uint8_t peer     :1;				// is it a peer list message
