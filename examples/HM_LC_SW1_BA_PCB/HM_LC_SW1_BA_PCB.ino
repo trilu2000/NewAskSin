@@ -14,21 +14,29 @@ void setup() {
 	Serial << F("Starting sketch...\n");													// ...and some information
 	#endif
 	
-	initHW();																				// initialize the hardware
+	pinOutput(DDRD,4);																		// init the led pins 
+	pinOutput(DDRD,6);
+	
+	pinInput(DDRB,0);																		// init the config key pin
+	setInHigh(PORTB,0);
+	regPCIE(PCIE0);																			// set the pin change interrupt
+	regPCINT(PCMSK0,PCINT0);																// description is in hal.h
+	
 	led1_on();
-	// control led
-	//pinMode(3,OUTPUT);
-	//digitalWrite(3,1);
 
 	hm.init();
 	dummy.regInHM(1, 3, &hm);
 	
+	sei();	
 }
 
 void loop() {
 	hm.poll();
-	if (PINB & _BV(0)) led0_on();
-	else led0_off();
+
+	uint8_t chkKey = chkPCINT(0, 0);														// check input pin
+	if      (chkKey == 2) led0_on();														// set led accordingly
+	else if (chkKey == 1) led0_off();
+
 }
 
 void serialEvent() {

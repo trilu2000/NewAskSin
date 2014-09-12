@@ -88,47 +88,33 @@ ISR(ISR_VECT) {
 }
 
 //- pin related functions -------------------------------------------------------------------------------------------------
-void initHW(void) {
-	// AVR 328 uses three port addresses, PortB (digital pin 8 to 13), PortC (analog input pins), PortD (digital pins 0 to 7)
-
-	// - define the output pins -----------------------------------------------
-	// PortB PB2, PB3, PB4, PB5 already in use for SPI
-	// PortD PD0 and PD1 in use for serial port, PD2 in use for GDO0 pin
-	DDRB  |= _BV(7) | _BV(6) | _BV(1);
-	DDRC  |= _BV(6) | _BV(5) | _BV(4) | _BV(3) | _BV(2) | _BV(1) | _BV(0);
-	DDRD  |= _BV(7) | _BV(6) | _BV(5) | _BV(4) | _BV(3);
-
-	// - define the input pins ------------------------------------------------
-	// to get the pin state use "if (PINB & _BV(0))"
-	DDRB  &= ~_BV(0);																	// config key depends on PORTB0
-	PORTB |= _BV(0);																	// set PORTB0 to high
-		
-	// - define the pin interrupts --------------------------------------------
-	// The PCIEx bits in the PCICR registers enable External Interrupts and tells the MCU to check PCMSKx on a pin 
-	// change state.
-	// bit           7       6       5       4       3       2       1       0
-	// PCICR         -       -       -       -       -     PCIE2   PCIE1   PCIE0
-	// Read/Write    R       R       R       R       R      R/W     R/W     R/W
-	// Initial Value 0       0       0       0       0       0       0       0	
-
-	// Pin Change Mask Register determines which pins cause the PCINTX interrupt to be triggered.
-	// bit           7       6       5       4       3       2       1       0
-	// PCMSK0	  PCINT7  PCINT6  PCINT5  PCINT4  PCINT3  PCINT2  PCINT1  PCINT0
-	// PCMSK1	     -    PCINT14 PCINT13 PCINT12 PCINT11 PCINT10 PCINT9  PCINT8
-	// PCMSK2	  PCINT23 PCINT22 PCINT21 PCINT20 PCINT19 PCINT18 PCINT17 PCINT16
-	// Read/Write   R/W     R/W     R/W     R/W     R/W     R/W     R/W     R/W
-	// Initial Value 0       0       0       0       0       0       0       0
-
-	// Pin Change Interrupt Flag Register - When a pin changes states (HIGH to LOW, or LOW to HIGH) and the 
-	// corresponding PCINTx bit in the PCMSKx register is HIGH the corresponding PCIFx bit in the PCIFR register 
-	// is set to HIGH and the MCU jumps to the corresponding Interrupt vector.
-	// bit           7       6       5       4       3       2       1       0
-	// PCIFR         -       -       -       -       -     PCIF2   PCIF1   PCIF0
+struct s_pcINT {
+	uint8_t cur = 0xff;
+	uint8_t prev = 0xff;
+	uint32_t time;
+} static volatile pcInt[3];
+uint8_t chkPCINT(uint8_t port, uint8_t pin) {
+	if (pcInt[port].cur == pcInt[port].prev) return 0;									// no status change, exit
+	if (pcInt[port].time > getMillis()) return 0;										// debounce time running, exit
+	
+	if ( (pcInt[port].cur & _BV(pin)) != (pcInt[port].prev & _BV(pin)) ) {				// check if the requested pin was different
+		pcInt[port].prev = pcInt[port].cur;												// remember port for next checkup
+		return (pcInt[port].cur & _BV(pin))?1:2;
+	} else return 0;																	// it seems it was a different pin
+	
 }
+
+#define debounce 10
 ISR (PCINT0_vect) {
+	pcInt[0].cur = PINB;
+	pcInt[0].time = getMillis()+debounce;
 }
 ISR (PCINT1_vect) {
+	pcInt[1].cur = PINC;
+	pcInt[1].time = getMillis()+debounce;
 }
 ISR (PCINT2_vect) {
+	pcInt[2].cur = PIND;
+	pcInt[2].time = getMillis()+debounce;
 }
 
