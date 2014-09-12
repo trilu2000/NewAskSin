@@ -2,7 +2,8 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																		// configuration sheet
-#include "Dummy.h"
+#include <AS.h>
+#include <Dummy.h>
 
 AS hm;
 Dummy dummy;
@@ -14,6 +15,8 @@ void setup() {
 	Serial << F("Starting sketch...\n");													// ...and some information
 	#endif
 	
+	initHW();																				// initialize the hardware
+	led1_on();
 	// control led
 	//pinMode(3,OUTPUT);
 	//digitalWrite(3,1);
@@ -25,7 +28,8 @@ void setup() {
 
 void loop() {
 	hm.poll();
-
+	if (PINB & _BV(0)) led0_on();
+	else led0_off();
 }
 
 void serialEvent() {

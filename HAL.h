@@ -67,17 +67,17 @@ void clearEEPromBlock(uint16_t addr, uint16_t len);
 #define CC1100_INT      INT0
 #define CC1100_INTVECT  INT0_vect
 
-#define _setBit(PORT, BITNUM)  ((PORT) |= (1<<(BITNUM)))
-#define _clrBit(PORT, BITNUM)  ((PORT) &= ~(1<<(BITNUM)))
-#define _tglBit(PORT, BITNUM)  ((PORT) ^= (1<<(BITNUM)))
-#define _chkBit(PORT, BITNUM)  ((PORT) & (1<<(BITNUM)))
+//#define _setBit(PORT, BITNUM)  ((PORT) |= (1<<(BITNUM)))
+//#define _clrBit(PORT, BITNUM)  ((PORT) &= ~(1<<(BITNUM)))
+//#define _tglBit(PORT, BITNUM)  ((PORT) ^= (1<<(BITNUM)))
+//#define _chkBit(PORT, BITNUM)  ((PORT) & (1<<(BITNUM)))
 
-#define _waitMiso   while(_chkBit(SPI_PORT,SPI_MISO))										// wait until SPI MISO line goes low
-#define _ccDeselect  _setBit( CC1100_CS_PORT, CC1100_CS_PIN )
-#define _ccSelect    _clrBit( CC1100_CS_PORT, CC1100_CS_PIN )
+#define _waitMiso        while(SPI_PORT &   _BV(SPI_MISO))									// wait until SPI MISO line goes low
+#define _ccDeselect      CC1100_CS_PORT |=  _BV(CC1100_CS_PIN) 
+#define _ccSelect        CC1100_CS_PORT &= ~_BV(CC1100_CS_PIN) 
 
-#define _disableGDO0Int  EIMSK &= ~(1<<INT0);
-#define _enableGDO0Int   EIMSK |= (1<<INT0);
+#define _disableGDO0Int  EIMSK &= ~_BV(INT0);
+#define _enableGDO0Int   EIMSK |=  _BV(INT0);
 
 void    ccInitHw(void);
 uint8_t ccSendByte(uint8_t data);
@@ -104,5 +104,16 @@ void     initMillis(void);
 millis_t getMillis(void);
 void     addMillis(millis_t ms);
 
+//- pin related functions -------------------------------------------------------------------------------------------------
+// led on PortD, pinD4 and pinD6
+#define led0_on()		PORTD |=  _BV(4)
+#define led0_off()		PORTD &= ~_BV(4)
+#define led0_cng()		PORTD ^=  _BV(4)
+
+#define led1_on()		PORTD |=  _BV(6)
+#define led1_off()		PORTD &= ~_BV(6)
+#define led1_cng()		PORTD ^=  _BV(6)
+
+void initHW(void);
 
 #endif 
