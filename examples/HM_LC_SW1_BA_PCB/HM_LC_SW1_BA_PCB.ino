@@ -4,8 +4,8 @@
 #include "register.h"																		// configuration sheet
 #include <Dummy.h>
 
-AS hm;
-Dummy dummy;
+AS hm;																						// stage the asksin framework
+Dummy dummy;																				// stage a dummy module
 
 
 void setup() {
@@ -14,25 +14,27 @@ void setup() {
 	Serial << F("Starting sketch...\n");													// ...and some information
 	#endif
 	
+	// led's - D4 and D6
 	pinOutput(DDRD,4);																		// init the led pins 
 	pinOutput(DDRD,6);
 	
+	// config key pin - D8
 	pinInput(DDRB,0);																		// init the config key pin
 	setInHigh(PORTB,0);
 	regPCIE(PCIE0);																			// set the pin change interrupt
 	regPCINT(PCMSK0,PCINT0);																// description is in hal.h
 	
-	led1_on();
-
+	// init the homematic framework and register user modules
 	hm.init();
 	dummy.regInHM(1, 3, &hm);
 	
-	sei();	
+	sei();																					// enable interrupts
 }
 
 void loop() {
-	hm.poll();
+	hm.poll();																				// poll the homematic main loop
 
+	// some test for config key handling
 	uint8_t chkKey = chkPCINT(0, 0);														// check input pin
 	if      (chkKey == 2) led0_on();														// set led accordingly
 	else if (chkKey == 1) led0_off();

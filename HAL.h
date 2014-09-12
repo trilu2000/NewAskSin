@@ -128,6 +128,7 @@ void     addMillis(millis_t ms);
 #define getPin(PORT,PIN)    ((PORT) &  _BV(PIN))
 
 // - define the pin interrupts --------------------------------------------
+// http://www.protostack.com/blog/2010/09/external-interrupts-on-an-atmega168/
 // The PCIEx bits in the PCICR registers enable External Interrupts and tells the MCU to check PCMSKx on a pin
 // change state.
 // bit           7       6       5       4       3       2       1       0
