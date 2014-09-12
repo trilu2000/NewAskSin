@@ -2,7 +2,6 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																		// configuration sheet
-#include <AS.h>
 #include <Dummy.h>
 
 AS hm;
