@@ -13,9 +13,15 @@
 waitTimer btnTmr;																			// button timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
-CB::CB() {
-} 
+void CB::config(uint8_t mode, uint8_t pcIntByte, uint8_t pcIntBit) {
+	scn = mode;
+	pciByte = pcIntByte;
+	pciBit = pcIntBit;
+}
 
+// private:		//---------------------------------------------------------------------------------------------------------
+CB::CB() {
+}
 void CB::init(AS *ptrMain) {
 	#ifdef CB_DBG																			// only if ee debug is set
 	dbgStart();																				// serial setup
@@ -24,15 +30,10 @@ void CB::init(AS *ptrMain) {
 
 	pHM = ptrMain;
 }
-void CB::config(uint8_t mode, uint8_t pcIntByte, uint8_t pcIntBit) {
-	scn = mode;
-	pciByte = pcIntByte;
-	pciBit = pcIntBit;
-}
 void CB::poll(void) {
 	#define detectLong      3000
 	#define timeoutDouble   1000
-		
+	
 	if (!scn) return;
 	
 	// 0 for button is pressed, 1 for released, 2 for falling and 3 for rising edge
@@ -41,32 +42,32 @@ void CB::poll(void) {
 	// check button status
 	switch (btn) {
 		case 0:		// button is still pressed
-			if (btnTmr.done() )	{															// timed out, seems to be a long
-				btnTmr.set(detectLong);														// set timer to detect next long
-				if (lstLng) keyLongRepeat();												// last key state was a long, now it is a double
-				else keyLongSingle();														// first time detect a long
-			}
-			break;
+		if (btnTmr.done() )	{															// timed out, seems to be a long
+			btnTmr.set(detectLong);														// set timer to detect next long
+			if (lstLng) keyLongRepeat();												// last key state was a long, now it is a double
+			else keyLongSingle();														// first time detect a long
+		}
+		break;
 
 		case 1:		// button is released, check if the double flags timed out
-			if (btnTmr.done() ) {															// check for double timed out
-				rptFlg = 0;																	// clear the repeat flag
-				lstLng = 0;
-			}
-			break;
+		if (btnTmr.done() ) {															// check for double timed out
+			rptFlg = 0;																	// clear the repeat flag
+			lstLng = 0;
+		}
+		break;
 
 		case 2:		// button was just pressed
-			btnTmr.set(detectLong);															// set timer to detect a long
-			break;
+		btnTmr.set(detectLong);															// set timer to detect a long
+		break;
 
 		case 3:		// button was just released, was a long while timed out, or a short while timer is running
-			if      ((lstLng) && (rptFlg)) keyLongRelease();								// check for long double
-			else if (rptFlg)  keyShortDouble();												// check for short double
-			else if (!lstLng) keyShortSingle();												// otherwise it was a short single
-			
-			btnTmr.set(timeoutDouble);														// set timer to clear the repeated flags
-			break;
-	}	
+		if      ((lstLng) && (rptFlg)) keyLongRelease();								// check for long double
+		else if (rptFlg)  keyShortDouble();												// check for short double
+		else if (!lstLng) keyShortSingle();												// otherwise it was a short single
+		
+		btnTmr.set(timeoutDouble);														// set timer to clear the repeated flags
+		break;
+	}
 }
 void CB::keyShortSingle(void) {
 	rptFlg = 1;																				// remember last key press

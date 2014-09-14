@@ -2,19 +2,21 @@
 // AskSin driver implementation
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin send function ---------------------------------------------------------------------------------------------
+//- AskSin send function --------------------------------------------------------------------------------------------------
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
-
 
 #ifndef _SN_H
 #define _SN_H
 
 #include "HAL.h"
+#define MaxDataLen   60						// maximum length of received bytes
+
 
 class SN {
-  public:		//---------------------------------------------------------------------------------------------------------
-	#define MaxDataLen   60					// maximum length of received bytes
+	friend class AS;
+  
+  private:		//---------------------------------------------------------------------------------------------------------
 
 	struct s_mFlg {
 		uint8_t WKUP     :1;				// 0x01: send initially to keep the device awake
@@ -26,7 +28,7 @@ class SN {
 		uint8_t RPTED    :1;				// 0x40: repeated (repeater operation)
 		uint8_t RPTEN    :1;				// 0x80: set in every message. Meaning?
 	};
-	
+
 	struct s_msgBody {
 		uint8_t       mLen;					// message length
 		uint8_t       mCnt;					// counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
@@ -39,30 +41,30 @@ class SN {
 		uint8_t       pyLd[MaxDataLen-12];	// payload
 	};
 
-	struct s_msgBody mBdy;					// structure for easier message creation
-	uint8_t *buf = (uint8_t*)&mBdy;			// cast to byte array											
 
 	uint8_t msgCnt;							// message counter for standard sends, while not answering something
 
-	uint8_t active   :1;					// is send module active, 1 indicates yes
-	uint8_t timeOut  :1;					// was last message a timeout
 	uint8_t retrCnt;						// variable to count how often a message was already send
 	uint8_t maxRetr;						// how often a message has to be send until ACK
 	uint8_t lastMsgCnt;						// store of message counter, needed to identify ACK
 
-  protected:	//---------------------------------------------------------------------------------------------------------
 	class AS *pHM;							// pointer to main class for function calls
-	
-  private:		//---------------------------------------------------------------------------------------------------------
+
+  protected:	//---------------------------------------------------------------------------------------------------------
+  public:		//---------------------------------------------------------------------------------------------------------
+	struct s_msgBody mBdy;					// structure for easier message creation
+	uint8_t *buf = (uint8_t*)&mBdy;			// cast to byte array
+
+	uint8_t active   :1;					// is send module active, 1 indicates yes
+	uint8_t timeOut  :1;					// was last message a timeout
 
   public:		//---------------------------------------------------------------------------------------------------------
+  protected:	//---------------------------------------------------------------------------------------------------------
+  private:		//---------------------------------------------------------------------------------------------------------
+
 	SN();
 	void init(AS *ptrMain);
 	void poll(void);
-		
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
-
 };
 
 #endif 

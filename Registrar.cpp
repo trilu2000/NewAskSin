@@ -11,9 +11,19 @@
 #include "AS.h"
 
 // public:		//---------------------------------------------------------------------------------------------------------
+void	RG::regInAS(uint8_t cnl, uint8_t lst, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList) {
+	modTbl[cnl-1].cnl = cnl;
+	modTbl[cnl-1].lst = lst;
+	modTbl[cnl-1].mDlgt = delegate;
+	modTbl[cnl-1].lstCnl = mainList;
+	modTbl[cnl-1].lstPeer = peerList;
+
+	pHM->ee.getList(cnl,1,0,modTbl[cnl-1].lstCnl);											// load list1 in the respective buffer
+}
+
+// private:		//---------------------------------------------------------------------------------------------------------
 RG::RG() {
 } 
-
 void    RG::init(AS *ptrMain) {
 	
 	#ifdef RG_DBG																			// only if ee debug is set
@@ -28,13 +38,4 @@ void	RG::poll(void) {
 	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {
 		if (modTbl[i].cnl) modTbl[i].mDlgt(0,0,0,NULL,0);
 	}
-}
-void	RG::regInAS(uint8_t cnl, uint8_t lst, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList) {
-	modTbl[cnl-1].cnl = cnl;
-	modTbl[cnl-1].lst = lst;
-	modTbl[cnl-1].mDlgt = delegate;
-	modTbl[cnl-1].lstCnl = mainList;
-	modTbl[cnl-1].lstPeer = peerList;
-
-	pHM->ee.getList(cnl,1,0,modTbl[cnl-1].lstCnl);											// load list1 in the respective buffer
 }

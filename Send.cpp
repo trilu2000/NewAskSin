@@ -2,7 +2,7 @@
 // AskSin driver implementation
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin send function ---------------------------------------------------------------------------------------------
+//- AskSin send function --------------------------------------------------------------------------------------------------
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -10,15 +10,14 @@
 #include "Send.h"
 #include "AS.h"
 
-#define sndLen       this->buf[0]+1
+// private:		//---------------------------------------------------------------------------------------------------------
+#define sndLen       this->buf[0]+1															// amount of bytes in the send buffer
 #define reqACK       this->mBdy.mFlg.BIDI													// check if an ACK is requested
 
 waitTimer sndTmr;																			// send timer functionality
 
-// public:		//---------------------------------------------------------------------------------------------------------
 SN::SN() {
 } 
-
 void SN::init(AS *ptrMain) {
 	#ifdef SN_DBG																			// only if ee debug is set
 	dbgStart();																				// serial setup
@@ -50,7 +49,7 @@ void SN::poll(void) {
 		this->retrCnt++;																	// increase counter while send out
 
 		// check if we should send an internal message
-		if (cmpAry(this->mBdy.toID, HMID, 3)) {												// message is addressed to us
+		if (compArray(this->mBdy.toID, HMID, 3)) {											// message is addressed to us
 			memcpy(pHM->rv.buf, this->buf, sndLen);											// copy send buffer to received buffer
 			this->retrCnt = 0xff;															// ACK not required, because internal
 						

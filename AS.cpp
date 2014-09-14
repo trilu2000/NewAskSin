@@ -104,7 +104,7 @@ void AS::sendPeerMsg(void) {
 	if (stcPeer.curIdx >= stcPeer.maxIdx) {													// check if all peer slots are done
 		stcPeer.rnd++;																		// increase the round counter
 		
-		if ((stcPeer.rnd >= maxRetries) || (isEmty(stcPeer.slt,8))) {						// all rounds done or all peers reached
+		if ((stcPeer.rnd >= maxRetries) || (isEmpty(stcPeer.slt,8))) {						// all rounds done or all peers reached
 			//dbg << "through\n";
 			sn.msgCnt++;																	// increase the send message counter
 			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));									// clean out and return
@@ -134,7 +134,7 @@ void AS::sendPeerMsg(void) {
 	uint8_t tPeer[4];																		// get the respective peer
 	ee.getPeerByIdx(stcPeer.cnl, stcPeer.curIdx, tPeer);
 		
-	if (isEmty(tPeer,4)) {																	// if peer is 0, set done bit in slt and skip
+	if (isEmpty(tPeer,4)) {																	// if peer is 0, set done bit in slt and skip
 		stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// remember empty peer in slt table										// clear bit in slt and increase counter
 		stcPeer.curIdx++;																	// increase counter for next time
 		return;																				// wait for next round
@@ -312,7 +312,7 @@ void AS::recvMessage(void) {
 		//                                         serial
 		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A  4B 45 51 30 32 33 37 33 39 36
 		// do something with the information ----------------------------------
-		if (cmpAry(rv.buf+12,HMSR,10)) sendDEVICE_INFO();									// compare serial and send device info
+		if (compArray(rv.buf+12,HMSR,10)) sendDEVICE_INFO();									// compare serial and send device info
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0E)) {			// CONFIG_STATUS_REQUEST
@@ -972,10 +972,8 @@ void AS::explainMessage(uint8_t *buf) {
 	dbg << F("\n\n");
 }
 
+
 // - some helpers ----------------------------------
-
-
-
 // public:		//---------------------------------------------------------------------------------------------------------
 uint8_t  waitTimer::done(void) {
 	// todo - check if nexTime is near overflow and we have some delay, so getMillis() goes over 0

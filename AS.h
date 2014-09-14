@@ -19,13 +19,21 @@
 
 
 class AS {
+	friend class SN;
+	friend class RV;
+	friend class RG;
+	
   public:		//---------------------------------------------------------------------------------------------------------
 	EE ee;																					// load eeprom module
-	CC cc;																					// load communication module
 	SN sn;
-	RV rv;
 	RG rg;
 	CB confButton;
+
+  protected:	//---------------------------------------------------------------------------------------------------------
+  private:		//---------------------------------------------------------------------------------------------------------
+
+	CC cc;																					// load communication module
+	RV rv;
 	
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
 		uint8_t  active   :1;				// indicates status, 1 if config mode is active
@@ -34,7 +42,6 @@ class AS {
 		uint8_t  idx;						// peer index
 	} cFlag;
 
-  protected:	//---------------------------------------------------------------------------------------------------------
 	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
 		uint8_t active   :1;				// indicates status of poll routine, 1 is active
 		uint8_t peer     :1;				// is it a peer list message
@@ -63,7 +70,6 @@ class AS {
 		uint8_t slt[8];						// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
 	} stcPeer;
 	
-  private:		//---------------------------------------------------------------------------------------------------------
 	struct s_l4_0x01 {
 		uint8_t  peerNeedsBurst      :1;     // 0x01, s:0, e:1
 		uint8_t                      :6;     //
@@ -73,47 +79,51 @@ class AS {
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
 	void init(void);																		// init the AS module
-
-// - poll functions --------------------------------
 	void poll(void);																		// poll routine for regular operation
+
+	// - send functions --------------------------------
+	void sendDEVICE_INFO(void);
+	void sendACK(void);
+	void sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul);
+	void sendNACK(void);
+	void sendNACK_TARGET_INVALID(void);
+	void sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng);
+	void sendINFO_TEMP(void);
+	void sendHAVE_DATA(void);
+	void sendSWITCH(void);
+	void sendTimeStamp(void);
+	void sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL);
+	void sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL);
+	void sendSensorData(void);
+	void sendClimateEvent(void);
+	void sendSetTeamTemp(void);
+	void sendWeatherEvent(void);
+
+  private:		//---------------------------------------------------------------------------------------------------------
+
+	// - poll functions --------------------------------
 	void sendSliceList(void);																// scheduler to send config messages, peers and regs
 	void sendPeerMsg(void);																	// scheduler for peer messages
 	
-// - receive functions -----------------------------
+	// - receive functions -----------------------------
 	void recvMessage(void);
 
-// - send functions --------------------------------
-	void sendDEVICE_INFO(void);													
- 	void sendACK(void);
- 	void sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul);
- 	void sendNACK(void);
- 	void sendNACK_TARGET_INVALID(void);
- 	void sendINFO_SERIAL(void);
- 	void sendINFO_PEER_LIST(uint8_t len);
- 	void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
- 	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
- 	void sendINFO_PARAMETER_CHANGE(void);
- 	void sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng);
- 	void sendINFO_TEMP(void);
- 	void sendHAVE_DATA(void);
- 	void sendSWITCH(void);
- 	void sendTimeStamp(void);
- 	void sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL);
- 	void sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL);
- 	void sendSensorData(void);
- 	void sendClimateEvent(void);
- 	void sendSetTeamTemp(void);
- 	void sendWeatherEvent(void);
+	// - send functions --------------------------------
+	void sendINFO_SERIAL(void);
+	void sendINFO_PEER_LIST(uint8_t len);
+	void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
+	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
+	void sendINFO_PARAMETER_CHANGE(void);
+
 	
-// - homematic specific functions ------------------
+  protected:	//---------------------------------------------------------------------------------------------------------
+	// - homematic specific functions ------------------
 	void decode(uint8_t *buf);																// decodes the message
 	void encode(uint8_t *buf);																// encodes the message
 	void explainMessage(uint8_t *buf);														// explains message content, part of debug functions
 
-// - some helpers ----------------------------------
+	// - some helpers ----------------------------------
 
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
 
 };
 extern AS hm;

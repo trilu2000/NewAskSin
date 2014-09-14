@@ -2,7 +2,7 @@
 // AskSin driver implementation
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin eeprom functions ---------------------------------------------------------------------------------------------
+//- AskSin eeprom functions -----------------------------------------------------------------------------------------------
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -10,9 +10,14 @@
 #define _EE_H
 
 #include "HAL.h"
+#define maxMsgLen 16																		// define max message length in byte
 
 //- class definition ------------------------------------------------------------------------------------------------------
 class EE {
+	friend class AS;
+	friend class RV;
+	friend class CB;
+	
   public:		//---------------------------------------------------------------------------------------------------------
 
 	struct s_cnlTbl {	// channel table holds all information regarding channels and lists
@@ -38,9 +43,14 @@ class EE {
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
-	#define maxMsgLen 16																// define max message length in byte
 	
   public:		//---------------------------------------------------------------------------------------------------------
+	uint8_t getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in to a given buffer
+	uint8_t setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
+	uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
+
+  protected:	//---------------------------------------------------------------------------------------------------------
+  private:	    //---------------------------------------------------------------------------------------------------------
 	EE();																				// class constructor
 	void    init(void);
 	void    getMasterID(void);
@@ -68,18 +78,13 @@ class EE {
 
 	uint8_t countRegListSlc(uint8_t cnl, uint8_t lst);									// ok, counts the slices for a complete regs transmition
 	uint8_t getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);// ok, generates answer to a channel/list request
-	uint8_t getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 	uint8_t setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
-	uint8_t getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in to a given buffer
-	uint8_t setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
 	
 	//uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);		
 	//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);							
 	//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); 
 
 	uint8_t getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:	    //---------------------------------------------------------------------------------------------------------
 
 }; 
 extern EE::s_cnlTbl cnlTbl[];															// initial register.h
@@ -92,8 +97,8 @@ extern uint8_t HMSR[];
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
-uint8_t cmpAry(void *p1, void *p2, uint8_t len);
-uint8_t isEmty(void *p1, uint8_t len);
+uint8_t  compArray(void *p1, void *p2, uint8_t len);									// compare two byte arrays
+uint8_t  isEmpty(void *p1, uint8_t len);												// check if a byte array is empty
 
 #endif
 
