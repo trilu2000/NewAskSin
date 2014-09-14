@@ -26,7 +26,7 @@ void AS::init(void) {
 	sn.init(this);																			// send module
 	rv.init(this);																			// receive module
 	rg.init(this);																			// module registrar
-	cb.init(this);																			// config key
+	confButton.init(this);																	// config button
 
 	initMillis();																			// start the millis counter
 
@@ -58,7 +58,7 @@ void AS::poll(void) {
 	
 	// regular polls
 	rg.poll();																				// poll the channel module handler
-	cb.poll();																				// poll the config button
+	confButton.poll();																		// poll the config button
 	
 	// check if we could go to standby
 	

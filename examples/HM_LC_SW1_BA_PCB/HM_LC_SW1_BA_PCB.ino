@@ -4,16 +4,20 @@
 #include "register.h"																		// configuration sheet
 #include <Dummy.h>
 
+
+//- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 Dummy dummy;																				// stage a dummy module
 
 
+//- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
 	#ifdef SER_DBG
 	dbgStart();																				// serial setup
 	Serial << F("Main\n");																	// ...and some information
 	#endif
 	
+	// - Hardware setup ---------------------------------------
 	// led's - D4 and D6
 	pinOutput(DDRD,4);																		// init the led pins 
 	pinOutput(DDRD,6);
@@ -23,20 +27,31 @@ void setup() {
 	setInHigh(PORTB,0);
 	regPCIE(PCIE0);																			// set the pin change interrupt
 	regPCINT(PCMSK0,PCINT0);																// description is in hal.h
+
 	
+	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
-	hm.init();
-	dummy.regInHM(1, 3, &hm);
-	
+	hm.init();																				// init the asksin framework
+	hm.confButton.config(2,0,0);															// configure the config button, mode, pci byte and pci bit
+	dummy.regInHM(1, 3, &hm);																// register dummy module on channel 1, with a list3 and introduce asksin instance
+
+			
+	// - User related -----------------------------------------
+
 	sei();																					// enable interrupts
 }
 
 void loop() {
+	// - AskSin related ---------------------------------------
 	hm.poll();																				// poll the homematic main loop
 
 
+	// - User related -----------------------------------------
+
 }
 
+
+//- user functions --------------------------------------------------------------------------------------------------------
 void serialEvent() {
 	#ifdef SER_DBG
 	

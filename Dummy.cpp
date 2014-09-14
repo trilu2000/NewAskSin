@@ -13,6 +13,14 @@
 //-------------------------------------------------------------------------------------------------------------------------
 //- mandatory functions for every new module to communicate within HM protocol stack -
 //-------------------------------------------------------------------------------------------------------------------------
+void Dummy::setToggle(void) {
+	// setToggle will be addressed by config button in mode 2 by a short key press
+	// here we can toggle the status of the actor
+	#ifdef DM_DBG
+	dbg << F("sT\n");
+	#endif
+	
+}
 void Dummy::configCngEvent(void) {
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
 	#ifdef DM_DBG
@@ -72,7 +80,8 @@ void Dummy::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 }
 void Dummy::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
-	if       (by3 == 0x00)                    poll();
+	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
+	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
 	else if ((by3 == 0x01) && (by11 == 0x06)) configCngEvent();
 	else if ((by3 == 0x11) && (by10 == 0x02)) pairSetEvent(data, len);
 	else if ((by3 == 0x01) && (by11 == 0x0E)) pairStatusReq();

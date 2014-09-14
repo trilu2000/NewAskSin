@@ -94,6 +94,7 @@ class Dummy {
 
 	AS      *hm;																			// pointer to HM class instance
 
+	void    setToggle(void);																// toggle the module initiated by config button
 	void    configCngEvent(void);															// list1 on registered channel had changed
 	void    pairSetEvent(uint8_t *data, uint8_t len);										// pair message to specific channel, handover information for value, ramp time and so on
 	void    pairStatusReq(void);															// event on status request

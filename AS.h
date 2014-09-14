@@ -25,7 +25,7 @@ class AS {
 	SN sn;
 	RV rv;
 	RG rg;
-	CB cb;
+	CB confButton;
 	
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
 		uint8_t  active   :1;				// indicates status, 1 if config mode is active
