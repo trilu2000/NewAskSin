@@ -22,9 +22,10 @@ void AS::init(void) {
 	ee.init();																				// eeprom init
 	cc.init();																				// init the rf module
 
-	sn.init(this);
-	rv.init(this);
-	rg.init(this);
+	sn.init(this);																			// send module
+	rv.init(this);																			// receive module
+	rg.init(this);																			// module registrar
+	cb.init(this);																			// config key
 
 	initMillis();																			// start the millis counter
 
@@ -41,13 +42,22 @@ void AS::poll(void) {
 		if (rv.hasData) decode(rv.buf);														// decode the string
 	}
 
+	// handle send and receive buffer
 	if (rv.hasData) rv.poll();																// check if there is something in the received buffer
-	if (sn.active) sn.poll();
+	if (sn.active) sn.poll();																// check if there is something to send
 
+	// handle the slice send functions
 	if (stcSlice.active) sendSliceList();													// poll the slice list send function
 	if (stcPeer.active) sendPeerMsg();														// poll the peer message sender
 	
+	// time out the config flag
+	if (cFlag.active) {																		// only if we are in config mode
+		if (cFlag.time < getMillis()) cFlag.active = 0;										// check if time is over and end the config mode
+	}
+
+	// regular polls
 	rg.poll();																				// poll the channel module handler
+	cb.poll();																				// poll the config button
 	
 	// check if we could go to standby
 	
@@ -249,6 +259,7 @@ void AS::recvMessage(void) {
 		cFlag.lst = rv.buf[16];
 		if (cFlag.idx != 0xff) {
 			cFlag.active = 1;																// set active if there is no error on index
+			cFlag.time = getMillis() + 20000;												// set timeout time, will be checked in poll function
 			// set message id flag to config in send module
 		}
 	

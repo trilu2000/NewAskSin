@@ -15,7 +15,7 @@
 #include "Send.h"
 #include "Receive.h"
 #include "Registrar.h"
-
+#include "ConfButton.h"
 
 class AS {
   public:		//---------------------------------------------------------------------------------------------------------
@@ -24,12 +24,14 @@ class AS {
 	SN sn;
 	RV rv;
 	RG rg;
+	CB cb;
 	
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
-		uint8_t active   :1;				// indicates status, 1 if config mode is active
-		uint8_t cnl;						// channel
-		uint8_t lst;						// list
-		uint8_t idx;						// peer index
+		uint8_t  active   :1;				// indicates status, 1 if config mode is active
+		uint8_t  cnl;						// channel
+		uint8_t  lst;						// list
+		uint8_t  idx;						// peer index
+		uint32_t time;						// config should timing out after 20 sec		
 	} cFlag;
 
   protected:	//---------------------------------------------------------------------------------------------------------

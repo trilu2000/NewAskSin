@@ -11,7 +11,7 @@ Dummy dummy;																				// stage a dummy module
 void setup() {
 	#ifdef SER_DBG
 	dbgStart();																				// serial setup
-	Serial << F("Starting sketch...\n");													// ...and some information
+	Serial << F("Main\n");																	// ...and some information
 	#endif
 	
 	// led's - D4 and D6
