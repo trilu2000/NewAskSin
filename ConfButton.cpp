@@ -10,18 +10,7 @@
 #include "ConfButton.h"
 #include "AS.h"
 
-// scenario 01
-// short press = nothing
-// long press  = pair
-// double long = reset
-//
-// scenario 02
-// short press = toggle channel one
-// long press  = pair
-// double long = reset
-//
-// if 0x18 localResDis available, take care of it and enable or disable double long
-
+waitTimer btnTmr;																			// button timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
 CB::CB() {
@@ -35,6 +24,17 @@ void CB::init(AS *ptrMain) {
 
 	pHM = ptrMain;
 }
+void CB::config(uint8_t mode, uint8_t pcIntByte, uint8_t pcIntBit) {
+	scn = mode;
+	pciByte = pcIntByte;
+	pciBit = pcIntBit;
+}
 void CB::poll(void) {
+	//if (!scn) return;
+	
+	// 2 for falling and 3 for rising edge
+	uint8_t chkKey = chkPCINT(pciByte, pciBit);												// check input pin
+	if      (chkKey == 2) led0_on();														// set led accordingly
+	else if (chkKey == 3) led0_off();
 
 }

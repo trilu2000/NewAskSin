@@ -34,10 +34,6 @@ void setup() {
 void loop() {
 	hm.poll();																				// poll the homematic main loop
 
-	// some test for config key handling
-	uint8_t chkKey = chkPCINT(0, 0);														// check input pin
-	if      (chkKey == 2) led0_on();														// set led accordingly
-	else if (chkKey == 1) led0_off();
 
 }
 

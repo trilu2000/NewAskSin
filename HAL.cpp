@@ -98,14 +98,23 @@ struct s_pcINT {
 	uint32_t time;
 } static volatile pcInt[3];
 uint8_t chkPCINT(uint8_t port, uint8_t pin) {
-	if (pcInt[port].cur == pcInt[port].prev) return 0;									// no status change, exit
-	if (pcInt[port].time > getMillis()) return 0;										// debounce time running, exit
+	// returns 0 or 1 for pin level and
+	// 2 for falling and 3 for rising edge
 	
-	if ( (pcInt[port].cur & _BV(pin)) != (pcInt[port].prev & _BV(pin)) ) {				// check if the requested pin was different
-		pcInt[port].prev = pcInt[port].cur;												// remember port for next checkup
-		return (pcInt[port].cur & _BV(pin))?1:2;
-	} else return 0;																	// it seems it was a different pin
+	// old and new bit is similar, return current status
+	if ( (pcInt[port].cur & _BV(pin)) == (pcInt[port].prev & _BV(pin)) ) return pcInt[port].cur & _BV(pin);
+
+	// check for debounce time, if still running return previous status
+	if (pcInt[port].time > getMillis()) return pcInt[port].prev & _BV(pin);
 	
+	// detect rising or falling edge
+	if (pcInt[port].cur & _BV(pin)) {
+		pcInt[port].prev |= _BV(pin);													// set bit bit in prev
+		return 3;
+	} else {
+		pcInt[port].prev &= ~_BV(pin);													// clear bit in prev
+		return 2;
+	}
 }
 
 #define debounce 10

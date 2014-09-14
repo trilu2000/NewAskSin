@@ -17,6 +17,7 @@
 #include "Registrar.h"
 #include "ConfButton.h"
 
+
 class AS {
   public:		//---------------------------------------------------------------------------------------------------------
 	EE ee;																					// load eeprom module
@@ -31,7 +32,6 @@ class AS {
 		uint8_t  cnl;						// channel
 		uint8_t  lst;						// list
 		uint8_t  idx;						// peer index
-		uint32_t time;						// config should timing out after 20 sec		
 	} cFlag;
 
   protected:	//---------------------------------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ class AS {
 		uint8_t                      :6;     //
 		uint8_t  expectAES           :1;     // 0x01, s:7, e:8
 	} l4_0x01;
-
+	
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
 	void init(void);																		// init the AS module

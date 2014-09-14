@@ -9,6 +9,7 @@
 //#define AS_DBG
 #include "AS.h"
 
+waitTimer cnfTmr;																			// config timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
@@ -51,10 +52,10 @@ void AS::poll(void) {
 	if (stcPeer.active) sendPeerMsg();														// poll the peer message sender
 	
 	// time out the config flag
-	if (cFlag.active) {																		// only if we are in config mode
-		if (cFlag.time < getMillis()) cFlag.active = 0;										// check if time is over and end the config mode
+	if (cFlag.active) {																		// check only if we are still in config mode
+		if (cnfTmr.done()) cFlag.active = 0;												// when timer is done, set config flag to inactive
 	}
-
+	
 	// regular polls
 	rg.poll();																				// poll the channel module handler
 	cb.poll();																				// poll the config button
@@ -259,7 +260,7 @@ void AS::recvMessage(void) {
 		cFlag.lst = rv.buf[16];
 		if (cFlag.idx != 0xff) {
 			cFlag.active = 1;																// set active if there is no error on index
-			cFlag.time = getMillis() + 20000;												// set timeout time, will be checked in poll function
+			cnfTmr.set(20000);																// set timeout time, will be checked in poll function
 			// set message id flag to config in send module
 		}
 	
