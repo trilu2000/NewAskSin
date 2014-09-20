@@ -100,13 +100,13 @@ void     addMillis(millis_t ms);
 
 //- pin related functions -------------------------------------------------------------------------------------------------
 // AVR 328 uses three port addresses, PortB (digital pin 8 to 13), PortC (analog input pins), PortD (digital pins 0 to 7)
-#define led0_on()		PORTD |=  _BV(4)
-#define led0_off()		PORTD &= ~_BV(4)
-#define led0_cng()		PORTD ^=  _BV(4)
+#define led0_on()		PORTD |=  _BV(6)
+#define led0_off()		PORTD &= ~_BV(6)
+#define led0_cng()		PORTD ^=  _BV(6)
 
-#define led1_on()		PORTD |=  _BV(6)
-#define led1_off()		PORTD &= ~_BV(6)
-#define led1_cng()		PORTD ^=  _BV(6)
+#define led1_on()		PORTD |=  _BV(4)
+#define led1_off()		PORTD &= ~_BV(4)
+#define led1_cng()		PORTD ^=  _BV(4)
 
 #define pinOutput(PORT,PIN) ((PORT) |=  _BV(PIN))
 #define pinInput(PORT,PIN)  ((PORT) &= ~_BV(PIN))

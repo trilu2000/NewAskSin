@@ -72,7 +72,9 @@ void SN::poll(void) {
 			#endif
 
 		}
-
+		
+		if (!pHM->ld.active) pHM->ld.set(send);												// fire the status led
+		
 		#ifdef SN_DBG																		// only if AS debug is set
 		dbg << pHex(this->buf,sndLen) << ' ' << pTime << '\n';
 		#endif
@@ -96,6 +98,8 @@ void SN::poll(void) {
 		this->maxRetr = 0;
 		this->active = 0;
 		sndTmr.set(0);
+
+		if (!pHM->ld.active) pHM->ld.set(ack);																	// fire the status led
 	}
 
 /*	

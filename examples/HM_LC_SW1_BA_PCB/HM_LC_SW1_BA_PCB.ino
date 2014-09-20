@@ -34,7 +34,9 @@ void setup() {
 	hm.init();																				// init the asksin framework
 	hm.confButton.config(2,0,0);															// configure the config button, mode, pci byte and pci bit
 	dummy.regInHM(1, 3, &hm);																// register dummy module on channel 1, with a list3 and introduce asksin instance
-
+	
+	hm.ld.init(2, &hm);
+	hm.ld.set(welcome);
 			
 	// - User related -----------------------------------------
 
@@ -75,3 +77,11 @@ void serialEvent() {
 	}
 	#endif
 }
+/*void serialEvent() {
+	while (Serial.available()) {
+		uint8_t inChar = (uint8_t)Serial.read();											// read a byte
+		if ((inChar>47) && (inChar<58))
+			hm.ld.rmb((ledStat)(inChar-48));
+		
+	}
+}*/

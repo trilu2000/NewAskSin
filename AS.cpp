@@ -10,6 +10,7 @@
 #include "AS.h"
 
 waitTimer cnfTmr;																			// config timer functionality
+waitTimer pairTmr;																			// config timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
@@ -33,8 +34,6 @@ void AS::init(void) {
 	// everything is setuped, enable RF functionality
 	_enableGDO0Int;																			// enable interrupt to get a signal while receiving data
 }
-
-// - poll functions --------------------------------
 void AS::poll(void) {
 
 	// check if something received
@@ -55,17 +54,250 @@ void AS::poll(void) {
 	if (cFlag.active) {																		// check only if we are still in config mode
 		if (cnfTmr.done()) cFlag.active = 0;												// when timer is done, set config flag to inactive
 	}
-	
+
+	// time out the pairing timer
+	if (pairActive) { 
+		if (pairTmr.done()) {
+			if (isEmpty(MAID, 3)) ld.set(pair_err);
+			else                  ld.set(pair_suc);
+			pairActive = 0;
+		}
+	}
+
 	// regular polls
 	rg.poll();																				// poll the channel module handler
 	confButton.poll();																		// poll the config button
-	
+	ld.poll();
+		
 	// check if we could go to standby
 	
 	// some sanity poll routines
 	
 }
 
+// - send functions --------------------------------
+void AS::sendDEVICE_INFO(void) {
+	// description --------------------------------------------------------
+	//                 reID      toID      fw  type   serial                         class  pCnlA  pCnlB  unknown
+	// l> 1A 94 84 00  1F B7 4A  01 02 04  15  00 6C  4B 45 51 30 32 33 37 33 39 36  10     41     01     00
+	// do something with the information ----------------------------------
+
+	uint8_t xCnt;
+	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) xCnt = rv.mBdy.mLen;														// send counter - is it an answer or a initial message
+	else xCnt = sn.msgCnt++;
+	
+	sn.mBdy.mLen = 0x1a;
+	sn.mBdy.mCnt = xCnt;
+	sn.mBdy.mFlg.CFG = 1;
+	if (!isEmpty(MAID,3)) sn.mBdy.mFlg.BIDI = 1;
+
+	sn.mBdy.mTyp = 0x00;
+	memcpy(sn.mBdy.reID,HMID,3);
+	memcpy(sn.mBdy.toID,MAID,3);
+
+	memcpy_P(sn.buf+10,devDef.devIdnt,3);
+	memcpy(sn.buf+13,HMSR,10);
+	memcpy_P(sn.buf+23,devDef.devIdnt+3,4);
+	sn.active = 1;																			// fire the message
+
+	pairActive = 1;																			// set pairing flag
+	pairTmr.set(20000);
+	ld.set(pairing);																		// and visualize the status
+	// --------------------------------------------------------------------
+}
+void AS::sendACK(void) {
+	// description --------------------------------------------------------
+	//                reID      toID      ACK
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  00
+	// do something with the information ----------------------------------
+
+	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mCnt = rv.mBdy.mCnt;
+	sn.mBdy.mTyp = 0x02;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	sn.mBdy.by10 = 0x00;
+	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
+}
+void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
+	// description --------------------------------------------------------
+	// l> 0B 12 A4 40 23 70 EC 1E 7A AD 01 02
+	//                 reID      toID      ACK  Cnl  Stat  DUL  RSSI
+	// l> 0F 12 80 02  1E 7A AD  23 70 EC  01   01   BE    20   27    CC - dimmer
+	// l> 0E 5C 80 02  1F B7 4A  63 19 63  01   01   C8    00   42       - pcb relay
+	//
+	// b> 0F 13 84 10 1E 7A AD 00 00 00 06 01 00 00 80 00
+	// - DUL = Down 0x20, UP 0x10, LowBat 0x80
+	// do something with the information ----------------------------------
+
+	sn.mBdy.mLen = 0x0e;
+	sn.mBdy.mCnt = rv.mBdy.mCnt;
+	sn.mBdy.mTyp = 0x02;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	sn.mBdy.by10 = 0x01;
+	sn.mBdy.by11 = cnl;
+	sn.mBdy.pyLd[0] = stat;
+	sn.mBdy.pyLd[1] = dul;
+	sn.mBdy.pyLd[2] = cc.rssi;
+	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
+}
+void AS::sendNACK(void) {
+	// description --------------------------------------------------------
+	//                reID      toID      NACK
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
+	// do something with the information ----------------------------------
+
+	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mCnt = rv.mBdy.mLen;
+	sn.mBdy.mTyp = 0x02;
+	memcpy(sn.mBdy.reID,HMID,3);
+	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+	sn.mBdy.by10 = 0x80;
+	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
+}
+void AS::sendNACK_TARGET_INVALID(void) {
+	// description --------------------------------------------------------
+	//                reID      toID      ACK
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  84
+	// do something with the information ----------------------------------
+
+	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mCnt = rv.mBdy.mLen;
+	sn.mBdy.mTyp = 0x02;
+	memcpy(sn.mBdy.reID,HMID,3);
+	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+	sn.mBdy.by10 = 0x84;
+	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
+}
+void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
+	// description --------------------------------------------------------
+	// l> 0B 40 B0 01 63 19 63 1F B7 4A 01 0E (148552)
+	//                 reID      toID          cnl  stat cng  RSSI
+	// l> 0E 40 A4 10  1F B7 4A  63 19 63  06  01   00   00   48 (148679)
+	// l> 0A 40 80 02 63 19 63 1F B7 4A 00 (148804)
+	// do something with the information ----------------------------------
+
+	sn.mBdy.mLen = 0x0e;
+	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0e)) {
+		sn.mBdy.mCnt = rv.mBdy.mCnt;
+		} else {
+		sn.mBdy.mCnt = sn.msgCnt++;
+	}
+	sn.mBdy.mFlg.BIDI = 1;
+	
+	sn.mBdy.mTyp = 0x10;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	
+	sn.mBdy.by10 = 0x06;
+	sn.mBdy.by11 = cnl;
+	sn.mBdy.pyLd[0] = stat;
+	sn.mBdy.pyLd[1] = cng;
+	sn.mBdy.pyLd[2] = cc.rssi;
+	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
+}
+void AS::sendINFO_TEMP(void) {
+	//"10;p01=0A"   => { txt => "INFO_TEMP", params => {
+	//SET     => '2,4,$val=(hex($val)>>10)&0x3F',
+	//ACT     => '2,4,$val=hex($val)&0x3FF',
+	//ERR     => "6,2",
+	//VALVE   => "6,2",
+	//MODE    => "6,2" } },
+	// --------------------------------------------------------------------
+}
+void AS::sendHAVE_DATA(void) {
+	//"12"          => { txt => "HAVE_DATA"},
+	// --------------------------------------------------------------------
+}
+void AS::sendSWITCH(void) {
+	//"3E"          => { txt => "SWITCH"      , params => {
+	//DST      => "00,6",
+	//UNKNOWN  => "06,2",
+	//CHANNEL  => "08,2",
+	//COUNTER  => "10,2", } },
+	// --------------------------------------------------------------------
+}
+void AS::sendTimeStamp(void) {
+	//"3F"          => { txt => "TimeStamp"   , params => {
+	//UNKNOWN  => "00,4",
+	//TIME     => "04,2", } },
+	// --------------------------------------------------------------------
+}
+void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
+	// description --------------------------------------------------------
+	//                 reID      toID      BLL Cnt
+	// l> 0B 0A A4 40  23 70 EC  1E 7A AD  02  01
+	// l> 0F 0A 80 02 1E 7A AD 23 70 EC 01 01 14 10 32 A4
+	// l> 0B 0B B0 40 23 70 EC 1F B7 4A 02 01
+	// l> 0E 0B 80 02 1F B7 4A 23 70 EC 01 01 C8 80 21
+	// l> 0F 0B A4 10 1E 7A AD 63 19 63 06 01 C8 00 80 C8
+	// l> 0A 0B 80 02 63 19 63 1E 7A AD 00
+	// do something with the information ----------------------------------
+	// BUTTON = bit 0 - 5
+	// LONG   = bit 6
+	// LOWBAT = bit 7
+
+	stcPeer.pL = pL;
+	stcPeer.lenPL = 2;
+	stcPeer.cnl = cnl;
+	stcPeer.burst = burst;
+	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
+	stcPeer.mTyp = 0x40;
+	stcPeer.active = 1;
+	// --------------------------------------------------------------------
+}
+void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
+	// description --------------------------------------------------------
+	//                 reID      toID      BLL  Cnt  Val
+	// l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200
+	// do something with the information ----------------------------------
+	//"41"          => { txt => "Sensor_event", params => {
+	// BUTTON = bit 0 - 5
+	// LONG   = bit 6
+	// LOWBAT = bit 7
+	// --------------------------------------------------------------------
+}
+void AS::sendSensorData(void) {
+	//"53"          => { txt => "SensorData"  , params => {
+	//CMD => "00,2",
+	//Fld1=> "02,2",
+	//Val1=> '04,4,$val=(hex($val))',
+	//Fld2=> "08,2",
+	//Val2=> '10,4,$val=(hex($val))',
+	//Fld3=> "14,2",
+	//Val3=> '16,4,$val=(hex($val))',
+	//Fld4=> "20,2",
+	//Val4=> '24,4,$val=(hex($val))'} },
+	// --------------------------------------------------------------------
+}
+void AS::sendClimateEvent(void) {
+	//"58"          => { txt => "ClimateEvent", params => {
+	//CMD      => "00,2",
+	//ValvePos => '02,2,$val=(hex($val))', } },
+	// --------------------------------------------------------------------
+}
+void AS::sendSetTeamTemp(void) {
+	//"59"          => { txt => "setTeamTemp" , params => {
+	//CMD      => "00,2",
+	//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
+	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
+	// --------------------------------------------------------------------
+}
+void AS::sendWeatherEvent(void) {
+	//"70"          => { txt => "WeatherEvent", params => {
+	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
+	//HUM      => '04,2,$val=(hex($val))', } },
+	// --------------------------------------------------------------------
+}
+
+// private:		//---------------------------------------------------------------------------------------------------------
+// - poll functions --------------------------------
 void AS::sendSliceList(void) {
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
 
@@ -73,17 +305,17 @@ void AS::sendSliceList(void) {
 
 	if        (stcSlice.peer) {			// INFO_PEER_LIST
 		cnt = ee.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, sn.buf+11);					// get the slice and the amount of bytes
-		sendINFO_PEER_LIST(cnt);															// create the body		
+		sendINFO_PEER_LIST(cnt);															// create the body
 		stcSlice.curSlc++;																	// increase slice counter
 		//dbg << "peer slc: " << pHex(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
 
-	} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
+		} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
 		cnt = ee.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, sn.buf+11); // get the slice and the amount of bytes
-		sendINFO_PARAM_RESPONSE_PAIRS(cnt);	
+		sendINFO_PARAM_RESPONSE_PAIRS(cnt);
 		stcSlice.curSlc++;																	// increase slice counter
 		//dbg << "reg2 slc: " << pHex(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
 		
-	} else if (stcSlice.reg3) {			// INFO_PARAM_RESPONSE_SEQ
+		} else if (stcSlice.reg3) {			// INFO_PARAM_RESPONSE_SEQ
 
 	}
 
@@ -109,15 +341,15 @@ void AS::sendPeerMsg(void) {
 			sn.msgCnt++;																	// increase the send message counter
 			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));									// clean out and return
 			
-		} else {																			// start next round
+			} else {																			// start next round
 			//dbg << "next round\n";
 			stcPeer.curIdx = 0;
 
 		}
 		return;
 
-	} else if ((stcPeer.curIdx) && (!sn.timeOut)) {											// peer index is >0, first round done and no timeout
-		stcPeer.slt[(stcPeer.curIdx-1) >> 3] &=  ~(1<<((stcPeer.curIdx-1) & 0x07));			// clear bit, because message got an ACK		
+		} else if ((stcPeer.curIdx) && (!sn.timeOut)) {											// peer index is >0, first round done and no timeout
+		stcPeer.slt[(stcPeer.curIdx-1) >> 3] &=  ~(1<<((stcPeer.curIdx-1) & 0x07));			// clear bit, because message got an ACK
 
 	}
 	
@@ -133,7 +365,7 @@ void AS::sendPeerMsg(void) {
 
 	uint8_t tPeer[4];																		// get the respective peer
 	ee.getPeerByIdx(stcPeer.cnl, stcPeer.curIdx, tPeer);
-		
+	
 	if (isEmpty(tPeer,4)) {																	// if peer is 0, set done bit in slt and skip
 		stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// remember empty peer in slt table										// clear bit in slt and increase counter
 		stcPeer.curIdx++;																	// increase counter for next time
@@ -170,8 +402,8 @@ void AS::sendPeerMsg(void) {
 	sn.maxRetr = 1;																			// send only one time
 	sn.active = 1;																			// make send active
 	
-	if (!sn.mBdy.mFlg.BIDI) 
-		stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// clear bit, because it is a message without need to be repeated
+	if (!sn.mBdy.mFlg.BIDI)
+	stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// clear bit, because it is a message without need to be repeated
 
 	stcPeer.curIdx++;																		// increase counter for next time
 }
@@ -261,7 +493,8 @@ void AS::recvMessage(void) {
 		if (cFlag.idx != 0xff) {
 			cFlag.active = 1;																// set active if there is no error on index
 			cnfTmr.set(20000);																// set timeout time, will be checked in poll function
-			// set message id flag to config in send module
+			// todo: set message id flag to config in send module
+			
 		}
 	
 		if (rv.ackRq) sendACK();															// send appropriate answer
@@ -500,98 +733,6 @@ void AS::recvMessage(void) {
 }
 
 // - send functions --------------------------------
-void AS::sendDEVICE_INFO(void) {
-	// description --------------------------------------------------------
-	//                 reID      toID      fw  type   serial                         class  pCnlA  pCnlB  unknown
-	// l> 1A 94 84 00  1F B7 4A  01 02 04  15  00 6C  4B 45 51 30 32 33 37 33 39 36  10     41     01     00
-	// do something with the information ----------------------------------
-
-	uint8_t xCnt;
-	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) xCnt = rv.mBdy.mLen;														// send counter - is it an answer or a initial message
-	else xCnt = sn.msgCnt++;
-	
-	sn.mBdy.mLen = 0x1a;
-	sn.mBdy.mCnt = xCnt;
-	sn.mBdy.mFlg.CFG = 1;
-	sn.mBdy.mTyp = 0x00;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,MAID,3);
-
-	memcpy_P(sn.buf+10,devDef.devIdnt,3);
-	memcpy(sn.buf+13,HMSR,10);
-	memcpy_P(sn.buf+23,devDef.devIdnt+3,4);
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
-void AS::sendACK(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      ACK      
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  00
-	// do something with the information ----------------------------------
-
-	sn.mBdy.mLen = 0x0a;
-	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.mTyp = 0x02;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-	sn.mBdy.by10 = 0x00;
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
-void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
-	// description --------------------------------------------------------
-	// l> 0B 12 A4 40 23 70 EC 1E 7A AD 01 02 
-	//                 reID      toID      ACK  Cnl  Stat  DUL  RSSI  
-	// l> 0F 12 80 02  1E 7A AD  23 70 EC  01   01   BE    20   27    CC - dimmer
-	// l> 0E 5C 80 02  1F B7 4A  63 19 63  01   01   C8    00   42       - pcb relay 
-	//
-	// b> 0F 13 84 10 1E 7A AD 00 00 00 06 01 00 00 80 00 
-	// - DUL = Down 0x20, UP 0x10, LowBat 0x80
-	// do something with the information ----------------------------------
-
-	sn.mBdy.mLen = 0x0e;
-	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.mTyp = 0x02;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-	sn.mBdy.by10 = 0x01;
-	sn.mBdy.by11 = cnl;
-	sn.mBdy.pyLd[0] = stat;
-	sn.mBdy.pyLd[1] = dul;
-	sn.mBdy.pyLd[2] = cc.rssi;
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
-void AS::sendNACK(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      NACK
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
-	// do something with the information ----------------------------------
-
-	sn.mBdy.mLen = 0x0a;
-	sn.mBdy.mCnt = rv.mBdy.mLen;
-	sn.mBdy.mTyp = 0x02;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-	sn.mBdy.by10 = 0x80;
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
-void AS::sendNACK_TARGET_INVALID(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      ACK
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  84
-	// do something with the information ----------------------------------
-
-	sn.mBdy.mLen = 0x0a;
-	sn.mBdy.mCnt = rv.mBdy.mLen;
-	sn.mBdy.mTyp = 0x02;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-	sn.mBdy.by10 = 0x84;
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
 void AS::sendINFO_SERIAL(void) {
 	// description --------------------------------------------------------
 	// l> 0B 77 A0 01 63 19 63 1E 7A AD 00 09
@@ -683,127 +824,6 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 	//DATA => '14,,$val =~ s/(..)(..)/ $1:$2/g', } },
 	// --------------------------------------------------------------------
 }
-void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
-	// description --------------------------------------------------------
-	// l> 0B 40 B0 01 63 19 63 1F B7 4A 01 0E (148552)
-	//                 reID      toID          cnl  stat cng  RSSI
-	// l> 0E 40 A4 10  1F B7 4A  63 19 63  06  01   00   00   48 (148679)
-	// l> 0A 40 80 02 63 19 63 1F B7 4A 00 (148804)
-	// do something with the information ----------------------------------
-
-	sn.mBdy.mLen = 0x0e;
-	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0e)) {
-		sn.mBdy.mCnt = rv.mBdy.mCnt;
-	} else {
-		sn.mBdy.mCnt = sn.msgCnt++;
-	}
-	sn.mBdy.mFlg.BIDI = 1;
-	
-	sn.mBdy.mTyp = 0x10;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-	
-	sn.mBdy.by10 = 0x06;
-	sn.mBdy.by11 = cnl;
-	sn.mBdy.pyLd[0] = stat;
-	sn.mBdy.pyLd[1] = cng;
-	sn.mBdy.pyLd[2] = cc.rssi;  
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
-void AS::sendINFO_TEMP(void) {
-	//"10;p01=0A"   => { txt => "INFO_TEMP", params => {
-	//SET     => '2,4,$val=(hex($val)>>10)&0x3F',
-	//ACT     => '2,4,$val=hex($val)&0x3FF',
-	//ERR     => "6,2",
-	//VALVE   => "6,2",
-	//MODE    => "6,2" } },
-	// --------------------------------------------------------------------
-}
-void AS::sendHAVE_DATA(void) {
-	//"12"          => { txt => "HAVE_DATA"},
-	// --------------------------------------------------------------------
-}
-void AS::sendSWITCH(void) {
-	//"3E"          => { txt => "SWITCH"      , params => {
-	//DST      => "00,6",
-	//UNKNOWN  => "06,2",
-	//CHANNEL  => "08,2",
-	//COUNTER  => "10,2", } },
-	// --------------------------------------------------------------------
-}
-void AS::sendTimeStamp(void) {
-	//"3F"          => { txt => "TimeStamp"   , params => {
-	//UNKNOWN  => "00,4",
-	//TIME     => "04,2", } },
-	// --------------------------------------------------------------------
-}
-void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
-	// description --------------------------------------------------------
-	//                 reID      toID      BLL Cnt
-	// l> 0B 0A A4 40  23 70 EC  1E 7A AD  02  01
-	// l> 0F 0A 80 02 1E 7A AD 23 70 EC 01 01 14 10 32 A4
-	// l> 0B 0B B0 40 23 70 EC 1F B7 4A 02 01
-	// l> 0E 0B 80 02 1F B7 4A 23 70 EC 01 01 C8 80 21
-	// l> 0F 0B A4 10 1E 7A AD 63 19 63 06 01 C8 00 80 C8
-	// l> 0A 0B 80 02 63 19 63 1E 7A AD 00
-	// do something with the information ----------------------------------
-	// BUTTON = bit 0 - 5
-	// LONG   = bit 6
-	// LOWBAT = bit 7
-
-	stcPeer.pL = pL;
-	stcPeer.lenPL = 2;
-	stcPeer.cnl = cnl;
-	stcPeer.burst = burst;
-	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
-	stcPeer.mTyp = 0x40;
-	stcPeer.active = 1;
-	// --------------------------------------------------------------------
-}
-void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
-	// description --------------------------------------------------------
-	//                 reID      toID      BLL  Cnt  Val
-	// l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200
-	// do something with the information ----------------------------------
-	//"41"          => { txt => "Sensor_event", params => {
-	// BUTTON = bit 0 - 5
-	// LONG   = bit 6
-	// LOWBAT = bit 7
-	// --------------------------------------------------------------------
-}
-void AS::sendSensorData(void) {
-	//"53"          => { txt => "SensorData"  , params => {
-	//CMD => "00,2",
-	//Fld1=> "02,2",
-	//Val1=> '04,4,$val=(hex($val))',
-	//Fld2=> "08,2",
-	//Val2=> '10,4,$val=(hex($val))',
-	//Fld3=> "14,2",
-	//Val3=> '16,4,$val=(hex($val))',
-	//Fld4=> "20,2",
-	//Val4=> '24,4,$val=(hex($val))'} },
-	// --------------------------------------------------------------------
-}
-void AS::sendClimateEvent(void) {
-	//"58"          => { txt => "ClimateEvent", params => {
-	//CMD      => "00,2",
-	//ValvePos => '02,2,$val=(hex($val))', } },
-	// --------------------------------------------------------------------
-}
-void AS::sendSetTeamTemp(void) {
-	//"59"          => { txt => "setTeamTemp" , params => {
-	//CMD      => "00,2",
-	//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
-	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
-	// --------------------------------------------------------------------
-}
-void AS::sendWeatherEvent(void) {
-	//"70"          => { txt => "WeatherEvent", params => {
-	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
-	//HUM      => '04,2,$val=(hex($val))', } },
-	// --------------------------------------------------------------------
-}	
 
 // - homematic specific functions ------------------
 void AS::decode(uint8_t *buf) {

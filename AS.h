@@ -16,7 +16,7 @@
 #include "Receive.h"
 #include "Registrar.h"
 #include "ConfButton.h"
-
+#include "StatusLed.h"
 
 class AS {
 	friend class SN;
@@ -25,15 +25,16 @@ class AS {
 	
   public:		//---------------------------------------------------------------------------------------------------------
 	EE ee;																					// load eeprom module
-	SN sn;
-	RG rg;
-	CB confButton;
-
+	SN sn;																					// send module
+	RG rg;																					// user module registrar
+	CB confButton;																			// config button
+	LD ld;																					// status led
+	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 
 	CC cc;																					// load communication module
-	RV rv;
+	RV rv;																					// receive module
 	
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
 		uint8_t  active   :1;				// indicates status, 1 if config mode is active
@@ -75,6 +76,8 @@ class AS {
 		uint8_t                      :6;     //
 		uint8_t  expectAES           :1;     // 0x01, s:7, e:8
 	} l4_0x01;
+	
+	uint8_t pairActive    :1;
 	
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
