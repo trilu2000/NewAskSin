@@ -20,6 +20,7 @@ struct s_blinkPattern {							// struct for defining the blink pattern
 	uint8_t pat[6];								// the pattern it self, pattern starts always with the on time, followed by off time.
 };												// time is given in 10ms steps
 
+
 enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, bat_low, defect, welcome};
 
 // we need two type of blink patterns, one with only one led and a second one with a bi color led

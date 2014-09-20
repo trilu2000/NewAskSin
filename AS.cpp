@@ -309,19 +309,20 @@ void AS::sendSliceList(void) {
 		stcSlice.curSlc++;																	// increase slice counter
 		//dbg << "peer slc: " << pHex(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
 
-		} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
+	} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
 		cnt = ee.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, sn.buf+11); // get the slice and the amount of bytes
+		//dbg << "cnt: " << cnt << '\n';
 		sendINFO_PARAM_RESPONSE_PAIRS(cnt);
 		stcSlice.curSlc++;																	// increase slice counter
 		//dbg << "reg2 slc: " << pHex(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
 		
-		} else if (stcSlice.reg3) {			// INFO_PARAM_RESPONSE_SEQ
+	} else if (stcSlice.reg3) {			// INFO_PARAM_RESPONSE_SEQ
 
 	}
 
 	if (stcSlice.curSlc == stcSlice.totSlc) {												// if everything is send, we could empty the struct
 		memset((void*)&stcSlice, 0, 10);													// by memset
-		//dbg << "end: " << sList.active << sList.peer << sList.reg2 << sList.reg3 << '\n';
+		//dbg << "end: " << stcSlice.active << stcSlice.peer << stcSlice.reg2 << stcSlice.reg3 << '\n';
 	}
 }
 void AS::sendPeerMsg(void) {
@@ -455,7 +456,7 @@ void AS::recvMessage(void) {
 		// do something with the information ----------------------------------
 	
 		stcSlice.totSlc = ee.countPeerSlc(rv.mBdy.by10);									// how many slices are need
-		stcSlice.mCnt = rv.mBdy.mLen;														// remember the message count
+		stcSlice.mCnt = rv.mBdy.mCnt;														// remember the message count
 		memcpy(stcSlice.toID, rv.mBdy.reID, 3);
 		stcSlice.cnl = rv.mBdy.by10;														// send input to the send peer function
 		stcSlice.peer = 1;																	// set the type of answer
@@ -471,7 +472,7 @@ void AS::recvMessage(void) {
 
 		stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);							// fill struct
 		stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);						// how many slices are need
-		stcSlice.mCnt = rv.mBdy.mLen;														// remember the message count
+		stcSlice.mCnt = rv.mBdy.mCnt;														// remember the message count
 		memcpy(stcSlice.toID, rv.mBdy.reID, 3);
 		stcSlice.cnl = rv.mBdy.by10;														// send input to the send peer function
 		stcSlice.lst = rv.buf[16];															// send input to the send peer function
@@ -648,7 +649,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x01) && (rv.mBdy.by11 == 0x00)) {	// RESET
+	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x04) && (rv.mBdy.by11 == 0x00)) {	// RESET
 		// description --------------------------------------------------------
 		//
 		// l> 0B 1C B0 11 63 19 63 1F B7 4A 04 00 (234116)
@@ -658,7 +659,13 @@ void AS::recvMessage(void) {
 		ee.clearPeers();
 		ee.clearRegs();
 		ee.getMasterID();
-		// todo: sendACK_STATUS(); // or sendACK() depending on device
+		ld.set(defect);
+
+		uint8_t xI = ee.getRegListIdx(1,3);
+		if (rv.ackRq) {
+			if (xI == 0xff) sendACK();
+			else sendACK_STATUS(0, 0, 0);
+		}
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x80)) {			// LED
@@ -797,7 +804,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	sn.mBdy.mTyp = 0x10;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
-	sn.mBdy.by10 = 0x02; //sList.cnl;
+	sn.mBdy.by10 = 0x02;
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }

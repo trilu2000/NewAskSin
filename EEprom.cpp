@@ -16,7 +16,7 @@ uint8_t MAID[3];
 uint8_t EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
-	if (idx >= peerTbl[cnl-1].pMax) return 0;											// check if peer index is in range
+	if ((cnl >0) && (idx >= peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
 
 	getEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
@@ -24,7 +24,7 @@ uint8_t EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 uint8_t EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
-	if (idx >= peerTbl[cnl-1].pMax) return 0;											// check if peer index is in range
+	if ((cnl >0) && (idx >= peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
 
 	setEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
@@ -33,7 +33,7 @@ uint8_t EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
 
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
-	if (idx >= peerTbl[cnl-1].pMax) return 0;											// check if peer index is in range
+	if ((cnl > 0) && (idx >= peerTbl[cnl-1].pMax)) return 0;							// check if peer index is in range
 
 	uint16_t eIdx = cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx);
 	
@@ -94,9 +94,9 @@ void    EE::init(void) {
 
 }
 void    EE::getMasterID(void) {
-	MAID[0] = 0x63; //getRegAddr(0, 0, 0, 0x0a);
-	MAID[1] = 0x19; //getRegAddr(0, 0, 0, 0x0b);
-	MAID[2] = 0x63; //getRegAddr(0, 0, 0, 0x0c);
+	MAID[0] = getRegAddr(0, 0, 0, 0x0a);
+	MAID[1] = getRegAddr(0, 0, 0, 0x0b);
+	MAID[2] = getRegAddr(0, 0, 0, 0x0c);
 }
 void    EE::testModul(void) {															// prints register.h content on console
 	#ifdef EE_DBG																		// only if ee debug is set
@@ -214,6 +214,9 @@ uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId) {
 	if (isPairValid(reId)) return 'm';													// coming from master
 	if (isPeerValid(reId)) return 'p';													// coming from a peer
 	if (isHMIDValid(reId)) return 'i';													// we were the sender, internal message
+
+	// now it could be a message from the master to us, but master is unknown because we are not paired
+	if ((isHMIDValid(toId)) && isEmpty(MAID,3)) return 'x';
 	return 'u';																			// should never happens
 }
 
@@ -403,7 +406,8 @@ uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, ui
 	
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
-	if (idx >= peerTbl[cnl-1].pMax) return 0;											// check if peer index is in range
+	//dbg << "idx " << idx << " pT " << peerTbl[cnl-1].pMax << '\n';
+	if ((cnl > 0) && (idx >= peerTbl[cnl-1].pMax)) return 0;							// check if peer index is in range
 	
 	uint8_t slcOffset = slc * maxMsgLen;												// calculate the starting offset	
 	slcOffset /= 2;																		// divided by to because of mixed message, regs + eeprom content
@@ -423,6 +427,7 @@ uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, ui
 	for (uint8_t i = 0; i < remByte; i++) {												// count through the remaining bytes
 		*buf++ = _pgmB(devDef.cnlAddr[i+sIdx+slcOffset]);								// add the register address
 		getEEPromBlock(i+eIdx+slcOffset, 1, buf++);										// add the eeprom content
+		//dbg << (i+eIdx+slcOffset) << '\n';
 	}
 
 	return remByte*2;																	// return the byte length
@@ -431,7 +436,7 @@ uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uin
 
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
-	if (idx >=peerTbl[cnl-1].pMax) return 0;											// check if peer index is in range
+	if ((cnl > 0) && (idx >=peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
 
 	uint16_t eIdx = cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx);
 
