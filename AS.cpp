@@ -58,9 +58,8 @@ void AS::poll(void) {
 	// time out the pairing timer
 	if (pairActive) { 
 		if (pairTmr.done()) {
-			if (isEmpty(MAID, 3)) ld.set(pair_err);
-			else                  ld.set(pair_suc);
 			pairActive = 0;
+			isEmpty(MAID, 3)? ld.set(pair_err) : ld.set(pair_suc);	
 		}
 	}
 

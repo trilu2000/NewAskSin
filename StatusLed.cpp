@@ -53,6 +53,7 @@ void    LD::set(ledStat stat) {
 	else if (stat == pair_err) blinkPtr = &sPair_err;
 	else if (stat == send)     blinkPtr = &sSend;
 	else if (stat == ack)      blinkPtr = &sAck;
+	else if (stat == noack)    blinkPtr = &sNoack;
 	else if (stat == bat_low)  blinkPtr = &sBattLow;
 	else if (stat == defect)   blinkPtr = &sDefect;
 	else if (stat == welcome)  blinkPtr = &sWelcome;

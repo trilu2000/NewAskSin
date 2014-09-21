@@ -21,7 +21,7 @@ struct s_blinkPattern {							// struct for defining the blink pattern
 };												// time is given in 10ms steps
 
 
-enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, bat_low, defect, welcome};
+enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, welcome};
 
 // we need two type of blink patterns, one with only one led and a second one with a bi color led
 #ifdef led1_off()	// - patterns for two leds
@@ -40,13 +40,16 @@ enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, bat_low, defect, 
 	const struct s_blinkPattern sAck = {		// 5; define ack indicator
 		2, 1, 0, 1, {5, 1,}
 	};
-	const struct s_blinkPattern sBattLow = {	// 6; define battery low indicator
+	const struct s_blinkPattern sNoack = {		// 6; define no ack indicator
+		2, 1, 1, 0, {10, 1,}
+	};
+	const struct s_blinkPattern sBattLow = {	// 7; define battery low indicator
 		6, 3, 1, 0, {50, 10, 10, 10, 10 ,100}
 	};
-	const struct s_blinkPattern sDefect = {		// 7; define defect indicator
+	const struct s_blinkPattern sDefect = {		// 8; define defect indicator
 		6, 3, 1, 0, {10, 10, 10, 10, 10, 100}
 	};
-	const struct s_blinkPattern sWelcome = {	// 8; define welcome indicator
+	const struct s_blinkPattern sWelcome = {	// 9; define welcome indicator
 		6, 1, 0, 1, {10, 10, 50, 10, 50, 100}
 	};
 
@@ -66,13 +69,16 @@ enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, bat_low, defect, 
 	const struct s_blinkPattern sAck = {		// 5; define ack indicator
 		0, 0, 0, 0, {0, 0,}
 	};
-	const struct s_blinkPattern sBattLow = {	// 6; define battery low indicator
+	const struct s_blinkPattern sNoack = {		// 6; define no ack indicator
+		0, 0, 0, 0, {0, 0,}
+	};
+	const struct s_blinkPattern sBattLow = {	// 7; define battery low indicator
 		6, 3, 1, 0, {50, 10, 10, 10, 10, 100}
 	};
-	const struct s_blinkPattern sDefect = {		// 7; define defect indicator
+	const struct s_blinkPattern sDefect = {		// 8; define defect indicator
 		6, 3, 1, 0, {10, 10, 10, 10, 10, 100}
 	};
-	const struct s_blinkPattern sWelcome = {	// 8; define welcome indicator
+	const struct s_blinkPattern sWelcome = {	// 9; define welcome indicator
 		6, 1, 1, 0, {10, 10, 50, 10, 50, 100}
 	};
 #endif

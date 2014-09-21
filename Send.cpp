@@ -86,7 +86,8 @@ void SN::poll(void) {
 		if (!reqACK) return;
 		
 		this->timeOut = 1;																	// set the time out only while an ACK or answer was requested
-
+		pHM->ld.set(noack);
+		
 		#ifdef SN_DBG																		// only if AS debug is set
 		dbg << F("  timed out") << ' ' << pTime << '\n';
 		#endif
