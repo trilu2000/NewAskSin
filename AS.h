@@ -6,8 +6,8 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#ifndef _AS_H
-#define _AS_H
+#ifndef _NAS_H
+#define _NAS_H
 
 #include "HAL.h"
 #include "CC1101.h"

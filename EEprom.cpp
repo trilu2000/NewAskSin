@@ -477,10 +477,17 @@ uint16_t crc16(uint16_t crc, uint8_t a) {
 uint8_t  compArray(void *ptr1, void *ptr2, uint8_t len) {
 	return memcmp(ptr1, ptr2, len)?0:1;
 }
-uint8_t  isEmpty(void *ptr, uint8_t len) {
+uint8_t  isEmpty(uint8_t *ptr, uint8_t len) {
+	do {
+		if (*(ptr+len-1) != 0) return 0;
+		len-=1;
+	} while (len>0);
+	return 1;
+}
+/*uint8_t  isEmpty(void *ptr, uint8_t len) {
 	do {
 		if (*(uint8_t*)(ptr+len-1) != 0) return 0;
 		len-=1;
 	} while (len>0);
 	return 1;
-}
+}*/
