@@ -896,24 +896,24 @@ void AS::explainMessage(uint8_t *buf) {
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x0E)) {
 		dbg << F("CONFIG_STATUS_REQUEST, cnl: ") << pHexB(buf[10]);
 
-	} else if ((buf[3] == 0x02) && (buf[11] == 0x00)) {
+	} else if ((buf[3] == 0x02) && (buf[10] == 0x00)) {
 		if (buf[0] == 0x0A) dbg << F("ACK");
 		else dbg << F("ACK; data: ") << pHex((buf+11),buf[0]-10);
 
-	} else if ((buf[3] == 0x02) && (buf[11] == 0x01)) {
+	} else if ((buf[3] == 0x02) && (buf[10] == 0x01)) {
 		dbg << F("ACK_STATUS; cnl: ") << pHexB(buf[11]) << F(", status: ") << pHexB(buf[12]) << F(", down/up/loBat: ") << pHexB(buf[13]);
 		if (buf[0] > 13) dbg << F(", rssi: ") << pHexB(buf[14]);
 
-	} else if ((buf[3] == 0x02) && (buf[11] == 0x02)) {
+	} else if ((buf[3] == 0x02) && (buf[10] == 0x02)) {
 		dbg << F("ACK2");
 		
-	} else if ((buf[3] == 0x02) && (buf[11] == 0x04)) {
+	} else if ((buf[3] == 0x02) && (buf[10] == 0x04)) {
 		dbg << F("ACK_PROC; para1: ") << pHex((buf+11),2) << F(", para2: ") << pHex((buf+13),2) << F(", para3: ") << pHex((buf+15),2) << F(", para4: ") << pHexB(buf[17]);
 
-	} else if ((buf[3] == 0x02) && (buf[11] == 0x80)) {
+	} else if ((buf[3] == 0x02) && (buf[10] == 0x80)) {
 		dbg << F("NACK");
 
-	} else if ((buf[3] == 0x02) && (buf[11] == 0x84)) {
+	} else if ((buf[3] == 0x02) && (buf[10] == 0x84)) {
 		dbg << F("NACK_TARGET_INVALID");
 		
 	} else if ((buf[3] == 0x03)) {
