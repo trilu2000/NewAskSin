@@ -53,7 +53,7 @@ class SN {
   protected:	//---------------------------------------------------------------------------------------------------------
   public:		//---------------------------------------------------------------------------------------------------------
 	struct s_msgBody mBdy;					// structure for easier message creation
-	uint8_t *buf = (uint8_t*)&mBdy;			// cast to byte array
+	uint8_t *buf;							// cast to byte array
 
 	uint8_t active   :1;					// is send module active, 1 indicates yes
 	uint8_t timeOut  :1;					// was last message a timeout

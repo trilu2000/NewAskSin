@@ -25,6 +25,7 @@ void SN::init(AS *ptrMain) {
 	#endif
 
 	pHM = ptrMain;
+	buf = (uint8_t*)&mBdy;
 }
 void SN::poll(void) {
 	#define maxRetries    3

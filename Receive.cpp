@@ -23,6 +23,7 @@ void    RV::init(AS *ptrMain) {
 	#endif
 
 	pHM = ptrMain;
+	buf = (uint8_t*)&mBdy;
 }
 void	RV::poll(void) {
 	static uint8_t last_rCnt;
