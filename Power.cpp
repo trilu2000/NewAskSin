@@ -15,12 +15,15 @@ waitTimer pwrTmr;																			// power timer functionality
 
 PW::PW() {
 } 
-void PW::init(void) {
+void PW::init(uint8_t mode) {
 	#ifdef PW_DBG																			// only if ee debug is set
 	dbgStart();																				// serial setup
 	dbg << F("PW.\n");																		// ...and some information
 	#endif
 
+	pwrMode = mode;
 }
 void PW::poll(void) {
+	if (mode == 0) return;																	// nothing to do
+	
 }
