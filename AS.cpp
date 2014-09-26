@@ -69,6 +69,7 @@ void AS::poll(void) {
 	ld.poll();
 		
 	// check if we could go to standby
+	pw.poll();																				// poll the power management
 	
 	// some sanity poll routines
 	

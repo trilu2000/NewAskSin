@@ -17,6 +17,7 @@
 #include "Registrar.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
+#include "Power.h"
 
 class AS {
 	friend class SN;
@@ -29,6 +30,7 @@ class AS {
 	RG rg;																					// user module registrar
 	CB confButton;																			// config button
 	LD ld;																					// status led
+	PW pw;																					// power management
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------

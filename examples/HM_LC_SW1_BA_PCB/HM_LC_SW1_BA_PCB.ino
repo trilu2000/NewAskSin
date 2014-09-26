@@ -19,7 +19,7 @@ void setup() {
 	
 	// - Hardware setup ---------------------------------------
 	// led's - D4 and D6
-	pinOutput(DDRD,4);																		// init the led pins 
+	pinOutput(DDRD,4);																		// init the led pins
 	pinOutput(DDRD,6);
 	
 	// config key pin - D8
@@ -37,7 +37,7 @@ void setup() {
 	
 	hm.ld.init(2, &hm);
 	hm.ld.set(welcome);
-			
+	
 	// - User related -----------------------------------------
 
 	sei();																					// enable interrupts
@@ -78,10 +78,10 @@ void serialEvent() {
 	#endif
 }
 /*void serialEvent() {
-	while (Serial.available()) {
-		uint8_t inChar = (uint8_t)Serial.read();											// read a byte
-		if ((inChar>47) && (inChar<58))
-			hm.ld.rmb((ledStat)(inChar-48));
-		
-	}
+while (Serial.available()) {
+uint8_t inChar = (uint8_t)Serial.read();											// read a byte
+if ((inChar>47) && (inChar<58))
+hm.ld.rmb((ledStat)(inChar-48));
+
+}
 }*/
