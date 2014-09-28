@@ -20,9 +20,9 @@
 #include <avr/interrupt.h>
 #include <util/atomic.h>
 
-//#include <avr/power.h>
-//#include <avr/sleep.h>
-//#include <avr/wdt.h>
+#include <avr/power.h>
+#include <avr/sleep.h>
+#include <avr/wdt.h>
 
 
 //- some macros and definitions -------------------------------------------------------------------------------------------
@@ -123,5 +123,14 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
+//- power management functions --------------------------------------------------------------------------------------------
+// http://donalmorrissey.blogspot.de/2010/04/sleeping-arduino-part-5-wake-up-via.html
+#define 	WDTO_250MS   4
+#define 	WDTO_8S   9
+
+void initPwrMode(uint8_t mode);
+void setSleep(void);
+
+//- -----------------------------------------------------------------------------------------------------------------------
 
 #endif 

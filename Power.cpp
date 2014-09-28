@@ -24,6 +24,6 @@ void PW::init(uint8_t mode) {
 	pwrMode = mode;
 }
 void PW::poll(void) {
-	if (mode == 0) return;																	// nothing to do
+	if (pwrMode == 0) return;																// nothing to do
 	
 }

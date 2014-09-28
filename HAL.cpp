@@ -131,3 +131,67 @@ ISR (PCINT2_vect) {
 	pcInt[2].time = getMillis()+debounce;
 }
 
+
+//- power management functions --------------------------------------------------------------------------------------------
+uint8_t pwrMode, wdtSleep;
+uint16_t wdtSleepTime;
+
+void initPwrMode(uint8_t mode) {
+	pwrMode = mode;
+	if (pwrMode == 0) return;
+
+	if        (pwrMode == 1) {
+		WDTCSR |= (1<<WDCE) | (1<<WDE);													// set control register to change and enable the watch dog
+		WDTCSR = (1<<WDP2);																// 250 ms
+		wdtSleepTime = 256;																// to add it later to the timer
+	
+	} else if (pwrMode == 2) {
+		WDTCSR |= (1<<WDCE) | (1<<WDE);													// set control register to change and enable the watch dog
+		WDTCSR = (1<<WDP0) | (1<<WDP3);													// 8000 ms
+		wdtSleepTime = 8192;															// to add it later to the timer
+
+	}
+	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+}
+void setSleep(void) {
+	if (pwrMode == 0) return;															// nothing to do because power management is off
+
+	if ((pwrMode == 1) || (pwrMode == 2)) {
+		WDTCSR |= (1<<WDIE);															// enable watch dog if power mode 1 or 2
+		wdtSleep = 1;																	// remember that it was a watch dog sleep
+	}
+
+	//dbg << ',';																		// some debug
+	//_delay_ms(100);																	// delay is neccasaary to get it printed on the console before device sleeps
+	//_delay_ms(100);
+
+	// some power savings by switching off some CPU functionality
+	ADCSRA = 0;																			// disable ADC
+	uint8_t xPrr = PRR;																	// save content of Power Reduction Register
+	PRR = 0xFF;																			// turn off various modules
+
+	sleep_enable();																		// enable sleep
+	MCUCR = (1<<BODS)|(1<<BODSE);														// turn off brown-out enable in software
+	MCUCR = (1<<BODS);																	// must be done right before sleep
+
+	sleep_cpu();																		// goto sleep
+	// sleeping now
+	// --------------------------------------------------------------------------------------------------------------------
+	// wakeup will be here
+	sleep_disable();																	// first thing after waking from sleep, disable sleep...
+
+	if (wdtSleep) {
+		WDTCSR &= ~(1<<WDIE);															// watchdog interrupt off
+		milliseconds += wdtSleepTime;													// add the time we were sleeping to the timer
+		wdtSleep = 0;																	// clear the watch dog time marker
+	}
+
+	PRR = xPrr;																			// restore power management
+	//dbg << '.';																		// some debug
+}
+
+ISR(WDT_vect) {
+	// nothing to do, only for waking up
+}
+
+//- -----------------------------------------------------------------------------------------------------------------------

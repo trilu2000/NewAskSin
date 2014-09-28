@@ -9,6 +9,7 @@
 AS hm;																						// stage the asksin framework
 Dummy dummy;																				// stage a dummy module
 
+waitTimer xTmr;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
@@ -40,13 +41,24 @@ void setup() {
 	
 	// - User related -----------------------------------------
 
+	initPwrMode(2);
+	
 	sei();																					// enable interrupts
+	
 }
 
 void loop() {
 	// - AskSin related ---------------------------------------
 	hm.poll();																				// poll the homematic main loop
 
+	if (xTmr.done()) {
+		xTmr.set(1000);
+		dbg << getMillis() << '\n';
+		_delay_ms(200);
+		_delay_ms(200);
+	}
+
+	setSleep();
 
 	// - User related -----------------------------------------
 
