@@ -36,30 +36,31 @@ void setup() {
 	hm.confButton.config(2,0,0);															// configure the config button, mode, pci byte and pci bit
 	dummy.regInHM(1, 3, &hm);																// register dummy module on channel 1, with a list3 and introduce asksin instance
 	
-	hm.ld.init(2, &hm);
-	hm.ld.set(welcome);
+	hm.ld.init(2, &hm);																		// set the led
+	hm.ld.set(welcome);																		// show something
+	
+	hm.pw.setMode(0);																		// set power management mode
+
+	//WDTCSR |= (1<<WDCE) | (1<<WDE);													// set control register to change and enable the watch dog
+	//WDTCSR = (1<<WDP2);																// 250 ms
+	//WDTCSR |= (1<<WDIE);
 	
 	// - User related -----------------------------------------
 
-	initPwrMode(2);
 	
 	sei();																					// enable interrupts
+	//hm.cc.setIdle();
 	
 }
 
 void loop() {
 	// - AskSin related ---------------------------------------
-	hm.poll();																				// poll the homematic main loop
-
+	//hm.poll();																				// poll the homematic main loop
 	if (xTmr.done()) {
-		xTmr.set(1000);
-		dbg << getMillis() << '\n';
-		_delay_ms(200);
-		_delay_ms(200);
+		xTmr.set(250);
+		dbg << hm.cc.detectBurst() << ' ';
+		hm.cc.setIdle();
 	}
-
-	setSleep();
-
 	// - User related -----------------------------------------
 
 }
@@ -97,3 +98,9 @@ hm.ld.rmb((ledStat)(inChar-48));
 
 }
 }*/
+
+ISR(WDT_vect) {
+	// nothing to do, only for waking up
+	//hm.cc.detectBurst();
+	//hm.cc.setIdle();
+}

@@ -158,7 +158,6 @@ void setSleep(void) {
 
 	if ((pwrMode == 1) || (pwrMode == 2)) {
 		WDTCSR |= (1<<WDIE);															// enable watch dog if power mode 1 or 2
-		wdtSleep = 1;																	// remember that it was a watch dog sleep
 	}
 
 	//dbg << ',';																		// some debug
@@ -180,8 +179,8 @@ void setSleep(void) {
 	// wakeup will be here
 	sleep_disable();																	// first thing after waking from sleep, disable sleep...
 
+	WDTCSR &= ~(1<<WDIE);																// watchdog interrupt off
 	if (wdtSleep) {
-		WDTCSR &= ~(1<<WDIE);															// watchdog interrupt off
 		milliseconds += wdtSleepTime;													// add the time we were sleeping to the timer
 		wdtSleep = 0;																	// clear the watch dog time marker
 	}
@@ -190,8 +189,10 @@ void setSleep(void) {
 	//dbg << '.';																		// some debug
 }
 
-ISR(WDT_vect) {
+//ISR(WDT_vect) {
 	// nothing to do, only for waking up
-}
+//	wdtSleep = 1;																		// remember that it was a watch dog sleep
+
+//}
 
 //- -----------------------------------------------------------------------------------------------------------------------

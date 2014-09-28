@@ -178,7 +178,16 @@ uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 
 	return buf[0];																		// return the data buffer
 }
-uint8_t CC::detectBurst(void) {															// wake up CC1101 from power down state
+void    CC::setIdle() {																	// put CC1101 into power-down state
+	strobe(CC1101_SIDLE);																// coming from RX state, we need to enter the IDLE state first
+	strobe(CC1101_SFRX);
+	strobe(CC1101_SPWD);																// enter power down state
+	//dbg << "pd\n";
+}
+uint8_t CC::getStatus() {
+	return readReg(CC1101_PKTSTATUS, CC1101_STATUS);
+}
+uint8_t CC::detectBurst(void) {		
 	// 10 7/10 5 in front of the received string; 33 after received string
 	// 10 - 00001010 - sync word found
 	// 7  - 00000111 - GDO0 = 1, GDO2 = 1
@@ -199,26 +208,20 @@ uint8_t CC::detectBurst(void) {															// wake up CC1101 from power down 
 	//
 	// possible solution for finding a burst is to check for bit 6, carrier sense
 
-	// set RXTX module in receive mode
-	_ccSelect;																			// select CC1101
-	_waitMiso;																			// wait until MISO goes low
-	_ccDeselect;																		// deselect CC1101
-	strobe(CC1101_SRX);																	// set RX mode again
-	_delay_ms(3);																		// wait a short time to set RX mode
+	// power on cc1101 module and set to RX mode
+	_ccSelect;																			// wake up the communication module
+	_waitMiso;
+	_ccDeselect;
+	_delay_ms(1);																		// give some time to come up
 
-	// todo: check carrier sense for 5ms to avoid wakeup due to normal transmition
-	//dbg << "rx\n";
-	//	return bitRead(hm.cc.monitorStatus(),6);										// return the detected signal
-	return bitRead(getStatus(),6);														// return the detected signal
-}
-void    CC::setIdle() {																	// put CC1101 into power-down state
-	strobe(CC1101_SIDLE);																// coming from RX state, we need to enter the IDLE state first
-	strobe(CC1101_SFRX);
-	strobe(CC1101_SPWD);																// enter power down state
-	//dbg << "pd\n";
-}
-uint8_t CC::getStatus() {
-	return readReg(CC1101_PKTSTATUS, CC1101_STATUS);
+	//strobe(CC1101_SIDLE);																// enter idle mode first
+	strobe(CC1101_SRX);																	// set RX mode again
+	_delay_ms(2);																		// wait a short time to set RX mode
+
+	// check carrier sense for 5ms to avoid wakeup due to normal transmition
+	if (! (getStatus() & (1<<6)) ) return 0;
+	_delay_ms(5);
+	return (getStatus() & (1<<6))?1:0;
 }
 
 void    CC::strobe(uint8_t cmd) {														// send command strobe to the CC1101 IC via SPI

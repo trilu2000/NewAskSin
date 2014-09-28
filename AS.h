@@ -23,6 +23,7 @@ class AS {
 	friend class SN;
 	friend class RV;
 	friend class RG;
+	friend class PW;
 	
   public:		//---------------------------------------------------------------------------------------------------------
 	EE ee;																					// load eeprom module
@@ -31,11 +32,12 @@ class AS {
 	CB confButton;																			// config button
 	LD ld;																					// status led
 	PW pw;																					// power management
+	CC cc;																					// load communication module
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 
-	CC cc;																					// load communication module
+	//CC cc;																					// load communication module
 	RV rv;																					// receive module
 	
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
@@ -146,6 +148,7 @@ class waitTimer {
 
 	uint8_t  done(void);
 	void     set(uint32_t ms);
+	uint16_t remain(void);
 };
 
 #endif

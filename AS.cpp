@@ -28,7 +28,8 @@ void AS::init(void) {
 	rv.init(this);																			// receive module
 	rg.init(this);																			// module registrar
 	confButton.init(this);																	// config button
-
+	pw.init(this);																			// power management
+	
 	initMillis();																			// start the millis counter
 
 	// everything is setuped, enable RF functionality
@@ -103,6 +104,7 @@ void AS::sendDEVICE_INFO(void) {
 	pairActive = 1;																			// set pairing flag
 	pairTmr.set(20000);
 	ld.set(pairing);																		// and visualize the status
+	pw.stayAwake(20001);																	// stay awake for the given time
 	// --------------------------------------------------------------------
 }
 void AS::sendACK(void) {
@@ -300,6 +302,7 @@ void AS::sendWeatherEvent(void) {
 // - poll functions --------------------------------
 void AS::sendSliceList(void) {
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
+	pw.stayAwake(100);																		// awake at least for the time to enter the send function
 
 	uint8_t cnt;
 
@@ -329,6 +332,7 @@ void AS::sendPeerMsg(void) {
 	#define maxRetries    3
 
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
+	pw.stayAwake(100);																		// awake at least for the time to enter the send function
 	
 	// first run, prepare amount of slots
 	if (!stcPeer.maxIdx) stcPeer.maxIdx = ee.getPeerSlots(stcPeer.cnl);						// get amount of messages of peer channel
@@ -1006,12 +1010,16 @@ uint8_t  waitTimer::done(void) {
 	// todo - check if nexTime is near overflow and we have some delay, so getMillis() goes over 0
 	// to get the correct timer result
 	if (!armed) return 1;
-	if ( nexTime > getMillis() ) return 0;
+	if ( getMillis() < nexTime ) return 0;
 	armed = 0;
 	return 1;
 }
 void     waitTimer::set(uint32_t ms) {
 	armed = ms?1:0;
-	if (armed) nexTime = getMillis() + ms -1;
+	if (armed) nexTime = getMillis() + ms;
+}
+uint16_t waitTimer::remain(void) {
+	if (!armed) return 0;
+	return nexTime - getMillis();
 }
 

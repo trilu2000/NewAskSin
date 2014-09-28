@@ -71,6 +71,15 @@ void    LD::set(ledStat stat) {
 		return;																				// jump out
 	}
 }
+void    LD::blinkRed(void) {
+	if (!bLeds) return;																		// no led available, skip...
+
+	led0(0);																				// switch led off
+	_delay_ms(20);																			// wait
+	led0(1);																				// switch led on
+	_delay_ms(20);																			// wait
+	led0(0);																				// switch led off
+}
 void	LD::poll(void) {
 	if (!active) return;																	// still waiting to do something
 	if (!ledTmr.done()) return;																// active but timer not done
