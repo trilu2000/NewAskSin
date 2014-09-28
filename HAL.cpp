@@ -189,10 +189,9 @@ void setSleep(void) {
 	//dbg << '.';																		// some debug
 }
 
-//ISR(WDT_vect) {
+ISR(WDT_vect) {
 	// nothing to do, only for waking up
-//	wdtSleep = 1;																		// remember that it was a watch dog sleep
-
-//}
+	wdtSleep = 1;																		// remember that it was a watch dog sleep
+}
 
 //- -----------------------------------------------------------------------------------------------------------------------

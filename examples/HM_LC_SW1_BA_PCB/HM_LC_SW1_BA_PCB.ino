@@ -41,16 +41,10 @@ void setup() {
 	
 	hm.pw.setMode(0);																		// set power management mode
 
-	//WDTCSR |= (1<<WDCE) | (1<<WDE);													// set control register to change and enable the watch dog
-	//WDTCSR = (1<<WDP2);																// 250 ms
-	//WDTCSR |= (1<<WDIE);
-	
 	// - User related -----------------------------------------
 
 	
 	sei();																					// enable interrupts
-	//hm.cc.setIdle();
-	
 }
 
 void loop() {
@@ -98,9 +92,3 @@ hm.ld.rmb((ledStat)(inChar-48));
 
 }
 }*/
-
-ISR(WDT_vect) {
-	// nothing to do, only for waking up
-	//hm.cc.detectBurst();
-	//hm.cc.setIdle();
-}

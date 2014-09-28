@@ -218,9 +218,10 @@ uint8_t CC::detectBurst(void) {
 	strobe(CC1101_SRX);																	// set RX mode again
 	_delay_ms(2);																		// wait a short time to set RX mode
 
-	// check carrier sense for 5ms to avoid wakeup due to normal transmition
-	if (! (getStatus() & (1<<6)) ) return 0;
-	_delay_ms(5);
+	// check carrier sense for 2ms to avoid wakeup due to normal transmition
+	// will be checked in the power management function
+	//if (! (getStatus() & (1<<6)) ) return 0;
+	//_delay_ms(2);
 	return (getStatus() & (1<<6))?1:0;
 }
 
