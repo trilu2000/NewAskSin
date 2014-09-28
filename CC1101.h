@@ -95,9 +95,8 @@ class CC {
 
 
   public:		//---------------------------------------------------------------------------------------------------------
-	uint8_t detectBurst(void);																// detect burst signal, sleep while no signal, otherwise stay awake
-	uint8_t getStatus(void);
 	void    setIdle(void);																	// put CC1101 into power-down state
+	uint8_t detectBurst(void);																// detect burst signal, sleep while no signal, otherwise stay awake
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
@@ -107,10 +106,6 @@ class CC {
 	void    init();																			// initialize CC1101
 	uint8_t sndData(uint8_t *buf, uint8_t burst);											// send data packet via RF
 	uint8_t rcvData(uint8_t *buf);															// read data packet from RX FIFO
-	//uint8_t detectBurst(void);
-	//void    setIdle(void);																	// put CC1101 into power-down state
-	//uint8_t getStatus(void);
-	//uint8_t detectBurst(void);																// detect burst signal, sleep while no signal, otherwise stay awake
 	
 	void    strobe(uint8_t cmd);															// send command strobe to the CC1101 IC via SPI
 	void    readBurst(uint8_t * buf, uint8_t regAddr, uint8_t len);							// read burst data from CC1101 via SPI

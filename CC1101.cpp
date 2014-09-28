@@ -184,9 +184,6 @@ void    CC::setIdle() {																	// put CC1101 into power-down state
 	strobe(CC1101_SPWD);																// enter power down state
 	//dbg << "pd\n";
 }
-uint8_t CC::getStatus() {
-	return readReg(CC1101_PKTSTATUS, CC1101_STATUS);
-}
 uint8_t CC::detectBurst(void) {		
 	// 10 7/10 5 in front of the received string; 33 after received string
 	// 10 - 00001010 - sync word found
@@ -222,7 +219,7 @@ uint8_t CC::detectBurst(void) {
 	// will be checked in the power management function
 	//if (! (getStatus() & (1<<6)) ) return 0;
 	//_delay_ms(2);
-	return (getStatus() & (1<<6))?1:0;
+	return (readReg(CC1101_PKTSTATUS, CC1101_STATUS) & (1<<6))?1:0;
 }
 
 void    CC::strobe(uint8_t cmd) {														// send command strobe to the CC1101 IC via SPI
