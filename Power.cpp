@@ -39,14 +39,34 @@ void PW::stayAwake(uint16_t time) {
 	pwrTmr.set(time);
 }
 void PW::poll(void) {
-	if (pwrMode == 0) return;
+	// check against active flag of various modules
+	// on mode 0 there is nothing to do, maybe set idle mode to save some energy
+	// mode 1 means - check every 250ms if there is a transmition signal, if yes, wait
+	// 50ms and check again - if it is still active, then wakeup the device for some time, 
+	// if not, then sleep again
+	// mode 2 means - sleep for 8000ms, wake up - check if something is to do, otherwise sleep again
+	// communication module could stay idle, communication will start with transmition
+	// mode 3 means - sleep for ever until an interrupt get raised
+	
+	//if (pwrMode == 0) return;
 	if (!pwrTmr.done()) return;	
-
+	if ((pHM->sn.active) || (pHM->stcSlice.active) || (pHM->cFlag.active) || (pHM->pairActive)) return;
+	
 	#ifdef PW_DBG																			// only if pw debug is set
 	dbg << '.';																				// ...and some information
 	_delay_ms(10);
 	#endif
 
+	if        (pwrMode == 0) {
+		
+	} else if (pwrMode == 1) {
+
+	} else if (pwrMode == 2) {
+
+	} else if (pwrMode == 3) {
+
+	}
+	
 	pHM->cc.setIdle();																		// set communication module to idle
 	pHM->ld.set(nothing);																	// switch off all led's
 	pHM->ld.blinkRed();																		// we go sleeping
