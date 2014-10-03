@@ -51,7 +51,7 @@ void CB::poll(void) {
 		}
 		break;
 
-		case 1:		// button is released, check if the double flags timed out
+		case 1:		// button is not pressed for a longer time, check if the double flags timed out
 		if (btnTmr.done() ) {																// check for double timed out
 			rptFlg = 0;																		// clear the repeat flag
 			lstLng = 0;
@@ -75,6 +75,7 @@ void CB::poll(void) {
 }
 void CB::keyShortSingle(void) {
 	rptFlg = 1;																				// remember last key press
+	pHM->pw.stayAwake(500);
 
 	#ifdef CB_DBG																			// only if ee debug is set
 	dbg << F("keyShortSingle\n");															// ...and some information
@@ -85,6 +86,7 @@ void CB::keyShortSingle(void) {
 }
 void CB::keyShortDouble(void) {
 	rptFlg = 0;																				// clear last key press
+	pHM->pw.stayAwake(500);
 
 	#ifdef CB_DBG																			// only if ee debug is set
 	dbg << F("keyShortDouble\n");															// ...and some information
@@ -92,6 +94,7 @@ void CB::keyShortDouble(void) {
 }
 void CB::keyLongSingle(void) {
 	lstLng = 1;																				// remember long key press
+	pHM->pw.stayAwake(500);
 	
 	#ifdef CB_DBG																			// only if ee debug is set
 	dbg << F("keyLongSingle\n");															// ...and some information
@@ -101,6 +104,7 @@ void CB::keyLongSingle(void) {
 }
 void CB::keyLongRepeat(void) {
 	rptFlg = 1;																				// remember last key press
+	pHM->pw.stayAwake(500);
 
 	#ifdef CB_DBG																			// only if ee debug is set
 	dbg << F("keyLongRepeat\n");															// ...and some information
@@ -109,6 +113,7 @@ void CB::keyLongRepeat(void) {
 void CB::keyLongRelease(void) {
 	rptFlg = 0;																				// clear the repeat flag
 	lstLng = 0;																				// remember last key press
+	pHM->pw.stayAwake(500);
 	
 	// 0x18 localResDis available, take care of it
 	uint8_t localResDis = pHM->ee.getRegAddr(0,0,0,0x18);									// get register address

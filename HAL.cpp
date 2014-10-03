@@ -133,35 +133,28 @@ ISR (PCINT2_vect) {
 
 
 //- power management functions --------------------------------------------------------------------------------------------
-uint8_t pwrMode, wdtSleep;
-uint16_t wdtSleepTime;
+static volatile uint8_t wdtSleep;
+static uint16_t wdtSleepTime;
 
-void initPwrMode(uint8_t mode) {
-	pwrMode = mode;
-	if (pwrMode == 0) return;
-
-	if        (pwrMode == 1) {
-		WDTCSR |= (1<<WDCE) | (1<<WDE);													// set control register to change and enable the watch dog
-		WDTCSR = (1<<WDP2);																// 250 ms
-		wdtSleepTime = 256;																// to add it later to the timer
-	
-	} else if (pwrMode == 2) {
-		WDTCSR |= (1<<WDCE) | (1<<WDE);													// set control register to change and enable the watch dog
-		WDTCSR = (1<<WDP0) | (1<<WDP3);													// 8000 ms
-		wdtSleepTime = 8192;															// to add it later to the timer
-
-	}
-	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+void setWDG32ms(void) {
+	WDTCSR |= (1<<WDCE) | (1<<WDE);
+	WDTCSR = (1<<WDIE) | (1<<WDP0);
+	wdtSleepTime = 32;
 }
+void setWDG250ms(void) {
+	WDTCSR |= (1<<WDCE) | (1<<WDE);
+	WDTCSR = (1<<WDIE) | (1<<WDP2);
+	wdtSleepTime = 256;
+}
+void setWDG8000ms(void) {
+	WDTCSR |= (1<<WDCE) | (1<<WDE);
+	WDTCSR = (1<<WDIE) | (1<<WDP3) | (1<<WDP0);
+	wdtSleepTime = 8192;
+}
+
 void setSleep(void) {
-	if (pwrMode == 0) return;															// nothing to do because power management is off
-
-	if ((pwrMode == 1) || (pwrMode == 2)) {
-		WDTCSR |= (1<<WDIE);															// enable watch dog if power mode 1 or 2
-	}
-
 	//dbg << ',';																		// some debug
-	//_delay_ms(100);																	// delay is neccasaary to get it printed on the console before device sleeps
+	//_delay_ms(10);																	// delay is necessary to get it printed on the console before device sleeps
 	//_delay_ms(100);
 
 	// some power savings by switching off some CPU functionality
@@ -179,7 +172,6 @@ void setSleep(void) {
 	// wakeup will be here
 	sleep_disable();																	// first thing after waking from sleep, disable sleep...
 
-	WDTCSR &= ~(1<<WDIE);																// watchdog interrupt off
 	if (wdtSleep) {
 		milliseconds += wdtSleepTime;													// add the time we were sleeping to the timer
 		wdtSleep = 0;																	// clear the watch dog time marker

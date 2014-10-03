@@ -104,18 +104,5 @@ void SN::poll(void) {
 		if (!pHM->ld.active) pHM->ld.set(ack);																	// fire the status led
 	}
 
-/*	
-	// setting some variables
-	powr.state = 1;																		// remember TRX module status, after sending it is always in RX mode
-	if ((powr.mode > 0) && (powr.nxtTO < (millis() + powr.minTO))) stayAwake(powr.minTO); // stay awake for some time
-
-	if (pevt.act == 1) {
-		hm.statusLed.set(STATUSLED_BOTH, STATUSLED_MODE_BLINKFAST, 1);					// blink led 1 and led 2 once after key press
-	}
-
-	if (pevt.act == 1) {
-		hm.statusLed.stop(STATUSLED_BOTH);
-		hm.statusLed.set(STATUSLED_2, STATUSLED_MODE_BLINKSLOW, 1);						// blink the led 2 once if keypress before
-	}*/
 	
 }

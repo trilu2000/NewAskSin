@@ -104,7 +104,6 @@ void AS::sendDEVICE_INFO(void) {
 	pairActive = 1;																			// set pairing flag
 	pairTmr.set(20000);
 	ld.set(pairing);																		// and visualize the status
-	pw.stayAwake(20001);																	// stay awake for the given time
 	// --------------------------------------------------------------------
 }
 void AS::sendACK(void) {
@@ -302,7 +301,6 @@ void AS::sendWeatherEvent(void) {
 // - poll functions --------------------------------
 void AS::sendSliceList(void) {
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
-	pw.stayAwake(100);																		// awake at least for the time to enter the send function
 
 	uint8_t cnt;
 
@@ -332,7 +330,6 @@ void AS::sendPeerMsg(void) {
 	#define maxRetries    3
 
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
-	pw.stayAwake(100);																		// awake at least for the time to enter the send function
 	
 	// first run, prepare amount of slots
 	if (!stcPeer.maxIdx) stcPeer.maxIdx = ee.getPeerSlots(stcPeer.cnl);						// get amount of messages of peer channel
