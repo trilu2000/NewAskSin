@@ -112,7 +112,12 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 
 	if (burst) {																		// BURST-bit set?
 		strobe(CC1101_STX  );															// send a burst
-		_delay_ms(360);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
+		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
+		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
+		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
+		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
+		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
+		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
 		//dbg << "send burst\n";
 	} else {
 		_delay_ms(1);																	// wait a short time to set TX mode
@@ -211,15 +216,15 @@ uint8_t CC::detectBurst(void) {
 	_ccDeselect;
 	_delay_ms(1);																		// give some time to come up
 
-	//strobe(CC1101_SIDLE);																// enter idle mode first
 	strobe(CC1101_SRX);																	// set RX mode again
-	_delay_ms(2);																		// wait a short time to set RX mode
 
-	// check carrier sense for 2ms to avoid wakeup due to normal transmition
-	// will be checked in the power management function
-	//if (! (getStatus() & (1<<6)) ) return 0;
-	//_delay_ms(2);
-	return (readReg(CC1101_PKTSTATUS, CC1101_STATUS) & (1<<6))?1:0;
+	uint8_t bTmp;
+	for (uint8_t i = 0; i < 200; i++) {													// check if we are in RX mode
+		bTmp = readReg(CC1101_PKTSTATUS, CC1101_STATUS);								// read the status of the line
+		if ((bTmp & 0x10) || (bTmp & 0x40)) break;										// check for channel clear, or carrier sense
+		_delay_us(10);																	// wait a bit
+	}
+	return (bTmp & 0x40)?1:0;															// return carrier sense bit
 }
 
 void    CC::strobe(uint8_t cmd) {														// send command strobe to the CC1101 IC via SPI

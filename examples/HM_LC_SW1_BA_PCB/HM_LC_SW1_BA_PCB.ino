@@ -19,6 +19,25 @@ void setup() {
 	#endif
 	
 	// - Hardware setup ---------------------------------------
+	// everything off
+	ADCSRA = 0;	
+	power_adc_disable();																	// stop unused functions
+	power_timer1_disable();
+	power_timer2_disable();
+	power_twi_disable();
+
+	DDRB = 0xff;																			// everything as output
+	DDRC = 0xff;
+	DDRD = 0xff;
+
+	PORTB = 0x00;																			// pullup's off
+	PORTC = 0x00;
+	PORTD = 0x00;
+
+	power_spi_enable();
+	power_timer0_enable();
+	power_usart0_enable();
+
 	// led's - D4 and D6
 	pinOutput(DDRD,4);																		// init the led pins
 	pinOutput(DDRD,6);
