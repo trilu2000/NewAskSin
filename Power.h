@@ -12,19 +12,23 @@
 #include "HAL.h"
 
 // - power modes to implement -----------
-// 0 - no power management
+// 0 - 19.9ma; no power management
 // 1 - wake up every 250ms, check for wakeup signal on air and stay awake accordingly, timer gets updated every 250ms
-// 2 - deep sleep, wakeup every 8 seconds, not able to receive anything while sleeping, timer gets updated every 8000ms
-// 3 - deep sleep, wakeup only on interrupt
+// 2 - deep sleep, wakeup every 250ms, not able to receive anything while sleeping, timer gets updated every 256ms
+// 3 - 0.04ma; deep sleep, wakeup every 8 seconds, not able to receive anything while sleeping, timer gets updated every 8192ms
+// 4 - 0.00ma; deep sleep, wakeup only on interrupt
 
 class PW {
 	friend class AS;
   
   private:		//---------------------------------------------------------------------------------------------------------
-	class AS *pHM;							// pointer to main class for function calls
-	uint8_t pwrMode;						// remember the level of power savings
-	
   protected:	//---------------------------------------------------------------------------------------------------------
+	class AS *pHM;							// pointer to main class for function calls
+
+	uint8_t pwrMode       :3;				// remember the level of power savings
+	uint8_t chkCCBurst    :1;
+	uint8_t comStat       :1;
+
   public:		//---------------------------------------------------------------------------------------------------------
 
   public:		//---------------------------------------------------------------------------------------------------------
@@ -36,6 +40,7 @@ class PW {
 	PW();
 	void init(AS *ptrMain);
 	void poll(void);
+	void chkBurst(void);
 };
 
 #endif 

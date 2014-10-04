@@ -117,7 +117,7 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin) {
 	}
 }
 
-#define debounce 10
+#define debounce 5
 ISR (PCINT0_vect) {
 	pcInt[0].cur = PINB;
 	pcInt[0].time = getMillis()+debounce;
@@ -133,26 +133,25 @@ ISR (PCINT2_vect) {
 
 
 //- power management functions --------------------------------------------------------------------------------------------
-static volatile uint8_t wdtSleep;
+//static volatile uint8_t wdtSleep;
 static uint16_t wdtSleepTime;
 
-void setWDG32ms(void) {
+void    startWDG32ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP0);
 	wdtSleepTime = 32;
 }
-void setWDG250ms(void) {
+void    startWDG250ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP2);
 	wdtSleepTime = 256;
 }
-void setWDG8000ms(void) {
+void    startWDG8000ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP3) | (1<<WDP0);
 	wdtSleepTime = 8192;
 }
-
-void setSleep(void) {
+void    setSleep(void) {
 	//dbg << ',';																		// some debug
 	//_delay_ms(10);																	// delay is necessary to get it printed on the console before device sleeps
 	//_delay_ms(100);
@@ -172,18 +171,13 @@ void setSleep(void) {
 	// wakeup will be here
 	sleep_disable();																	// first thing after waking from sleep, disable sleep...
 
-	if (wdtSleep) {
-		milliseconds += wdtSleepTime;													// add the time we were sleeping to the timer
-		wdtSleep = 0;																	// clear the watch dog time marker
-	}
-
 	PRR = xPrr;																			// restore power management
 	//dbg << '.';																		// some debug
 }
 
 ISR(WDT_vect) {
 	// nothing to do, only for waking up
-	wdtSleep = 1;																		// remember that it was a watch dog sleep
+	milliseconds += wdtSleepTime;
 }
 
 //- -----------------------------------------------------------------------------------------------------------------------

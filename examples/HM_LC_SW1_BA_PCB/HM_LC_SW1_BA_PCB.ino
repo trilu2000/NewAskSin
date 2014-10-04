@@ -39,7 +39,7 @@ void setup() {
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(3);																		// set power management mode
+	hm.pw.setMode(1);																		// set power management mode
 
 	// - User related -----------------------------------------
 

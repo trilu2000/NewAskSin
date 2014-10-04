@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define CB_DBG
+#define CB_DBG
 #include "ConfButton.h"
 #include "AS.h"
 
@@ -40,37 +40,28 @@ void CB::poll(void) {
 	btn = chkPCINT(pciByte, pciBit);														// check input pin
 
 	// check button status
-	switch (btn) {
-		case 0:		// button is still pressed
-		if (btnTmr.done() )	{																// timed out, seems to be a long
-			btnTmr.set(detectLong);															// set timer to detect next long
-			pHM->pw.stayAwake(detectLong+5);												// stay awake to check button status
-			
-			if (lstLng) keyLongRepeat();													// last key state was a long, now it is a double
-			else keyLongSingle();															// first time detect a long
-		}
-		break;
+	if ((btn == 0) && (btnTmr.done() )) {			// button is still pressed, but timed out, seems to be a long
+		btnTmr.set(detectLong);																// set timer to detect next long
+		pHM->pw.stayAwake(detectLong+500);													// stay awake to check button status
 
-		case 1:		// button is not pressed for a longer time, check if the double flags timed out
-		if (btnTmr.done() ) {																// check for double timed out
-			rptFlg = 0;																		// clear the repeat flag
-			lstLng = 0;
-		}
-		break;
+		if (lstLng) keyLongRepeat();														// last key state was a long, now it is a double
+		else keyLongSingle();																// first time detect a long
 
-		case 2:		// button was just pressed
+	} else if ((btn == 1) && (btnTmr.done() )) {	// button is not pressed for a longer time, check if the double flags timed out
+		rptFlg = 0;																		// clear the repeat flag
+		lstLng = 0;
+		
+	} else if (btn == 2) {							// button was just pressed
 		btnTmr.set(detectLong);																// set timer to detect a long
-		pHM->pw.stayAwake(detectLong+5);													// stay awake to check button status
-		break;
+		pHM->pw.stayAwake(detectLong+500);													// stay awake to check button status
 
-		case 3:		// button was just released, was a long while timed out, or a short while timer is running
+	} else if (btn == 3) {							// button was just released, was a long while timed out, or a short while timer is running
 		if      ((lstLng) && (rptFlg)) keyLongRelease();									// check for long double
 		else if (rptFlg)  keyShortDouble();													// check for short double
 		else if (!lstLng) keyShortSingle();													// otherwise it was a short single
 		
 		btnTmr.set(timeoutDouble);															// set timer to clear the repeated flags
-		pHM->pw.stayAwake(timeoutDouble+5);													// stay awake to check button status
-		break;
+		pHM->pw.stayAwake(timeoutDouble+500);												// stay awake to check button status
 	}
 }
 void CB::keyShortSingle(void) {

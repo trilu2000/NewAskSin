@@ -127,23 +127,13 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin);
 // http://donalmorrissey.blogspot.de/2010/04/sleeping-arduino-part-5-wake-up-via.html
 // http://www.mikrocontroller.net/articles/Sleep_Mode#Idle_Mode
 
-// set control register to change and enable the watch dog
-  /* The tricky part is that the next line *must* have both,
-   * WDCE and WDE cleared. */
-  //WDTCSR = _BV(WDIF) | _BV(WDIE) | WDTO_1S;
-  //MCUSR = 0;
-
-
-//#define setWDG32ms()          WDTCSR = (1<<WDIF) | (1<<WDCE) | (1<<WDE); WDTCSR = (1<<WDIF) | (1<<WDIE) | (1<<WDP0); MCUSR = 0; wdtSleepTime = 32
-//#define setWDG250ms()         WDTCSR = (1<<WDIF) | (1<<WDCE) | (1<<WDE); WDTCSR = (1<<WDIF) | (1<<WDIE) | (1<<WDP2); MCUSR = 0; wdtSleepTime = 256
-//#define setWDG8000ms()        WDTCSR = (1<<WDIF) | (1<<WDCE) | (1<<WDE); WDTCSR = (1<<WDIF) | (1<<WDIE) | (1<<WDP0) | (1<<WDP3); MCUSR = 0; wdtSleepTime = 8192
 #define startWDG()            WDTCSR = (1<<WDIE)     
 #define stopWDG()             WDTCSR &= ~(1<<WDIE)
 #define setSleepMode()        set_sleep_mode(SLEEP_MODE_PWR_DOWN)
 
-void setWDG32ms(void);
-void setWDG250ms(void);
-void setWDG8000ms(void);
+void startWDG32ms(void);
+void startWDG250ms(void);
+void startWDG8000ms(void);
 void setSleep(void);
 
 //- -----------------------------------------------------------------------------------------------------------------------
