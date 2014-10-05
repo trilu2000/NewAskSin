@@ -20,21 +20,13 @@ void setup() {
 	
 	// - Hardware setup ---------------------------------------
 	// everything off
-	ADCSRA = 0;	
-	power_adc_disable();																	// stop unused functions
-	power_timer1_disable();
-	power_timer2_disable();
-	power_twi_disable();
+	ADCSRA = 0;																				// ADC off
+	power_all_disable();																	// and everything else
+	
+	DDRB = DDRC = DDRD = 0xff;																// everything as output
+	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	DDRB = 0xff;																			// everything as output
-	DDRC = 0xff;
-	DDRD = 0xff;
-
-	PORTB = 0x00;																			// pullup's off
-	PORTC = 0x00;
-	PORTD = 0x00;
-
-	power_spi_enable();
+	power_spi_enable();																		// enable only needed functions
 	power_timer0_enable();
 	power_usart0_enable();
 
@@ -105,6 +97,5 @@ while (Serial.available()) {
 uint8_t inChar = (uint8_t)Serial.read();											// read a byte
 if ((inChar>47) && (inChar<58))
 hm.ld.rmb((ledStat)(inChar-48));
-
 }
 }*/

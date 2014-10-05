@@ -100,10 +100,6 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 
 	// Going from RX to TX does not work if there was a reception less than 0.5
 	// sec ago. Due to CCA? Using IDLE helps to shorten this period(?)
-	//ccStrobe(CC1100_SIDLE);
-	//uint8_t cnt = 0xff;
-	//while(cnt-- && (ccStrobe( CC1100_STX ) & 0x70) != 2)
-	//my_delay_us(10);
 	strobe(CC1101_SIDLE);																// go to idle mode
 	strobe(CC1101_SFRX );																// flush RX buffer
 	strobe(CC1101_SFTX );																// flush TX buffer
@@ -128,7 +124,7 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	strobe(CC1101_SFRX);																// flush the RX buffer
 	strobe(CC1101_STX);																	// send a burst
 
-	for(uint8_t i=0; i< 200; ++i) {														// after sending out all bytes the chip should go automatically in RX mode
+	for(uint8_t i = 0; i < 200; i++) {													// after sending out all bytes the chip should go automatically in RX mode
 		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_RX)
 			break;																		//now in RX mode, good
 		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_TX) {
@@ -136,10 +132,6 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 		}
 		_delay_us(10);
 	}
-
-	//uint8_t cnt = 0xff;
-	//while(cnt-- && (ccSendByte(CC1101_SRX) & 0x70) != 1)
-	//_delay_us(10);
 
 	#ifdef CC_DBG																		// only if cc debug is set
 	dbg << F("<- ") << pHexB(buf[0]) << pHexB(buf[1]) << '\n';//pTime();

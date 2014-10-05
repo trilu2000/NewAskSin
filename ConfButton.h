@@ -54,12 +54,9 @@ class CB {
 	
 	void init(AS *ptrMain);
 	void poll(void);
+	
+	void outSignal(uint8_t mode);
 
-	void keyShortSingle(void);
-	void keyShortDouble(void);
-	void keyLongSingle(void);
-	void keyLongRepeat(void);
-	void keyLongRelease(void);
 };
 
 #endif 

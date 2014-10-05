@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define CB_DBG
+//#define CB_DBG
 #include "ConfButton.h"
 #include "AS.h"
 
@@ -38,14 +38,14 @@ void CB::poll(void) {
 	
 	// 0 for button is pressed, 1 for released, 2 for falling and 3 for rising edge
 	btn = chkPCINT(pciByte, pciBit);														// check input pin
-
+	
 	// check button status
 	if ((btn == 0) && (btnTmr.done() )) {			// button is still pressed, but timed out, seems to be a long
 		btnTmr.set(detectLong);																// set timer to detect next long
 		pHM->pw.stayAwake(detectLong+500);													// stay awake to check button status
 
-		if (lstLng) keyLongRepeat();														// last key state was a long, now it is a double
-		else keyLongSingle();																// first time detect a long
+		if (lstLng) outSignal(4);															// last key state was a long, now it is a double
+		else outSignal(3);																	// first time detect a long
 
 	} else if ((btn == 1) && (btnTmr.done() )) {	// button is not pressed for a longer time, check if the double flags timed out
 		rptFlg = 0;																		// clear the repeat flag
@@ -56,65 +56,53 @@ void CB::poll(void) {
 		pHM->pw.stayAwake(detectLong+500);													// stay awake to check button status
 
 	} else if (btn == 3) {							// button was just released, was a long while timed out, or a short while timer is running
-		if      ((lstLng) && (rptFlg)) keyLongRelease();									// check for long double
-		else if (rptFlg)  keyShortDouble();													// check for short double
-		else if (!lstLng) keyShortSingle();													// otherwise it was a short single
+		if      ((lstLng) && (rptFlg)) outSignal(5);										// check for long double
+		else if (rptFlg)  outSignal(2);														// check for short double
+		else if (!lstLng) outSignal(1);														// otherwise it was a short single
 		
 		btnTmr.set(timeoutDouble);															// set timer to clear the repeated flags
-		pHM->pw.stayAwake(timeoutDouble+500);												// stay awake to check button status
+		pHM->pw.stayAwake(timeoutDouble+500);													// stay awake to check button status
 	}
 }
-void CB::keyShortSingle(void) {
-	rptFlg = 1;																				// remember last key press
+
+void CB::outSignal(uint8_t mode) {
 	pHM->pw.stayAwake(500);
 
 	#ifdef CB_DBG																			// only if ee debug is set
-	dbg << F("keyShortSingle\n");															// ...and some information
+	if (mode == 1) dbg << F("keyShortSingle\n");											// ...and some information
+	if (mode == 2) dbg << F("keyShortDouble\n");
+	if (mode == 3) dbg << F("keyLongSingle\n");	
+	if (mode == 4) dbg << F("keyLongRepeat\n");	
+	if (mode == 5) dbg << F("keyLongRelease\n");
 	#endif
 
-	if (scn == 1) pHM->sendDEVICE_INFO();													// send pairing string
-	if ((scn == 2) && (modTbl[0].cnl)) modTbl[0].mDlgt(0,1,0,NULL,0);						// send toggle to user module registered on channel 1
-}
-void CB::keyShortDouble(void) {
-	rptFlg = 0;																				// clear last key press
-	pHM->pw.stayAwake(500);
+	if (mode == 1) {						// keyShortSingle
+		rptFlg = 1;																			// remember last key press
 
-	#ifdef CB_DBG																			// only if ee debug is set
-	dbg << F("keyShortDouble\n");															// ...and some information
-	#endif
-}
-void CB::keyLongSingle(void) {
-	lstLng = 1;																				// remember long key press
-	pHM->pw.stayAwake(500);
+		if (scn == 1) pHM->sendDEVICE_INFO();												// send pairing string
+		if ((scn == 2) && (modTbl[0].cnl)) modTbl[0].mDlgt(0,1,0,NULL,0);					// send toggle to user module registered on channel 1
+		
+	} else if (mode == 2) {					// keyShortDouble
+		rptFlg = 0;																			// clear last key press
+		
+	} else if (mode == 3) {					// keyLongSingle
+		lstLng = 1;																			// remember long key press
+
+		if (scn == 2) pHM->sendDEVICE_INFO();												// send pairing string
+
+	} else if (mode == 4) {					// keyLongRepeat
+		rptFlg = 1;																			// remember last key press
+
+	} else if (mode == 5) {					// keyLongRelease
+		rptFlg = 0;																			// clear the repeat flag
+		lstLng = 0;																			// remember last key press
 	
-	#ifdef CB_DBG																			// only if ee debug is set
-	dbg << F("keyLongSingle\n");															// ...and some information
-	#endif
-
-	if (scn == 2) pHM->sendDEVICE_INFO();													// send pairing string
-}
-void CB::keyLongRepeat(void) {
-	rptFlg = 1;																				// remember last key press
-	pHM->pw.stayAwake(500);
-
-	#ifdef CB_DBG																			// only if ee debug is set
-	dbg << F("keyLongRepeat\n");															// ...and some information
-	#endif
-}
-void CB::keyLongRelease(void) {
-	rptFlg = 0;																				// clear the repeat flag
-	lstLng = 0;																				// remember last key press
-	pHM->pw.stayAwake(500);
+		// 0x18 localResDis available, take care of it
+		uint8_t localResDis = pHM->ee.getRegAddr(0,0,0,0x18);								// get register address
 	
-	// 0x18 localResDis available, take care of it
-	uint8_t localResDis = pHM->ee.getRegAddr(0,0,0,0x18);									// get register address
-	
-	#ifdef CB_DBG																			// only if ee debug is set
-	dbg << F("keyLongRelease\n");															// ...and some information
-	#endif
-
-	if (localResDis) return;
-	pHM->ee.clearPeers();
-	pHM->ee.clearRegs();
-	pHM->ee.getMasterID();
+		if (localResDis) return;
+		pHM->ee.clearPeers();
+		pHM->ee.clearRegs();
+		pHM->ee.getMasterID();
+	}
 }

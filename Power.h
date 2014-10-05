@@ -28,7 +28,8 @@ class PW {
 	uint8_t pwrMode       :3;				// remember the level of power savings
 	uint8_t chkCCBurst    :1;
 	uint8_t comStat       :1;
-
+	uint8_t tmpCCBurst    :1;
+	
   public:		//---------------------------------------------------------------------------------------------------------
 
   public:		//---------------------------------------------------------------------------------------------------------
@@ -40,7 +41,6 @@ class PW {
 	PW();
 	void init(AS *ptrMain);
 	void poll(void);
-	void chkBurst(void);
 };
 
 #endif 

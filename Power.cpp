@@ -57,6 +57,7 @@ void PW::poll(void) {
 	
 	if (pwrMode == 0) return;																// no power savings, there for we can exit
 	if (!pwrTmr.done()) return;																// timer active, jump out
+
 	// some communication still active, jump out
 	if ((pHM->sn.active) || (pHM->stcSlice.active) || (pHM->cFlag.active) || (pHM->pairActive)) return;
 	
@@ -66,26 +67,49 @@ void PW::poll(void) {
 	uint32_t fTme = getMillis();
 	#endif
 
-	// check communication on power mode 1
-	if (pwrMode == 1) {
-		chkBurst();																			// rxtx check every 250ms, between deep sleep
-		if (comStat == 1) {																	// communication is still active, means we have detected a burst, stay wake for some time																	
-			stayAwake(500);
-			return;
+
+	if (pwrMode == 1) {									// check communication on power mode 1
+
+		tmpCCBurst = pHM->cc.detectBurst();
+
+		if ((tmpCCBurst) && (!chkCCBurst)) {			// burst detected for the first time
+			chkCCBurst = 1;																	// set the flag
+			
+			#ifdef PW_DBG																	// only if pw debug is set
+			dbg << '1';																		// ...and some information
+			#endif
+
+		} else if ((tmpCCBurst) && (chkCCBurst)) {		// burst detected for the second time
+			chkCCBurst = 0;																	// reset the flag
+			stayAwake(500);																	// stay awake for some time to check if we receive a valid message
+
+			#ifdef PW_DBG																	// only if pw debug is set
+			dbg << '2';																		// ...and some information
+			#endif
+
+			return;																			// we don't want proceed further, jump out
+			
+		} else if ((!tmpCCBurst) && (chkCCBurst)) {		// secondary test was negative, reset the flag
+			chkCCBurst = 0;																	// reset the flag
+
+			#ifdef PW_DBG																	// only if pw debug is set
+			dbg << '-';																		// ...and some information
+			#endif			
 		}
 	}
 
 	// if we are here, we could go sleep. set cc module idle, switch off led's and sleep
 	pHM->cc.setIdle();																		// set communication module to idle
 	pHM->ld.set(nothing);																	// switch off all led's
-	//pHM->ld.blinkRed();																	// we go sleeping
 
+	// start the respective watchdog timers
 	cli();
-	if ((pwrMode == 1) && (!chkCCBurst)) startWDG250ms();									// set respective watchdog time out
+	if ((pwrMode == 1) && (!chkCCBurst)) startWDG250ms();
 	if ((pwrMode == 1) && (chkCCBurst)) startWDG32ms();
 	if (pwrMode == 2) startWDG250ms();
 	if (pwrMode == 3) startWDG8000ms();
 	sei();
+
 
 	setSleep();																				// call sleep function in HAL
 	// wake up will be here
@@ -98,48 +122,4 @@ void PW::poll(void) {
 	dbg << ':';// << (getMillis() -fTme) << '\n';												// ...and some information
 	#endif
 		
-}
-void PW::chkBurst(void) {
-	// only valid for power mode 1, we will check every 250ms if there is a burst signal
-	// if there is one, we set the pwrTmr to stay awake for some time, otherwise we fall in sleep again
-	// and switch communication to power down
-	
-	// well will check for burst twice - primary start every 250ms, if we detect a burst, we set the flag and check again in 50ms
-	
-	if (pHM->cc.detectBurst()) {															
-		// burst detected, check if it was first or second time		
-		if (chkCCBurst) {																	// it was second time
-			chkCCBurst = 0;																	// reset the flag
-			comStat = 1;																	// remember that communication module is still active
-
-			#ifdef PW_DBG																	// only if pw debug is set
-			dbg << '2';																		// ...and some information
-			#endif
-			
-		} else {																			// it was first time
-			chkCCBurst = 1;																	// set the flag
-			//pHM->cc.setIdle();																// set communication module to idle
-			comStat = 0;																	// remember that communication module is off
-
-			#ifdef PW_DBG																	// only if pw debug is set
-			dbg << '1';																		// ...and some information
-			#endif
-			
-		}
-		
-	} else {
-		if (chkCCBurst) {																	// secondary test was negative, reset the flag
-			chkCCBurst = 0;																	// reset the flag
-
-			#ifdef PW_DBG																	// only if pw debug is set
-			dbg << '-';																		// ...and some information
-			_delay_ms(1);
-			#endif
-
-		}
-		// no burst detected, means we can go sleep again
-		//pHM->cc.setIdle();																	// set communication module to idle
-		comStat = 0;																		// remember that communication module is off
-	}
-
 }

@@ -13,6 +13,9 @@
 	#include "WProgram.h"
 #endif
 
+#include <stdint.h>
+#include <stdlib.h>
+
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 #include <avr/delay.h>
