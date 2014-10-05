@@ -206,8 +206,12 @@ uint8_t CC::detectBurst(void) {
 	_ccSelect;																			// wake up the communication module
 	_waitMiso;
 	_ccDeselect;
-	_delay_ms(1);																		// give some time to come up
 
+	for(uint8_t i = 0; i < 200; i++) {													// instead of delay, check the really needed time to wakeup
+		if (readReg(CC1101_MARCSTATE, CC1101_STATUS) != 0xff) break;
+		_delay_us(10);
+	}
+	
 	strobe(CC1101_SRX);																	// set RX mode again
 
 	uint8_t bTmp;
