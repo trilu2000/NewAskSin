@@ -18,6 +18,7 @@
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
+#include "Battery.h"
 
 class AS {
 	friend class SN;
@@ -33,6 +34,7 @@ class AS {
 	LD ld;																					// status led
 	PW pw;																					// power management
 	CC cc;																					// load communication module
+	BT bt;
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
