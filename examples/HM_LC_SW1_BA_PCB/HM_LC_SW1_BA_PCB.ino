@@ -40,6 +40,10 @@ void setup() {
 	regPCIE(PCIE0);																			// set the pin change interrupt
 	regPCINT(PCMSK0,PCINT0);																// description is in hal.h
 
+	// battery measurement, ADC pin PC0, enable pin PD7
+	pinInput(DDRC, 0);																		// set the ADC pin as input
+	setPinLow(PORTC, 0);																	// switch off pull up
+
 	
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
@@ -59,7 +63,7 @@ void setup() {
 
 
 	dbg << "v1: " << getBatteryVoltageInternal() << '\n';
-	dbg << "v2: " << getBatteryVoltageExternal(124) << '\n';
+	dbg << "v3: " << getBatteryVoltageExternal() << '\n';
 }
 
 void loop() {

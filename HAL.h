@@ -145,13 +145,17 @@ void setSleep(void);
 #define BATTERY_NUM_MESS_ADC              20												// real measures to get the best average measure
 #define BATTERY_DUMMY_NUM_MESS_ADC        40												// dummy measures to get the ADC working
 #define AVR_BANDGAP_VOLTAGE               1100UL											// band gap reference for Atmega328p
+#define BATTERY_FACTOR                    121												// see excel table
 
 #define BATTERY_MODE_BANDGAP_MESSUREMENT  1
 #define BATTERY_MODE_EXTERNAL_MESSUREMENT 2
 
+#define enableBattery()       pinOutput(DDRD, 7); setPinLow(PORTD, 7)																// to low status, so measurement could be taken
+#define disableBattery()      pinInput(DDRD, 7);
+
 uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel);
 uint8_t  getBatteryVoltageInternal(void);
-uint16_t getBatteryVoltageExternal(uint8_t tFactor);
+uint8_t  getBatteryVoltageExternal(void);
 
 //- -----------------------------------------------------------------------------------------------------------------------
 

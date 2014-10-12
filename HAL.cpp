@@ -18,14 +18,14 @@ void initEEProm(void) {
 	// place the code to init a i2c eeprom
 }
 void getEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
-	eeprom_read_block((void*)ptr,(const void*)addr,len);								// AVR GCC standard function
+	eeprom_read_block((void*)ptr,(const void*)addr,len);									// AVR GCC standard function
 }
 void setEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
-	eeprom_write_block((const void*)ptr,(void*)addr,len);								// AVR GCC standard function
+	eeprom_write_block((const void*)ptr,(void*)addr,len);									// AVR GCC standard function
 }
 void clearEEPromBlock(uint16_t addr, uint16_t len) {
 	uint8_t tB=0;
-	for (uint16_t l = 0; l < len; l++) {												// step through the bytes of eeprom
+	for (uint16_t l = 0; l < len; l++) {													// step through the bytes of eeprom
 		setEEPromBlock(addr+l,1,(void*)&tB);
 	}
 }
@@ -34,19 +34,19 @@ void clearEEPromBlock(uint16_t addr, uint16_t len) {
 //- cc1100 hardware functions ---------------------------------------------------------------------------------------------
 static volatile uint8_t gdo0 = 0;
 void    ccInitHw(void) {
-	CC1100_IN_DDR &= ~_BV (CC1100_IN_PIN);												// GDO0 input
-	CC1100_CS_DDR |= _BV (CC1100_CS_PIN);												// CS output
+	CC1100_IN_DDR &= ~_BV (CC1100_IN_PIN);													// GDO0 input
+	CC1100_CS_DDR |= _BV (CC1100_CS_PIN);													// CS output
 
-	SPI_DDR |= _BV (SPI_MOSI) | _BV (SPI_SCLK);											// MOSI, SCK output
-	SPI_DDR &= ~_BV (SPI_MISO);															// MISO input
+	SPI_DDR |= _BV (SPI_MOSI) | _BV (SPI_SCLK);												// MOSI, SCK output
+	SPI_DDR &= ~_BV (SPI_MISO);																// MISO input
 
-	SPCR = _BV(SPE) | _BV(MSTR);														// SPI enable, master, speed = CLK/4
+	SPCR = _BV(SPE) | _BV(MSTR);															// SPI enable, master, speed = CLK/4
 
-    EICRA |= _BV(ISC01);																// set INT0 to trigger on falling edge
+    EICRA |= _BV(ISC01);																	// set INT0 to trigger on falling edge
 }
 uint8_t ccSendByte(uint8_t data) {
-	SPDR = data;																		// send byte
-	while (!(SPSR & _BV(SPIF)));														// wait until transfer finished
+	SPDR = data;																			// send byte
+	while (!(SPSR & _BV(SPIF)));															// wait until transfer finished
 	return SPDR;
 }
 uint8_t ccGetGDO0() {
@@ -109,10 +109,10 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin) {
 	
 	// detect rising or falling edge
 	if (pcInt[port].cur & _BV(pin)) {
-		pcInt[port].prev |= _BV(pin);													// set bit bit in prev
+		pcInt[port].prev |= _BV(pin);														// set bit bit in prev
 		return 3;
 	} else {
-		pcInt[port].prev &= ~_BV(pin);													// clear bit in prev
+		pcInt[port].prev &= ~_BV(pin);														// clear bit in prev
 		return 2;
 	}
 }
@@ -152,27 +152,27 @@ void    startWDG8000ms(void) {
 	wdtSleepTime = 8192;
 }
 void    setSleep(void) {
-	//dbg << ',';																		// some debug
-	//_delay_ms(10);																	// delay is necessary to get it printed on the console before device sleeps
+	//dbg << ',';																			// some debug
+	//_delay_ms(10);																		// delay is necessary to get it printed on the console before device sleeps
 	//_delay_ms(100);
 
 	// some power savings by switching off some CPU functionality
-	ADCSRA = 0;																			// disable ADC
-	uint8_t xPrr = PRR;																	// save content of Power Reduction Register
-	PRR = 0xFF;																			// turn off various modules
+	ADCSRA = 0;																				// disable ADC
+	uint8_t xPrr = PRR;																		// save content of Power Reduction Register
+	PRR = 0xFF;																				// turn off various modules
 
-	sleep_enable();																		// enable sleep
-	MCUCR = (1<<BODS)|(1<<BODSE);														// turn off brown-out enable in software
-	MCUCR = (1<<BODS);																	// must be done right before sleep
+	sleep_enable();																			// enable sleep
+	MCUCR = (1<<BODS)|(1<<BODSE);															// turn off brown-out enable in software
+	MCUCR = (1<<BODS);																		// must be done right before sleep
 
-	sleep_cpu();																		// goto sleep
+	sleep_cpu();																			// goto sleep
 	// sleeping now
 	// --------------------------------------------------------------------------------------------------------------------
 	// wakeup will be here
-	sleep_disable();																	// first thing after waking from sleep, disable sleep...
+	sleep_disable();																		// first thing after waking from sleep, disable sleep...
 
-	PRR = xPrr;																			// restore power management
-	//dbg << '.';																		// some debug
+	PRR = xPrr;																				// restore power management
+	//dbg << '.';																			// some debug
 }
 
 ISR(WDT_vect) {
@@ -184,51 +184,51 @@ ISR(WDT_vect) {
 //- battery measurement functions -----------------------------------------------------------------------------------------
 uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel) {
 	uint16_t adcValue = 0;
-	// remember status of ADC
+	
+	uint8_t xPRR = PRR;																		// remember status of ADC 
 	power_adc_enable();
 
-	// start ADC 
-	ADMUX = (voltageReference | inputChannel);
-	ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1);									// Enable ADC and set ADC pre scaler
+	ADMUX = (voltageReference | inputChannel);												// start ADC 
+	ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1);										// Enable ADC and set ADC pre scaler
 
-	for (uint8_t i = 0; i < BATTERY_NUM_MESS_ADC + BATTERY_DUMMY_NUM_MESS_ADC; i++) {	// take samples in a round
-		ADCSRA |= (1 << ADSC);															// start conversion
-		while (ADCSRA & (1 << ADSC)) {}													// wait for conversion complete
+	for (uint8_t i = 0; i < BATTERY_NUM_MESS_ADC + BATTERY_DUMMY_NUM_MESS_ADC; i++) {		// take samples in a round
+		ADCSRA |= (1 << ADSC);																// start conversion
+		while (ADCSRA & (1 << ADSC)) {}														// wait for conversion complete
 
-		if (i >= BATTERY_DUMMY_NUM_MESS_ADC) {											// we discard the first dummy measurements
+		if (i >= BATTERY_DUMMY_NUM_MESS_ADC) {												// we discard the first dummy measurements
 			adcValue += ADCW;
 		}
 	}
 
-	ADCSRA &= ~(1 << ADEN);																// ADC disable
-	adcValue = adcValue / BATTERY_NUM_MESS_ADC;
+	ADCSRA &= ~(1 << ADEN);																	// ADC disable
+	adcValue = adcValue / BATTERY_NUM_MESS_ADC;												// divide adcValue by amount of measurements
 
-	// set ADC to origin status
-	return adcValue;																	// return the measured value
+	PRR = xPRR;																				// set ADC to origin status
+	ADCSRA = 0;																				// ADC off
+	return adcValue;																		// return the measured value
 }
-uint8_t getBatteryVoltageInternal(void) {
-	uint16_t adcValue = getAdcValue(
-		(0 << REFS1) | (1 << REFS0),													// Voltage Reference = AVCC with external capacitor at AREF pin
-		(1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (0 << MUX0)							// Input Channel = 1.1V (V BG)
+uint8_t  getBatteryVoltageInternal(void) {
+	uint32_t adcValue = (uint32_t)getAdcValue(
+		(0 << REFS1) | (1 << REFS0),														// Voltage Reference = AVCC with external capacitor at AREF pin
+		(1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (0 << MUX0)								// Input Channel = 1.1V (V BG)
 	);
 
-	return AVR_BANDGAP_VOLTAGE * 1023 / adcValue / 100;									// calculate battery voltage in V/10
-}
-uint16_t getBatteryVoltageExternal(uint8_t tFactor) {
-	pinInput(DDRC, 0);																	// set the ADC pin accordingly
-	setPinLow(PORTC, 0);
-
-	pinOutput(DDRD, 7);																	// set the measure on pin
-	setPinLow(PORTD, 7);																// to low status, so measurement could be taken
-	
-	uint16_t adcValue = getAdcValue(													// ask the ADC
-		(1 << REFS1) | (1 << REFS0),													// Voltage Reference = Internal 1.1V Voltage Reference
-		0																				// pin 0 on PORTC
-	);
-
-	pinInput(DDRD, 7);																	// set the measure pin to input, so no battery will be wasted
 	//dbg << "x:" << adcValue << '\n';
-	return ((adcValue / 10) * tFactor) / 100;											// calculate and return
+	adcValue = AVR_BANDGAP_VOLTAGE * 1023 / adcValue / 100;									// calculate battery voltage in V/10
+	return (uint8_t)adcValue;																	
+}
+uint8_t  getBatteryVoltageExternal(void) {
+	enableBattery();																		// set pin to low, to make it active
+	
+	uint32_t adcValue = (uint32_t)getAdcValue(												// ask the ADC
+		(1 << REFS1) | (1 << REFS0),														// Voltage Reference = Internal 1.1V Voltage Reference
+		0																					// pin 0 on PORTC
+	);
+
+	disableBattery();																		// measurement pin to input to save battery
+	//dbg << "x:" << adcValue << '\n';
+	adcValue *= BATTERY_FACTOR; adcValue /= 1000;											// calculate the V/10 and return
+	return (uint8_t)adcValue;
 }
 
 
