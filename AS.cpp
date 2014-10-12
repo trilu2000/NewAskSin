@@ -142,7 +142,7 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	sn.mBdy.by10 = 0x01;
 	sn.mBdy.by11 = cnl;
 	sn.mBdy.pyLd[0] = stat;
-	sn.mBdy.pyLd[1] = dul;
+	sn.mBdy.pyLd[1] = dul | (bt.getStatus() << 7);
 	sn.mBdy.pyLd[2] = cc.rssi;
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
@@ -200,7 +200,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	sn.mBdy.by10 = 0x06;
 	sn.mBdy.by11 = cnl;
 	sn.mBdy.pyLd[0] = stat;
-	sn.mBdy.pyLd[1] = cng;
+	sn.mBdy.pyLd[1] = cng | (bt.getStatus() << 7);
 	sn.mBdy.pyLd[2] = cc.rssi;
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
@@ -402,12 +402,13 @@ void AS::sendPeerMsg(void) {
 	memcpy(sn.mBdy.reID, HMID, 3);															// sender id
 	memcpy(sn.mBdy.toID, tPeer, 3);															// receiver id
 	memcpy(sn.buf+10, stcPeer.pL, stcPeer.lenPL);											// payload
-	
+	sn.buf[10] |= (bt.getStatus() << 7);													// battery bit
+ 	
 	sn.maxRetr = 1;																			// send only one time
 	sn.active = 1;																			// make send active
 	
 	if (!sn.mBdy.mFlg.BIDI)
-	stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// clear bit, because it is a message without need to be repeated
+	stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));						// clear bit, because it is a message without need to be repeated
 
 	stcPeer.curIdx++;																		// increase counter for next time
 }

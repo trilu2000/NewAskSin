@@ -3,7 +3,7 @@
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
 //- AskSin battery status functions ---------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
+//- with a lot of support from dirk at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #ifndef _BT_H

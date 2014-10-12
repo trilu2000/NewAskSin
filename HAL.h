@@ -142,6 +142,8 @@ void setSleep(void);
 
 
 //- battery measurement functions -----------------------------------------------------------------------------------------
+// http://jeelabs.org/2013/05/17/zero-powe-battery-measurement/
+
 #define BATTERY_NUM_MESS_ADC              20												// real measures to get the best average measure
 #define BATTERY_DUMMY_NUM_MESS_ADC        40												// dummy measures to get the ADC working
 #define AVR_BANDGAP_VOLTAGE               1100UL											// band gap reference for Atmega328p
