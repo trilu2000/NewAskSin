@@ -23,7 +23,7 @@ void setup() {
 	ADCSRA = 0;																				// ADC off
 	power_all_disable();																	// and everything else
 	
-	DDRB = DDRC = DDRD = 0xff;																// everything as output
+	DDRB = DDRC = DDRD = 0x00;																// everything as input
 	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
 	power_spi_enable();																		// enable only needed functions
@@ -36,7 +36,7 @@ void setup() {
 	
 	// config key pin - D8
 	pinInput(DDRB,0);																		// init the config key pin
-	setInHigh(PORTB,0);
+	setPinHigh(PORTB,0);
 	regPCIE(PCIE0);																			// set the pin change interrupt
 	regPCINT(PCMSK0,PCINT0);																// description is in hal.h
 
@@ -50,12 +50,16 @@ void setup() {
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(1);																		// set power management mode
+	hm.pw.setMode(0);																		// set power management mode
 
 	// - User related -----------------------------------------
 
 	
 	sei();																					// enable interrupts
+
+
+	dbg << "v1: " << getBatteryVoltageInternal() << '\n';
+	dbg << "v2: " << getBatteryVoltageExternal(124) << '\n';
 }
 
 void loop() {

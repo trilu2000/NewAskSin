@@ -180,4 +180,56 @@ ISR(WDT_vect) {
 	milliseconds += wdtSleepTime;
 }
 
+
+//- battery measurement functions -----------------------------------------------------------------------------------------
+uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel) {
+	uint16_t adcValue = 0;
+	// remember status of ADC
+	power_adc_enable();
+
+	// start ADC 
+	ADMUX = (voltageReference | inputChannel);
+	ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1);									// Enable ADC and set ADC pre scaler
+
+	for (uint8_t i = 0; i < BATTERY_NUM_MESS_ADC + BATTERY_DUMMY_NUM_MESS_ADC; i++) {	// take samples in a round
+		ADCSRA |= (1 << ADSC);															// start conversion
+		while (ADCSRA & (1 << ADSC)) {}													// wait for conversion complete
+
+		if (i >= BATTERY_DUMMY_NUM_MESS_ADC) {											// we discard the first dummy measurements
+			adcValue += ADCW;
+		}
+	}
+
+	ADCSRA &= ~(1 << ADEN);																// ADC disable
+	adcValue = adcValue / BATTERY_NUM_MESS_ADC;
+
+	// set ADC to origin status
+	return adcValue;																	// return the measured value
+}
+uint8_t getBatteryVoltageInternal(void) {
+	uint16_t adcValue = getAdcValue(
+		(0 << REFS1) | (1 << REFS0),													// Voltage Reference = AVCC with external capacitor at AREF pin
+		(1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (0 << MUX0)							// Input Channel = 1.1V (V BG)
+	);
+
+	return AVR_BANDGAP_VOLTAGE * 1023 / adcValue / 100;									// calculate battery voltage in V/10
+}
+uint16_t getBatteryVoltageExternal(uint8_t tFactor) {
+	pinInput(DDRC, 0);																	// set the ADC pin accordingly
+	setPinLow(PORTC, 0);
+
+	pinOutput(DDRD, 7);																	// set the measure on pin
+	setPinLow(PORTD, 7);																// to low status, so measurement could be taken
+	
+	uint16_t adcValue = getAdcValue(													// ask the ADC
+		(1 << REFS1) | (1 << REFS0),													// Voltage Reference = Internal 1.1V Voltage Reference
+		0																				// pin 0 on PORTC
+	);
+
+	pinInput(DDRD, 7);																	// set the measure pin to input, so no battery will be wasted
+	//dbg << "x:" << adcValue << '\n';
+	return ((adcValue / 10) * tFactor) / 100;											// calculate and return
+}
+
+
 //- -----------------------------------------------------------------------------------------------------------------------

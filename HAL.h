@@ -111,10 +111,11 @@ void     addMillis(millis_t ms);
 #define led1_off()		PORTD &= ~_BV(4)
 #define led1_cng()		PORTD ^=  _BV(4)
 
-#define pinOutput(PORT,PIN) ((PORT) |=  _BV(PIN))
-#define pinInput(PORT,PIN)  ((PORT) &= ~_BV(PIN))
-#define setInHigh(PORT,PIN) ((PORT) |=  _BV(PIN))
-#define getPin(PORT,PIN)    ((PORT) &  _BV(PIN))
+#define pinOutput(PORT,PIN)  ((PORT) |=  _BV(PIN))
+#define pinInput(PORT,PIN)   ((PORT) &= ~_BV(PIN))
+#define setPinHigh(PORT,PIN) ((PORT) |=  _BV(PIN))
+#define setPinLow(PORT,PIN)  ((PORT) &= ~_BV(PIN))
+#define getPin(PORT,PIN)     ((PORT) &  _BV(PIN))
 
 // define the pin interrupts
 // http://www.protostack.com/blog/2010/09/external-interrupts-on-an-atmega168/
@@ -138,6 +139,19 @@ void startWDG32ms(void);
 void startWDG250ms(void);
 void startWDG8000ms(void);
 void setSleep(void);
+
+
+//- battery measurement functions -----------------------------------------------------------------------------------------
+#define BATTERY_NUM_MESS_ADC              20												// real measures to get the best average measure
+#define BATTERY_DUMMY_NUM_MESS_ADC        40												// dummy measures to get the ADC working
+#define AVR_BANDGAP_VOLTAGE               1100UL											// band gap reference for Atmega328p
+
+#define BATTERY_MODE_BANDGAP_MESSUREMENT  1
+#define BATTERY_MODE_EXTERNAL_MESSUREMENT 2
+
+uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel);
+uint8_t  getBatteryVoltageInternal(void);
+uint16_t getBatteryVoltageExternal(uint8_t tFactor);
 
 //- -----------------------------------------------------------------------------------------------------------------------
 
