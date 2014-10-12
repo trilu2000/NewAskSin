@@ -29,6 +29,7 @@ void AS::init(void) {
 	rg.init(this);																			// module registrar
 	confButton.init(this);																	// config button
 	pw.init(this);																			// power management
+	bt.init(this);																			// battery check
 	
 	initMillis();																			// start the millis counter
 
@@ -67,7 +68,8 @@ void AS::poll(void) {
 	// regular polls
 	rg.poll();																				// poll the channel module handler
 	confButton.poll();																		// poll the config button
-	ld.poll();
+	ld.poll();																				// poll the leds
+	bt.poll();																				// poll the battery check
 		
 	// check if we could go to standby
 	pw.poll();																				// poll the power management

@@ -43,6 +43,7 @@ void setup() {
 	// battery measurement, ADC pin PC0, enable pin PD7
 	pinInput(DDRC, 0);																		// set the ADC pin as input
 	setPinLow(PORTC, 0);																	// switch off pull up
+	// enable pin is set via macro in HAL.h
 
 	
 	// - AskSin related ---------------------------------------
@@ -55,15 +56,14 @@ void setup() {
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(0);																		// set power management mode
+	hm.bt.set(1, 30, 3600000);		// 3600000 = 1h											// set battery check
 
-	// - User related -----------------------------------------
+	// - user related -----------------------------------------
 
 	
 	sei();																					// enable interrupts
 
 
-	dbg << "v1: " << getBatteryVoltageInternal() << '\n';
-	dbg << "v3: " << getBatteryVoltageExternal() << '\n';
 }
 
 void loop() {
@@ -71,7 +71,7 @@ void loop() {
 	hm.poll();																				// poll the homematic main loop
 	
 
-	// - User related -----------------------------------------
+	// - user related -----------------------------------------
 
 }
 

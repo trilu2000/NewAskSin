@@ -24,15 +24,21 @@ class BT {
 	
 	class AS *pHM;								// pointer to main class for function calls
 
+	uint8_t  checkTenthVolt;					// holds the proof point
+	uint8_t  measureTenthVolt;					// variable to hold last measured value
+	uint8_t  bState        :1;					// holds status bit
+	uint8_t  bMode         :2;					// mode variable
+	uint32_t bDuration;							// duration for the next check
 	
   public:		//---------------------------------------------------------------------------------------------------------
-	void init(uint8_t mode, AS *ptrMain);
-	
+	void set(uint8_t mode, uint8_t tenthVolt, uint32_t duration);
+		
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 	BT();
-	void poll(void);
-
+	void    init(AS *ptrMain);
+	void    poll(void);
+	uint8_t getStatus(void);
 };
 
 
