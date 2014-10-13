@@ -10,7 +10,7 @@
 #include "AS.h"
 
 waitTimer cnfTmr;																			// config timer functionality
-waitTimer pairTmr;																			// config timer functionality
+waitTimer pairTmr;																			// pair timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
@@ -200,7 +200,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	sn.mBdy.by10 = 0x06;
 	sn.mBdy.by11 = cnl;
 	sn.mBdy.pyLd[0] = stat;
-	sn.mBdy.pyLd[1] = cng | (bt.getStatus() << 7);
+	sn.mBdy.pyLd[1] = cng; // | (bt.getStatus() << 7);
 	sn.mBdy.pyLd[2] = cc.rssi;
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
@@ -1009,10 +1009,11 @@ void AS::explainMessage(uint8_t *buf) {
 uint8_t  waitTimer::done(void) {
 	// todo - check if nexTime is near overflow and we have some delay, so getMillis() goes over 0
 	// to get the correct timer result
-	if (!armed) return 1;
-	if ( getMillis() < nexTime ) return 0;
-	armed = 0;
-	return 1;
+	if (!armed) return 1;																	// not armed, so nothing to do
+	if ( getMillis() < nexTime ) return 0;													// not ready yet
+	if ((nexTime - getMillis() ) > 360000000 ) return 0;									// check if there was an over lap 
+	armed = 0;																				// seems everything is done
+	return 1;																				// signal done
 }
 void     waitTimer::set(uint32_t ms) {
 	armed = ms?1:0;

@@ -63,7 +63,6 @@ void setup() {
 	
 	sei();																					// enable interrupts
 
-
 }
 
 void loop() {
