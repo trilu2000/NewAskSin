@@ -153,5 +153,9 @@ class waitTimer {
 	uint16_t remain(void);
 };
 
+
+uint32_t byteTimeCvt(uint8_t tTime);
+uint32_t intTimeCvt(uint16_t iTime);
+
 #endif
 

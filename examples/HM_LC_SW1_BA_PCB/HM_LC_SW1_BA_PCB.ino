@@ -1,15 +1,16 @@
 #define SER_DBG
 
 //- load library's --------------------------------------------------------------------------------------------------------
+#include <AS.h>
 #include "register.h"																		// configuration sheet
-#include <Dummy.h>
+#include <Relay.h>
 
 
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
-Dummy dummy;																				// stage a dummy module
+Relay relay;																				// stage a dummy module
 
-waitTimer xTmr;
+//waitTimer xTmr;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
@@ -50,7 +51,7 @@ void setup() {
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 	hm.confButton.config(2,0,0);															// configure the config button, mode, pci byte and pci bit
-	dummy.regInHM(1, 3, &hm);																// register dummy module on channel 1, with a list3 and introduce asksin instance
+	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
@@ -58,6 +59,8 @@ void setup() {
 	hm.pw.setMode(0);																		// set power management mode
 	hm.bt.set(1, 30, 3600000);		// 3600000 = 1h											// set battery check
 
+	relay.config(&initRly, &switchRly, 1, 1);
+	
 	// - user related -----------------------------------------
 
 	
@@ -76,6 +79,12 @@ void loop() {
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
+void initRly() {
+}
+void switchRly(uint8_t status) {
+}
+
+
 void serialEvent() {
 	#ifdef SER_DBG
 	

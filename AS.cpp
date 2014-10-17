@@ -635,8 +635,8 @@ void AS::recvMessage(void) {
 
 	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x02)) {			// SET
 		// description --------------------------------------------------------
-		//                                      cnl  stat  ramp  dura
-		// l> 0E 5E B0 11 63 19 63 1F B7 4A 02  01   C8    00    00 
+		//                                      cnl  stat  ramp   dura
+		// l> 0E 5E B0 11 63 19 63 1F B7 4A 02  01   C8    00 00  00 00
 		// l> 0E 5E 80 02 1F B7 4A 63 19 63 01 01 C8 80 41 
 		// do something with the information ----------------------------------
 
@@ -1024,3 +1024,21 @@ uint16_t waitTimer::remain(void) {
 	return nexTime - getMillis();
 }
 
+
+
+uint32_t byteTimeCvt(uint8_t tTime) {
+	const uint16_t c[8] = {1,10,50,100,600,3000,6000,36000};
+	return (uint32_t)(tTime & 0x1f)*c[tTime >> 5]*100;
+}
+
+uint32_t intTimeCvt(uint16_t iTime) {
+	if (iTime == 0) return 0;
+
+	uint8_t tByte;
+	if ((iTime & 0x1F) != 0) {
+		tByte = 2;
+		for (uint8_t i = 1; i < (iTime & 0x1F); i++) tByte *= 2;
+	} else tByte = 1;
+
+	return (uint32_t)tByte*(iTime>>5)*100;
+}
