@@ -84,7 +84,8 @@ class Relay {
 		uint8_t  lgSwJtDlyOn         :4;     // 0x8c, s:0, e:4
 		uint8_t  lgSwJtDlyOff        :4;     // 0x8c, s:4, e:8
 	} lstPeer;
-	  
+	
+	uint8_t sendStat;  
   
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
@@ -92,14 +93,13 @@ class Relay {
 	void (*fInit)(void);
 	void (*fSwitch)(uint8_t);
 
-	uint8_t  minDly, ranDly;																// remember delay for send status information
+	uint8_t  minDly;																		// remember delay for send status information
 	uint8_t  cnt;																			// message counter for type 40 message
 	uint8_t  curStat:4, nxtStat:4;															// current state and next state
 	uint16_t rampTme, duraTme;																// time store for trigger 11
+	uint8_t  OnDly, OnTime, OffDly, OffTime;												// message 40 timers
 
-	uint8_t OnDly, OnTime, OffDly, OffTime;													// message 40 timers
-
-	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay, uint8_t randomDelay);
+	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay);
 	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);
 

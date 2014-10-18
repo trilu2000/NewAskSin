@@ -59,7 +59,7 @@ void setup() {
 	hm.bt.set(1, 30, 3600000);		// 3600000 = 1h											// set battery check
 
 	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
-	relay.config(&initRly, &switchRly, 1, 1);
+	relay.config(&initRly, &switchRly, 2);
 	
 	// - user related -----------------------------------------
 

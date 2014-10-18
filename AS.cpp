@@ -195,7 +195,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	
 	sn.mBdy.mTyp = 0x10;
 	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	memcpy(sn.mBdy.toID, MAID, 3);
 	
 	sn.mBdy.by10 = 0x06;
 	sn.mBdy.by11 = cnl;
