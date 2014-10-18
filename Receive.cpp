@@ -30,7 +30,7 @@ void	RV::poll(void) {
 
 	if (this->bufLen > 10) {																// create search string for peer
 		memcpy(this->peerId, this->mBdy.reID, 3);
-		this->peerId[3] = this->buf[10];
+		this->peerId[3] = (this->buf[10] & 0x3f);											// mask out long and battery low
 	}
 	
 	uint8_t bIntend = pHM->ee.getIntend(this->mBdy.reID,this->mBdy.toID, this->peerId);		// get the intend of the message

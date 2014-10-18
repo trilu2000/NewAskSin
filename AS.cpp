@@ -728,8 +728,9 @@ void AS::recvMessage(void) {
 		if (modTbl[cnl-1].cnl) {
 
 			// check if we have a list3 or list4 and reload to the module item
-			uint8_t pIdx = ee.getIdxByPeer(cnl, rv.mBdy.reID);
-			ee.getList(cnl-1, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);
+			uint8_t pIdx = ee.getIdxByPeer(cnl, rv.peerId);
+			//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
+			ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);
 			
 			// call the user module
 			modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);

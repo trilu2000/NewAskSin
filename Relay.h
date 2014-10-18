@@ -13,13 +13,13 @@
 #include "HAL.h"
 
 // default settings for list3 or list4
-const uint8_t peerOdd[] =    {
+const uint8_t peerOdd[] =    {		// cnl 2, 4, 6
 	// Default actor dual 1: 02:00 03:00 04:32 05:64 06:00 07:FF 08:00 09:FF 0A:01
 	// 0B:64 0C:66 82:00 83:00 84:32 85:64 86:00 87:FF 88:00 89:FF 8A:21 8B:64 8C:66
 	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x01, 0x64, 0x66,
 	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x21, 0x64, 0x66
 };
-const uint8_t peerEven[] =   {
+const uint8_t peerEven[] =   {		// cnl 1, 3, 5
 	// Default actor dual 2: 02:00 03:00 04:32 05:64 06:00 07:FF 08:00 09:FF 0A:01
 	// 0B:13 0C:33 82:00 83:00 84:32 85:64 86:00 87:FF 88:00 89:FF 8A:21 8B:13 8C:33
 	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x01, 0x13, 0x33,
@@ -93,13 +93,15 @@ class Relay {
 	void (*fSwitch)(uint8_t);
 
 	uint8_t  minDly, ranDly;																// remember delay for send status information
-	uint8_t  lastTrig;																		// remember which message type was the latest one
+	uint8_t  cnt;																			// message counter for type 40 message
 	uint8_t  curStat:4, nxtStat:4;															// current state and next state
 	uint16_t rampTme, duraTme;																// time store for trigger 11
 
+	uint8_t OnDly, OnTime, OffDly, OffTime;													// message 40 timers
+
 	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay, uint8_t randomDelay);
 	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
-
+	void     trigger40(uint8_t msgLng, uint8_t msgCnt);
 
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
 	uint8_t modStat;																		// module status byte, needed for list3 modules to answer status requests

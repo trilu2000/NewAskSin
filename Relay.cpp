@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define RL_DBG																				// debug message flag
+//#define RL_DBG																				// debug message flag
 #include "Relay.h"
 
 waitTimer delayTmr;																				// delay timer for relay
@@ -57,6 +57,64 @@ void Relay::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 	//dbg << F("RL:trigger11, val:") << value << F(", nxtS:") << nxtStat << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
 
+void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
+
+	// check for repeated message
+	if (( msgLng) && (cnt == msgCnt) && (!lstPeer.lgMultiExec)) return;							// trigger was long, but we have no multi execute
+	if ((!msgLng) && (cnt == msgCnt)) return;													// not a long message but counter is the same, means a repeated messgae
+	cnt = msgCnt;																				// remember message counter
+
+	// fill the respective variables
+	uint8_t actTp = (msgLng)?lstPeer.lgActionType:lstPeer.shActionType;							// get action type = {off=>0,jmpToTarget=>1,toggleToCnt=>2,toggleToCntInv=>3}
+
+	if         (actTp == 0) {						// off
+
+	} else if ((actTp == 1) && (msgLng == 1)) {		// jmpToTarget
+		// SwJtOn {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
+
+		if      (curStat == 6) nxtStat = lstPeer.lgSwJtOff;										// currently off
+		else if (curStat == 3) nxtStat = lstPeer.lgSwJtOn;										// on
+		else if (curStat == 4) nxtStat = lstPeer.lgSwJtDlyOff;									// delay off
+		else if (curStat == 1) nxtStat = lstPeer.lgSwJtDlyOn;									// delay on
+
+		OnDly   = lstPeer.lgOnDly;																// set timers
+		OnTime  = lstPeer.lgOnTime;
+		OffDly  = lstPeer.lgOffDly;
+		OffTime = lstPeer.lgOffTime;
+
+	} else if ((actTp == 1) && (msgLng == 0)) {		// jmpToTarget
+		// SwJtOn {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
+
+		if      (curStat == 6) nxtStat = lstPeer.shSwJtOff;										// currently off
+		else if (curStat == 3) nxtStat = lstPeer.shSwJtOn;										// on
+		else if (curStat == 4) nxtStat = lstPeer.shSwJtDlyOff;									// delay off
+		else if (curStat == 1) nxtStat = lstPeer.shSwJtDlyOn;									// delay on
+
+		OnDly   = lstPeer.shOnDly;																// set timers
+		OnTime  = lstPeer.shOnTime;
+		OffDly  = lstPeer.shOffDly;
+		OffTime = lstPeer.shOffTime;
+
+	} else if (actTp == 2) {						// toogleToCnt, if msgCnt is even, then next state is on
+		nxtStat = (msgCnt % 2 == 0)?3:6;														// even - relay dlyOn, otherwise dlyOff
+		OnDly   = 0; OnTime  = 255; OffDly  = 0; OffTime = 255;									// set timers
+
+	} else if (actTp == 3) {						// toggleToCntInv, if msgCnt is even, then next state is off, while inverted
+		nxtStat = (msgCnt % 2 == 0)?6:3;														// even - relay dlyOff, otherwise dlyOn
+		OnDly   = 0; OnTime  = 255; OffDly  = 0; OffTime = 255;									// set timers
+	}
+
+	if ((nxtStat == 1) || (nxtStat == 4)) {														// important for the status message
+		modDUL = 0x40;																			// signal that there is a timer running
+		//modStat																				// show the current status of the relais		
+
+	} else {
+		modDUL = 0x00;																			// no timer running
+		modStat = (nxtStat == 3)?0xc8:0x00;														// therefore we show the future state of the relay
+	}
+	dbg << "a: " << actTp << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << pHexB(OnDly) << ", onTime: " << pHexB(OnTime) << ", offDly: " << pHexB(OffDly) << ", offTime: " << pHexB(OffTime) << '\n';
+}
+
 void Relay::poll(void) {
 	// check if there is some status to send
 	
@@ -64,13 +122,21 @@ void Relay::poll(void) {
 	if (curStat == nxtStat) return;																// no status change expected
 	if (!delayTmr.done()) return;																// timer not done, wait until then
 
+	//	OnDly, OnTime, OffDly, OffTime 
+
 	// check the different status changes
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 	if        ((curStat == 1) && (nxtStat == 3)) {		// dlyOn -> on
 		fSwitch(1);																				// switch relay on
 		modStat = 0xC8;																			// module status, needed for status request, etc
 		curStat = nxtStat;																		// set current status accordingly
-		
+
+		if ((OnTime) && (OnTime != 255)) {														// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(OnTime));													// activate the timer and set next status
+			OnTime = 0;																			// clean variable
+			nxtStat = 4;																		// and set the next status variable
+		}
+
 		if (duraTme) {																			// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
 			duraTme = 0;																		// clean variable
@@ -80,6 +146,11 @@ void Relay::poll(void) {
 	} else if ((curStat == 3) && (nxtStat == 4)) {		// on -> dlyOff
 		curStat = nxtStat;																		// set current status accordingly
 		nxtStat = 6;																			// and set the next status variable
+
+		if (OffDly) {																			// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(OffDly));													// activate the timer and set next status
+			OffDly = 0;																			// clean variable
+		}
 
 		if (rampTme) {																			// check if there is something in the ramp timer, set next status accordingly
 			delayTmr.set(intTimeCvt(rampTme));													// activate the timer and set next status
@@ -92,6 +163,12 @@ void Relay::poll(void) {
 		modStat = 0x00;																			// module status, needed for status request, etc
 		curStat = nxtStat;																		// set current status accordingly
 		
+		if ((OffTime) && (OffTime != 255)) {													// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(OffTime));													// activate the timer and set next status
+			OffTime = 0;																		// clean variable
+			nxtStat = 1;																		// and set the next status variable
+		}
+
 		if (duraTme) {																			// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
 			duraTme = 0;																		// clean variable
@@ -101,6 +178,11 @@ void Relay::poll(void) {
 	} else if ((curStat == 6) && (nxtStat == 1)) {		// off -> dlyOn
 		curStat = nxtStat;																		// set current status accordingly
 		nxtStat = 3;																			// and set the next status variable
+
+		if (OnDly) {																			// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(OnDly));													// activate the timer and set next status
+			OnDly = 0;																			// clean variable
+		}
 
 		if (rampTme) {																			// check if there is something in the ramp timer, set next status accordingly
 			delayTmr.set(intTimeCvt(rampTme));													// activate the timer and set next status
@@ -161,10 +243,14 @@ void Relay::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	dbg << F("PME, type: ")  << pHexB(type) << F(", data: ")  << pHex(data, len) << '\n';
 	#endif
 	
+	if (type == 0x40) trigger40((data[0] & 0x40), data[1]);
+	
 	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
 		hm->sendACK_STATUS(regCnl, modStat, modDUL);
+
 	} else {
 		hm->sendACK();
+
 	}
 }
 
