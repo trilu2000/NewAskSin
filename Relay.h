@@ -99,7 +99,6 @@ class Relay {
 
 	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay, uint8_t randomDelay);
 	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
-	void     switchRly(uint8_t value);														// set relay to tValue, 0 is off, 1 is on
 
 
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------

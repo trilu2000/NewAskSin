@@ -207,12 +207,12 @@ uint8_t EE::isBroadCast(uint8_t *toID) {
 	//return mycmp(toID, zero, 3);
 	return isEmpty(toID, 3);
 }
-uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId) {
+uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
 	if (isBroadCast(toId)) return 'b';													// broadcast message
 	if (!isHMIDValid(toId)) return 'l';													// not for us, only show as log message
 
 	if (isPairValid(reId)) return 'm';													// coming from master
-	if (isPeerValid(reId)) return 'p';													// coming from a peer
+	if (isPeerValid(peId)) return 'p';													// coming from a peer
 	if (isHMIDValid(reId)) return 'i';													// we were the sender, internal message
 
 	// now it could be a message from the master to us, but master is unknown because we are not paired
@@ -228,6 +228,7 @@ void    EE::clearPeers(void) {
 	}
 }
 uint8_t EE::isPeerValid (uint8_t *peer) {
+	//dbg << "p: " << pHex(peer, 4) << '\n';
 	for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {										// step through all channels
 		if (getIdxByPeer(i, peer) != 0xff) return i;									// if a valid peer is found return the respective channel
 	}

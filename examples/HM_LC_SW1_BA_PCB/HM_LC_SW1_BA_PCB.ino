@@ -82,6 +82,7 @@ void loop() {
 void initRly() {
 }
 void switchRly(uint8_t status) {
+	dbg << "rly: " << status << '\n';
 }
 
 

@@ -6,9 +6,11 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define RL_DBG																				// debug message flag
+#define RL_DBG																				// debug message flag
 #include "Relay.h"
 
+waitTimer delayTmr;																				// delay timer for relay
+waitTimer msgTmr;																				// message timer for sending status
 
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
@@ -25,30 +27,88 @@ void Relay::config(void Init(), void Switch(uint8_t), uint8_t minDelay, uint8_t 
 	fInit();
 
 	// some basic settings for start
+	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 	nxtStat = 6;																				// set relay status to off
 	curStat = 6;																				// set relay status to off
-	switchRly(0);																				// set relay to a defined status
+	fSwitch(0);																					// set relay to a defined status
 }
-void Relay::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
-	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 
-	if (rampTime) {
-		rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];								// store ramp time
-		nxtStat = (value == 0)?4:1;																// set next status, if ramp time is given then the next status will be done by delay
-	} else {
-		rampTme = 0;
-		nxtStat = (value == 0)?6:3;																// otherwise set directly
-	}
-	
+void Relay::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
+
+	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];					// store ramp time
+	else rampTme = 0;
+
 	if (duraTime) duraTme = (uint16_t)duraTime[0]<<8 | (uint16_t)duraTime[1];					// duration time if given
 	else duraTme = 0;
+
+	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
+	if (value) {
+		curStat = 6;																			// set current status to off
+		nxtStat = 1;																			// and the next one to delay on, if ramptime is set poll will recognize
+
+	} else {
+		curStat = 3;
+		nxtStat = 4;
+	}
 	
-	lastTrig = 11;																				// remember the trigger
+	if ((rampTme) || (duraTme)) modDUL = 0x40;													// important for the status message
+	else modDUL = 0x00;
+
 	//dbg << F("RL:trigger11, val:") << value << F(", nxtS:") << nxtStat << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
 
-void Relay::switchRly(uint8_t value) {
-	fSwitch(value);
+void Relay::poll(void) {
+	// check if there is some status to send
+	
+	// check if something is to do on the relay
+	if (curStat == nxtStat) return;																// no status change expected
+	if (!delayTmr.done()) return;																// timer not done, wait until then
+
+	// check the different status changes
+	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
+	if        ((curStat == 1) && (nxtStat == 3)) {		// dlyOn -> on
+		fSwitch(1);																				// switch relay on
+		modStat = 0xC8;																			// module status, needed for status request, etc
+		curStat = nxtStat;																		// set current status accordingly
+		
+		if (duraTme) {																			// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
+			duraTme = 0;																		// clean variable
+			nxtStat = 4;																		// and set the next status variable
+		} 
+				
+	} else if ((curStat == 3) && (nxtStat == 4)) {		// on -> dlyOff
+		curStat = nxtStat;																		// set current status accordingly
+		nxtStat = 6;																			// and set the next status variable
+
+		if (rampTme) {																			// check if there is something in the ramp timer, set next status accordingly
+			delayTmr.set(intTimeCvt(rampTme));													// activate the timer and set next status
+			rampTme = 0;																		// clean variable
+		}
+
+
+	} else if ((curStat == 4) && (nxtStat == 6)) {		// dlyOff -> off
+		fSwitch(0);																				// switch relay off
+		modStat = 0x00;																			// module status, needed for status request, etc
+		curStat = nxtStat;																		// set current status accordingly
+		
+		if (duraTme) {																			// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
+			duraTme = 0;																		// clean variable
+			nxtStat = 1;																		// and set the next status variable
+		}
+		
+	} else if ((curStat == 6) && (nxtStat == 1)) {		// off -> dlyOn
+		curStat = nxtStat;																		// set current status accordingly
+		nxtStat = 3;																			// and set the next status variable
+
+		if (rampTme) {																			// check if there is something in the ramp timer, set next status accordingly
+			delayTmr.set(intTimeCvt(rampTme));													// activate the timer and set next status
+			rampTme = 0;																		// clean variable
+		}
+		
+	}
+	
 }
 
 //-------------------------------------------------------------------------------------------------------------------------
@@ -106,10 +166,6 @@ void Relay::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	} else {
 		hm->sendACK();
 	}
-}
-
-void Relay::poll(void) {
-	// just polling, as the function name said
 }
 
 

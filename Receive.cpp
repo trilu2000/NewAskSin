@@ -27,12 +27,17 @@ void    RV::init(AS *ptrMain) {
 }
 void	RV::poll(void) {
 	static uint8_t last_rCnt;
+
+	if (this->bufLen > 10) {																// create search string for peer
+		memcpy(this->peerId, this->mBdy.reID, 3);
+		this->peerId[3] = this->buf[10];
+	}
 	
-	uint8_t bIntend = pHM->ee.getIntend(this->mBdy.reID,this->mBdy.toID);					// get the intend of the message
+	uint8_t bIntend = pHM->ee.getIntend(this->mBdy.reID,this->mBdy.toID, this->peerId);		// get the intend of the message
 
 	// some debugs
 	#ifdef RV_DBG																			// only if AS debug is set
-	dbg << (char)bIntend << F("> ") << pHex(this->buf,this->bufLen) << ' ' << pTime << '\n';
+	dbg << (char)bIntend << F("> ") << pHex(this->buf, this->bufLen) << ' ' << pTime << '\n';
 	#endif
 	
 	#ifdef RV_DBG_EX																		// only if extended AS debug is set
