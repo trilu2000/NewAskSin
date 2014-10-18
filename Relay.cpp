@@ -112,7 +112,7 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 		modDUL = 0x00;																			// no timer running
 		modStat = (nxtStat == 3)?0xc8:0x00;														// therefore we show the future state of the relay
 	}
-	dbg << "a: " << actTp << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << pHexB(OnDly) << ", onTime: " << pHexB(OnTime) << ", offDly: " << pHexB(OffDly) << ", offTime: " << pHexB(OffTime) << '\n';
+	//dbg << "a: " << actTp << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << pHexB(OnDly) << ", onTime: " << pHexB(OnTime) << ", offDly: " << pHexB(OffDly) << ", offTime: " << pHexB(OffTime) << '\n';
 }
 
 void Relay::poll(void) {
@@ -121,8 +121,6 @@ void Relay::poll(void) {
 	// check if something is to do on the relay
 	if (curStat == nxtStat) return;																// no status change expected
 	if (!delayTmr.done()) return;																// timer not done, wait until then
-
-	//	OnDly, OnTime, OffDly, OffTime 
 
 	// check the different status changes
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
@@ -284,14 +282,14 @@ void Relay::peerAddEvent(uint8_t *data, uint8_t len) {
 	
 	if ((data[0]) && (data[1])) {															// dual peer add
 		if (data[0]%2) {																	// odd
-			//hm->setListFromModule(regCnl,data[2],(uint8_t*)peerOdd,sizeof(peerOdd));
-			//hm->setListFromModule(regCnl,data[3],(uint8_t*)peerEven,sizeof(peerEven));
+			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
+			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
 		} else {																			// even
-			//hm->setListFromModule(regCnl,data[2],(uint8_t*)peerEven,sizeof(peerEven));
-			//hm->setListFromModule(regCnl,data[3],(uint8_t*)peerOdd,sizeof(peerOdd));
+			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
+			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
 		}
 	} else {																				// single peer add
-		//if (data[0]) hm->setListFromModule(regCnl,data[2],(uint8_t*)peerSingle,sizeof(peerSingle));
-		//if (data[1]) hm->setListFromModule(regCnl,data[3],(uint8_t*)peerSingle,sizeof(peerSingle));
+		if (data[0]) hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
+		if (data[1]) hm->ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
 }
