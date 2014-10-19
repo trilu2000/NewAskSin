@@ -29,9 +29,7 @@ void Relay::config(void Init(), void Switch(uint8_t), uint8_t minDelay) {
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 	nxtStat = 6;																				// set relay status to off
 	curStat = 6;																				// set relay status to off
-	fSwitch(0);																					// set relay to a defined status
-	sendStat = 1;
-	msgTmr.set((minDly*1000)+(rand()%2048));
+	adjRly(0);
 }
 
 void Relay::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
@@ -116,6 +114,13 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 	//dbg << "a: " << actTp << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << pHexB(OnDly) << ", onTime: " << pHexB(OnTime) << ", offDly: " << pHexB(OffDly) << ", offTime: " << pHexB(OffTime) << '\n';
 }
 
+void Relay::adjRly(uint8_t status) {
+	fSwitch(status);																			// switch relay 
+	modStat = (status)?0xC8:0x00;																// module status, needed for status request, etc
+	sendStat = 1;																				// we should send the current status change
+	msgTmr.set((minDly*1000)+(rand()%2048));
+}
+
 void Relay::poll(void) {
 	// check if there is some status to send
 	if ((sendStat) && (msgTmr.done() )) {
@@ -131,11 +136,8 @@ void Relay::poll(void) {
 	// check the different status changes
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 	if        ((curStat == 1) && (nxtStat == 3)) {		// dlyOn -> on
-		fSwitch(1);																				// switch relay on
-		modStat = 0xC8;																			// module status, needed for status request, etc
+		adjRly(1);
 		curStat = nxtStat;																		// set current status accordingly
-		sendStat = 1;																			// we should send the current status change
-		msgTmr.set((minDly*1000)+(rand()%2048));
 		
 		if ((OnTime) && (OnTime != 255)) {														// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(OnTime));													// activate the timer and set next status
@@ -165,11 +167,8 @@ void Relay::poll(void) {
 
 
 	} else if ((curStat == 4) && (nxtStat == 6)) {		// dlyOff -> off
-		fSwitch(0);																				// switch relay off
-		modStat = 0x00;																			// module status, needed for status request, etc
+		adjRly(0);
 		curStat = nxtStat;																		// set current status accordingly
-		sendStat = 1;																			// we should send the current status change
-		msgTmr.set((minDly*1000)+(rand()%2048));
 		
 		if ((OffTime) && (OffTime != 255)) {													// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(OffTime));													// activate the timer and set next status

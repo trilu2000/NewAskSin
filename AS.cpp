@@ -136,6 +136,7 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 
 	sn.mBdy.mLen = 0x0e;
 	sn.mBdy.mCnt = rv.mBdy.mCnt;
+	sn.mBdy.mFlg.BIDI = 0;
 	sn.mBdy.mTyp = 0x02;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);

@@ -101,7 +101,7 @@ void SN::poll(void) {
 		this->active = 0;
 		sndTmr.set(0);
 
-		if (!pHM->ld.active) pHM->ld.set(ack);																	// fire the status led
+		if (!pHM->ld.active) pHM->ld.set(ack);												// fire the status led
 	}
 
 	
