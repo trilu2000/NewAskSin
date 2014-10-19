@@ -128,8 +128,7 @@ void Relay::poll(void) {
 		
 	// check if something is to do on the relay
 	if (curStat == nxtStat) return;																// no status change expected
-	hm->pw.stayAwake(10);
-	
+	hm->pw.stayAwake(100);
 	if (!delayTmr.done()) return;																// timer not done, wait until then
 	
 	// check the different status changes
