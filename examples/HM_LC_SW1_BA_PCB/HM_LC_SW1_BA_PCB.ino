@@ -55,8 +55,8 @@ void setup() {
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(1, 30, 3600000);		// 3600000 = 1h											// set battery check
+	hm.pw.setMode(1);																		// set power management mode
+	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
 
 	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
 	relay.config(&initRly, &switchRly, 2);
@@ -81,9 +81,20 @@ void loop() {
 //- user functions --------------------------------------------------------------------------------------------------------
 void initRly() {
 	dbg << "rly: init\n";
+	_delay_ms(100);
+	pinOutput(DDRD,3);																		// init the relay pins
+	setPinLow(PORTD,3);
+
+
 }
 void switchRly(uint8_t status) {
+	if (status) setPinHigh(PORTD,3);
+	else setPinLow(PORTD,3);
+
 	dbg << "rly: " << status << '\n';
+	_delay_ms(100);
+
+
 }
 
 

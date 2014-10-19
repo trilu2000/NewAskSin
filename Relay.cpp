@@ -118,6 +118,7 @@ void Relay::adjRly(uint8_t status) {
 	msgTmr.set((minDly*1000)+(rand()%2048));
 }
 void Relay::poll(void) {
+
 	// check if there is some status to send
 	if ((sendStat) && (msgTmr.done() )) {
 		sendStat = 0;																			// no need for next time
@@ -127,8 +128,10 @@ void Relay::poll(void) {
 		
 	// check if something is to do on the relay
 	if (curStat == nxtStat) return;																// no status change expected
+	hm->pw.stayAwake(10);
+	
 	if (!delayTmr.done()) return;																// timer not done, wait until then
-
+	
 	// check the different status changes
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 	if        ((curStat == 1) && (nxtStat == 3)) {		// dlyOn -> on

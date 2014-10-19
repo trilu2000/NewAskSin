@@ -416,7 +416,7 @@ void AS::sendPeerMsg(void) {
 	
 // - receive functions -----------------------------
 void AS::recvMessage(void) {
-
+	
 	// check which type of message was received
 	if         (rv.mBdy.mTyp == 0x00) {										// DEVICE_INFO
 		// description --------------------------------------------------------
