@@ -31,7 +31,6 @@ void Relay::config(void Init(), void Switch(uint8_t), uint8_t minDelay) {
 	curStat = 6;																				// set relay status to off
 	adjRly(0);
 }
-
 void Relay::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 
 	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];					// store ramp time
@@ -55,7 +54,6 @@ void Relay::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 
 	//dbg << F("RL:trigger11, val:") << value << F(", nxtS:") << nxtStat << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
-
 void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
 	// check for repeated message
@@ -76,10 +74,10 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 		else if (curStat == 4) nxtStat = lstPeer.lgSwJtDlyOff;									// delay off
 		else if (curStat == 1) nxtStat = lstPeer.lgSwJtDlyOn;									// delay on
 
-		OnDly   = lstPeer.lgOnDly;																// set timers
-		OnTime  = lstPeer.lgOnTime;
-		OffDly  = lstPeer.lgOffDly;
-		OffTime = lstPeer.lgOffTime;
+		onDly   = lstPeer.lgOnDly;																// set timers
+		onTime  = lstPeer.lgOnTime;
+		offDly  = lstPeer.lgOffDly;
+		offTime = lstPeer.lgOffTime;
 
 	} else if ((actTp == 1) && (msgLng == 0)) {		// jmpToTarget
 		// SwJtOn {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
@@ -89,18 +87,18 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 		else if (curStat == 4) nxtStat = lstPeer.shSwJtDlyOff;									// delay off
 		else if (curStat == 1) nxtStat = lstPeer.shSwJtDlyOn;									// delay on
 
-		OnDly   = lstPeer.shOnDly;																// set timers
-		OnTime  = lstPeer.shOnTime;
-		OffDly  = lstPeer.shOffDly;
-		OffTime = lstPeer.shOffTime;
+		onDly   = lstPeer.shOnDly;																// set timers
+		onTime  = lstPeer.shOnTime;
+		offDly  = lstPeer.shOffDly;
+		offTime = lstPeer.shOffTime;
 
 	} else if (actTp == 2) {						// toogleToCnt, if msgCnt is even, then next state is on
 		nxtStat = (msgCnt % 2 == 0)?3:6;														// even - relay dlyOn, otherwise dlyOff
-		OnDly   = 0; OnTime  = 255; OffDly  = 0; OffTime = 255;									// set timers
+		onDly   = 0; onTime  = 255; offDly  = 0; offTime = 255;									// set timers
 
 	} else if (actTp == 3) {						// toggleToCntInv, if msgCnt is even, then next state is off, while inverted
 		nxtStat = (msgCnt % 2 == 0)?6:3;														// even - relay dlyOff, otherwise dlyOn
-		OnDly   = 0; OnTime  = 255; OffDly  = 0; OffTime = 255;									// set timers
+		onDly   = 0; onTime  = 255; offDly  = 0; offTime = 255;									// set timers
 	}
 
 	if ((nxtStat == 1) || (nxtStat == 4)) {														// important for the status message
@@ -111,16 +109,14 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 		modDUL = 0x00;																			// no timer running
 		modStat = (nxtStat == 3)?0xc8:0x00;														// therefore we show the future state of the relay
 	}
-	//dbg << "a: " << actTp << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << pHexB(OnDly) << ", onTime: " << pHexB(OnTime) << ", offDly: " << pHexB(OffDly) << ", offTime: " << pHexB(OffTime) << '\n';
+	//dbg << "a: " << actTp << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << pHexB(onDly) << ", onTime: " << pHexB(onTime) << ", offDly: " << pHexB(offDly) << ", offTime: " << pHexB(offTime) << '\n';
 }
-
 void Relay::adjRly(uint8_t status) {
 	fSwitch(status);																			// switch relay 
 	modStat = (status)?0xC8:0x00;																// module status, needed for status request, etc
 	sendStat = 1;																				// we should send the current status change
 	msgTmr.set((minDly*1000)+(rand()%2048));
 }
-
 void Relay::poll(void) {
 	// check if there is some status to send
 	if ((sendStat) && (msgTmr.done() )) {
@@ -139,9 +135,9 @@ void Relay::poll(void) {
 		adjRly(1);
 		curStat = nxtStat;																		// set current status accordingly
 		
-		if ((OnTime) && (OnTime != 255)) {														// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(OnTime));													// activate the timer and set next status
-			OnTime = 0;																			// clean variable
+		if ((onTime) && (onTime != 255)) {														// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(onTime));													// activate the timer and set next status
+			onTime = 0;																			// clean variable
 			nxtStat = 4;																		// and set the next status variable
 		}
 
@@ -155,9 +151,9 @@ void Relay::poll(void) {
 		curStat = nxtStat;																		// set current status accordingly
 		nxtStat = 6;																			// and set the next status variable
 
-		if (OffDly) {																			// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(OffDly));													// activate the timer and set next status
-			OffDly = 0;																			// clean variable
+		if (offDly) {																			// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(offDly));													// activate the timer and set next status
+			offDly = 0;																			// clean variable
 		}
 
 		if (rampTme) {																			// check if there is something in the ramp timer, set next status accordingly
@@ -170,9 +166,9 @@ void Relay::poll(void) {
 		adjRly(0);
 		curStat = nxtStat;																		// set current status accordingly
 		
-		if ((OffTime) && (OffTime != 255)) {													// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(OffTime));													// activate the timer and set next status
-			OffTime = 0;																		// clean variable
+		if ((offTime) && (offTime != 255)) {													// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(offTime));													// activate the timer and set next status
+			offTime = 0;																		// clean variable
 			nxtStat = 1;																		// and set the next status variable
 		}
 
@@ -186,9 +182,9 @@ void Relay::poll(void) {
 		curStat = nxtStat;																		// set current status accordingly
 		nxtStat = 3;																			// and set the next status variable
 
-		if (OnDly) {																			// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(OnDly));													// activate the timer and set next status
-			OnDly = 0;																			// clean variable
+		if (onDly) {																			// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(onDly));													// activate the timer and set next status
+			onDly = 0;																			// clean variable
 		}
 
 		if (rampTme) {																			// check if there is something in the ramp timer, set next status accordingly
@@ -217,7 +213,6 @@ void Relay::configCngEvent(void) {
 	dbg << F("CCE, lst1: ") << pHex(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
 }
-
 void Relay::pairSetEvent(uint8_t *data, uint8_t len) {
 	// we received a message from master to set a new value, typical you will find three bytes in data
 	// 1st byte = value; 2nd and 3rd byte = ramp time; 4th and 5th byte = duration time;
@@ -233,7 +228,6 @@ void Relay::pairSetEvent(uint8_t *data, uint8_t len) {
 
 	hm->sendACK_STATUS(regCnl, data[0], modDUL);
 }
-
 void Relay::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	#ifdef RL_DBG
@@ -242,7 +236,6 @@ void Relay::pairStatusReq(void) {
 	
 	hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);
 }
-
 void Relay::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
 	// appropriate answer is an ACK
@@ -260,7 +253,6 @@ void Relay::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 
 	}
 }
-
 
 //-------------------------------------------------------------------------------------------------------------------------
 //- predefined, no reason to touch -

@@ -97,7 +97,7 @@ class Relay {
 	uint8_t  cnt;																			// message counter for type 40 message
 	uint8_t  curStat:4, nxtStat:4;															// current state and next state
 	uint16_t rampTme, duraTme;																// time store for trigger 11
-	uint8_t  OnDly, OnTime, OffDly, OffTime;												// message 40 timers
+	uint8_t  onDly, onTime, offDly, offTime;												// message 40 timers
 
 	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay);
 	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
@@ -105,24 +105,24 @@ class Relay {
 	void     adjRly(uint8_t status);
 
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
-	uint8_t modStat;																		// module status byte, needed for list3 modules to answer status requests
-	uint8_t modDUL;																			// module down up low battery byte
-	uint8_t regCnl;																			// holds the channel for the module
+	uint8_t  modStat;																		// module status byte, needed for list3 modules to answer status requests
+	uint8_t  modDUL;																		// module down up low battery byte
+	uint8_t  regCnl;																		// holds the channel for the module
 
-	AS      *hm;																			// pointer to HM class instance
+	AS       *hm;																			// pointer to HM class instance
 
-	void    setToggle(void);																// toggle the module initiated by config button
-	void    configCngEvent(void);															// list1 on registered channel had changed
-	void    pairSetEvent(uint8_t *data, uint8_t len);										// pair message to specific channel, handover information for value, ramp time and so on
-	void    pairStatusReq(void);															// event on status request
-	void    peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len);							// peer message was received on the registered channel, handover the message bytes and length
+	void     setToggle(void);																// toggle the module initiated by config button
+	void     configCngEvent(void);															// list1 on registered channel had changed
+	void     pairSetEvent(uint8_t *data, uint8_t len);										// pair message to specific channel, handover information for value, ramp time and so on
+	void     pairStatusReq(void);															// event on status request
+	void     peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len);						// peer message was received on the registered channel, handover the message bytes and length
 
-	void    poll(void);																		// poll function, driven by HM loop
+	void     poll(void);																	// poll function, driven by HM loop
 
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
-	void    regInHM(uint8_t cnl, uint8_t lst, AS *instPtr);									// register this module in HM on the specific channel
-	void    hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
-	void    peerAddEvent(uint8_t *data, uint8_t len);										// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
+	void     regInHM(uint8_t cnl, uint8_t lst, AS *instPtr);								// register this module in HM on the specific channel
+	void     hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
+	void     peerAddEvent(uint8_t *data, uint8_t len);										// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
 };
 
 
