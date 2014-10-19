@@ -80,6 +80,7 @@ void loop() {
 
 //- user functions --------------------------------------------------------------------------------------------------------
 void initRly() {
+	dbg << "rly: init\n";
 }
 void switchRly(uint8_t status) {
 	dbg << "rly: " << status << '\n';
