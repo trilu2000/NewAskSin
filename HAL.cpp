@@ -177,7 +177,7 @@ void    setSleep(void) {
 
 ISR(WDT_vect) {
 	// nothing to do, only for waking up
-	milliseconds += wdtSleepTime;
+	addMillis(wdtSleepTime);
 }
 
 

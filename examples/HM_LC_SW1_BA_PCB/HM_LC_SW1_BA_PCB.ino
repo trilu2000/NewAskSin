@@ -80,21 +80,14 @@ void loop() {
 
 //- user functions --------------------------------------------------------------------------------------------------------
 void initRly() {
-	dbg << "rly: init\n";
-	_delay_ms(100);
+
 	pinOutput(DDRD,3);																		// init the relay pins
 	setPinLow(PORTD,3);
-
-
 }
 void switchRly(uint8_t status) {
+
 	if (status) setPinHigh(PORTD,3);
 	else setPinLow(PORTD,3);
-
-	dbg << "rly: " << status << '\n';
-	_delay_ms(100);
-
-
 }
 
 

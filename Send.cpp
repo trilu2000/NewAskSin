@@ -87,6 +87,7 @@ void SN::poll(void) {
 		if (!reqACK) return;
 		
 		this->timeOut = 1;																	// set the time out only while an ACK or answer was requested
+		pHM->pw.stayAwake(100);
 		pHM->ld.set(noack);
 		
 		#ifdef SN_DBG																		// only if AS debug is set
@@ -100,7 +101,8 @@ void SN::poll(void) {
 		this->maxRetr = 0;
 		this->active = 0;
 		sndTmr.set(0);
-
+		
+		pHM->pw.stayAwake(100);
 		if (!pHM->ld.active) pHM->ld.set(ack);												// fire the status led
 	}
 

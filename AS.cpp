@@ -1013,7 +1013,7 @@ uint8_t  waitTimer::done(void) {
 	// to get the correct timer result
 	if (!armed) return 1;																	// not armed, so nothing to do
 	if ( getMillis() < nexTime ) return 0;													// not ready yet
-	if ((nexTime - getMillis() ) > 360000000 ) return 0;									// check if there was an over lap 
+	//if ((nexTime - getMillis() ) > 360000000 ) return 0;									// check if there was an over lap 
 	armed = 0;																				// seems everything is done
 	return 1;																				// signal done
 }
