@@ -223,7 +223,11 @@ void Relay::setToggle(void) {
 	#ifdef RL_DBG
 	dbg << F("RL\n");
 	#endif
-	
+
+	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
+	if (curStat == 3) nxtStat = 4;																// currently on, next status should be off
+	else nxtStat = 1;																			// currently off, next status should be on
+	onDly   = 0; onTime  = 255; offDly  = 0; offTime = 255;										// set timers
 }
 void Relay::configCngEvent(void) {
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
