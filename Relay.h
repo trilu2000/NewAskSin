@@ -103,6 +103,7 @@ class Relay {
 	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);
 	void     adjRly(uint8_t status);
+	void     adjStat(uint8_t status);
 
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
 	uint8_t  modStat;																		// module status byte, needed for list3 modules to answer status requests

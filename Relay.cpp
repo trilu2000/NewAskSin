@@ -27,8 +27,8 @@ void Relay::config(void Init(), void Switch(uint8_t), uint8_t minDelay) {
 
 	// some basic settings for start
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
-	nxtStat = 6;																				// set relay status to off
-	curStat = 6;																				// set relay status to off
+	curStat = nxtStat = 6;																		// set relay status to off
+	modDUL = 0x40;																				// otherwise status gets not send
 	adjRly(0);
 }
 void Relay::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
@@ -101,22 +101,38 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 		onDly   = 0; onTime  = 255; offDly  = 0; offTime = 255;									// set timers
 	}
 
-	if ((nxtStat == 1) || (nxtStat == 4)) {														// important for the status message
-		modDUL = 0x40;																			// signal that there is a timer running
-		//modStat																				// show the current status of the relais		
+	if ((onDly) || (offDly)) {
+		modDUL = 0x40;
 
 	} else {
 		modDUL = 0x00;																			// no timer running
-		modStat = (nxtStat == 3)?0xc8:0x00;														// therefore we show the future state of the relay
+		modStat = ((nxtStat == 1) || (nxtStat == 3))?0xc8:0x00;									// therefore we show the future state of the relay
+
 	}
 	//dbg << "a: " << actTp << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << pHexB(onDly) << ", onTime: " << pHexB(onTime) << ", offDly: " << pHexB(offDly) << ", offTime: " << pHexB(offTime) << '\n';
 }
 void Relay::adjRly(uint8_t status) {
 	fSwitch(status);																			// switch relay 
 	modStat = (status)?0xC8:0x00;																// module status, needed for status request, etc
-	sendStat = 1;																				// we should send the current status change
-	msgTmr.set((minDly*1000)+(rand()%2048));
+
+	if (modDUL) {
+		sendStat = 1;																			// we should send the current status change
+		msgTmr.set((minDly*1000)+(rand()%2048));
+	}
 }
+void Relay::adjStat(uint8_t status) {
+	if (modStat == status) return;
+
+	modStat = status;																			// set new status to message byte
+	modDUL = 0;
+	sendStat = 1;																				// we should send the current status change
+	msgTmr.set(100);																			// send the new status next time
+
+	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
+	if (status == 0xc8) curStat = nxtStat = 3;													// set relay status accordingly
+	else curStat = nxtStat = 6;	
+}
+
 void Relay::poll(void) {
 
 	// check if there is some status to send
