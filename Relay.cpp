@@ -64,33 +64,20 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 	// fill the respective variables
 	uint8_t actTp = (msgLng)?lstPeer.lgActionType:lstPeer.shActionType;							// get action type = {off=>0,jmpToTarget=>1,toggleToCnt=>2,toggleToCntInv=>3}
 
-	if         (actTp == 0) {						// off
+	if        (actTp == 0) {						// off
 
-	} else if ((actTp == 1) && (msgLng == 1)) {		// jmpToTarget
+	} else if (actTp == 1) {						// jmpToTarget
 		// SwJtOn {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 
-		if      (curStat == 6) nxtStat = lstPeer.lgSwJtOff;										// currently off
-		else if (curStat == 3) nxtStat = lstPeer.lgSwJtOn;										// on
-		else if (curStat == 4) nxtStat = lstPeer.lgSwJtDlyOff;									// delay off
-		else if (curStat == 1) nxtStat = lstPeer.lgSwJtDlyOn;									// delay on
+		if      (curStat == 6) nxtStat = (msgLng)?lstPeer.lgSwJtOff    :lstPeer.shSwJtOff;		// currently off
+		else if (curStat == 3) nxtStat = (msgLng)?lstPeer.lgSwJtOn     :lstPeer.shSwJtOn;		// on
+		else if (curStat == 4) nxtStat = (msgLng)?lstPeer.lgSwJtDlyOff :lstPeer.shSwJtDlyOff;	// delay off
+		else if (curStat == 1) nxtStat = (msgLng)?lstPeer.lgSwJtDlyOn  :lstPeer.shSwJtDlyOn;	// delay on
 
-		onDly   = lstPeer.lgOnDly;																// set timers
-		onTime  = lstPeer.lgOnTime;
-		offDly  = lstPeer.lgOffDly;
-		offTime = lstPeer.lgOffTime;
-
-	} else if ((actTp == 1) && (msgLng == 0)) {		// jmpToTarget
-		// SwJtOn {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
-
-		if      (curStat == 6) nxtStat = lstPeer.shSwJtOff;										// currently off
-		else if (curStat == 3) nxtStat = lstPeer.shSwJtOn;										// on
-		else if (curStat == 4) nxtStat = lstPeer.shSwJtDlyOff;									// delay off
-		else if (curStat == 1) nxtStat = lstPeer.shSwJtDlyOn;									// delay on
-
-		onDly   = lstPeer.shOnDly;																// set timers
-		onTime  = lstPeer.shOnTime;
-		offDly  = lstPeer.shOffDly;
-		offTime = lstPeer.shOffTime;
+		onDly   = (msgLng)?lstPeer.lgOnDly   :lstPeer.shOnDly;									// set timers
+		onTime  = (msgLng)?lstPeer.lgOnTime  :lstPeer.shOnTime;
+		offDly  = (msgLng)?lstPeer.lgOffDly  :lstPeer.shOffDly;
+		offTime = (msgLng)?lstPeer.lgOffTime :lstPeer.shOffTime;
 
 	} else if (actTp == 2) {						// toogleToCnt, if msgCnt is even, then next state is on
 		nxtStat = (msgCnt % 2 == 0)?3:6;														// even - relay dlyOn, otherwise dlyOff
@@ -110,6 +97,35 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
 	}
 	//dbg << "a: " << actTp << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << pHexB(onDly) << ", onTime: " << pHexB(onTime) << ", offDly: " << pHexB(offDly) << ", offTime: " << pHexB(offTime) << '\n';
+}
+void Relay::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
+
+	uint8_t isLng = msgBLL & 0x40;																// is it a long message?
+	uint8_t ctTbl, ctLo, ctHi;
+	
+	if      (curStat == 6) ctTbl = (isLng)?lstPeer.lgCtOff   :lstPeer.shCtOff;					// currently off
+	else if (curStat == 3) ctTbl = (isLng)?lstPeer.lgCtOn    :lstPeer.shCtOn;					// on
+	else if (curStat == 4) ctTbl = (isLng)?lstPeer.lgCtDlyOff:lstPeer.shCtDlyOff;				// delay off
+	else if (curStat == 1) ctTbl = (isLng)?lstPeer.lgCtDlyOn :lstPeer.shCtDlyOn;				// delay on
+	
+	ctLo = (isLng)?lstPeer.lgCtValLo :lstPeer.shCtValLo;
+	ctHi = (isLng)?lstPeer.lgCtValHi :lstPeer.shCtValHi;
+	
+	// X GE COND_VALUE_LO                         - geLo -  > low           - 0
+	// X GE COND_VALUE_HI                         - geHi -  > high          - 1
+	// X LT COND_VALUE_LO                         - ltLo -  < low           - 2
+	// X LT COND_VALUE_HI                         - ltHi -  < high          - 3
+	// COND_VALUE_LO LE X LT COND_VALUE_HIGH      - betW -  low <> high     - 4
+	// X LT COND_VALUE_LO OR X GE COND_VALUE_HIGH - outS -  < low or > high - 5
+
+	//dbg << "c: " << curStat  << ", bll: " << msgBLL << ", cnt: " << msgCnt << ", val: " << msgVal  << ", cond: " << ctTbl << '\n';
+
+	if      ((ctTbl == 0) && (msgVal > ctLo)) trigger40(isLng, msgCnt);
+	else if ((ctTbl == 1) && (msgVal > ctHi)) trigger40(isLng, msgCnt);
+	else if ((ctTbl == 2) && (msgVal < ctLo)) trigger40(isLng, msgCnt);
+	else if ((ctTbl == 3) && (msgVal < ctHi)) trigger40(isLng, msgCnt);
+	else if ((ctTbl == 4) && (msgVal > ctLo) && (msgVal < ctHi)) trigger40(isLng, msgCnt);
+	else if ((ctTbl == 5) && (msgVal < ctLo) && (msgVal > ctHi)) trigger40(isLng, msgCnt);
 }
 void Relay::adjRly(uint8_t status) {
 	fSwitch(status);																			// switch relay 
@@ -266,6 +282,7 @@ void Relay::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	#endif
 	
 	if (type == 0x40) trigger40((data[0] & 0x40), data[1]);
+	if (type == 0x41) trigger41((data[0] & 0x7F), data[1], data[2]);
 	
 	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
 		hm->sendACK_STATUS(regCnl, modStat, modDUL);

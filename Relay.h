@@ -85,8 +85,8 @@ class Relay {
 		uint8_t  lgSwJtDlyOff        :4;     // 0x8c, s:4, e:8
 	} lstPeer;
 	
-	uint8_t sendStat;  
-  
+	uint8_t sendStat       :1;  
+
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
 	
@@ -102,6 +102,7 @@ class Relay {
 	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay);
 	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);
+	void     trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);
 	void     adjRly(uint8_t status);
 	void     adjStat(uint8_t status);
 
