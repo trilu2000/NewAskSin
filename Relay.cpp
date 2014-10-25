@@ -120,12 +120,13 @@ void Relay::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 
 	//dbg << "c: " << curStat  << ", bll: " << msgBLL << ", cnt: " << msgCnt << ", val: " << msgVal  << ", cond: " << ctTbl << '\n';
 
-	if      ((ctTbl == 0) && (msgVal > ctLo)) trigger40(isLng, msgCnt);
-	else if ((ctTbl == 1) && (msgVal > ctHi)) trigger40(isLng, msgCnt);
-	else if ((ctTbl == 2) && (msgVal < ctLo)) trigger40(isLng, msgCnt);
-	else if ((ctTbl == 3) && (msgVal < ctHi)) trigger40(isLng, msgCnt);
-	else if ((ctTbl == 4) && (msgVal > ctLo) && (msgVal < ctHi)) trigger40(isLng, msgCnt);
-	else if ((ctTbl == 5) && (msgVal < ctLo) && (msgVal > ctHi)) trigger40(isLng, msgCnt);
+	if      (ctTbl == 0) if (msgVal > ctLo) trigger40(isLng, msgCnt);
+	else if (ctTbl == 1) if (msgVal > ctHi) trigger40(isLng, msgCnt);
+	else if (ctTbl == 2) if (msgVal < ctLo) trigger40(isLng, msgCnt);
+	else if (ctTbl == 3) if (msgVal < ctHi) trigger40(isLng, msgCnt);
+	else if (ctTbl == 4) if ((msgVal > ctLo) && (msgVal < ctHi)) trigger40(isLng, msgCnt);
+	else if (ctTbl == 5) if ((msgVal < ctLo) && (msgVal > ctHi)) trigger40(isLng, msgCnt);
+
 }
 void Relay::adjRly(uint8_t status) {
 	fSwitch(status);																			// switch relay 
