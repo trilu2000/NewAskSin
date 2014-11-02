@@ -75,7 +75,7 @@ void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 		else if (curStat == 4) nxtStat = l3->jtDlyOff;											// delay off
 		else if (curStat == 5) nxtStat = l3->jtRampOff;											// ramp off
 		else if (curStat == 6) nxtStat = l3->jtOff;												// currently off
-
+		delayTmr.set(0);																		// set timer to 0 for avoiding delays
 
 	} else if (l3->actionType == 2) {		// toogleToCounter
 
@@ -295,63 +295,90 @@ void Dimmer::poll(void) {
 	}	
 	
 	// jump table section, only
-	if (l3->actionType != 1) return;
+	if (l3->actionType != 1) return;															// only valid for jump table
 	if (curStat == nxtStat) return;																// no status change expected
 	
 	// check the different status changes, {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
 	if        (nxtStat == 1) {		// dlyOn
 		dbg << "dlyOn\n";
-		curStat = nxtStat;
-		nxtStat = l3->jtDlyOn;
+		curStat = nxtStat;																		// remember current status
+		nxtStat = l3->jtDlyOn;																	// get next status from jump table
 		
 		if (l3->onDly) {																		// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->onDly));												// activate the timer and set next status
-			dbg << "set onDly\n";
+			// dbg << "set onDly\n";
 		}
 		
 
 	} else if (nxtStat == 2) {		// rampOn
 		dbg << "rampOn\n";
-		curStat = nxtStat;
-		nxtStat = l3->jtRampOn;
+
+		// check modStat against onLevel, if not compare, set the right values
+		if (modStat != l3->onLevel)	{															// modStat not set, so first time
+			modStat	= l3->onLevel;																// set module status accordingly settings
+			adjDlyPWM = byteTimeCvt(l3->rampOnTime);											// get the ramp on time
+			// dbg << "rOnT: " << adjDlyPWM << '\n';
+			delayTmr.set(adjDlyPWM);															// set the ramp time to poll delay, otherwise we will every time end here
+			adjDlyPWM /= 200;																	// break down the ramp time to smaller slices for adjusting PWM
+		}	
+		
+		// check if ramp on is done, set next status
+		if (modStat == setStat) {																// ramp on is done
+			curStat = nxtStat;																	// set current status accordingly
+			nxtStat = l3->jtRampOn;																// set next status accordingly the jump table
+		}
 
 	
 	} else if (nxtStat == 3) {		// on
 		dbg << "on\n";
-		curStat = nxtStat;
-		nxtStat = l3->jtOn;
+		curStat = nxtStat;																		// remember current status, when timer not set, we stay here for ever
 		
 		if ((l3->onTime) && (l3->onTime != 255)) {												// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->onTime));												// activate the timer and set next status
-			// refill jumptable
 
-			dbg << "set onTime\n";
-		}
+			// nxtStat = l3->jtOn; seems to be wrong here, because original device goes to rampOff and stays in off, so refill jumptable
+			nxtStat = 5;																		// go to ramp off
+			l3->jtRampOff = 6;																	// jump from rampOff to off
+			l3->jtOff = 6;																		// stay in off mode
+			// dbg << "set onTime\n";
+		} else nxtStat = l3->jtOn;
 
 
 	} else if (nxtStat == 4) {		// dlyOff
 		dbg << "dlyOff\n";
-		curStat = nxtStat;
-		nxtStat = l3->jtDlyOff;
+		curStat = nxtStat;																		// remember current status
+		nxtStat = l3->jtDlyOff;																	// get jump table for next status
 
 		if (l3->offDly) {																		// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->offDly));												// activate the timer and set next status
-			dbg << "set offDly\n";
+			// dbg << "set offDly\n";
 		}
 
 
 	} else if (nxtStat == 5) {		// rampOff
 		dbg << "rampOff\n";
-		curStat = nxtStat;
-		nxtStat = l3->jtRampOff;
+
+		// check modStat against offLevel, if not compare, set the right values
+		if (modStat != l3->offLevel) {															// check for first time and set the correct values
+			modStat	= l3->offLevel;																// set the PWM to the right value
+			adjDlyPWM = byteTimeCvt(l3->rampOffTime);											// get the ramp off time
+			delayTmr.set(adjDlyPWM);															// set ramp off time to the poll timer, other wise we will check every ms again
+			adjDlyPWM /= 200;																	// split PWN timer to slices for smooth dimming
+		}
+		
+		// check if ramp on is done, set next status
+		if (modStat == setStat) {																// check if ramp off is done
+			curStat = nxtStat;																	// remember the current status
+			nxtStat = l3->jtRampOff;															// get the next status from jump table
+		}
 
 
 	} else if (nxtStat == 6) {		// off
 		dbg << "off\n";
-		curStat = nxtStat;
-		nxtStat = l3->jtOff;	
+		curStat = nxtStat;																		// remember the current status
+		nxtStat = l3->jtOff;																	// get the next status from jump table
 
-		if ((l3->offTime) && (l3->offTime != 255)) {												// check if there is something in the duration timer, set next status accordingly
+		if ((l3->offTime) && (l3->offTime != 255)) {											// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->offTime));												// activate the timer and set next status
 			// refill jumptable
 
@@ -360,17 +387,7 @@ void Dimmer::poll(void) {
 
 	}
 
-	
-	
-	//dbg << "cS: " << curStat << ", nS: " << nxtStat << '\n'; 
-	
 	/*	adjRly(1);
-		
-		if ((onTime) && (onTime != 255)) {														// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(onTime));													// activate the timer and set next status
-			onTime = 0;																			// clean variable
-			nxtStat = 4;																		// and set the next status variable
-		}
 
 		if (duraTme) {																			// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
@@ -378,50 +395,12 @@ void Dimmer::poll(void) {
 			nxtStat = 4;																		// and set the next status variable
 		} 
 				
-	} else if ((curStat == 2) && (nxtStat == 2)) {		// on -> dlyOff
-		curStat = nxtStat;																		// set current status accordingly
-		nxtStat = 6;																			// and set the next status variable
-
-		if (offDly) {																			// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(offDly));													// activate the timer and set next status
-			offDly = 0;																			// clean variable
-		}
 
 		if (rampTme) {																			// check if there is something in the ramp timer, set next status accordingly
 			delayTmr.set(intTimeCvt(rampTme));													// activate the timer and set next status
 			rampTme = 0;																		// clean variable
 		}
 
-
-	} else if ((curStat == 4) && (nxtStat == 6)) {		// dlyOff -> off
-		adjRly(0);
-		curStat = nxtStat;																		// set current status accordingly
-		
-		if ((offTime) && (offTime != 255)) {													// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(offTime));													// activate the timer and set next status
-			offTime = 0;																		// clean variable
-			nxtStat = 1;																		// and set the next status variable
-		}
-
-		if (duraTme) {																			// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
-			duraTme = 0;																		// clean variable
-			nxtStat = 1;																		// and set the next status variable
-		}
-		
-	} else if ((curStat == 6) && (nxtStat == 1)) {		// off -> dlyOn
-		curStat = nxtStat;																		// set current status accordingly
-		nxtStat = 3;																			// and set the next status variable
-
-		if (onDly) {																			// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(onDly));													// activate the timer and set next status
-			onDly = 0;																			// clean variable
-		}
-
-		if (rampTme) {																			// check if there is something in the ramp timer, set next status accordingly
-			delayTmr.set(intTimeCvt(rampTme));													// activate the timer and set next status
-			rampTme = 0;																		// clean variable
-		}
 		
 	}*/
 	

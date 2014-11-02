@@ -95,9 +95,9 @@ void initPWM() {
 
 void switchPWM(uint8_t status) {
 	uint16_t x = status*255;
-	dbg << x << " ";
+	//dbg << x << " ";
 	x /= 200;
-	dbg << x << '\n';
+	//dbg << x << '\n';
 	OCR2B = x;
 
 	//if (status) setPinHigh(PORTD,3);
