@@ -27,7 +27,8 @@ void Dimmer::config(void Init(), void Switch(uint8_t), uint8_t minDelay) {
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 	curStat = nxtStat = 6;																		// set relay status to off
 	modDUL = 0x40;																				// otherwise status gets not send
-	adjPWM(0);
+	modStat = 0x00;
+	adjPWM();
 }
 void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 
@@ -119,6 +120,7 @@ void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 	}
 */
 	dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << '\n';
+	//showStruct();
 }
 
 void Dimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
@@ -155,41 +157,50 @@ void Dimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 	else if (ctTbl == 5) if ((msgVal < l3->ctValLo) && (msgVal > l3->ctValHi)) trigger40(isLng, msgCnt);
 
 }
-void Dimmer::adjPWM(uint8_t status) {
-	fSwitch(status);																			// switch relay 
-	//modStat = (status)?0xC8:0x00;																// module status, needed for status request, etc
+void Dimmer::adjPWM(void) {
 
-	//if (modDUL) {
-	//	sendStat = 1;																			// we should send the current status change
-	//	msgTmr.set((minDly*1000)+(rand()%2048));
-	//}
+	// something to do?
+	if (setStat == modStat) return;																// nothing to do
+	if (!adjTmr.done()) return;																	// timer not done, wait until then
+	
+	// calculate next step
+	if (modStat > setStat) setStat++;															// do we have to go up
+	else setStat--;																				// or down
+	
+	// set value on PWM channel and timer for next adjustment
+	if (lstCnl.characteristic) {
+
+		uint16_t xStat = setStat * setStat;
+		xStat /= 200;
+		if ((setStat) && (!xStat)) xStat = 1;	
+		fSwitch(xStat);																		// set accordingly
+
+	} else {
+
+		fSwitch(setStat);																		// set accordingly
+	}
+
+	adjTmr.set(adjDlyPWM);																		// set timer for next action
 }
-void Dimmer::adjStat(uint8_t status) {
-	if (modStat == status) return;
-
-	modStat = status;																			// set new status to message byte
-	modDUL = 0;
-	sendStat = 1;																				// we should send the current status change
-	msgTmr.set(100);																			// send the new status next time
-
-	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
-	if (status == 0xc8) curStat = nxtStat = 3;													// set relay status accordingly
-	else curStat = nxtStat = 6;	
-}
-
 void Dimmer::upDim(void) {
 
+	// calculate the value
 	if (modStat >= l3->dimMaxLvl) return;
 	modStat += l3->dimStep;
 	if (modStat > 200) modStat = 200;
-	adjPWM(modStat);
+
+	// new value will be set by polling function, time for increase has to be set manually
+	adjDlyPWM = 1;																				// do the adjustment in 1ms steps				
 }
 void Dimmer::downDim(void) {
 
+	// calculate the value
 	if (modStat == 0) return;
 	if (modStat < l3->dimStep) modStat = l3->dimStep;
 	modStat -= l3->dimStep;
-	adjPWM(modStat);
+
+	// new value will be set by polling function, time for increase has to be set manually
+	adjDlyPWM = 1;																				// do the adjustment in 1ms steps
 }
 
 void Dimmer::showStruct(void) {
@@ -217,6 +228,8 @@ void Dimmer::showStruct(void) {
 }
 
 void Dimmer::poll(void) {
+	// check if something is to be set on the PWM channel
+	adjPWM();
 
 	// check if there is some status to send
 	if ((sendStat) && (msgTmr.done() )) {

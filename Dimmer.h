@@ -38,7 +38,7 @@ class Dimmer {
   public://----------------------------------------------------------------------------------------------------------------
   protected://-------------------------------------------------------------------------------------------------------------
   private://---------------------------------------------------------------------------------------------------------------
-	waitTimer delayTmr;																			// delay timer for relay
+	waitTimer delayTmr;																			// delay timer for on,off and delay time
 	waitTimer msgTmr;																			// message timer for sending status
 
 	struct s_lstCnl {
@@ -225,25 +225,20 @@ class Dimmer {
 	void (*fInit)(void);
 	void (*fSwitch)(uint8_t);
 
-	uint8_t  minDly;																		// remember delay for send status information
-	uint8_t  cnt;																			// message counter for type 40 message
-	uint8_t  curStat:4, nxtStat:4;															// current state and next state
-	uint16_t rampTme, duraTme;																// time store for trigger 11
-
-	//uint8_t  jtOn :4, jtOff :4, jtDlyOn :4, jtDlyOff :4, jtRampOn :4,jtRampOff :4;
-	//uint8_t  onDly, onRamp, onTime, offDly, offRamp, offTime;								// message 40 timers
-	//uint8_t  offTimeMode :1, onTimeMode :1, offDlyBlink :1, onLvlPrio :1, onDlyMode :1;		// some config
-	//uint8_t  offLevel, onMinLevel, onLevel;													// leveling
-	//uint8_t  rampSstep;																		// ramping
-	//uint8_t  dimMinLvl, dimMaxLvl, dimStep;													// dimming
-	//uint8_t  offDlyNewTime, offDlyOldTime;													// timers
+	uint8_t   setStat;																			// status to set on the PWM channel
+	uint32_t  adjDlyPWM;																		// timer to follow in adjPWM function
+	waitTimer adjTmr;																			// timer for adjustment of PWM
+	
+	uint8_t  minDly;																			// remember delay for send status information
+	uint8_t  cnt;																				// message counter for type 40 message
+	uint8_t  curStat:4, nxtStat:4;																// current state and next state
+	uint16_t rampTme, duraTme;																	// time store for trigger 11
 
 	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay);
 	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);
 	void     trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);
-	void     adjPWM(uint8_t status);
-	void     adjStat(uint8_t status);
+	void     adjPWM(void);
 
 	void     upDim(void);
 	void     downDim(void);
