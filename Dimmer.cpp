@@ -213,6 +213,8 @@ void Dimmer::adjPWM(void) {
 	
 	// set value on PWM channel and timer for next adjustment
 	if (lstCnl.characteristic) {																// check if we should use quadratic approach
+
+
 		uint16_t xStat = setStat * setStat;														// recalculate the value
 		xStat /= 200;																			// divide it by 200
 		if ((setStat) && (!xStat)) xStat = 1;													// till 15 it is below 1	
@@ -341,7 +343,7 @@ void Dimmer::poll(void) {
 			l3->jtRampOff = 6;																	// jump from rampOff to off
 			l3->jtOff = 6;																		// stay in off mode
 			// dbg << "set onTime\n";
-		} else nxtStat = l3->jtOn;
+		} //else nxtStat = l3->jtOn;
 
 
 	} else if (nxtStat == 4) {		// dlyOff
@@ -376,7 +378,7 @@ void Dimmer::poll(void) {
 	} else if (nxtStat == 6) {		// off
 		dbg << "off\n";
 		curStat = nxtStat;																		// remember the current status
-		nxtStat = l3->jtOff;																	// get the next status from jump table
+		//nxtStat = l3->jtOff;																	// get the next status from jump table
 
 		if ((l3->offTime) && (l3->offTime != 255)) {											// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->offTime));												// activate the timer and set next status
