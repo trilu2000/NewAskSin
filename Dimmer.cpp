@@ -83,21 +83,65 @@ void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
 	} else if (l3->actionType == 4) {		// upDim
 		upDim();
-		// check onTimer, if set then set jump table accordingly
+
+		if ((l3->onTime) && (l3->onTime != 255)) {												// check onTimer, if set then set jump table accordingly
+			delayTmr.set(byteTimeCvt(l3->onTime) );												// set the timer
+		} else l3->actionType = 0;
+
 
 	} else if (l3->actionType == 5) {		// downDim
 		downDim();
-		// check onTimer, if set then set jump table accordingly
+		l3->actionType = 0;
+
 		
 	} else if (l3->actionType == 6) {		// toogleDim
+		// needs further research
+
 
 	} else if (l3->actionType == 7) {		// toogleDimToCounter
+		// check for even or odd, if even set onMinLvl 
+		if (msgCnt % 2) {																		// odd
 
+			if (modStat < l3->onMinLevel) {
+				modStat = l3->onMinLevel;
+				adjDlyPWM = byteTimeCvt(l3->rampOnTime);
+				adjDlyPWM /= (modStat - l3->onMinLevel);
+			}
+
+		} else {																				// even
+			
+			if (modStat > l3->offLevel) {
+				modStat = l3->offLevel;
+				adjDlyPWM = byteTimeCvt(l3->rampOffTime);
+				adjDlyPWM /= (modStat - l3->offLevel);
+			}
+			
+		}
+
+		
 	} else if (l3->actionType == 8) {		// toogleDimInversToCounter
+		// same as 7, but changed order
+		if (msgCnt % 2) {																		// odd
+
+			if (modStat > l3->offLevel) {
+				modStat = l3->offLevel;
+				adjDlyPWM = byteTimeCvt(l3->rampOffTime);
+				adjDlyPWM /= (modStat - l3->offLevel);
+			}
+
+		} else {																				// even
+			
+			if (modStat < l3->onMinLevel) {
+				modStat = l3->onMinLevel;
+				adjDlyPWM = byteTimeCvt(l3->rampOnTime);
+				adjDlyPWM /= (modStat - l3->onMinLevel);
+			}
+			
+		}
 
 	}
 
-	delayTmr.set(0);
+	//delayTmr.set(0);
 
 	//showStruct();
 	if ((l3->onDly) || (l3->offDly) || (l3->rampOnTime) || (l3->rampOffTime)) {
@@ -168,25 +212,25 @@ void Dimmer::adjPWM(void) {
 	else setStat--;																				// or down
 	
 	// set value on PWM channel and timer for next adjustment
-	if (lstCnl.characteristic) {
-
-		uint16_t xStat = setStat * setStat;
-		xStat /= 200;
-		if ((setStat) && (!xStat)) xStat = 1;	
-		fSwitch(xStat);																		// set accordingly
+	if (lstCnl.characteristic) {																// check if we should use quadratic approach
+		uint16_t xStat = setStat * setStat;														// recalculate the value
+		xStat /= 200;																			// divide it by 200
+		if ((setStat) && (!xStat)) xStat = 1;													// till 15 it is below 1	
+		fSwitch(xStat);																			// set accordingly
 
 	} else {
-
 		fSwitch(setStat);																		// set accordingly
-	}
 
+	}
 	adjTmr.set(adjDlyPWM);																		// set timer for next action
+
 }
 void Dimmer::upDim(void) {
 
 	// calculate the value
 	if (modStat >= l3->dimMaxLvl) return;
 	modStat += l3->dimStep;
+	if (modStat < l3->onMinLevel) modStat = l3->onMinLevel;
 	if (modStat > 200) modStat = 200;
 
 	// new value will be set by polling function, time for increase has to be set manually
@@ -198,7 +242,8 @@ void Dimmer::downDim(void) {
 	if (modStat == 0) return;
 	if (modStat < l3->dimStep) modStat = l3->dimStep;
 	modStat -= l3->dimStep;
-
+	if (modStat < l3->offLevel) modStat = l3->offLevel;
+	
 	// new value will be set by polling function, time for increase has to be set manually
 	adjDlyPWM = 1;																				// do the adjustment in 1ms steps
 }
@@ -238,29 +283,41 @@ void Dimmer::poll(void) {
 		hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);									// send status
 	}
 		
-	// check if something is to do on the relay
-	if (curStat == nxtStat) return;																// no status change expected
-	if (!delayTmr.done()) return;																// timer not done, wait until then
+	// check if something is to do on the dimmer
+	if (!delayTmr.done() ) return;																// timer not done, wait until then
+
+
+	// upDim, check if onTimer was running
+	if (l3->actionType == 4)  {							
+		modStat = l3->offLevel;
+		adjDlyPWM = 1;																			// do the adjustment in 1ms steps
+		l3->actionType = 0;	
+	}	
 	
-	// check the different status changes
-	// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
+	// jump table section, only
+	if (l3->actionType != 1) return;
+	if (curStat == nxtStat) return;																// no status change expected
+	
+	// check the different status changes, {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
 	if        (nxtStat == 1) {		// dlyOn
+		dbg << "dlyOn\n";
 		curStat = nxtStat;
 		nxtStat = l3->jtDlyOn;
 		
 		if (l3->onDly) {																		// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->onDly));												// activate the timer and set next status
 			dbg << "set onDly\n";
-			return;
 		}
 		
 
 	} else if (nxtStat == 2) {		// rampOn
+		dbg << "rampOn\n";
 		curStat = nxtStat;
 		nxtStat = l3->jtRampOn;
 
 	
 	} else if (nxtStat == 3) {		// on
+		dbg << "on\n";
 		curStat = nxtStat;
 		nxtStat = l3->jtOn;
 		
@@ -269,28 +326,37 @@ void Dimmer::poll(void) {
 			// refill jumptable
 
 			dbg << "set onTime\n";
-			return;
 		}
 
 
 	} else if (nxtStat == 4) {		// dlyOff
+		dbg << "dlyOff\n";
 		curStat = nxtStat;
 		nxtStat = l3->jtDlyOff;
 
 		if (l3->offDly) {																		// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->offDly));												// activate the timer and set next status
 			dbg << "set offDly\n";
-			return;
 		}
 
 
 	} else if (nxtStat == 5) {		// rampOff
+		dbg << "rampOff\n";
 		curStat = nxtStat;
 		nxtStat = l3->jtRampOff;
 
+
 	} else if (nxtStat == 6) {		// off
+		dbg << "off\n";
 		curStat = nxtStat;
 		nxtStat = l3->jtOff;	
+
+		if ((l3->offTime) && (l3->offTime != 255)) {												// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->offTime));												// activate the timer and set next status
+			// refill jumptable
+
+			dbg << "set offTime\n";
+		}
 
 	}
 
