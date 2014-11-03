@@ -1012,18 +1012,21 @@ uint8_t  waitTimer::done(void) {
 	// todo - check if nexTime is near overflow and we have some delay, so getMillis() goes over 0
 	// to get the correct timer result
 	if (!armed) return 1;																	// not armed, so nothing to do
-	if ( getMillis() < nexTime ) return 0;													// not ready yet
-	//if ((nexTime - getMillis() ) > 360000000 ) return 0;									// check if there was an over lap 
-	armed = 0;																				// seems everything is done
+	if ( (getMillis() - startTime) < checkTime ) return 0;									// not ready yet
+	// if we are here, timeout was happened 
+	armed = 0;																				// not armed any more
 	return 1;																				// signal done
 }
 void     waitTimer::set(uint32_t ms) {
 	armed = ms?1:0;
-	if (armed) nexTime = getMillis() + ms;
+	if (armed) {
+		startTime = getMillis();
+		checkTime = ms;
+	}
 }
 uint16_t waitTimer::remain(void) {
 	if (!armed) return 0;
-	return nexTime - getMillis();
+	return checkTime - (getMillis() - startTime);
 }
 
 

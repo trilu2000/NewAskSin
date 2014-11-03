@@ -140,10 +140,12 @@ extern AS hm;
 
 
 class waitTimer {
-
+	// http://www.gammon.com.au/forum/?id=12127
+	
   private:		//---------------------------------------------------------------------------------------------------------
 	uint8_t  armed;
-	uint32_t nexTime;
+	uint32_t checkTime;
+	uint32_t startTime;
 
   public:		//---------------------------------------------------------------------------------------------------------
 	waitTimer () {}
