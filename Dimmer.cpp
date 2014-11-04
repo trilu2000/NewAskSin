@@ -254,11 +254,6 @@ void Dimmer::blinkOffDly(void) {
 	// some sanity
 	if (!activeOffDlyBlink) return;															// blink off flag not set, jump out
 
-	if (curStat != 4) {																		// left off delay function,
-		activeOffDlyBlink = 0;																// no need to jump in again
-		return;																				// jump out
-	}
-	
 	// adjust timer not needed for PWM at the moment - take it for blinking delay
 	if (!adjTmr.done()) return;
 
@@ -301,40 +296,47 @@ void Dimmer::dimPoll(void) {
 	// - jump table section, only
 	if (l3->actionType != 1) return;														// only valid for jump table
 	if (curStat == nxtStat) return;															// no status change expected
-	
+	activeOffDlyBlink = 0;	
+
 	// check the different status changes, {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
 	if        (nxtStat == 1) {		// dlyOn
-		dbg << "dlyOn\n";
+		#ifdef DI_DBG
+		dbg << F("dlyOn\n");
+		#endif 
+		
 		curStat = nxtStat;																	// remember current status
 		nxtStat = l3->jtDlyOn;																// get next status from jump table
 		
 		if (l3->onDly) {																	// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->onDly));											// activate the timer and set next status
-			// dbg << "set onDly\n";
 		}
 		
 
 	} else if (nxtStat == 2) {		// rampOn
-		dbg << "rampOn\n";
-		curStat = nxtStat;																	// set current status accordingly
-
+		#ifdef DI_DBG
+		dbg << F("rampOn\n");
+		#endif
+		
 		// check modStat against onLevel, if not compare, set the right values
 		if (modStat != l3->onLevel)	{														// modStat not set, so first time
 			modStat	= l3->onLevel;															// set module status accordingly settings
 			adjDlyPWM = byteTimeCvt(l3->rampOnTime);										// get the ramp on time
-			// dbg << "rOnT: " << adjDlyPWM << '\n';
 			delayTmr.set(adjDlyPWM);														// set the ramp time to poll delay, otherwise we will every time end here
 			adjDlyPWM /= 200;																// break down the ramp time to smaller slices for adjusting PWM
 		}
 		
 		// check if ramp on is done, set next status
 		if (modStat == setStat) {															// ramp on is done
+			curStat = nxtStat;																// set current status accordingly
 			nxtStat = l3->jtRampOn;															// set next status accordingly the jump table
 		}
 
 		
 	} else if (nxtStat == 3) {		// on
-		dbg << "on\n";
+		#ifdef DI_DBG
+		dbg << F("on\n");
+		#endif
+		
 		curStat = nxtStat;																	// remember current status, when timer not set, we stay here for ever
 		
 		if ((l3->onTime) && (l3->onTime != 255)) {											// check if there is something in the duration timer, set next status accordingly
@@ -344,26 +346,28 @@ void Dimmer::dimPoll(void) {
 			nxtStat = 5;																	// go to ramp off
 			l3->jtRampOff = 6;																// jump from rampOff to off
 			l3->jtOff = 6;																	// stay in off mode
-			// dbg << "set onTime\n";
 		} //else nxtStat = l3->jtOn;														// not sure in which scenario it is needed
 
 
 	} else if (nxtStat == 4) {		// dlyOff
-		dbg << "dlyOff\n";
+		#ifdef DI_DBG
+		dbg << F("dlyOff\n");
+		#endif
+
 		curStat = nxtStat;																	// remember current status
 		nxtStat = l3->jtDlyOff;																// get jump table for next status
 
 		if (l3->offDly) {																	// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->offDly));											// activate the timer and set next status
 			if (l3->offDlyBlink) activeOffDlyBlink = 1;
-			// dbg << "set offDly\n";
 		}
 
 
 	} else if (nxtStat == 5) {		// rampOff
-		dbg << "rampOff\n";
-		curStat = nxtStat;																	// remember the current status
-
+		#ifdef DI_DBG
+		dbg << F("rampOff\n");
+		#endif
+		
 		// check modStat against offLevel, if not similar, set the right values
 		if (modStat != l3->offLevel) {														// check for first time and set the correct values
 			modStat	= l3->offLevel;															// set the PWM to the right value
@@ -374,12 +378,16 @@ void Dimmer::dimPoll(void) {
 		
 		// check if ramp on is done, set next status
 		if (modStat == setStat) {															// check if ramp off is done
+			curStat = nxtStat;																// remember the current status
 			nxtStat = l3->jtRampOff;														// get the next status from jump table
 		}
 
 
 	} else if (nxtStat == 6) {		// off
-		dbg << "off\n";
+		#ifdef DI_DBG
+		dbg << F("off\n");
+		#endif
+
 		curStat = nxtStat;																	// remember the current status
 		//nxtStat = l3->jtOff;																// get the next status from jump table
 
@@ -387,7 +395,6 @@ void Dimmer::dimPoll(void) {
 			delayTmr.set(byteTimeCvt(l3->offTime));											// activate the timer and set next status
 			// refill jumptable
 
-			dbg << "set offTime\n";
 		}
 
 	}
