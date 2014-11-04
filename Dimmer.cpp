@@ -204,20 +204,23 @@ void Dimmer::toggleDim(void) {
 void Dimmer::upDim(void) {
 
 	// calculate the value
-	if (modStat >= l3->dimMaxLvl) return;													// reached or above max value, nothing to do
+	if (modStat >= 200) return;																// reached or above max value, nothing to do
 	modStat += l3->dimStep;																	// increase by dim steps
 	//if (modStat < l3->onMinLevel) modStat = l3->onMinLevel;									// if not reached minimum level, set it
-	// todo: increase, decrease should be on base of dim steps; dimMinLvl, dimMaxLvl, dimStep
-	if (modStat > 200) modStat = 200;														// more then 100%, go back to 100%
-
+	if (modStat > l3->dimMaxLvl) modStat = l3->dimMaxLvl;									// more then 100%, go back to 100%
+	curStat = 3;																			// dimmer is on, important for on button setting
+	
 	// new value will be set by polling function, time for increase has to be set manually
 	adjDlyPWM = 1;																			// do the adjustment in 1ms steps
 }
 void Dimmer::downDim(void) {
 
 	// calculate the value
-	if (modStat == 0) return;																// dimmer already off, nothing to do
-	if (modStat < l3->dimStep) modStat = l3->dimStep;										// dimmer value smaller then dim step, set to minimum dim step
+	if (modStat == 0) return;																// dimmer already off
+	if (modStat <= l3->dimStep) {															// dimmer value smaller then dim step
+		modStat = l3->dimStep;																// set to minimum dim step
+		curStat = 6;																		// set status to off, important for one button settings
+	}
 	modStat -= l3->dimStep;																	// lower the value
 	// todo: increase, decrease should be on base of dim steps; dimMinLvl, dimMaxLvl, dimStep
 	//if (modStat < l3->offLevel) modStat = l3->offLevel;										// if we are now smaller then the off level, set value to off level
@@ -252,11 +255,15 @@ void Dimmer::adjPWM(void) {
 }
 void Dimmer::blinkOffDly(void) {
 	if (!activeOffDlyBlink) return;															// blink off flag not set, jump out
-	if (curStat != 4) activeOffDlyBlink = 0;												// left off delay function, no need to jump in again
 
+	if (curStat != 4) {																		// left off delay function,
+		activeOffDlyBlink = 0;																// no need to jump in again
+		return;																				// jump out
+	}
+	
 	// adjust timer not needed for PWM at the moment - take it for blinking delay
 	if (!adjTmr.done()) return;
-		
+
 	// check in which cycle we are, 1 means led is off, 0 led is on again 
 	if (statusOffDlyBlink) {
 		statusOffDlyBlink = 0;																// switch led on next time
@@ -311,6 +318,7 @@ void Dimmer::dimPoll(void) {
 
 	} else if (nxtStat == 2) {		// rampOn
 		dbg << "rampOn\n";
+		curStat = nxtStat;																	// set current status accordingly
 
 		// check modStat against onLevel, if not compare, set the right values
 		if (modStat != l3->onLevel)	{														// modStat not set, so first time
@@ -323,7 +331,6 @@ void Dimmer::dimPoll(void) {
 		
 		// check if ramp on is done, set next status
 		if (modStat == setStat) {															// ramp on is done
-			curStat = nxtStat;																// set current status accordingly
 			nxtStat = l3->jtRampOn;															// set next status accordingly the jump table
 		}
 
@@ -357,8 +364,9 @@ void Dimmer::dimPoll(void) {
 
 	} else if (nxtStat == 5) {		// rampOff
 		dbg << "rampOff\n";
+		curStat = nxtStat;																	// remember the current status
 
-		// check modStat against offLevel, if not compare, set the right values
+		// check modStat against offLevel, if not similar, set the right values
 		if (modStat != l3->offLevel) {														// check for first time and set the correct values
 			modStat	= l3->offLevel;															// set the PWM to the right value
 			adjDlyPWM = byteTimeCvt(l3->rampOffTime);										// get the ramp off time
@@ -368,7 +376,6 @@ void Dimmer::dimPoll(void) {
 		
 		// check if ramp on is done, set next status
 		if (modStat == setStat) {															// check if ramp off is done
-			curStat = nxtStat;																// remember the current status
 			nxtStat = l3->jtRampOff;														// get the next status from jump table
 		}
 
