@@ -33,21 +33,14 @@ void Dimmer::config(void Init(), void Switch(uint8_t), uint8_t minDelay) {
 
 void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 
-	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];				// store ramp time
-	else rampTme = 0;
+	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];				// if ramp time is given, bring it in the right format
+	else rampTme = 0;																		// otherwise empty variable
 
 	if (duraTime) duraTme = (uint16_t)duraTime[0]<<8 | (uint16_t)duraTime[1];				// duration time if given
-	else duraTme = 0;
+	else duraTme = 0;																		// or clear value
 
-	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
-	if (value) {
-		curStat = 6;																		// set current status to off
-		nxtStat = 1;																		// and the next one to delay on, if ramp time is set poll will recognize
+	// set value in modStat
 
-	} else {
-		curStat = 3;
-		nxtStat = 4;
-	}
 	
 	if ((rampTme) || (duraTme)) modDUL = 0x40;												// important for the status message
 	else modDUL = 0x00;
@@ -172,7 +165,7 @@ void Dimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 	uint8_t ctTbl;
 
 	// set short or long
-	l3 = (isLng)?(s_l3*)&lstPeer+1 :(s_l3*)&lstPeer;
+	l3 = (isLng)?(s_l3*)&lstPeer+1 :(s_l3*)&lstPeer;										// set pointer to the right part of the list3, short or long
 
 	
 	// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
@@ -190,7 +183,7 @@ void Dimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 	// COND_VALUE_LO LE X LT COND_VALUE_HIGH      - betW -  low <> high     - 4
 	// X LT COND_VALUE_LO OR X GE COND_VALUE_HIGH - outS -  < low or > high - 5
 
-	//dbg << "c: " << curStat  << ", bll: " << msgBLL << ", cnt: " << msgCnt << ", val: " << msgVal  << ", cond: " << ctTbl << '\n';
+	//dbg << "curStat: " << curStat  << ", isLng: " << isLng << ", val: " << msgVal  << ", cond: " << ctTbl << '\n';
 
 	if      (ctTbl == 0) if (msgVal > l3->ctValLo) trigger40(isLng, msgCnt);
 	else if (ctTbl == 1) if (msgVal > l3->ctValHi) trigger40(isLng, msgCnt);
@@ -326,7 +319,7 @@ void Dimmer::dimPoll(void) {
 			l3->jtRampOff = 6;																// jump from rampOff to off
 			l3->jtOff = 6;																	// stay in off mode
 			// dbg << "set onTime\n";
-		} //else nxtStat = l3->jtOn;
+		} //else nxtStat = l3->jtOn;														// not sure in which scenario it is needed
 
 
 	} else if (nxtStat == 4) {		// dlyOff
@@ -372,7 +365,6 @@ void Dimmer::dimPoll(void) {
 
 	}
 
-	//adjRly(1);
 	//if (duraTme) {																		// check if there is something in the duration timer, set next status accordingly
 	//	delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
 	//	duraTme = 0;																		// clean variable

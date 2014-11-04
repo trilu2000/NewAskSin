@@ -261,21 +261,21 @@ class Dimmer {
 	void (*fInit)(void);																	// pointer to init function in main sketch
 	void (*fSwitch)(uint8_t);																// pointer to switch function (PWM) in main sketch
 
-	uint8_t sendStat :1;																	// is there a status to be send  
+	uint8_t   sendStat :1;																	// is there a status to be send  
 	waitTimer msgTmr;																		// message timer for sending status
 
 	waitTimer delayTmr;																		// delay timer for on,off and delay time
-	uint8_t  minDly;																		// remember delay for send status information
-	uint16_t rampTme, duraTme;																// time store for trigger 11
+	uint8_t   minDly;																		// remember delay for send status information
+	uint16_t  rampTme, duraTme;																// time store for trigger 11
 
 	uint8_t   setStat;																		// status to set on the PWM channel
 	uint32_t  adjDlyPWM;																	// timer to follow in adjPWM function
 	waitTimer adjTmr;																		// timer for adjustment of PWM
 
-	uint8_t  directionDim :1;																// used in toogleDim function
+	uint8_t   directionDim :1;																// used in toogleDim function
 
-	uint8_t  cnt;																			// message counter for type 40 message
-	uint8_t  curStat:4, nxtStat:4;															// current state and next state
+	uint8_t   cnt;																			// message counter for type 40 message
+	uint8_t   curStat:4, nxtStat:4;															// current state and next state
 
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
