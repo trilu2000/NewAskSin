@@ -206,8 +206,7 @@ void Dimmer::upDim(void) {
 	// calculate the value
 	if (modStat >= 200) return;																// reached or above max value, nothing to do
 	modStat += l3->dimStep;																	// increase by dim steps
-	//if (modStat < l3->onMinLevel) modStat = l3->onMinLevel;									// if not reached minimum level, set it
-	if (modStat > l3->dimMaxLvl) modStat = l3->dimMaxLvl;									// more then 100%, go back to 100%
+	if (modStat > 200) modStat = 200;														// more then 100%, go back to 100%
 	curStat = 3;																			// dimmer is on, important for on button setting
 	
 	// new value will be set by polling function, time for increase has to be set manually
@@ -222,8 +221,6 @@ void Dimmer::downDim(void) {
 		curStat = 6;																		// set status to off, important for one button settings
 	}
 	modStat -= l3->dimStep;																	// lower the value
-	// todo: increase, decrease should be on base of dim steps; dimMinLvl, dimMaxLvl, dimStep
-	//if (modStat < l3->offLevel) modStat = l3->offLevel;										// if we are now smaller then the off level, set value to off level
 	
 	// new value will be set by polling function, time for increase has to be set manually
 	adjDlyPWM = 1;																			// do the adjustment in 1ms steps
@@ -254,6 +251,7 @@ void Dimmer::adjPWM(void) {
 	adjTmr.set(adjDlyPWM);																	// set timer for next action
 }
 void Dimmer::blinkOffDly(void) {
+	// some sanity
 	if (!activeOffDlyBlink) return;															// blink off flag not set, jump out
 
 	if (curStat != 4) {																		// left off delay function,
