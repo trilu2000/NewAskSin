@@ -290,6 +290,7 @@ class Dimmer {
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);										// messages coming from switch
 	void     trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);						// messages coming from sensor
 
+  private://---------------------------------------------------------------------------------------------------------------
 	void     toggleDim(void);																// dim up or down with one key
 	void     upDim(void);																	// up dim procedure
 	void     downDim(void);																	// down dim procedure
@@ -302,6 +303,7 @@ class Dimmer {
 	void     showStruct(void);
 
 	
+  public://----------------------------------------------------------------------------------------------------------------
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
 	uint8_t  modStat;																		// module status byte, needed for list3 modules to answer status requests
 	uint8_t  modDUL;																		// module down up low battery byte
