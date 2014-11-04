@@ -80,8 +80,6 @@ class Dimmer {
   public://----------------------------------------------------------------------------------------------------------------
   protected://-------------------------------------------------------------------------------------------------------------
   private://---------------------------------------------------------------------------------------------------------------
-	waitTimer delayTmr;																			// delay timer for on,off and delay time
-	waitTimer msgTmr;																			// message timer for sending status
 
 	struct s_lstCnl {
 		// 0x30,0x32,0x34,0x35,0x56,0x57,0x58,0x59,
@@ -199,7 +197,8 @@ class Dimmer {
 	} lstPeer;
 
 	struct s_l3 {
-		// 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x19,0x1a,0x26,0x27,0x28,0x29,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x99,0x9a,0xa6,0xa7,0xa8,0xa9,
+		// 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x19,0x1a,0x26,0x27,0x28,0x29,
+		// 0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x99,0x9a,0xa6,0xa7,0xa8,0xa9,
 		uint8_t  ctRampOn       :4;     // 0x01,0x81, s:0, e:4
 		uint8_t  ctRampOff      :4;     // 0x01,0x81, s:4, e:8
 		uint8_t  ctDlyOn        :4;     // 0x02,0x82, s:0, e:4
@@ -259,32 +258,44 @@ class Dimmer {
 		uint8_t  elsJtRampOff   :4;     // 0x29,0xa9, s:4, e:8
 	} *l3;
 	
-	uint8_t sendStat       :1;  
-
-  public://----------------------------------------------------------------------------------------------------------------
-  //- user defined functions ----------------------------------------------------------------------------------------------
-	
 	void (*fInit)(void);
 	void (*fSwitch)(uint8_t);
 
-	uint8_t   setStat;																			// status to set on the PWM channel
-	uint32_t  adjDlyPWM;																		// timer to follow in adjPWM function
-	waitTimer adjTmr;																			// timer for adjustment of PWM
-	
-	uint8_t  minDly;																			// remember delay for send status information
-	uint8_t  cnt;																				// message counter for type 40 message
-	uint8_t  curStat:4, nxtStat:4;																// current state and next state
-	uint16_t rampTme, duraTme;																	// time store for trigger 11
+	uint8_t sendStat       :1;																// is there a status to be send  
+	waitTimer msgTmr;																		// message timer for sending status
 
-	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay);
-	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
-	void     trigger40(uint8_t msgLng, uint8_t msgCnt);
-	void     trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);
+	waitTimer delayTmr;																		// delay timer for on,off and delay time
+	uint8_t  minDly;																		// remember delay for send status information
+	uint16_t rampTme, duraTme;																// time store for trigger 11
+
+	uint8_t   setStat;																		// status to set on the PWM channel
+	uint32_t  adjDlyPWM;																	// timer to follow in adjPWM function
+	waitTimer adjTmr;																		// timer for adjustment of PWM
+
+	uint8_t  directionDim :1;																// used in toogleDim function
+
+	uint8_t  cnt;																			// message counter for type 40 message
+	uint8_t  curStat:4, nxtStat:4;															// current state and next state
+
+  public://----------------------------------------------------------------------------------------------------------------
+  //- user defined functions ----------------------------------------------------------------------------------------------
+
+	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay);					// configures the module, jump addresses, etc
+
+	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);				// messages coming from master
+	void     trigger40(uint8_t msgLng, uint8_t msgCnt);										// messages coming from switch
+	void     trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);						// messages coming from sensor
+
+	void     toggleDim(void);																// dim up or down with one key
+	void     upDim(void);																	// up dim procedure
+	void     downDim(void);																	// down dim procedure
+
 	void     adjPWM(void);
 
-	void     upDim(void);
-	void     downDim(void);
+  //- helpers defined functions -------------------------------------------------------------------------------------------
 	void     showStruct(void);
+
+
 	
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
 	uint8_t  modStat;																		// module status byte, needed for list3 modules to answer status requests

@@ -92,7 +92,6 @@ void initPWM() {
 	TCCR2A |= 1<<COM2B1;
 
 }
-
 void switchPWM(uint8_t status) {
 	uint16_t x = status*255;
 	//dbg << x << " ";
