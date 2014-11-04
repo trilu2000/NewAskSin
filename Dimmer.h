@@ -258,10 +258,10 @@ class Dimmer {
 		uint8_t  elsJtRampOff   :4;     // 0x29,0xa9, s:4, e:8
 	} *l3;
 	
-	void (*fInit)(void);
-	void (*fSwitch)(uint8_t);
+	void (*fInit)(void);																	// pointer to init function in main sketch
+	void (*fSwitch)(uint8_t);																// pointer to switch function (PWM) in main sketch
 
-	uint8_t sendStat       :1;																// is there a status to be send  
+	uint8_t sendStat :1;																	// is there a status to be send  
 	waitTimer msgTmr;																		// message timer for sending status
 
 	waitTimer delayTmr;																		// delay timer for on,off and delay time
@@ -290,11 +290,11 @@ class Dimmer {
 	void     upDim(void);																	// up dim procedure
 	void     downDim(void);																	// down dim procedure
 
-	void     adjPWM(void);
-
+	void     adjPWM(void);																	// adjusts PWM value in a regular manner
+	void     dimPoll(void);																	// dimmer polling function
+	
   //- helpers defined functions -------------------------------------------------------------------------------------------
 	void     showStruct(void);
-
 
 	
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------

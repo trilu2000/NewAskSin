@@ -214,6 +214,7 @@ void Dimmer::upDim(void) {
 	if (modStat >= l3->dimMaxLvl) return;													// reached or above max value, nothing to do
 	modStat += l3->dimStep;																	// increase by dim steps
 	//if (modStat < l3->onMinLevel) modStat = l3->onMinLevel;									// if not reached minimum level, set it
+	// todo: increase, decrease should be on base of dim steps; dimMinLvl, dimMaxLvl, dimStep
 	if (modStat > 200) modStat = 200;														// more then 100%, go back to 100%
 
 	// new value will be set by polling function, time for increase has to be set manually
@@ -225,6 +226,7 @@ void Dimmer::downDim(void) {
 	if (modStat == 0) return;																// dimmer already off, nothing to do
 	if (modStat < l3->dimStep) modStat = l3->dimStep;										// dimmer value smaller then dim step, set to minimum dim step
 	modStat -= l3->dimStep;																	// lower the value
+	// todo: increase, decrease should be on base of dim steps; dimMinLvl, dimMaxLvl, dimStep
 	//if (modStat < l3->offLevel) modStat = l3->offLevel;										// if we are now smaller then the off level, set value to off level
 	
 	// new value will be set by polling function, time for increase has to be set manually
@@ -255,33 +257,7 @@ void Dimmer::adjPWM(void) {
 	}
 	adjTmr.set(adjDlyPWM);																	// set timer for next action
 }
-
-  //- helpers defined functions -------------------------------------------------------------------------------------------
-void Dimmer::showStruct(void) {
-
-	dbg << "\nctRampOn " << l3->ctRampOn << ", ctRampOff " << l3->ctRampOff << ", ctDlyOn " << l3->ctDlyOn << \
-	        ", ctDlyOff " << l3->ctDlyOff << ", ctOn " << l3->ctOn << ", ctOff " << l3->ctOff << \
-			", ctValLo " << l3->ctValLo << ", ctValHi " << l3->ctValHi << '\n' << '\n';
-	 
-	dbg << "onDly " << l3->onDly << ", onTime " << l3->onTime << ", offDly " << l3->offDly << ", offTime " << l3->offTime << \
-	       ", actionType " << l3->actionType << ", lgMultiExec " << l3->lgMultiExec << \
-		   ", offTimeMode " << l3->offTimeMode << ", onTimeMode " << l3->onTimeMode << '\n' << '\n'; 
-
-	dbg << "jtOn " << l3->jtOn << ", jtOff " << l3->jtOff << ", jtDlyOn " << l3->jtDlyOn << ", jtDlyOff " << l3->jtDlyOff << \
-	       ", jtRampOn " << l3->jtRampOn << ", jtRampOff " << l3->jtRampOff << '\n' << '\n';
-	
-	dbg << "offDlyBlink " << l3->offDlyBlink << ", onLvlPrio " << l3->onLvlPrio << ", onDlyMode " << l3->onDlyMode << ", offLevel " << l3->offLevel << \
-	       ", onMinLevel " << l3->onMinLevel << ", onLevel " << l3->onLevel << '\n' << '\n';
-
-	dbg << "rampSstep " << l3->rampSstep << ", rampOnTime " << l3->rampOnTime << ", rampOffTime " << l3->rampOffTime << '\n' << '\n';
-
-	dbg << "dimMinLvl " << l3->dimMinLvl << ", dimMaxLvl " << l3->dimMaxLvl << ", dimStep " << l3->dimStep << \
-	       ", offDlyNewTime " << l3->offDlyNewTime << ", offDlyOldTime " << l3->offDlyOldTime << '\n' << '\n';
-
-	dbg << '\n';
-}
-
-void Dimmer::poll(void) {
+void Dimmer::dimPoll(void) {
 	
 	adjPWM();																				// check if something is to be set on the PWM channel
 
@@ -291,19 +267,19 @@ void Dimmer::poll(void) {
 		modDUL = (curStat == nxtStat)?0x00:0x40;											// set change variable
 		hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);								// send status
 	}
-		
+	
 	// check if something is to do on the dimmer
 	if (!delayTmr.done() ) return;															// timer not done, wait until then
 
 
 	// upDim, check if onTimer was running
-	if (l3->actionType == 4)  {							
+	if (l3->actionType == 4)  {
 		modStat = l3->offLevel;
 		adjDlyPWM = 1;																		// do the adjustment in 1ms steps
-		l3->actionType = 0;	
-	}	
+		l3->actionType = 0;																	// no further action required
+	}
 	
-	// jump table section, only
+	// - jump table section, only
 	if (l3->actionType != 1) return;														// only valid for jump table
 	if (curStat == nxtStat) return;															// no status change expected
 	
@@ -329,7 +305,7 @@ void Dimmer::poll(void) {
 			// dbg << "rOnT: " << adjDlyPWM << '\n';
 			delayTmr.set(adjDlyPWM);														// set the ramp time to poll delay, otherwise we will every time end here
 			adjDlyPWM /= 200;																// break down the ramp time to smaller slices for adjusting PWM
-		}	
+		}
 		
 		// check if ramp on is done, set next status
 		if (modStat == setStat) {															// ramp on is done
@@ -337,7 +313,7 @@ void Dimmer::poll(void) {
 			nxtStat = l3->jtRampOn;															// set next status accordingly the jump table
 		}
 
-	
+		
 	} else if (nxtStat == 3) {		// on
 		dbg << "on\n";
 		curStat = nxtStat;																	// remember current status, when timer not set, we stay here for ever
@@ -401,13 +377,39 @@ void Dimmer::poll(void) {
 	//	delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
 	//	duraTme = 0;																		// clean variable
 	//	nxtStat = 4;																		// and set the next status variable
-	//} 
+	//}
 
 	//if (rampTme) {																		// check if there is something in the ramp timer, set next status accordingly
 	//	delayTmr.set(intTimeCvt(rampTme));													// activate the timer and set next status
 	//	rampTme = 0;																		// clean variable
-	//}	
+	//}
 }
+
+  //- helpers defined functions -------------------------------------------------------------------------------------------
+void Dimmer::showStruct(void) {
+
+	dbg << "\nctRampOn " << l3->ctRampOn << ", ctRampOff " << l3->ctRampOff << ", ctDlyOn " << l3->ctDlyOn << \
+	        ", ctDlyOff " << l3->ctDlyOff << ", ctOn " << l3->ctOn << ", ctOff " << l3->ctOff << \
+			", ctValLo " << l3->ctValLo << ", ctValHi " << l3->ctValHi << '\n' << '\n';
+	 
+	dbg << "onDly " << l3->onDly << ", onTime " << l3->onTime << ", offDly " << l3->offDly << ", offTime " << l3->offTime << \
+	       ", actionType " << l3->actionType << ", lgMultiExec " << l3->lgMultiExec << \
+		   ", offTimeMode " << l3->offTimeMode << ", onTimeMode " << l3->onTimeMode << '\n' << '\n'; 
+
+	dbg << "jtOn " << l3->jtOn << ", jtOff " << l3->jtOff << ", jtDlyOn " << l3->jtDlyOn << ", jtDlyOff " << l3->jtDlyOff << \
+	       ", jtRampOn " << l3->jtRampOn << ", jtRampOff " << l3->jtRampOff << '\n' << '\n';
+	
+	dbg << "offDlyBlink " << l3->offDlyBlink << ", onLvlPrio " << l3->onLvlPrio << ", onDlyMode " << l3->onDlyMode << ", offLevel " << l3->offLevel << \
+	       ", onMinLevel " << l3->onMinLevel << ", onLevel " << l3->onLevel << '\n' << '\n';
+
+	dbg << "rampSstep " << l3->rampSstep << ", rampOnTime " << l3->rampOnTime << ", rampOffTime " << l3->rampOffTime << '\n' << '\n';
+
+	dbg << "dimMinLvl " << l3->dimMinLvl << ", dimMaxLvl " << l3->dimMaxLvl << ", dimStep " << l3->dimStep << \
+	       ", offDlyNewTime " << l3->offDlyNewTime << ", offDlyOldTime " << l3->offDlyOldTime << '\n' << '\n';
+
+	dbg << '\n';
+}
+
 
 //-------------------------------------------------------------------------------------------------------------------------
 //- mandatory functions for every new module to communicate within HM protocol stack -
@@ -470,6 +472,10 @@ void Dimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 		hm->sendACK();
 
 	}
+}
+
+void Dimmer::poll(void) {
+	dimPoll();
 }
 
 //-------------------------------------------------------------------------------------------------------------------------
