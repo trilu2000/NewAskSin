@@ -239,10 +239,10 @@ void Dimmer::adjPWM(void) {
 	// set value on PWM channel and timer for next adjustment
 	if (lstCnl.characteristic) {															// check if we should use quadratic approach
 
-		uint16_t xStat = setStat * setStat;													// recalculate the value
-		xStat /= 200;																		// divide it by 200
-		if ((setStat) && (!xStat)) xStat = 1;												// till 15 it is below 1
-		fSwitch(xStat);																		// set accordingly
+		characteristicStat = setStat * setStat;												// recalculate the value
+		characteristicStat /= 200;															// divide it by 200
+		if ((setStat) && (!characteristicStat)) characteristicStat = 1;						// till 15 it is below 1
+		fSwitch(characteristicStat);														// set accordingly
 
 	} else {
 		fSwitch(setStat);																	// set accordingly
@@ -250,10 +250,31 @@ void Dimmer::adjPWM(void) {
 	}
 	adjTmr.set(adjDlyPWM);																	// set timer for next action
 }
+void Dimmer::blinkOffDly(void) {
+	if (!activeOffDlyBlink) return;															// blink off flag not set, jump out
+	if (curStat != 4) activeOffDlyBlink = 0;												// left off delay function, no need to jump in again
+
+	// adjust timer not needed for PWM at the moment - take it for blinking delay
+	if (!adjTmr.done()) return;
+		
+	// check in which cycle we are, 1 means led is off, 0 led is on again 
+	if (statusOffDlyBlink) {
+		statusOffDlyBlink = 0;																// switch led on next time
+		adjTmr.set(30);																		// off for 30 ms
+		fSwitch(1);																			// set led to minimum
+		
+	} else {
+		statusOffDlyBlink = 1;																// switch led off next time
+		adjTmr.set(500);																	// on for 500 ms
+		if (lstCnl.characteristic) fSwitch(characteristicStat);								// take the quadratic value
+		else fSwitch(modStat);																// restore origin value
+	}
+}
 void Dimmer::dimPoll(void) {
 	
 	adjPWM();																				// check if something is to be set on the PWM channel
-
+	blinkOffDly();																			// check if off delay blinking is needed
+	
 	// check if there is some status to send
 	if ((sendStat) && (msgTmr.done() )) {
 		sendStat = 0;																		// no need for next time
@@ -329,6 +350,7 @@ void Dimmer::dimPoll(void) {
 
 		if (l3->offDly) {																	// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->offDly));											// activate the timer and set next status
+			if (l3->offDlyBlink) activeOffDlyBlink = 1;
 			// dbg << "set offDly\n";
 		}
 

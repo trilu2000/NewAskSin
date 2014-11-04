@@ -270,8 +270,12 @@ class Dimmer {
 
 	uint8_t   setStat;																		// status to set on the PWM channel
 	uint32_t  adjDlyPWM;																	// timer to follow in adjPWM function
+	uint16_t  characteristicStat;															// depends on list1 characteristic setting
 	waitTimer adjTmr;																		// timer for adjustment of PWM
 
+	//uint8_t   oldStat;																		// remember modStat in delay off blink function
+	uint8_t   activeOffDlyBlink :1;															// activate off delay blinking
+	uint8_t   statusOffDlyBlink :1;															// remember led off cycle
 	uint8_t   directionDim :1;																// used in toogleDim function
 
 	uint8_t   cnt;																			// message counter for type 40 message
@@ -291,6 +295,7 @@ class Dimmer {
 	void     downDim(void);																	// down dim procedure
 
 	void     adjPWM(void);																	// adjusts PWM value in a regular manner
+	void     blinkOffDly(void);																// polling function to blink led while in off delay
 	void     dimPoll(void);																	// dimmer polling function
 	
   //- helpers defined functions -------------------------------------------------------------------------------------------
