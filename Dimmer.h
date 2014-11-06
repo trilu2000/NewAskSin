@@ -261,7 +261,7 @@ class Dimmer {
 	void (*fInit)(void);																	// pointer to init function in main sketch
 	void (*fSwitch)(uint8_t);																// pointer to switch function (PWM) in main sketch
 
-	uint8_t   sendStat :1;																	// is there a status to be send  
+	uint8_t   sendStat :2;																	// is there a status to be send, 1 indicates an ACK, 2 a status message 
 	waitTimer msgTmr;																		// message timer for sending status
 
 	waitTimer delayTmr;																		// delay timer for on,off and delay time

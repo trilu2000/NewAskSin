@@ -24,11 +24,15 @@ void Dimmer::config(void Init(), void Switch(uint8_t), uint8_t minDelay) {
 	fInit();
 
 	// some basic settings for start
-	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
 	curStat = nxtStat = 6;																	// set relay status to off
-	modDUL = 0x40;																			// otherwise status gets not send
 	modStat = 0x00;
-	adjPWM();
+	
+	// send the initial status info
+	// statusInfoMinDly    :5;     // 0x57, s:0, e:5
+	// statusInfoRandom    :3;     // 0x57, s:5, e:8
+	sendStat = 2;
+	msgTmr.set((minDly*1000)+(rand()%2048));
+	// adjPWM();
 }
 
 void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
@@ -277,11 +281,25 @@ void Dimmer::dimPoll(void) {
 	
 	// check if there is some status to send
 	if ((sendStat) && (msgTmr.done() )) {
-		sendStat = 0;																		// no need for next time
-		modDUL = (curStat == nxtStat)?0x00:0x40;											// set change variable
-		hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);								// send status
+		// prepare message
+		// ‘UP’ 0x10, ‘DOWN’ 0x20, LOWBAT ‘0x80’
+		if      (modStat == setStat) modDUL = 0;
+		else if (modStat <  setStat) modDUL = 0x10;
+		else if (modStat >  setStat) modDUL = 0x20;
+		
+		// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
+		if        (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);				// send ACK
+		else if (sendStat == 2) hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);		// send status
+
+		// check if it is a stable status, otherwise schedule next info message
+		if (modDUL) {																		// status is currently changing
+			sendStat = 2;																	// send next time a info status message
+			msgTmr.set((minDly*1000)+(rand()%2048));										// set the wait time for sending the status
+	
+		} else sendStat = 0;																// no need for next time
 	}
 	
+
 	// check if something is to do on the dimmer
 	if (!delayTmr.done() ) return;															// timer not done, wait until then
 
@@ -471,7 +489,10 @@ void Dimmer::pairSetEvent(uint8_t *data, uint8_t len) {
 
 	trigger11(data[0], (len > 1)?data+1:NULL, (len > 3)?data+3:NULL);
 
-	hm->sendACK_STATUS(regCnl, data[0], modDUL);
+	// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
+	//hm->sendACK_STATUS(regCnl, data[0], modDUL);
+	sendStat = 1;																			// ACK should be send
+	msgTmr.set(0);																			// immediately
 }
 void Dimmer::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
@@ -479,7 +500,10 @@ void Dimmer::pairStatusReq(void) {
 	dbg << F("PSR\n");
 	#endif
 	
-	hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);
+	// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
+	//hm->sendACK_STATUS(regCnl, data[0], modDUL);
+	sendStat = 1;																			// ACK should be send
+	msgTmr.set(0);																			// immediately
 }
 void Dimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
@@ -492,7 +516,10 @@ void Dimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	if (type == 0x41) trigger41((data[0] & 0x7F), data[1], data[2]);
 	
 	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
-		hm->sendACK_STATUS(regCnl, modStat, modDUL);
+		// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
+		//hm->sendACK_STATUS(regCnl, modStat, modDUL);
+		sendStat = 1;																		// ACK should be send
+		msgTmr.set(0);																		// immediately
 
 	} else {
 		hm->sendACK();
