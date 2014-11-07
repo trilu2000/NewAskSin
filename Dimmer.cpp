@@ -312,7 +312,9 @@ void Dimmer::dimPoll(void) {
 		} else sendStat = 0;																// no need for next time
 	}
 	
-
+	// check temperature against settings
+	// pTemp
+	
 	// check if something is to do on the dimmer
 	if (!delayTmr.done() ) return;															// timer not done, wait until then
 
