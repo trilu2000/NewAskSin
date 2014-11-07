@@ -59,7 +59,7 @@ void setup() {
 	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
 
 	dimmer.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
-	dimmer.config(&initPWM, &switchPWM, 2);
+	dimmer.config(&initPWM, &switchPWM, NULL);
 	
 	// - user related -----------------------------------------
 
@@ -92,7 +92,7 @@ void initPWM() {
 	TCCR2A |= 1<<COM2B1;
 
 }
-void switchPWM(uint8_t status) {
+void switchPWM(uint8_t status, uint8_t characteristic) {
 	uint16_t x = status*255;
 	//dbg << x << " ";
 	x /= 200;

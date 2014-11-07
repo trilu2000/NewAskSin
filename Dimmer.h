@@ -259,13 +259,14 @@ class Dimmer {
 	} *l3;
 	
 	void (*fInit)(void);																	// pointer to init function in main sketch
-	void (*fSwitch)(uint8_t);																// pointer to switch function (PWM) in main sketch
+	void (*fSwitch)(uint8_t,uint8_t);														// pointer to switch function (PWM) in main sketch, first value is PWM level, second the characteristics
 
+	uint8_t  *pTemp;																		// pointer to temperature byte in main sketch
+	
 	uint8_t   sendStat :2;																	// is there a status to be send, 1 indicates an ACK, 2 a status message 
 	waitTimer msgTmr;																		// message timer for sending status
 
 	waitTimer delayTmr;																		// delay timer for on,off and delay time
-	uint8_t   minDly;																		// remember delay for send status information
 	uint16_t  rampTme, duraTme;																// time store for trigger 11
 
 	uint8_t   setStat;																		// status to set on the PWM channel
@@ -273,7 +274,7 @@ class Dimmer {
 	uint16_t  characteristicStat;															// depends on list1 characteristic setting
 	waitTimer adjTmr;																		// timer for adjustment of PWM
 
-	//uint8_t   oldStat;																		// remember modStat in delay off blink function
+	//uint8_t   oldStat;																	// remember modStat in delay off blink function
 	uint8_t   activeOffDlyBlink :1;															// activate off delay blinking
 	uint8_t   statusOffDlyBlink :1;															// remember led off cycle
 	uint8_t   directionDim :1;																// used in toogleDim function
@@ -284,7 +285,7 @@ class Dimmer {
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
 
-	void     config(void Init(), void Switch(uint8_t), uint8_t minDelay);					// configures the module, jump addresses, etc
+	void     config(void Init(), void Switch(uint8_t,uint8_t), uint8_t temperature);		// configures the module, jump addresses, etc
 
 	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);				// messages coming from master
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);										// messages coming from switch

@@ -13,13 +13,12 @@
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
-void Dimmer::config(void Init(), void Switch(uint8_t), uint8_t minDelay) {
+void Dimmer::config(void Init(), void Switch(uint8_t, uint8_t), uint8_t temperature) {
 
 	fInit = Init;
 	fSwitch = Switch;
-
-	minDly = minDelay;																		// remember minimum delay for sending the status
-
+	if (temperature) pTemp = &temperature;
+	
 	// set output pins
 	fInit();
 
@@ -29,13 +28,22 @@ void Dimmer::config(void Init(), void Switch(uint8_t), uint8_t minDelay) {
 	
 	// send the initial status info
 	// statusInfoMinDly    :5;     // 0x57, s:0, e:5
+	// 08 57 34 - 1 10100 - 20/2 = 10 sec
+	// 08 57 3E - 1 11110 - 30/2 = 15 sec
+	
 	// statusInfoRandom    :3;     // 0x57, s:5, e:8
+	// 08 57 FE - 111 11110 - 7 random
+	// 08 57 BE - 101 11110 - 5 random
+	// 08 57 5E -  10 11110 - 2 random
 	sendStat = 2;
-	msgTmr.set((minDly*1000)+(rand()%2048));
-	// adjPWM();
+	msgTmr.set( (lstCnl.statusInfoMinDly * 500) + (lstCnl.statusInfoRandom? rand() % lstCnl.statusInfoRandom : 0) );
 }
 
 void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
+
+	// some sanity
+	activeOffDlyBlink = 0;																	// got a new key press, off delay blink is not needed
+	delayTmr.set(0);																		// also delay timer is not needed any more
 
 	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];				// if ramp time is given, bring it in the right format
 	else rampTme = 0;																		// otherwise empty variable
@@ -53,6 +61,10 @@ void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 }
 void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
+	// some sanity
+	activeOffDlyBlink = 0;																	// got a new key press, off delay blink is not needed
+	delayTmr.set(0);																		// also delay timer is not needed any more
+	
 	// check for multi execute flag
 	if (( msgLng) && (!lstPeer.lgMultiExec) && (cnt == msgCnt)) return;						// trigger was long, but we have no multi execute
 	cnt = msgCnt;																			// remember message counter
@@ -246,15 +258,16 @@ void Dimmer::adjPWM(void) {
 		characteristicStat = setStat * setStat;												// recalculate the value
 		characteristicStat /= 200;															// divide it by 200
 		if ((setStat) && (!characteristicStat)) characteristicStat = 1;						// till 15 it is below 1
-		fSwitch(characteristicStat);														// set accordingly
+		fSwitch(characteristicStat, lstCnl.characteristic);									// set accordingly
 
 	} else {
-		fSwitch(setStat);																	// set accordingly
+		fSwitch(setStat, lstCnl.characteristic);											// set accordingly
 
 	}
 	adjTmr.set(adjDlyPWM);																	// set timer for next action
 }
 void Dimmer::blinkOffDly(void) {
+
 	// some sanity
 	if (!activeOffDlyBlink) return;															// blink off flag not set, jump out
 
@@ -265,13 +278,13 @@ void Dimmer::blinkOffDly(void) {
 	if (statusOffDlyBlink) {
 		statusOffDlyBlink = 0;																// switch led on next time
 		adjTmr.set(30);																		// off for 30 ms
-		fSwitch(1);																			// set led to minimum
+		fSwitch(1, lstCnl.characteristic);													// set led to minimum
 		
 	} else {
 		statusOffDlyBlink = 1;																// switch led off next time
 		adjTmr.set(500);																	// on for 500 ms
-		if (lstCnl.characteristic) fSwitch(characteristicStat);								// take the quadratic value
-		else fSwitch(modStat);																// restore origin value
+		if (lstCnl.characteristic) fSwitch(characteristicStat, lstCnl.characteristic);		// take the quadratic value
+		else fSwitch(modStat,lstCnl.characteristic);										// restore origin value
 	}
 }
 void Dimmer::dimPoll(void) {
@@ -282,7 +295,7 @@ void Dimmer::dimPoll(void) {
 	// check if there is some status to send
 	if ((sendStat) && (msgTmr.done() )) {
 		// prepare message
-		// ‘UP’ 0x10, ‘DOWN’ 0x20, LOWBAT ‘0x80’
+		// ‘UP’ 0x10, ‘DOWN’ 0x20, ‘ERROR’ 0x30, LOWBAT ‘0x80’
 		if      (modStat == setStat) modDUL = 0;
 		else if (modStat <  setStat) modDUL = 0x10;
 		else if (modStat >  setStat) modDUL = 0x20;
@@ -294,7 +307,7 @@ void Dimmer::dimPoll(void) {
 		// check if it is a stable status, otherwise schedule next info message
 		if (modDUL) {																		// status is currently changing
 			sendStat = 2;																	// send next time a info status message
-			msgTmr.set((minDly*1000)+(rand()%2048));										// set the wait time for sending the status
+			msgTmr.set( (lstCnl.statusInfoMinDly * 500) + (lstCnl.statusInfoRandom? rand() % lstCnl.statusInfoRandom : 0) );
 	
 		} else sendStat = 0;																// no need for next time
 	}
