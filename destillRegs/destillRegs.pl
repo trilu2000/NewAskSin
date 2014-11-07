@@ -239,8 +239,8 @@ foreach my $chn (sort{$a <=> $b}(keys %regLfull)) {														# per channel
 # == print out =========================================================================================
 
 print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-print "//- channel slice definition ---------------------------------------------------------------------------------------------\n";
-print "uint8_t sliceStr[] = {\n";
+print "//- channel slice address definition -------------------------------------------------------------------------------------\n";
+print "const uint8_t cnlAddr[] PROGMEM = {\n";
 
 my $slcLenCnt = 0;
 foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {
