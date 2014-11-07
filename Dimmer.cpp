@@ -288,7 +288,7 @@ void Dimmer::dimPoll(void) {
 		else if (modStat >  setStat) modDUL = 0x20;
 		
 		// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-		if        (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);				// send ACK
+		if      (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);				// send ACK
 		else if (sendStat == 2) hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);		// send status
 
 		// check if it is a stable status, otherwise schedule next info message
