@@ -27,16 +27,8 @@ void Dimmer::config(void Init(), void Switch(uint8_t, uint8_t), uint8_t temperat
 	modStat = 0x00;
 	
 	// send the initial status info
-	// statusInfoMinDly    :5;     // 0x57, s:0, e:5
-	// 08 57 34 - 1 10100 - 20/2 = 10 sec
-	// 08 57 3E - 1 11110 - 30/2 = 15 sec
-	
-	// statusInfoRandom    :3;     // 0x57, s:5, e:8
-	// 08 57 FE - 111 11110 - 7 random
-	// 08 57 BE - 101 11110 - 5 random
-	// 08 57 5E -  10 11110 - 2 random
 	sendStat = 2;
-	msgTmr.set( (lstCnl.statusInfoMinDly * 500) + (lstCnl.statusInfoRandom? rand() % lstCnl.statusInfoRandom : 0) );
+	msgTmr.set(msgDelay);
 }
 
 void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
@@ -45,6 +37,8 @@ void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 	activeOffDlyBlink = 0;																	// got a new key press, off delay blink is not needed
 	delayTmr.set(0);																		// also delay timer is not needed any more
 
+	// m> 10 88 B0 11 63 19 63 01 02 04 02 01 C8 00 00 7D 00
+	// m> 0E 86 B0 11 63 19 63 01 02 04 02 01 C8 00 00
 	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];				// if ramp time is given, bring it in the right format
 	else rampTme = 0;																		// otherwise empty variable
 
@@ -52,12 +46,20 @@ void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 	else duraTme = 0;																		// or clear value
 
 	// set value in modStat
-
+	modStat = value;
+	if (rampTme) {
+		adjDlyPWM = intTimeCvt(rampTme);													// get the ramp on time
+		delayTmr.set(adjDlyPWM);															// set the ramp time to poll delay, otherwise we will every time end here
+		adjDlyPWM /= 200;																	// break down the ramp time to smaller slices for adjusting PWM
+	} else adjDlyPWM = 0;
 	
-	if ((rampTme) || (duraTme)) modDUL = 0x40;												// important for the status message
-	else modDUL = 0x00;
+	dbg << F("RL:trigger11, val:") << value << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
+	//if (duraTme) {																		// check if there is something in the duration timer, set next status accordingly
+	//	delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
+	//	duraTme = 0;																		// clean variable
+	//	nxtStat = 4;																		// and set the next status variable
+	//}
 
-	//dbg << F("RL:trigger11, val:") << value << F(", nxtS:") << nxtStat << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
 void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
@@ -154,26 +156,7 @@ void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
 	//showStruct();																			// some debug messages
 
-	if ((l3->onDly) || (l3->offDly) || (l3->rampOnTime) || (l3->rampOffTime)) {
-		modDUL = 0x40;
-
-	} else {
-		// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-		modDUL = 0x00;																		// no timer running
-		modStat = ((nxtStat == 1) || (nxtStat == 2) || (nxtStat == 3))?0xc8:0x00;			// therefore we show the future state of the relay
-
-	}
-		
-/*	} else if (actTp == 2) {						// toogleToCnt, if msgCnt is even, then next state is on
-		nxtStat = (msgCnt % 2 == 0)?3:6;														// even - relay dlyOn, otherwise dlyOff
-		onDly   = 0; onTime  = 255; offDly  = 0; offTime = 255;									// set timers
-
-	} else if (actTp == 3) {						// toggleToCntInv, if msgCnt is even, then next state is off, while inverted
-		nxtStat = (msgCnt % 2 == 0)?6:3;														// even - relay dlyOff, otherwise dlyOn
-		onDly   = 0; onTime  = 255; offDly  = 0; offTime = 255;									// set timers
-	}
-*/
-	dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << '\n';		// some debug again
+	//dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << '\n';		// some debug again
 }
 void Dimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 
@@ -247,7 +230,7 @@ void Dimmer::adjPWM(void) {
 	// something to do?
 	if (setStat == modStat) return;															// nothing to do
 	if (!adjTmr.done()) return;																// timer not done, wait until then
-	
+	dbg << "m" << modStat << " s" << setStat << '\n';
 	// calculate next step
 	if (modStat > setStat) setStat++;														// do we have to go up
 	else setStat--;																			// or down
@@ -287,30 +270,32 @@ void Dimmer::blinkOffDly(void) {
 		else fSwitch(modStat,lstCnl.characteristic);										// restore origin value
 	}
 }
+void Dimmer::sendStatus(void) {
+
+	if (!sendStat) return;																	// nothing to do
+	if (!msgTmr.done()) return;																// not the right time
+		
+	// prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT ‘0x80’
+	if      (modStat == setStat) modDUL  = 0;
+	else if (modStat <  setStat) modDUL  = 0x10;
+	else if (modStat >  setStat) modDUL  = 0x20;
+	if (delayTmr.remain() )      modDUL |= 0x40;
+		
+	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
+	if      (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);					// send ACK
+	else if (sendStat == 2) hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);			// send status
+
+	// check if it is a stable status, otherwise schedule next info message
+	if (modDUL) {																			// status is currently changing
+		sendStat = 2;																		// send next time a info status message
+		msgTmr.set(msgDelay);
+	} else sendStat = 0;																	// no need for next time
+}
 void Dimmer::dimPoll(void) {
 	
 	adjPWM();																				// check if something is to be set on the PWM channel
 	blinkOffDly();																			// check if off delay blinking is needed
-	
-	// check if there is some status to send
-	if ((sendStat) && (msgTmr.done() )) {
-		// prepare message
-		// ‘UP’ 0x10, ‘DOWN’ 0x20, ‘ERROR’ 0x30, LOWBAT ‘0x80’
-		if      (modStat == setStat) modDUL = 0;
-		else if (modStat <  setStat) modDUL = 0x10;
-		else if (modStat >  setStat) modDUL = 0x20;
-		
-		// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-		if      (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);				// send ACK
-		else if (sendStat == 2) hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);		// send status
-
-		// check if it is a stable status, otherwise schedule next info message
-		if (modDUL) {																		// status is currently changing
-			sendStat = 2;																	// send next time a info status message
-			msgTmr.set( (lstCnl.statusInfoMinDly * 500) + (lstCnl.statusInfoRandom? rand() % lstCnl.statusInfoRandom : 0) );
-	
-		} else sendStat = 0;																// no need for next time
-	}
+	sendStatus();																			// check if there is some status to send
 	
 	// check temperature against settings
 	// pTemp
@@ -432,16 +417,6 @@ void Dimmer::dimPoll(void) {
 
 	}
 
-	//if (duraTme) {																		// check if there is something in the duration timer, set next status accordingly
-	//	delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
-	//	duraTme = 0;																		// clean variable
-	//	nxtStat = 4;																		// and set the next status variable
-	//}
-
-	//if (rampTme) {																		// check if there is something in the ramp timer, set next status accordingly
-	//	delayTmr.set(intTimeCvt(rampTme));													// activate the timer and set next status
-	//	rampTme = 0;																		// clean variable
-	//}
 }
 
   //- helpers defined functions -------------------------------------------------------------------------------------------
@@ -490,6 +465,13 @@ void Dimmer::configCngEvent(void) {
 	#ifdef DI_DBG
 	dbg << F("CCE, lst1: ") << pHex(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
+
+	// get message delay
+	msgDelay = lstCnl.statusInfoMinDly * 500;
+	msgDelay += lstCnl.statusInfoRandom? rand() % lstCnl.statusInfoRandom*1000 : 0; 
+	
+	if (!msgDelay) msgDelay = 100;
+	dbg << "md" << msgDelay << '\n';
 }
 void Dimmer::pairSetEvent(uint8_t *data, uint8_t len) {
 	// we received a message from master to set a new value, typical you will find three bytes in data
@@ -507,7 +489,7 @@ void Dimmer::pairSetEvent(uint8_t *data, uint8_t len) {
 	// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
 	//hm->sendACK_STATUS(regCnl, data[0], modDUL);
 	sendStat = 1;																			// ACK should be send
-	msgTmr.set(0);																			// immediately
+	msgTmr.set(100);																		// give some time
 }
 void Dimmer::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
@@ -517,7 +499,7 @@ void Dimmer::pairStatusReq(void) {
 	
 	// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
 	//hm->sendACK_STATUS(regCnl, data[0], modDUL);
-	sendStat = 1;																			// ACK should be send
+	sendStat = 2;																			// ACK should be send
 	msgTmr.set(0);																			// immediately
 }
 void Dimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
@@ -529,12 +511,12 @@ void Dimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	
 	if (type == 0x40) trigger40((data[0] & 0x40)?1:0, data[1]);								// filter out the long message bit
 	if (type == 0x41) trigger41((data[0] & 0x7F), data[1], data[2]);
-	
+
 	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
 		// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
 		//hm->sendACK_STATUS(regCnl, modStat, modDUL);
 		sendStat = 1;																		// ACK should be send
-		msgTmr.set(0);																		// immediately
+		msgTmr.set(100);																	// immediately
 
 	} else {
 		hm->sendACK();

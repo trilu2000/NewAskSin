@@ -264,6 +264,7 @@ class Dimmer {
 	uint8_t  *pTemp;																		// pointer to temperature byte in main sketch
 	
 	uint8_t   sendStat :2;																	// is there a status to be send, 1 indicates an ACK, 2 a status message 
+	uint16_t  msgDelay;
 	waitTimer msgTmr;																		// message timer for sending status
 
 	waitTimer delayTmr;																		// delay timer for on,off and delay time
@@ -298,6 +299,7 @@ class Dimmer {
 
 	void     adjPWM(void);																	// adjusts PWM value in a regular manner
 	void     blinkOffDly(void);																// polling function to blink led while in off delay
+	void     sendStatus(void);																// send status function
 	void     dimPoll(void);																	// dimmer polling function
 	
   //- helpers defined functions -------------------------------------------------------------------------------------------

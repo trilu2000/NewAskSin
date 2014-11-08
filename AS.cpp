@@ -68,7 +68,7 @@ void AS::poll(void) {
 	// regular polls
 	rg.poll();																				// poll the channel module handler
 	confButton.poll();																		// poll the config button
-	ld.poll();																				// poll the leds
+	ld.poll();																				// poll the led's
 	bt.poll();																				// poll the battery check
 		
 	// check if we could go to standby
@@ -134,6 +134,8 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	// - DUL = Down 0x20, UP 0x10, LowBat 0x80
 	// do something with the information ----------------------------------
 
+	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
+	
 	sn.mBdy.mLen = 0x0e;
 	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.mFlg.BIDI = 0;
@@ -189,7 +191,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	sn.mBdy.mLen = 0x0e;
 	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0e)) {
 		sn.mBdy.mCnt = rv.mBdy.mCnt;
-		} else {
+	} else {
 		sn.mBdy.mCnt = sn.msgCnt++;
 	}
 	sn.mBdy.mFlg.BIDI = 1;
@@ -346,14 +348,14 @@ void AS::sendPeerMsg(void) {
 			sn.msgCnt++;																	// increase the send message counter
 			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));									// clean out and return
 			
-			} else {																			// start next round
+		} else {																			// start next round
 			//dbg << "next round\n";
 			stcPeer.curIdx = 0;
 
 		}
 		return;
 
-		} else if ((stcPeer.curIdx) && (!sn.timeOut)) {											// peer index is >0, first round done and no timeout
+	} else if ((stcPeer.curIdx) && (!sn.timeOut)) {											// peer index is >0, first round done and no timeout
 		stcPeer.slt[(stcPeer.curIdx-1) >> 3] &=  ~(1<<((stcPeer.curIdx-1) & 0x07));			// clear bit, because message got an ACK
 
 	}
@@ -493,9 +495,11 @@ void AS::recvMessage(void) {
 		// l> 10 01 A0 01 63 19 63 01 02 04 00  05 00 00 00  00       00
 		// do something with the information ----------------------------------
 
-		cFlag.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);								// fill structure to remember where to write
-		cFlag.cnl = rv.mBdy.by10;
+		cFlag.cnl = rv.mBdy.by10;															// fill structure to remember where to write
 		cFlag.lst = rv.buf[16];
+		if ((cFlag.lst == 3) || (cFlag.lst == 4)) cFlag.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);
+		else cFlag.idx = 0;
+		
 		if (cFlag.idx != 0xff) {
 			cFlag.active = 1;																// set active if there is no error on index
 			cnfTmr.set(20000);																// set timeout time, will be checked in poll function
@@ -518,8 +522,7 @@ void AS::recvMessage(void) {
 
 		if ((cFlag.cnl > 0) && (modTbl[cFlag.cnl-1].cnl)) {
 			// check if a new list1 was written and reload, no need for reload list3/4 because they will be loaded on an peer event
-			if (cFlag.cnl == 1) 
-				ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cFlag.cnl-1].lstCnl);			// load list1 in the respective buffer
+			if (cFlag.lst == 1) ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cFlag.cnl-1].lstCnl); // load list1 in the respective buffer
 			modTbl[cFlag.cnl-1].mDlgt(0x01, 0, 0x06, NULL, 0);								// inform the module of the change
 		}
 		
