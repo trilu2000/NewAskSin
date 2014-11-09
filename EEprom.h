@@ -85,7 +85,7 @@ class EE {
 	//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); 
 
 	uint8_t getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
-
+	uint8_t checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx);
 }; 
 extern EE::s_cnlTbl cnlTbl[];															// initial register.h
 extern EE::s_peerTbl peerTbl[];															// initial register.h

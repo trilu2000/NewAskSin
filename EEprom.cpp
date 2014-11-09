@@ -17,7 +17,7 @@ uint8_t EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
 	
-	if ( (cnl > 0) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl-1].pMax) ) return 0;
+	if (!checkIndex(cnl, lst, idx)) return 0;
 
 	getEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
@@ -26,7 +26,7 @@ uint8_t EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
 
-	if ( (cnl > 0) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl-1].pMax) ) return 0;
+	if (!checkIndex(cnl, lst, idx)) return 0;
 
 	setEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
@@ -35,7 +35,8 @@ uint8_t EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
 
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
-	if ((cnl > 0) && (idx >= peerTbl[cnl-1].pMax)) return 0;							// check if peer index is in range
+	
+	if (!checkIndex(cnl, lst, idx)) return 0;											// check if peer index is in range
 
 	uint16_t eIdx = cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx);
 	
@@ -410,7 +411,8 @@ uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, ui
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
 	//dbg << "idx " << idx << " pT " << peerTbl[cnl-1].pMax << '\n';
-	if ((cnl > 0) && (idx >= peerTbl[cnl-1].pMax)) return 0;							// check if peer index is in range
+	
+	if (!checkIndex(cnl, lst, idx)) return 0;											// check if peer index is in range
 	
 	uint8_t slcOffset = slc * maxMsgLen;												// calculate the starting offset	
 	slcOffset /= 2;																		// divided by to because of mixed message, regs + eeprom content
@@ -462,7 +464,11 @@ uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 	}
 	return 0xff;																		// respective line not found
 }
-
+uint8_t EE::checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx) {
+	dbg << "cnl: " << cnl << " lst: " << lst << " idx: " << idx << '\n';
+	if ( (cnl > 0) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl-1].pMax) ) return 0;
+	return 1;
+}
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a) {
