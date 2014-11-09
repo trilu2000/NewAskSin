@@ -31,8 +31,8 @@ void Dimmer::config(void Init(), void Switch(uint8_t, uint8_t), uint8_t temperat
 	msgTmr.set(msgDelay);
 }
 
-void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
-
+void Dimmer::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
+	
 	// some sanity
 	activeOffDlyBlink = 0;																	// got a new key press, off delay blink is not needed
 	delayTmr.set(0);																		// also delay timer is not needed any more
@@ -45,21 +45,22 @@ void Dimmer::trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 	if (duraTime) duraTme = (uint16_t)duraTime[0]<<8 | (uint16_t)duraTime[1];				// duration time if given
 	else duraTme = 0;																		// or clear value
 
-	// set value in modStat
-	modStat = value;
-	if (rampTme) {
-		adjDlyPWM = intTimeCvt(rampTme);													// get the ramp on time
-		delayTmr.set(adjDlyPWM);															// set the ramp time to poll delay, otherwise we will every time end here
-		adjDlyPWM /= 200;																	// break down the ramp time to smaller slices for adjusting PWM
-	} else adjDlyPWM = 0;
-	
-	dbg << F("RL:trigger11, val:") << value << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
-	//if (duraTme) {																		// check if there is something in the duration timer, set next status accordingly
-	//	delayTmr.set(intTimeCvt(duraTme));													// activate the timer and set next status
-	//	duraTme = 0;																		// clean variable
-	//	nxtStat = 4;																		// and set the next status variable
-	//}
+	// set value in modStat and ramp time if given
+	modStat = setValue;
 
+	adjDlyPWM = intTimeCvt(rampTme);														// get the ramp on time
+	delayTmr.set(adjDlyPWM);																// set the ramp time to poll delay, otherwise we will every time end here
+	adjDlyPWM /= 200;																		// break down the ramp time to smaller slices for adjusting PWM
+
+	if ((duraTme) && (setValue)) {															// duration time makes only sense if the led is on, default after duration is led off
+		delayTmr.set(0);
+		delayTmr.set(intTimeCvt(rampTme) + intTimeCvt(duraTme));							// poll routine needed when ramp and duration time is finished
+
+	} else {
+		rampTme = duraTme = 0;																// times not needed any more
+
+	}
+	//dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
 void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
@@ -155,8 +156,7 @@ void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 	}
 
 	//showStruct();																			// some debug messages
-
-	//dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << '\n';		// some debug again
+	//dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << '\n';	// some debug again
 }
 void Dimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 
@@ -230,7 +230,8 @@ void Dimmer::adjPWM(void) {
 	// something to do?
 	if (setStat == modStat) return;															// nothing to do
 	if (!adjTmr.done()) return;																// timer not done, wait until then
-	dbg << "m" << modStat << " s" << setStat << '\n';
+	//dbg << "m" << modStat << " s" << setStat << '\n';
+	
 	// calculate next step
 	if (modStat > setStat) setStat++;														// do we have to go up
 	else setStat--;																			// or down
@@ -279,7 +280,7 @@ void Dimmer::sendStatus(void) {
 	if      (modStat == setStat) modDUL  = 0;
 	else if (modStat <  setStat) modDUL  = 0x10;
 	else if (modStat >  setStat) modDUL  = 0x20;
-	if (delayTmr.remain() )      modDUL |= 0x40;
+	if (!delayTmr.done() )       modDUL |= 0x40;
 		
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
 	if      (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);					// send ACK
@@ -309,6 +310,14 @@ void Dimmer::dimPoll(void) {
 		modStat = l3->offLevel;
 		adjDlyPWM = 1;																		// do the adjustment in 1ms steps
 		l3->actionType = 0;																	// no further action required
+	}
+
+	// trigger11, check if onTimer was running
+	if (duraTme)  {
+		modStat = 0;
+		adjDlyPWM = intTimeCvt(rampTme);													// get the ramp on time
+		adjDlyPWM /= 200;																	// break down the ramp time to smaller slices for adjusting PWM
+		rampTme = duraTme = 0;																// no further action required
 	}
 	
 	// - jump table section, only
@@ -468,10 +477,12 @@ void Dimmer::configCngEvent(void) {
 
 	// get message delay
 	msgDelay = lstCnl.statusInfoMinDly * 500;
-	msgDelay += lstCnl.statusInfoRandom? rand() % lstCnl.statusInfoRandom*1000 : 0; 
 	
-	if (!msgDelay) msgDelay = 100;
-	dbg << "md" << msgDelay << '\n';
+	srand(17);
+	if (lstCnl.statusInfoRandom) msgDelay += (rand()%(uint16_t)(lstCnl.statusInfoRandom*1000));
+
+	if (!msgDelay) msgDelay = 2000;
+	//dbg << "md" << msgDelay << '\n';
 }
 void Dimmer::pairSetEvent(uint8_t *data, uint8_t len) {
 	// we received a message from master to set a new value, typical you will find three bytes in data

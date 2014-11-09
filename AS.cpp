@@ -1012,8 +1012,6 @@ void AS::explainMessage(uint8_t *buf) {
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------
 uint8_t  waitTimer::done(void) {
-	// todo - check if nexTime is near overflow and we have some delay, so getMillis() goes over 0
-	// to get the correct timer result
 	if (!armed) return 1;																	// not armed, so nothing to do
 	if ( (getMillis() - startTime) < checkTime ) return 0;									// not ready yet
 	// if we are here, timeout was happened 

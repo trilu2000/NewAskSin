@@ -288,7 +288,7 @@ class Dimmer {
 
 	void     config(void Init(), void Switch(uint8_t,uint8_t), uint8_t temperature);		// configures the module, jump addresses, etc
 
-	void     trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);				// messages coming from master
+	void     trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime);				// messages coming from master
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);										// messages coming from switch
 	void     trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);						// messages coming from sensor
 
