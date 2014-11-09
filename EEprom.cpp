@@ -465,7 +465,7 @@ uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 	return 0xff;																		// respective line not found
 }
 uint8_t EE::checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx) {
-	dbg << "cnl: " << cnl << " lst: " << lst << " idx: " << idx << '\n';
+	//dbg << "cnl: " << cnl << " lst: " << lst << " idx: " << idx << '\n';
 	if ( (cnl > 0) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl-1].pMax) ) return 0;
 	return 1;
 }
