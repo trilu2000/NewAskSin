@@ -114,6 +114,8 @@ void AS::sendACK(void) {
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  00
 	// do something with the information ----------------------------------
 
+	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
+
 	sn.mBdy.mLen = 0x0a;
 	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.mTyp = 0x02;
@@ -1030,13 +1032,10 @@ uint16_t waitTimer::remain(void) {
 	return checkTime - (getMillis() - startTime);
 }
 
-
-
 uint32_t byteTimeCvt(uint8_t tTime) {
 	const uint16_t c[8] = {1,10,50,100,600,3000,6000,36000};
 	return (uint32_t)(tTime & 0x1f)*c[tTime >> 5]*100;
 }
-
 uint32_t intTimeCvt(uint16_t iTime) {
 	if (iTime == 0) return 0;
 
