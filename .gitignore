@@ -31,3 +31,6 @@ Visual Micro/
 *.atsln
 *.atsuo
 *.cppproj
+.metadata/
+RemoteSystemsTempFiles/
+.project

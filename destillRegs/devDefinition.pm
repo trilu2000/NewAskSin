@@ -1,70 +1,44 @@
 use strict;
 #Beispiel 
-# ========================switch =====================================
-# battery powered 1 channel temperature
-#  "003D" => {name=>"HM-WDS10-TH-O"           ,st=>'THSensor'          ,cyc=>'00:10' ,rxt=>'c:w:f'  ,lst=>'p'            ,chn=>"",},
-# 1 device
-# 1 kanal
-# 6 peers je kanal erlaubt
+
 #----------------define reglist types-----------------
 package usrRegs;
 my %listTypes = (
-      regDev =>{ intKeyVisib=>1, burstRx=>1, pairCentral=>1,
-              },
-      regKey =>{ 
-                 sign=>1, longPress=>1, dblPress=>1,
-                 peerNeedsBurst=>1, expectAES=>1,    
-		          },
-      regAct =>{  
-                sign          =>1,    #|     literal        |          | signature (AES) options:on,off
-                lgActionType  =>1,    #|     literal        | required |  options:toggleToCntInv,off,toggleToCnt,jmpToTarget
-                lgCtDlyOff    =>1,    #|     literal        | required | Jmp on condition from delayOff options:geLo,between,outside,ltLo,geHi,ltHi
-                lgCtDlyOn     =>1,    #|     literal        | required | Jmp on condition from delayOn options:geLo,between,outside,ltLo,geHi,ltHi
-								lgCtOff       =>1,    #|     literal        | required | Jmp on condition from off options:geLo,between,outside,ltLo,geHi,ltHi
-                lgCtOn        =>1,    #|     literal        | required | Jmp on condition from on options:geLo,between,outside,ltLo,geHi,ltHi
-								lgCtValHi     =>1,    #|   0 to 255         | required | Condition value high for CT table
-                lgCtValLo     =>1,    #|   0 to 255         | required | Condition value low for CT table
-								lgMultiExec   =>1,    #|     literal        | required | multiple execution per repeat of long trigger options:on,off
-								lgOffDly      =>1,    #|   0 to 111600s     | required | off delay
-								lgOffTime     =>1,    #|   0 to 111600s     | required | off time, 111600 = infinite
-								lgOffTimeMode =>1,    #|     literal        | required | off time mode options:minimal,absolut
-								lgOnDly       =>1,    #|   0 to 111600s     | required | on delay
-								lgOnTime      =>1,    #|   0 to 111600s     | required | on time, 111600 = infinite
-								lgOnTimeMode  =>1,    #|     literal        | required | on time mode options:minimal,absolut
-								lgSwJtDlyOff  =>1,    #|     literal        | required | Jump from delayOff options:on,off,dlyOn,no,dlyOff
-								lgSwJtDlyOn   =>1,    #|     literal        | required | Jump from delayOn options:on,off,dlyOn,no,dlyOff
-								lgSwJtOff     =>1,    #|     literal        | required | Jump from off options:on,off,dlyOn,no,dlyOff
-								lgSwJtOn      =>1,    #|     literal        | required | Jump from on options:on,off,dlyOn,no,dlyOff
-								shActionType  =>1,    #|     literal        | required |  options:toggleToCntInv,off,toggleToCnt,jmpToTarget
-								shCtDlyOff    =>1,    #|     literal        | required | Jmp on condition from delayOff options:geLo,between,outside,ltLo,geHi,ltHi
-								shCtDlyOn     =>1,    #|     literal        | required | Jmp on condition from delayOn options:geLo,between,outside,ltLo,geHi,ltHi
-								shCtOff       =>1,    #|     literal        | required | Jmp on condition from off options:geLo,between,outside,ltLo,geHi,ltHi
-								shCtOn        =>1,    #|     literal        | required | Jmp on condition from on options:geLo,between,outside,ltLo,geHi,ltHi
-								shCtValHi     =>1,    #|   0 to 255         | required | Condition value high for CT table
-								shCtValLo     =>1,    #|   0 to 255         | required | Condition value low for CT table
-								shOffDly      =>1,    #|   0 to 111600s     | required | off delay
-								shOffTime     =>1,    #|   0 to 111600s     | required | off time, 111600 = infinite
-								shOffTimeMode =>1,    #|     literal        | required | off time mode options:minimal,absolut
-								shOnDly       =>1,    #|   0 to 111600s     | required | on delay
-								shOnTime      =>1,    #|   0 to 111600s     | required | on time, 111600 = infinite
-								shOnTimeMode  =>1,    #|     literal        | required | on time mode options:minimal,absolut
-								shSwJtDlyOff  =>1,    #|     literal        | required | Jump from delayOff options:on,off,dlyOn,no,dlyOff
-								shSwJtDlyOn   =>1,    #|     literal        | required | Jump from delayOn options:on,off,dlyOn,no,dlyOff
-								shSwJtOff     =>1,    #|     literal        | required | Jump from off options:on,off,dlyOn,no,dlyOff
-								shSwJtOn      =>1,    #|  
-		          },
-     );
-#      -----------assemble device -----------------
+	regDev    => { burstRx=>1, intKeyVisib=>1, pairCentral=>1, localResDis=>1,
+	},
+
+	regSwitch => { sign=>1, longPress=>1, dblPress=>1,
+	               peerNeedsBurst=>1, expectAES=>1,
+	},
+
+	regDimmer => { transmitTryMax=>1, ovrTempLvl=>1, redTempLvl=>1, redLvl=>1, powerUpAction=>1, statusInfoMinDly=>1, statusInfoRandom=>1, characteristic=>1, logicCombination=>1, 
+		           shCtRampOn=>1, shCtRampOff=>1, shCtDlyOn=>1, shCtDlyOff=>1, shCtOn=>1, shCtOff=>1, shCtValLo=>1, shCtValHi=>1, shOnDly=>1, shOnTime=>1, shOffDly=>1, 
+	               shOffTime=>1, shActionTypeDim=>1, shOffTimeMode=>1, shOnTimeMode=>1, shDimJtOn=>1, shDimJtOff=>1, shDimJtDlyOn=>1, shDimJtDlyOff=>1, shDimJtRampOn=>1, 
+	               shDimJtRampOff=>1, shOffDlyBlink=>1, shOnLvlPrio=>1, shOnDlyMode=>1, shOffLevel=>1, shOnMinLevel=>1, shOnLevel=>1, shRampSstep=>1, shRampOnTime=>1, 
+	               shRampOffTime=>1, shDimMinLvl=>1, shDimMaxLvl=>1, shDimStep=>1, shOffDlyNewTime=>1, shOffDlyOldTime=>1, shDimElsActionType=>1, shDimElsOffTimeMd=>1, 
+	               shDimElsOnTimeMd=>1, shDimElsJtOn=>1, shDimElsJtOff=>1, shDimElsJtDlyOn=>1, shDimElsJtDlyOff=>1, shDimElsJtRampOn=>1, shDimElsJtRampOff=>1,
+	               lgCtRampOn=>1, lgCtRampOff=>1, lgCtDlyOn=>1, lgCtDlyOff=>1, lgCtOn=>1, lgCtOff=>1, lgCtValLo=>1, lgCtValHi=>1, lgOnDly=>1, lgOnTime=>1, lgOffDly=>1, 
+	               lgOffTime=>1, lgActionTypeDim=>1, lgMultiExec=>1, lgOffTimeMode=>1, lgOnTimeMode=>1, lgDimJtOn=>1, lgDimJtOff=>1, lgDimJtDlyOn=>1, lgDimJtDlyOff=>1, 
+	               lgDimJtRampOn=>1, lgDimJtRampOff=>1, lgOffDlyBlink=>1, lgOnLvlPrio=>1, lgOnDlyMode=>1, lgOffLevel=>1, lgOnMinLevel=>1, lgOnLevel=>1, lgRampSstep=>1, 
+	               lgRampOnTime=>1, lgRampOffTime=>1, lgDimMinLvl=>1, lgDimMaxLvl=>1, lgDimStep=>1, lgOffDlyNewTime=>1, lgOffDlyOldTime=>1, lgDimElsActionType=>1, 
+	               lgDimElsOffTimeMd=>1, lgDimElsOnTimeMd=>1, lgDimElsJtOn=>1, lgDimElsJtOff=>1, lgDimElsJtDlyOn=>1, lgDimElsJtDlyOff=>1, lgDimElsJtRampOn=>1, lgDimElsJtRampOff=>1, 
+	},
+
+	
+
+);
+
+#----------------assemble device -----------------
 my %regList;
 $regList{0}={type => "regDev",peers=>1};
-$regList{1}={type => "regKey",peers=>6};
-$regList{2}={type => "regKey",peers=>6};
-$regList{3}={type => "regKey",peers=>6};
-$regList{4}={type => "regKey",peers=>6};
-$regList{5}={type => "regAct",peers=>2};
-$regList{6}={type => "regAct",peers=>2};
-$regList{7}={type => "regAct",peers=>2};
-$regList{8}={type => "regAct",peers=>2};
+
+$regList{1}={type => "regDimmer",peers=>6};
+$regList{2}={type => "regSwitch",peers=>6};
+$regList{3}={type => "regSwitch",peers=>6};
+$regList{4}={type => "regSwitch",peers=>6};
+$regList{5}={type => "regSwitch",peers=>6};
+$regList{6}={type => "regSwitch",peers=>6};
+
 
 sub usr_getHash($){
   my $hn = shift;

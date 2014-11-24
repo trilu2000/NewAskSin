@@ -148,10 +148,9 @@ foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {													# step through
 		
 		my $fillText = "";
 		if (($lastBits) && (int($regL) == int($reg))) {													# check if we are in the same byte
-			$fillText = "    uint8_t" ." "x22 .":" .int(($reg - $regL)*10) .";";							# add the missing bits as a line 
+			$fillText = "    uint8_t" ." "x22 .":" .(($reg - $regL)*10) .";";							# add the missing bits as a line 
 			$fillText .= " "x5 ."//"; #." "x7 ."l:$regL, s:$reg";										# some debug
 			$fillText .= "\n";
-      if  ((($reg - $regL)*10) == 0) {$fillText = "";}
 
 		} elsif (($lastBits) || ($regSBit)) {															# not in the same byte
 			$fillText = "    uint8_t" ." "x22 .":" .($lastBits + $regSBit) .";";						# add the missing bits as a line 
@@ -183,7 +182,7 @@ foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {													# step through
 	}
 	
 	if ($regL) {																						# add the missing bytes on the end
-		my $lmissBits = 8 - int( ($regL - int($regL)) * 11);
+		my $lmissBits = 8 - int( ($regL - int($regL)) * 10);
 		my $lmissText = "    uint8_t" ." "x22 .":" .$lmissBits .";";									# add the missing bits as a line 
 		$lmissText .= " "x5 ."//";																		# some debug
 		$lmissText .= "\n";
@@ -248,62 +247,92 @@ foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {
 	$slcLenCnt += $h->{'slcCnt'};
 	print "    $h->{'slcStrItem'}\n";
 }
-print "}; // $slcLenCnt byte \n\n\n";
+print "}; // $slcLenCnt byte \n\n";
 
 
-print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-print "//- Channel device config ------------------------------------------------------------------------------------------------\n";
 
-foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {
-	my $h = $cnlLstType{$cnt};
-	print "struct s_$h->{'cnlLstType'} {\n";
-	print "    // $h->{'slcStrItem'}\n";
-	print "$h->{'devStrItem'}};\n\n";
-}
-
-foreach my $i (keys @cnlTypeA) {
-	print "struct s_$cnlTypeA[$i] {\n";
-	foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {
-		if ($cnlLstType{$cnt}{'cnlType'} eq $cnlTypeA[$i]) {
-			print "    s_$cnlLstType{$cnt}{'cnlLstType'} l$cnlLstType{$cnt}{'lst'};\n";
-		}
-	}
-	print "};\n\n";
-}
-
-print "struct s_regs {\n";
-foreach my $cnl (sort{$a <=> $b}(keys %regList)) {
-	print "    s_$regList{$cnl}{'type'} ch$cnl;\n";
-}
-print "} regs; // "  .$pAddr ." byte\n\n\n";
-
-
-print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 print "//- channel device list table --------------------------------------------------------------------------------------------\n";
-print "s_cnlDefType cnlDefType[] PROGMEM = {\n";
-print "    // cnl, lst, pMax, sIdx, sLen, pAddr, pPeer, *pRegs;																	// pointer to regs structure\n\n";
+print "EE::s_cnlTbl cnlTbl[] = {\n";
+print "    // cnl, lst, sIdx, sLen, pAddr;\n";
 
 foreach my $cnt (sort{$a <=> $b}(keys %cnlDefIndex)) {
+
 	my $h = $cnlDefIndex{$cnt};
-	print "    {$h->{cnl}, $h->{lst}, $h->{pMax}, " .sprintf("0x%.2x", $h->{slcIdx}) .", $h->{slcLen}, ";
-	print sprintf("0x%.4x", $h->{pAddr}) .", " .sprintf("0x%.4x", $h->{pPeer})  .", (void*)&regs.ch$h->{cnl}.l$h->{lst}},\n"; #.", $h->{slcStrItem},    \n";	
+	print "    {$h->{cnl}, $h->{lst}, " .sprintf("0x%.2x, ", $h->{slcIdx}) .sprintf("%2d, ", $h->{slcLen}); # .", $h->{slcLen}, ";
+	print sprintf("0x%.4x", $h->{pAddr}) ."},";
+
+	if ($h->{pMax}) {
+		print "   // " .sprintf("%2d * %2d = %3d (0x%.4x)", $h->{slcLen}, $h->{pMax}, $h->{slcLen} * $h->{pMax}, $h->{slcLen} * $h->{pMax}) ."\n";
+		
+	} else {
+		print "\n";
+		
+	}	
 }
-print "}; // " .(scalar( keys %cnlDefIndex)*11) ." byte \n\n\n";
+print "}; // " .(scalar( keys %cnlDefIndex)*6) ." byte \n\n";
 
 
-print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-print "//- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
-print "HM::s_devDef dDef = {\n";
-print "    " .(scalar( keys %regLfull)-1) .", " .scalar( keys %cnlDefIndex) .", sliceStr, cnlDefType,\n";
-print "}; // 6 byte\n\n\n";
+
+print "//- peer device list table -----------------------------------------------------------------------------------------------\n";
+print "EE::s_peerTbl peerTbl[] = {\n";
+print "    // cnl, pMax, pAddr;\n";
+
+my $peerCnlCnt = 0;
+foreach my $cnt (sort{$a <=> $b}(keys %cnlDefIndex)) {
+	my $h = $cnlDefIndex{$cnt};
+#	print "    {$h->{cnl}, $h->{lst}, $h->{pMax}, " .sprintf("0x%.2x", $h->{slcIdx}) .", $h->{slcLen}, ";
+#	print sprintf("0x%.4x", $h->{pAddr}) .", " .sprintf("0x%.4x", $h->{pPeer})  .", (void*)&regs.ch$h->{cnl}.l$h->{lst}},\n"; #.", $h->{slcStrItem},    \n";	
+
+	if ($h->{pMax}) {
+		print "    {$h->{cnl}, $h->{pMax}, " .sprintf("0x%.4x", $h->{pPeer}) ."},\n"; #            // " .sprintf("% 1d* 4=% 3d (0x%.2x)", $h->{pMax}, $h->{pMax}*4, $h->{pMax}*4) ."\n";
+		$peerCnlCnt++;
+	}
+}
+print "}; // " .$peerCnlCnt*4 ." byte \n\n";
 
 
-print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-print "//- eeprom definition ----------------------------------------------------------------------------------------------------\n";
-print "// define start address  and size in eeprom for magicNumber, peerDB, regsDB, userSpace  \n";
-print "HM::s_eeprom ee[] = {\n";
-print "    {" .sprintf("0x%.4x", 0) .", " .sprintf("0x%.4x", 2)      .", " .sprintf("0x%.4x", 2+$pPeer) .", " .sprintf("0x%.4x", 2+$pPeer+$pAddr) .",},\n";  
-print "    {" .sprintf("0x%.4x", 2) .", " .sprintf("0x%.4x", $pPeer) .", " .sprintf("0x%.4x", $pAddr)   .", " .sprintf("0x%.4x", 0)               .",},\n";  
-print "}; // 16 byte\n\n\n";
+#print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+#print "//- Channel device config ------------------------------------------------------------------------------------------------\n";
+
+#foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {
+#	my $h = $cnlLstType{$cnt};
+#	print "struct s_$h->{'cnlLstType'} {\n";
+#	print "    // $h->{'slcStrItem'}\n";
+#	print "$h->{'devStrItem'}};\n\n";
+#}
+
+#foreach my $i (keys @cnlTypeA) {
+#	print "struct s_$cnlTypeA[$i] {\n";
+#	foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {
+#		if ($cnlLstType{$cnt}{'cnlType'} eq $cnlTypeA[$i]) {
+#			print "    s_$cnlLstType{$cnt}{'cnlLstType'} l$cnlLstType{$cnt}{'lst'};\n";
+#		}
+#	}
+#	print "};\n\n";
+#}
+
+#print "struct s_regs {\n";
+#foreach my $cnl (sort{$a <=> $b}(keys %regList)) {
+#	print "    s_$regList{$cnl}{'type'} ch$cnl;\n";
+#}
+#print "} regs; // "  .$pAddr ." byte\n\n\n";
+
+
+
+
+#print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+#print "//- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
+#print "RPDB::s_devDef dDef = {\n";
+#print "    " .(scalar( keys %regLfull)-1) .", " .scalar( keys %cnlDefIndex) .", sliceStr, cnlDefType,\n";
+#print "}; // 6 byte\n\n\n";
+
+
+#print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+#print "//- eeprom definition ----------------------------------------------------------------------------------------------------\n";
+#print "// define start address  and size in eeprom for magicNumber, peerDB, regsDB, userSpace  \n";
+#print "RPDB::s_eeprom ee[] = {\n";
+#print "    {" .sprintf("0x%.4x", 0) .", " .sprintf("0x%.4x", 2)      .", " .sprintf("0x%.4x", 2+$pPeer) .", " .sprintf("0x%.4x", 2+$pPeer+$pAddr) .",},\n";  
+#print "    {" .sprintf("0x%.4x", 2) .", " .sprintf("0x%.4x", $pPeer) .", " .sprintf("0x%.4x", $pAddr)   .", " .sprintf("0x%.4x", 0)               .",},\n";  
+#print "}; // 16 byte\n\n\n";
 
 # something for default settings....
