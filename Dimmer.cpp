@@ -261,7 +261,7 @@ void Dimmer::blinkOffDly(void) {
 	// check in which cycle we are, 1 means led is off, 0 led is on again 
 	if (statusOffDlyBlink) {
 		statusOffDlyBlink = 0;																// switch led on next time
-		adjTmr.set(30);																		// off for 30 ms
+		adjTmr.set(10);																		// off for 30 ms
 		fSwitch(1, lstCnl.characteristic);													// set led to minimum
 		
 	} else {
