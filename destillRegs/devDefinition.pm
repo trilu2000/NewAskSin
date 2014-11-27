@@ -11,6 +11,13 @@ my %listTypes = (
 	               peerNeedsBurst=>1, expectAES=>1,
 	},
 
+	regRelay  => { sign=>1, 
+	               shCtDlyOn=>1, shCtDlyOff=>1, shCtOn=>1, shCtOff=>1, shCtValLo=>1, shCtValHi=>1, shOnDly=>1, shOnTime=>1, shOffDly=>1, shOffTime=>1, shActionType=>1, 
+	               shOffTimeMode=>1, shOnTimeMode=>1, shSwJtOn=>1, shSwJtOff=>1, shSwJtDlyOn=>1, shSwJtDlyOff=>1, 
+	               lgCtDlyOn=>1, lgCtDlyOff=>1, lgCtOn=>1, lgCtOff=>1, lgCtValLo=>1, lgCtValHi=>1, lgOnDly=>1, lgOnTime=>1, lgOffDly=>1, lgOffTime=>1, lgActionType=>1, lgMultiExec=>1, 
+	               lgOffTimeMode=>1, lgOnTimeMode=>1, lgSwJtOn=>1, lgSwJtOff=>1, lgSwJtDlyOn=>1, lgSwJtDlyOff=>1, 
+	},
+
 	regDimmer => { transmitTryMax=>1, ovrTempLvl=>1, redTempLvl=>1, redLvl=>1, powerUpAction=>1, statusInfoMinDly=>1, statusInfoRandom=>1, characteristic=>1, logicCombination=>1, 
 		           shCtRampOn=>1, shCtRampOff=>1, shCtDlyOn=>1, shCtDlyOff=>1, shCtOn=>1, shCtOff=>1, shCtValLo=>1, shCtValHi=>1, shOnDly=>1, shOnTime=>1, shOffDly=>1, 
 	               shOffTime=>1, shActionTypeDim=>1, shOffTimeMode=>1, shOnTimeMode=>1, shDimJtOn=>1, shDimJtOff=>1, shDimJtDlyOn=>1, shDimJtDlyOff=>1, shDimJtRampOn=>1, 
@@ -24,7 +31,8 @@ my %listTypes = (
 	               lgDimElsOffTimeMd=>1, lgDimElsOnTimeMd=>1, lgDimElsJtOn=>1, lgDimElsJtOff=>1, lgDimElsJtDlyOn=>1, lgDimElsJtDlyOff=>1, lgDimElsJtRampOn=>1, lgDimElsJtRampOff=>1, 
 	},
 
-	
+	regSensor => { 
+	},
 
 );
 
@@ -32,9 +40,10 @@ my %listTypes = (
 my %regList;
 $regList{0}={type => "regDev",peers=>1};
 
-$regList{1}={type => "regDimmer",peers=>6};
-$regList{2}={type => "regDimmer",peers=>1};
-$regList{3}={type => "regDimmer",peers=>1};
+$regList{1}={type => "regRelay",peers=>6};
+#$regList{1}={type => "regDimmer",peers=>6};
+#$regList{2}={type => "regDimmer",peers=>1};
+#$regList{3}={type => "regDimmer",peers=>1};
 #$regList{2}={type => "regSwitch",peers=>6};
 #$regList{3}={type => "regSwitch",peers=>6};
 #$regList{4}={type => "regSwitch",peers=>6};
