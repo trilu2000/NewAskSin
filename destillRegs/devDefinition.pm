@@ -33,11 +33,13 @@ my %regList;
 $regList{0}={type => "regDev",peers=>1};
 
 $regList{1}={type => "regDimmer",peers=>6};
-$regList{2}={type => "regSwitch",peers=>6};
-$regList{3}={type => "regSwitch",peers=>6};
-$regList{4}={type => "regSwitch",peers=>6};
-$regList{5}={type => "regSwitch",peers=>6};
-$regList{6}={type => "regSwitch",peers=>6};
+$regList{2}={type => "regDimmer",peers=>1};
+$regList{3}={type => "regDimmer",peers=>1};
+#$regList{2}={type => "regSwitch",peers=>6};
+#$regList{3}={type => "regSwitch",peers=>6};
+#$regList{4}={type => "regSwitch",peers=>6};
+#$regList{5}={type => "regSwitch",peers=>6};
+#$regList{6}={type => "regSwitch",peers=>6};
 
 
 sub usr_getHash($){

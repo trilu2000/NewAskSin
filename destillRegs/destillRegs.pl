@@ -202,6 +202,8 @@ foreach my $cnt (sort{$a <=> $b}(keys %cnlLstType)) {													# step through
 my %cnlDefIndex;
 my ($cnt, $pAddr, $pPeer) = (0, 0, 0);
 
+$pAddr=15;
+
 foreach my $chn (sort{$a <=> $b}(keys %regLfull)) {														# per channel
 	foreach my $lst (sort{$a <=> $b}(keys %{$regLfull{$chn}})) {										# per list
 
@@ -280,15 +282,27 @@ print "    // cnl, pMax, pAddr;\n";
 my $peerCnlCnt = 0;
 foreach my $cnt (sort{$a <=> $b}(keys %cnlDefIndex)) {
 	my $h = $cnlDefIndex{$cnt};
+
 #	print "    {$h->{cnl}, $h->{lst}, $h->{pMax}, " .sprintf("0x%.2x", $h->{slcIdx}) .", $h->{slcLen}, ";
 #	print sprintf("0x%.4x", $h->{pAddr}) .", " .sprintf("0x%.4x", $h->{pPeer})  .", (void*)&regs.ch$h->{cnl}.l$h->{lst}},\n"; #.", $h->{slcStrItem},    \n";	
 
 	if ($h->{pMax}) {
-		print "    {$h->{cnl}, $h->{pMax}, " .sprintf("0x%.4x", $h->{pPeer}) ."},\n"; #            // " .sprintf("% 1d* 4=% 3d (0x%.2x)", $h->{pMax}, $h->{pMax}*4, $h->{pMax}*4) ."\n";
+		print "    {$h->{cnl}, $h->{pMax}, " .sprintf("0x%.4x", $h->{pPeer}+$pAddr) ."}              // " .sprintf("%2d * 4 = %3d (0x%.2x)", $h->{pMax}, $h->{pMax}*4, $h->{pMax}*4) ."\n";
 		$peerCnlCnt++;
 	}
 }
 print "}; // " .$peerCnlCnt*4 ." byte \n\n";
+
+
+print "//- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
+print "EE::s_devDef devDef = {\n";
+print "    " .(scalar( keys %regLfull)-1) .", " .scalar( keys %cnlDefIndex) .", devIdnt, cnlAddr,\n";
+print "}; // 6 byte\n\n";
+
+
+print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
+print "RG::s_modTable modTbl[" .(scalar( keys %regLfull)-1) ."];\n\n";
+#print "}; // 6 byte\n\n\n";
 
 
 #print "//- ----------------------------------------------------------------------------------------------------------------------\n";
