@@ -3,8 +3,33 @@ use strict;
 
 #----------------define reglist types-----------------
 package usrRegs;
+
+# sub types - needed in register.h
+#  "01" => { st => "AlarmControl",
+#  "10" => { st => "switch",
+#  "12" => { st => "outputUnit",
+#  "20" => { st => "dimmer",
+#  "30" => { st => "blindActuator",
+#  "39" => { st => "ClimateControl",
+#  "40" => { st => "remote",
+#  "41" => { st => "sensor",
+#  "42" => { st => "swi",
+#  "43" => { st => "pushButton",
+#  "44" => { st => "singleButton",
+#  "51" => { st => "powerMeter",
+#  "58" => { st => "thermostat",
+#  "60" => { st => "KFM100",
+#  "70" => { st => "THSensor",
+#  "80" => { st => "threeStateSensor"
+#  "81" => { st => "motionDetector",
+#  "C0" => { st => "keyMatic",
+#  "C1" => { st => "winMatic",
+#  "C3" => { st => "tipTronic",
+#  "CD" => { st => "smokeDetector",
+
 my %listTypes = (
-	regDev    => { burstRx=>1, intKeyVisib=>1, pairCentral=>1, localResDis=>1,
+	#regDev    => { burstRx=>1, intKeyVisib=>1, pairCentral=>1, localResDis=>1,
+	regDev    => { burstRx=>1, intKeyVisib=>1, pairCentral=>1, 
 	},
 
 	regSwitch => { sign=>1, longPress=>1, dblPress=>1,
@@ -31,7 +56,7 @@ my %listTypes = (
 	               lgDimElsOffTimeMd=>1, lgDimElsOnTimeMd=>1, lgDimElsJtOn=>1, lgDimElsJtOff=>1, lgDimElsJtDlyOn=>1, lgDimElsJtDlyOff=>1, lgDimElsJtRampOn=>1, lgDimElsJtRampOff=>1, 
 	},
 
-	regSensor => { 
+	regTHSensor => { peerNeedsBurst=>1, expectAES=>1,
 	},
 
 );
@@ -40,7 +65,7 @@ my %listTypes = (
 my %regList;
 $regList{0}={type => "regDev",peers=>1};
 
-$regList{1}={type => "regRelay",peers=>6};
+$regList{1}={type => "regTHSensor",peers=>6};
 #$regList{1}={type => "regDimmer",peers=>6};
 #$regList{2}={type => "regDimmer",peers=>1};
 #$regList{3}={type => "regDimmer",peers=>1};
