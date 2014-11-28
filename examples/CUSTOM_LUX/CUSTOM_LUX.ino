@@ -3,12 +3,12 @@
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <AS.h>
 #include "register.h"																		// configuration sheet
-//#include <Dimmer.h>
+#include <THSensor.h>
 
 
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
-//Dimmer dimmer;																				// stage a dummy module
+THSensor thsens;																			// stage a dummy module
 
 //waitTimer xTmr;
 
