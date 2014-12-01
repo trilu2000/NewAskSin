@@ -37,7 +37,7 @@ void	RV::poll(void) {
 
 	// some debugs
 	#ifdef RV_DBG																			// only if AS debug is set
-	dbg << (char)bIntend << F("> ") << pHex(this->buf, this->bufLen) << ' ' << pTime << '\n';
+	dbg << (char)bIntend << F("> ") << _HEX(this->buf, this->bufLen) << ' ' << _TIME << '\n';
 	#endif
 	
 	#ifdef RV_DBG_EX																		// only if extended AS debug is set

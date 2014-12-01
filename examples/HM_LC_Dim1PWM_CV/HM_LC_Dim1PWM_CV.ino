@@ -38,6 +38,7 @@ void setup() {
 	// config key pin - D8
 	pinInput(DDRB,0);																		// init the config key pin
 	setPinHigh(PORTB,0);
+	initPCINT();																			// some sanity on interrupts	
 	regPCIE(PCIE0);																			// set the pin change interrupt
 	regPCINT(PCMSK0,PCINT0);																// description is in hal.h
 

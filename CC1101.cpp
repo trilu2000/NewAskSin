@@ -69,7 +69,7 @@ void    CC::init(void) {																// initialize CC1101
 	};
 	for (uint8_t i=0; i<sizeof(initVal); i+=2) {										// write init value to TRX868
 		writeReg(_pgmB(initVal[i]), _pgmB(initVal[i+1]));
-		//dbg << i << ": " << pHexB(_pgmB(initVal[i])) << " " << pHexB(_pgmB(initVal[i+1])) << '\n';
+		//dbg << i << ": " << _HEXB(_pgmB(initVal[i])) << " " << _HEXB(_pgmB(initVal[i+1])) << '\n';
 	}
 
 	#ifdef CC_DBG																		// only if cc debug is set
@@ -134,7 +134,7 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	}
 
 	#ifdef CC_DBG																		// only if cc debug is set
-	dbg << F("<- ") << pHexB(buf[0]) << pHexB(buf[1]) << '\n';//pTime();
+	dbg << F("<- ") << _HEXB(buf[0]) << _HEXB(buf[1]) << '\n';//pTime();
 	#endif
 
 	//dbg << "rx\n";
@@ -142,16 +142,17 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 }
 uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIFO
 	uint8_t rxBytes = readReg(CC1101_RXBYTES, CC1101_STATUS);							// how many bytes are in the buffer
-	
 	//dbg << rxBytes << ' ';
 
 	if ((rxBytes & 0x7F) && !(rxBytes & 0x80)) {										// any byte waiting to be read and no overflow?
 		buf[0] = readReg(CC1101_RXFIFO, CC1101_CONFIG);									// read data length
-
-		if (buf[0] > CC1101_DATA_LEN)													// if packet is too long
+		
+		if (buf[0] > CC1101_DATA_LEN) {													// if packet is too long
 			buf[0] = 0;																	// discard packet
-		else {
+			
+		} else {
 			readBurst(&buf[1], CC1101_RXFIFO, buf[0]);									// read data packet
+			
 			rssi = readReg(CC1101_RXFIFO, CC1101_CONFIG);								// read RSSI
 			
 			if (rssi >= 128) rssi = 255 - rssi;
@@ -160,7 +161,9 @@ uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 			uint8_t val = readReg(CC1101_RXFIFO, CC1101_CONFIG);						// read LQI and CRC_OK
 			lqi = val & 0x7F;
 			crc_ok = bitRead(val, 7);
+	
 		}
+
 	} else buf[0] = 0;																	// nothing to do, or overflow
 
 	strobe(CC1101_SFRX);																// flush Rx FIFO
@@ -170,7 +173,7 @@ uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	//	trx868.rfState = RFSTATE_RX;													// declare to be in Rx state
 
 	#ifdef CC_DBG																		// only if cc debug is set
-	if (buf[0] > 0) dbg << pHex(buf, buf[0]+1) << '\n';//pTime();
+	if (buf[0] > 0) dbg << _HEX(buf, buf[0]+1) << '\n';//pTime();
 	#endif
 
 	return buf[0];																		// return the data buffer
@@ -233,7 +236,10 @@ void    CC::readBurst(uint8_t *buf, uint8_t regAddr, uint8_t len) {						// read
 	_ccSelect;																			// select CC1101
 	_waitMiso;																			// wait until MISO goes low
 	ccSendByte(regAddr | READ_BURST);													// send register address
-	for(uint8_t i=0 ; i<len ; i++) buf[i] = ccSendByte(0x00);							// read result byte by byte
+	for(uint8_t i=0 ; i<len ; i++) {
+		buf[i] = ccSendByte(0x00);														// read result byte by byte
+		//dbg << i << ":" << buf[i] << '\n';
+	}
 	_ccDeselect;																		// deselect CC1101
 }
 void    CC::writeBurst(uint8_t regAddr, uint8_t *buf, uint8_t len) {					// write multiple registers into the CC1101 IC via SPI

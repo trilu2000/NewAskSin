@@ -16,30 +16,42 @@ THSensor thsens;																			// stage a dummy module
 void setup() {
 	#ifdef SER_DBG
 	dbgStart();																				// serial setup
-	Serial << F("Main\n");																	// ...and some information
+	dbg << F("Main\n");																		// ...and some information
 	#endif
 	
-	// - Hardware setup ---------------------------------------
-	// everything off
-	ADCSRA = 0;																				// ADC off
-	power_all_disable();																	// and everything else
-	
-	DDRB = DDRC = DDRD = 0x00;																// everything as input
-	PORTB = PORTC = PORTD = 0x00;															// pullup's off
+	_delay_ms(100);
+	_delay_ms(100);
+	_delay_ms(100);
+	_delay_ms(100);
+	_delay_ms(100);
+	dbg << F("Main\n");																		// ...and some information
 
-	power_spi_enable();																		// enable only needed functions
-	power_timer0_enable();
-	power_usart0_enable();
+	// - Hardware setup ---------------------------------------
+	initMillis();																			// milli timer start
+	initPCINT();																			// init the pin change interrupts
+	ccInitHw();
+		
+	// everything off
+	//ADCSRA = 0;																				// ADC off
+	//power_all_disable();																	// and everything else
+	
+	//DDRB = DDRC = DDRD = 0x00;																// everything as input
+	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
+
+	//power_spi_enable();																		// enable only needed functions
+	//power_timer0_enable();
+	//power_usart0_enable();
 
 	// led's - D4 and D6
-	pinOutput(DDRD,4);																		// init the led pins
-	pinOutput(DDRD,6);
+	//pinOutput(DDRD,4);																		// init the led pins
+	//pinOutput(DDRD,6);
 	
 	// config key pin - D8
-	pinInput(DDRB,0);																		// init the config key pin
-	setPinHigh(PORTB,0);
-	regPCIE(PCIE0);																			// set the pin change interrupt
-	regPCINT(PCMSK0,PCINT0);																// description is in hal.h
+	//pinInput(DDRB,0);																		// init the config key pin
+	//setPinHigh(PORTB,0);
+	//initPCINT();																			// some sanity on interrupts	
+	//regPCIE(PCIE0);																			// set the pin change interrupt
+	//regPCINT(PCMSK0,PCINT0);																// description is in hal.h
 
 	// battery measurement, ADC pin PC0, enable pin PD7
 	//pinInput(DDRC, 0);																		// set the ADC pin as input
@@ -50,28 +62,31 @@ void setup() {
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
-	hm.confButton.config(2,0,0);															// configure the config button, mode, pci byte and pci bit
+	//hm.confButton.config(1,0,0);															// configure the config button, mode, pci byte and pci bit
 	
-	hm.ld.init(2, &hm);																		// set the led
-	hm.ld.set(welcome);																		// show something
+	//hm.ld.init(2, &hm);																		// set the led
+	//hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
+	//hm.pw.setMode(0);																		// set power management mode
+	//hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
 
-	//dimmer.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
-	//dimmer.config(&initPWM, &switchPWM, NULL);
+	//thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
+	//thsens.config(&initTH1, &measureTH1, NULL);
 	
 	// - user related -----------------------------------------
-
-	
+	uint8_t x[5] = {0x01,0x11,0x02,0x22,0x03};
+	dbg << "a:" << _HEX(x,5) << _TIME << '\n';
+	dbg << "b:" << _HEXB(0xff) << '\n';
 	sei();																					// enable interrupts
-
 }
 
 void loop() {
 	// - AskSin related ---------------------------------------
 	hm.poll();																				// poll the homematic main loop
 	
+	//if (getMillis()%500 ==0) {
+	//	dbg << getMillis() << '\n';
+	//}
 
 	// - user related -----------------------------------------
 
@@ -79,28 +94,13 @@ void loop() {
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
-void initPWM() {
-	dbg << "init pwm\n";
+void initTH1() {
+//	dbg << "init th1\n";
 	
-	power_timer2_enable();	
-	
-	pinOutput(DDRD,3);																		// init the relay pins
-	//setPinLow(PORTD,3);
-	
-	TCCR2B |= (1<<CS21);
-	OCR2B = 0x00;
-	TCCR2A |= 1<<COM2B1;
-
 }
-void switchPWM(uint8_t status, uint8_t characteristic) {
-	uint16_t x = status*255;
-	//dbg << x << " ";
-	x /= 200;
-	//dbg << x << '\n';
-	OCR2B = x;
+void measureTH1() {
+//	dbg << "measure th1\n";
 
-	//if (status) setPinHigh(PORTD,3);
-	//else setPinLow(PORTD,3);
 }
 
 

@@ -315,14 +315,14 @@ void AS::sendSliceList(void) {
 		cnt = ee.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, sn.buf+11);					// get the slice and the amount of bytes
 		sendINFO_PEER_LIST(cnt);															// create the body
 		stcSlice.curSlc++;																	// increase slice counter
-		//dbg << "peer slc: " << pHex(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
+		//dbg << "peer slc: " << _HEX(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
 
 	} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
 		cnt = ee.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, sn.buf+11); // get the slice and the amount of bytes
 		//dbg << "cnt: " << cnt << '\n';
 		sendINFO_PARAM_RESPONSE_PAIRS(cnt);
 		stcSlice.curSlc++;																	// increase slice counter
-		//dbg << "reg2 slc: " << pHex(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
+		//dbg << "reg2 slc: " << _HEX(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
 		
 	} else if (stcSlice.reg3) {			// INFO_PARAM_RESPONSE_SEQ
 
@@ -382,7 +382,7 @@ void AS::sendPeerMsg(void) {
 	}
 
 	// if we are here, there is something to send
-	//dbg << "cnl:" << stcPeer.cnl << " cIdx:" << stcPeer.curIdx << " mIdx:" << stcPeer.maxIdx << " slt:" << pHex(stcPeer.slt,8) << '\n';
+	//dbg << "cnl:" << stcPeer.cnl << " cIdx:" << stcPeer.curIdx << " mIdx:" << stcPeer.maxIdx << " slt:" << _HEX(stcPeer.slt,8) << '\n';
 	
 	// todo: get the respective list4 entries and take care while sending the message
 	// peerNeedsBurst  =>{a=>  1.0,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"peer expects burst",lit=>{off=>0,on=>1}},
@@ -727,7 +727,7 @@ void AS::recvMessage(void) {
 
 		// check if we have the peer in the database to get the channel
 		uint8_t cnl = ee.isPeerValid(rv.peerId);
-		//dbg << "cnl: " << cnl << " mTyp: " << pHexB(rv.mBdy.mTyp) << " by10: " << pHexB(rv.mBdy.by10)  << " by11: " << pHexB(rv.mBdy.by11) << " data: " << pHex((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
+		//dbg << "cnl: " << cnl << " mTyp: " << _HEXB(rv.mBdy.mTyp) << " by10: " << _HEXB(rv.mBdy.by10)  << " by11: " << _HEXB(rv.mBdy.by11) << " data: " << _HEX((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
 		if (cnl == 0) return;
 		
 		// check if a module is registered and send the information, otherwise report an empty status
@@ -794,7 +794,7 @@ void AS::sendINFO_PEER_LIST(uint8_t len) {
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
 	sn.mBdy.by10 = 0x01; //stcSlice.cnl;
-	//dbg << "x: " << pHex(sn.buf, sn.mBdy.mLen+1) << '\n';
+	//dbg << "x: " << _HEX(sn.buf, sn.mBdy.mLen+1) << '\n';
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
@@ -875,52 +875,52 @@ void AS::explainMessage(uint8_t *buf) {
 	dbg << F("   ");																		// save some byte and send 3 blanks once, instead of having it in every if
 	
 	if        ((buf[3] == 0x00)) {
-		dbg << F("DEVICE_INFO; fw: ") << pHex((buf+10),1) << F(", type: ") << pHex((buf+11),2) << F(", serial: ") << pHex((buf+13),10) << '\n';
-		dbg << F("              , class: ") << pHexB(buf[23]) << F(", pCnlA: ") << pHexB(buf[24]) << F(", pCnlB: ") << pHexB(buf[25]) << F(", na: ") << pHexB(buf[26]);
+		dbg << F("DEVICE_INFO; fw: ") << _HEX((buf+10),1) << F(", type: ") << _HEX((buf+11),2) << F(", serial: ") << _HEX((buf+13),10) << '\n';
+		dbg << F("              , class: ") << _HEXB(buf[23]) << F(", pCnlA: ") << _HEXB(buf[24]) << F(", pCnlB: ") << _HEXB(buf[25]) << F(", na: ") << _HEXB(buf[26]);
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x01)) {
-		dbg << F("CONFIG_PEER_ADD; cnl: ") << pHexB(buf[10]) << F(", peer: ") << pHex((buf+12),3) << F(", pCnlA: ") << pHexB(buf[15]) << F(", pCnlB: ") << pHexB(buf[16]);
+		dbg << F("CONFIG_PEER_ADD; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x02)) {
-		dbg << F("CONFIG_PEER_REMOVE; cnl: ") << pHexB(buf[10]) << F(", peer: ") << pHex((buf+12),3) << F(", pCnlA: ") << pHexB(buf[15]) << F(", pCnlB: ") << pHexB(buf[16]);
+		dbg << F("CONFIG_PEER_REMOVE; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x03)) {
-		dbg << F("CONFIG_PEER_LIST_REQ; cnl: ") << pHexB(buf[10]);
+		dbg << F("CONFIG_PEER_LIST_REQ; cnl: ") << _HEXB(buf[10]);
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x04)) {
-		dbg << F("CONFIG_PARAM_REQ; cnl: ") << pHexB(buf[10]) << F(", peer: ") << pHex((buf+12),3) << F(", pCnl: ") << pHexB(buf[15]) << F(", lst: ") << pHexB(buf[16]);
+		dbg << F("CONFIG_PARAM_REQ; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x05)) {
-		dbg << F("CONFIG_START; cnl: ") << pHexB(buf[10]) << F(", peer: ") << pHex((buf+12),3) << F(", pCnl: ") << pHexB(buf[15]) << F(", lst: ") << pHexB(buf[16]);
+		dbg << F("CONFIG_START; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x06)) {
-		dbg << F("CONFIG_END; cnl: ") << pHexB(buf[10]);
+		dbg << F("CONFIG_END; cnl: ") << _HEXB(buf[10]);
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x08)) {
-		dbg << F("CONFIG_WRITE_INDEX; cnl: ") << pHexB(buf[10]) << F(", data: ") << pHex((buf+12),(buf[0]-11));
+		dbg << F("CONFIG_WRITE_INDEX; cnl: ") << _HEXB(buf[10]) << F(", data: ") << _HEX((buf+12),(buf[0]-11));
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x09)) {
 		dbg << F("CONFIG_SERIAL_REQ");
 		
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x0A)) {
-		dbg << F("PAIR_SERIAL, serial: ") << pHex((buf+12),10);
+		dbg << F("PAIR_SERIAL, serial: ") << _HEX((buf+12),10);
 
 	} else if ((buf[3] == 0x01) && (buf[11] == 0x0E)) {
-		dbg << F("CONFIG_STATUS_REQUEST, cnl: ") << pHexB(buf[10]);
+		dbg << F("CONFIG_STATUS_REQUEST, cnl: ") << _HEXB(buf[10]);
 
 	} else if ((buf[3] == 0x02) && (buf[10] == 0x00)) {
 		if (buf[0] == 0x0A) dbg << F("ACK");
-		else dbg << F("ACK; data: ") << pHex((buf+11),buf[0]-10);
+		else dbg << F("ACK; data: ") << _HEX((buf+11),buf[0]-10);
 
 	} else if ((buf[3] == 0x02) && (buf[10] == 0x01)) {
-		dbg << F("ACK_STATUS; cnl: ") << pHexB(buf[11]) << F(", status: ") << pHexB(buf[12]) << F(", down/up/loBat: ") << pHexB(buf[13]);
-		if (buf[0] > 13) dbg << F(", rssi: ") << pHexB(buf[14]);
+		dbg << F("ACK_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", down/up/loBat: ") << _HEXB(buf[13]);
+		if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
 
 	} else if ((buf[3] == 0x02) && (buf[10] == 0x02)) {
 		dbg << F("ACK2");
 		
 	} else if ((buf[3] == 0x02) && (buf[10] == 0x04)) {
-		dbg << F("ACK_PROC; para1: ") << pHex((buf+11),2) << F(", para2: ") << pHex((buf+13),2) << F(", para3: ") << pHex((buf+15),2) << F(", para4: ") << pHexB(buf[17]);
+		dbg << F("ACK_PROC; para1: ") << _HEX((buf+11),2) << F(", para2: ") << _HEX((buf+13),2) << F(", para3: ") << _HEX((buf+15),2) << F(", para4: ") << _HEXB(buf[17]);
 
 	} else if ((buf[3] == 0x02) && (buf[10] == 0x80)) {
 		dbg << F("NACK");
@@ -929,80 +929,80 @@ void AS::explainMessage(uint8_t *buf) {
 		dbg << F("NACK_TARGET_INVALID");
 		
 	} else if ((buf[3] == 0x03)) {
-		dbg << F("AES_REPLY; data: ") << pHex((buf+10),buf[0]-9);
+		dbg << F("AES_REPLY; data: ") << _HEX((buf+10),buf[0]-9);
 		
 	} else if ((buf[3] == 0x04) && (buf[10] == 0x01)) {
-		dbg << F("TOpHMLAN:SEND_AES_CODE; cnl: ") << pHexB(buf[11]);
+		dbg << F("TOpHMLAN:SEND_AES_CODE; cnl: ") << _HEXB(buf[11]);
 
 	} else if ((buf[3] == 0x04)) {
-		dbg << F("TO_ACTOR:SEND_AES_CODE; code: ") << pHexB(buf[11]);
+		dbg << F("TO_ACTOR:SEND_AES_CODE; code: ") << _HEXB(buf[11]);
 		
 	} else if ((buf[3] == 0x10) && (buf[10] == 0x00)) {
-		dbg << F("INFO_SERIAL; serial: ") << pHex((buf+11),10);
+		dbg << F("INFO_SERIAL; serial: ") << _HEX((buf+11),10);
 
 	} else if ((buf[3] == 0x10) && (buf[10] == 0x01)) {
-		dbg << F("INFO_PEER_LIST; peer1: ") << pHex((buf+11),4);
-		if (buf[0] >= 19) dbg << F(", peer2: ") << pHex((buf+15),4);
-		if (buf[0] >= 23) dbg << F(", peer3: ") << pHex((buf+19),4);
-		if (buf[0] >= 27) dbg << F(", peer4: ") << pHex((buf+23),4);
+		dbg << F("INFO_PEER_LIST; peer1: ") << _HEX((buf+11),4);
+		if (buf[0] >= 19) dbg << F(", peer2: ") << _HEX((buf+15),4);
+		if (buf[0] >= 23) dbg << F(", peer3: ") << _HEX((buf+19),4);
+		if (buf[0] >= 27) dbg << F(", peer4: ") << _HEX((buf+23),4);
 
 	} else if ((buf[3] == 0x10) && (buf[10] == 0x02)) {
-		dbg << F("INFO_PARAM_RESPONSE_PAIRS; data: ") << pHex((buf+11),buf[0]-10);
+		dbg << F("INFO_PARAM_RESPONSE_PAIRS; data: ") << _HEX((buf+11),buf[0]-10);
 
 	} else if ((buf[3] == 0x10) && (buf[10] == 0x03)) {
-		dbg << F("INFO_PARAM_RESPONSE_SEQ; offset: ") << pHexB(buf[11]) << F(", data: ") << pHex((buf+12),buf[0]-11);
+		dbg << F("INFO_PARAM_RESPONSE_SEQ; offset: ") << _HEXB(buf[11]) << F(", data: ") << _HEX((buf+12),buf[0]-11);
 
 	} else if ((buf[3] == 0x10) && (buf[10] == 0x04)) {
-		dbg << F("INFO_PARAMETER_CHANGE; cnl: ") << pHexB(buf[11]) << F(", peer: ") << pHex((buf+12),4) << F(", pLst: ") << pHexB(buf[16]) << F(", data: ") << pHex((buf+17),buf[0]-16);
+		dbg << F("INFO_PARAMETER_CHANGE; cnl: ") << _HEXB(buf[11]) << F(", peer: ") << _HEX((buf+12),4) << F(", pLst: ") << _HEXB(buf[16]) << F(", data: ") << _HEX((buf+17),buf[0]-16);
 
 	} else if ((buf[3] == 0x10) && (buf[10] == 0x06)) {
-		dbg << F("INFO_ACTUATOR_STATUS; cnl: ") << pHexB(buf[11]) << F(", status: ") << pHexB(buf[12]) << F(", na: ") << pHexB(buf[13]);
-		if (buf[0] > 13) dbg << F(", rssi: ") << pHexB(buf[14]);
+		dbg << F("INFO_ACTUATOR_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", na: ") << _HEXB(buf[13]);
+		if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
 		
 	} else if ((buf[3] == 0x11) && (buf[10] == 0x02)) {
-		dbg << F("SET; cnl: ") << pHexB(buf[11]) << F(", value: ") << pHexB(buf[12]) << F(", rampTime: ") << pHex((buf+13),2) << F(", duration: ") << pHex((buf+15),2);
+		dbg << F("SET; cnl: ") << _HEXB(buf[11]) << F(", value: ") << _HEXB(buf[12]) << F(", rampTime: ") << _HEX((buf+13),2) << F(", duration: ") << _HEX((buf+15),2);
 
 	} else if ((buf[3] == 0x11) && (buf[10] == 0x03)) {
-		dbg << F("STOP_CHANGE; cnl: ") << pHexB(buf[11]);
+		dbg << F("STOP_CHANGE; cnl: ") << _HEXB(buf[11]);
 
 	} else if ((buf[3] == 0x11) && (buf[10] == 0x04) && (buf[11] == 0x00)) {
 		dbg << F("RESET");
 
 	} else if ((buf[3] == 0x11) && (buf[10] == 0x80)) {
-		dbg << F("LED; cnl: ") << pHexB(buf[11]) << F(", color: ") << pHexB(buf[12]);
+		dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", color: ") << _HEXB(buf[12]);
 
 	} else if ((buf[3] == 0x11) && (buf[10] == 0x81) && (buf[11] == 0x00)) {
-		dbg << F("LED_ALL; Led1To16: ") << pHex((buf+12),4);
+		dbg << F("LED_ALL; Led1To16: ") << _HEX((buf+12),4);
 		
 	} else if ((buf[3] == 0x11) && (buf[10] == 0x81)) {
-		dbg << F("LED; cnl: ") << pHexB(buf[11]) << F(", time: ") << pHexB(buf[12]) << F(", speed: ") << pHexB(buf[13]);
+		dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", time: ") << _HEXB(buf[12]) << F(", speed: ") << _HEXB(buf[13]);
 		
 	} else if ((buf[3] == 0x11) && (buf[10] == 0x82)) {
-		dbg << F("SLEEPMODE; cnl: ") << pHexB(buf[11]) << F(", mode: ") << pHexB(buf[12]);
+		dbg << F("SLEEPMODE; cnl: ") << _HEXB(buf[11]) << F(", mode: ") << _HEXB(buf[12]);
 		
 	} else if ((buf[3] == 0x12)) {
 		dbg << F("HAVE_DATA");
 		
 	} else if ((buf[3] == 0x3E)) {
-		dbg << F("SWITCH; dst: ") << pHex((buf+10),3) << F(", na: ") << pHexB(buf[13]) << F(", cnl: ") << pHexB(buf[14]) << F(", counter: ") << pHexB(buf[15]);
+		dbg << F("SWITCH; dst: ") << _HEX((buf+10),3) << F(", na: ") << _HEXB(buf[13]) << F(", cnl: ") << _HEXB(buf[14]) << F(", counter: ") << _HEXB(buf[15]);
 		
 	} else if ((buf[3] == 0x3F)) {
-		dbg << F("TIMESTAMP; na: ") << pHex((buf+10),2) << F(", time: ") << pHex((buf+12),2);
+		dbg << F("TIMESTAMP; na: ") << _HEX((buf+10),2) << F(", time: ") << _HEX((buf+12),2);
 		
 	} else if ((buf[3] == 0x40)) {
-		dbg << F("REMOTE; button: ") << pHexB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", counter: ") << pHexB(buf[11]);
+		dbg << F("REMOTE; button: ") << _HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", counter: ") << _HEXB(buf[11]);
 		
 	} else if ((buf[3] == 0x41)) {
-		dbg << F("SENSOR_EVENT; button: ") <<pHexB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", value: ") << pHexB(buf[11]) << F(", next: ") << pHexB(buf[12]);
+		dbg << F("SENSOR_EVENT; button: ") <<_HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", value: ") << _HEXB(buf[11]) << F(", next: ") << _HEXB(buf[12]);
 		
 	} else if ((buf[3] == 0x53)) {
-		dbg << F("SENSOR_DATA; cmd: ") << pHexB(buf[10]) << F(", fld1: ") << pHexB(buf[11]) << F(", val1: ") << pHex((buf+12),2) << F(", fld2: ") << pHexB(buf[14]) << F(", val2: ") << pHex((buf+15),2) << F(", fld3: ") << pHexB(buf[17]) << F(", val3: ") << pHex((buf+18),2) << F(", fld4: ") << pHexB(buf[20]) << F(", val4: ") << pHex((buf+21),2);
+		dbg << F("SENSOR_DATA; cmd: ") << _HEXB(buf[10]) << F(", fld1: ") << _HEXB(buf[11]) << F(", val1: ") << _HEX((buf+12),2) << F(", fld2: ") << _HEXB(buf[14]) << F(", val2: ") << _HEX((buf+15),2) << F(", fld3: ") << _HEXB(buf[17]) << F(", val3: ") << _HEX((buf+18),2) << F(", fld4: ") << _HEXB(buf[20]) << F(", val4: ") << _HEX((buf+21),2);
 		
 	} else if ((buf[3] == 0x58)) {
-		dbg << F("CLIMATE_EVENT; cmd: ") << pHexB(buf[10]) << F(", valvePos: ") << pHexB(buf[11]);
+		dbg << F("CLIMATE_EVENT; cmd: ") << _HEXB(buf[10]) << F(", valvePos: ") << _HEXB(buf[11]);
 		
 	} else if ((buf[3] == 0x70)) {
-		dbg << F("WEATHER_EVENT; temp: ") << pHex((buf+10),2) << F(", hum: ") << pHexB(buf[12]);
+		dbg << F("WEATHER_EVENT; temp: ") << _HEX((buf+10),2) << F(", hum: ") << _HEXB(buf[12]);
 
 	} else {
 		dbg << F("Unknown Message, please report!");

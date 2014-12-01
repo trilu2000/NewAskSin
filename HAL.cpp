@@ -7,11 +7,110 @@
 #include "HAL.h"
 
 
+//- timer functions -------------------------------------------------------------------------------------------------------
+static volatile tMillis milliseconds;
+void    initMillis() {
+	SET_TCCRA();
+	SET_TCCRB();
+	REG_TIMSK = _BV(BIT_OCIE);
+	REG_OCR = ((F_CPU / PRESCALER) / 1000);
+}
+tMillis getMillis() {
+	tMillis ms;
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		ms = milliseconds;
+	}
+	return ms;
+}
+void    addMillis(tMillis ms) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		milliseconds += ms;
+	}
+}
+ISR(ISR_VECT) {
+	++milliseconds;
+}
+//- -----------------------------------------------------------------------------------------------------------------------
+
 //- some macros for debugging ---------------------------------------------------------------------------------------------
 void dbgStart(void) {
-	if (!(UCSR0B & (1<<RXEN0))) dbg.begin(57600);
+	#if defined(__AVR_ATmega32U4__)
+	if (!(UCSR1B & (1<<RXEN1))) dbg.begin(57600);										// check if serial was already set
+	while(!dbg);																		// wait until serial has connected
+	#else
+	if (!(UCSR0B & (1<<RXEN0))) dbg.begin(57600);										// check if serial was already set
+	#endif
+}
+//- -----------------------------------------------------------------------------------------------------------------------
+
+//- pin related functions -------------------------------------------------------------------------------------------------
+struct s_pcINT {
+	uint8_t cur;
+	uint8_t prev;
+	uint32_t time;
+} static volatile pcInt[3];
+void    initPCINT(void) {
+	memset((uint8_t*)pcInt, 0xff, sizeof(pcInt));
+	//dbg << "a: " << pcInt[2].cur << '\n';
+}
+uint8_t chkPCINT(uint8_t port, uint8_t pin) {
+	// returns 0 or 1 for pin level and 2 for falling and 3 for rising edge
+	
+	// old and new bit is similar, return current status
+	if ( (pcInt[port].cur & _BV(pin)) == (pcInt[port].prev & _BV(pin)) ) return pcInt[port].cur & _BV(pin);
+
+	// check for debounce time, if still running return previous status
+	if (pcInt[port].time > getMillis()) return pcInt[port].prev & _BV(pin);
+	
+	// detect rising or falling edge
+	if (pcInt[port].cur & _BV(pin)) {
+		pcInt[port].prev |= _BV(pin);														// set bit bit in prev
+		return 3;
+	} else {
+		pcInt[port].prev &= ~_BV(pin);														// clear bit in prev
+		return 2;
+	}
 }
 
+ISR (PCINT0_vect) {
+	pcInt[0].cur = PINB;
+	pcInt[0].time = getMillis()+debounce;
+}
+ISR (PCINT1_vect) {
+	pcInt[1].cur = PINC;
+	pcInt[1].time = getMillis()+debounce;
+}
+ISR (PCINT2_vect) {
+	pcInt[2].cur = PIND;
+	pcInt[2].time = getMillis()+debounce;
+}
+//- -----------------------------------------------------------------------------------------------------------------------
+
+//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
+void    ccInitHw(void) {
+
+	pinInput(  CC_GDO0_DDR, CC_GDO0_PIN );													// set GDO0 as input
+	pinOutput( CC_CS_DDR, CC_CS_PIN );														// set chip select as output
+
+	pinOutput( SPI_DDR, SPI_MOSI );															// set MOSI as output
+	pinOutput( SPI_DDR, SPI_SCLK );															// set SCK as output
+	pinInput(  SPI_DDR, SPI_MISO );															// set MISO as input
+
+	SPCR = _BV(SPE) | _BV(MSTR);// | _BV(SPR0);// | _BV(SPR1); 									// SPI enable, master, speed = CLK/4
+	SPSR &= ~_BV(SPI2X);
+	
+	CC_GDO0_PCICR |= _BV(CC_GDO0_PCIE);														// set interrupt in mask active
+}
+uint8_t ccSendByte(uint8_t data) {
+	SPDR = data;																			// send byte
+	while (!(SPSR & _BV(SPIF))); 															// wait until transfer finished
+	return SPDR;
+}
+uint8_t ccGetGDO0() {
+	if (chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT) == 2 ) return 1;								// falling edge detected
+	else return 0;
+}
+//- -----------------------------------------------------------------------------------------------------------------------
 
 //- eeprom functions ------------------------------------------------------------------------------------------------------
 void initEEProm(void) {
@@ -31,125 +130,26 @@ void clearEEPromBlock(uint16_t addr, uint16_t len) {
 }
 
 
-//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
-static volatile uint8_t gdo0 = 0;
-void    ccInitHw(void) {
-	CC1100_IN_DDR &= ~_BV (CC1100_IN_PIN);													// GDO0 input
-	CC1100_CS_DDR |= _BV (CC1100_CS_PIN);													// CS output
-
-	SPI_DDR |= _BV (SPI_MOSI) | _BV (SPI_SCLK);												// MOSI, SCK output
-	SPI_DDR &= ~_BV (SPI_MISO);																// MISO input
-
-	SPCR = _BV(SPE) | _BV(MSTR);															// SPI enable, master, speed = CLK/4
-
-    EICRA |= _BV(ISC01);																	// set INT0 to trigger on falling edge
-}
-uint8_t ccSendByte(uint8_t data) {
-	SPDR = data;																			// send byte
-	while (!(SPSR & _BV(SPIF)));															// wait until transfer finished
-	return SPDR;
-}
-uint8_t ccGetGDO0() {
-	if (gdo0 == 1) {
-		gdo0 = 0;
-		return 1;
-	}
-	return gdo0;
-}
-void    ccSetGDO0() {
-	gdo0 = 1;
-}
-ISR(INT0_vect) {
-	//_disableGDO0Int;
-	gdo0 = 1;
-	//_enableGDO0Int;
-}
-
-
-//- timer functions -------------------------------------------------------------------------------------------------------
-static volatile millis_t milliseconds;
-void     initMillis() {
-	SET_TCCRA();
-	SET_TCCRB();
-	REG_TIMSK = _BV(BIT_OCIE);
-	REG_OCR = ((F_CPU / PRESCALER) / 1000);
-}
-millis_t getMillis() {
-	millis_t ms;
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		ms = milliseconds;
-	}
-	return ms;
-}
-void     addMillis(millis_t ms) {
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		milliseconds += ms;
-	}
-}
-ISR(ISR_VECT) {
-	++milliseconds;
-}
-
-
-//- pin related functions -------------------------------------------------------------------------------------------------
-struct s_pcINT {
-	uint8_t cur = 0xff;
-	uint8_t prev = 0xff;
-	uint32_t time;
-} static volatile pcInt[3];
-uint8_t chkPCINT(uint8_t port, uint8_t pin) {
-	// returns 0 or 1 for pin level and
-	// 2 for falling and 3 for rising edge
-	
-	// old and new bit is similar, return current status
-	if ( (pcInt[port].cur & _BV(pin)) == (pcInt[port].prev & _BV(pin)) ) return pcInt[port].cur & _BV(pin);
-
-	// check for debounce time, if still running return previous status
-	if (pcInt[port].time > getMillis()) return pcInt[port].prev & _BV(pin);
-	
-	// detect rising or falling edge
-	if (pcInt[port].cur & _BV(pin)) {
-		pcInt[port].prev |= _BV(pin);														// set bit bit in prev
-		return 3;
-	} else {
-		pcInt[port].prev &= ~_BV(pin);														// clear bit in prev
-		return 2;
-	}
-}
-
-#define debounce 5
-ISR (PCINT0_vect) {
-	pcInt[0].cur = PINB;
-	pcInt[0].time = getMillis()+debounce;
-}
-ISR (PCINT1_vect) {
-	pcInt[1].cur = PINC;
-	pcInt[1].time = getMillis()+debounce;
-}
-ISR (PCINT2_vect) {
-	pcInt[2].cur = PIND;
-	pcInt[2].time = getMillis()+debounce;
-}
 
 
 //- power management functions --------------------------------------------------------------------------------------------
 //static volatile uint8_t wdtSleep;
-static uint16_t wdtSleepTime;
+static uint16_t wdtSlee_TIME;
 
 void    startWDG32ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP0);
-	wdtSleepTime = 32;
+	wdtSlee_TIME = 32;
 }
 void    startWDG250ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP2);
-	wdtSleepTime = 256;
+	wdtSlee_TIME = 256;
 }
 void    startWDG8000ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP3) | (1<<WDP0);
-	wdtSleepTime = 8192;
+	wdtSlee_TIME = 8192;
 }
 void    setSleep(void) {
 	//dbg << ',';																			// some debug
@@ -158,12 +158,21 @@ void    setSleep(void) {
 
 	// some power savings by switching off some CPU functionality
 	ADCSRA = 0;																				// disable ADC
+#if defined(__AVR_ATmega32U4__)
+	uint8_t xPrr0 = PRR0;																	// save content of Power Reduction Register
+	uint8_t xPrr1 = PRR1;																	// save content of Power Reduction Register
+	PRR0 = PRR1= 0xFF;																		// turn off various modules
+#else
 	uint8_t xPrr = PRR;																		// save content of Power Reduction Register
 	PRR = 0xFF;																				// turn off various modules
+#endif
 
 	sleep_enable();																			// enable sleep
+#if defined(__AVR_ATmega32U4__)
+#else
 	MCUCR = (1<<BODS)|(1<<BODSE);															// turn off brown-out enable in software
 	MCUCR = (1<<BODS);																		// must be done right before sleep
+#endif
 
 	sleep_cpu();																			// goto sleep
 	// sleeping now
@@ -171,13 +180,18 @@ void    setSleep(void) {
 	// wakeup will be here
 	sleep_disable();																		// first thing after waking from sleep, disable sleep...
 
+#if defined(__AVR_ATmega32U4__)
+	PRR0 = xPrr0;																			// restore power management
+	PRR1 = xPrr1;																			// restore power management
+#else
 	PRR = xPrr;																				// restore power management
+#endif
 	//dbg << '.';																			// some debug
 }
 
 ISR(WDT_vect) {
 	// nothing to do, only for waking up
-	addMillis(wdtSleepTime);
+	addMillis(wdtSlee_TIME);
 }
 
 
@@ -185,7 +199,12 @@ ISR(WDT_vect) {
 uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel) {
 	uint16_t adcValue = 0;
 	
-	uint8_t xPRR = PRR;																		// remember status of ADC 
+	#if defined(__AVR_ATmega32U4__)															// save content of Power Reduction Register
+		uint8_t tmpPRR0 = PRR0;	
+		uint8_t tmpPRR1 = PRR1;	
+	#else
+		uint8_t tmpPRR = PRR;
+	#endif
 	power_adc_enable();
 
 	ADMUX = (voltageReference | inputChannel);												// start ADC 
@@ -203,7 +222,13 @@ uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel) {
 	ADCSRA &= ~(1 << ADEN);																	// ADC disable
 	adcValue = adcValue / BATTERY_NUM_MESS_ADC;												// divide adcValue by amount of measurements
 
-	PRR = xPRR;																				// set ADC to origin status
+	#if defined(__AVR_ATmega32U4__)															// restore power management
+		PRR0 = tmpPRR0;
+		PRR1 = tmpPRR1;	
+	#else
+		PRR = tmpPRR;
+	#endif
+
 	ADCSRA = 0;																				// ADC off
 	return adcValue;																		// return the measured value
 }
