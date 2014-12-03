@@ -19,11 +19,6 @@ void setup() {
 	dbg << F("Main\n");																		// ...and some information
 	#endif
 	
-	_delay_ms(100);
-	_delay_ms(100);
-	_delay_ms(100);
-	_delay_ms(100);
-	_delay_ms(100);
 	dbg << F("Main\n");																		// ...and some information
 
 	// - Hardware setup ---------------------------------------
@@ -74,9 +69,10 @@ void setup() {
 	//thsens.config(&initTH1, &measureTH1, NULL);
 	
 	// - user related -----------------------------------------
-	uint8_t x[5] = {0x01,0x11,0x02,0x22,0x03};
-	dbg << "a:" << _HEX(x,5) << _TIME << '\n';
-	dbg << "b:" << _HEXB(0xff) << '\n';
+	//uint8_t x[5] = {0x01,0x11,0x02,0x22,0x03};
+	//dbg << "a:" << _HEX(x,5) << _TIME << '\n';
+	//dbg << "b:" << _HEXB(0xff) << '\n';
+
 	sei();																					// enable interrupts
 }
 

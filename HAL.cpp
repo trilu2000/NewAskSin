@@ -35,8 +35,15 @@ ISR(ISR_VECT) {
 //- some macros for debugging ---------------------------------------------------------------------------------------------
 void dbgStart(void) {
 	#if defined(__AVR_ATmega32U4__)
-	if (!(UCSR1B & (1<<RXEN1))) dbg.begin(57600);										// check if serial was already set
-	while(!dbg);																		// wait until serial has connected
+	if (!(UCSR1B & (1<<RXEN1))) {
+		dbg.begin(57600);										// check if serial was already set
+		while(!dbg);																		// wait until serial has connected
+		_delay_ms(100);
+		_delay_ms(100);
+		_delay_ms(100);
+		_delay_ms(100);
+		_delay_ms(100);
+	}
 	#else
 	if (!(UCSR0B & (1<<RXEN0))) dbg.begin(57600);										// check if serial was already set
 	#endif
