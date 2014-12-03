@@ -36,6 +36,7 @@
 #define pinInput(PORT,PIN)   ((PORT) &= ~_BV(PIN))
 #define setPinHigh(PORT,PIN) ((PORT) |=  _BV(PIN))
 #define setPinLow(PORT,PIN)  ((PORT) &= ~_BV(PIN))
+#define setPinCng(PORT,PIN)  ((PORT) ^= _BV(PIN))
 #define getPin(PORT,PIN)     ((PORT) &  _BV(PIN))
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -162,13 +163,17 @@ void clearEEPromBlock(uint16_t addr, uint16_t len);
 
 //- pin related functions -------------------------------------------------------------------------------------------------
 // AVR 328 uses three port addresses, PortB (digital pin 8 to 13), PortC (analog input pins), PortD (digital pins 0 to 7)
-#define led0_on()		PORTD |=  _BV(6)
-#define led0_off()		PORTD &= ~_BV(6)
-#define led0_cng()		PORTD ^=  _BV(6)
 
-#define led1_on()		PORTD |=  _BV(4)
-#define led1_off()		PORTD &= ~_BV(4)
-#define led1_cng()		PORTD ^=  _BV(4)
+#define led0_on()       ledRed(1)
+#define led0_off()      ledRed(0)
+#define led0_cng()      ledRed(2)
+#define led1_on()       ledGrn(1)
+#define led2_off()      ledGrn(0)
+#define led3_cng()      ledGrn(2)
+
+extern void initLeds(void);																	// initialize leds
+extern void ledRed(uint8_t stat);															// function in main sketch to drive leds
+extern void ledGrn(uint8_t stat);															// stat could be 0 for off, 1 for on, 2 for toggle
 //- -----------------------------------------------------------------------------------------------------------------------
 
 //- power management functions --------------------------------------------------------------------------------------------

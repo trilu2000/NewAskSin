@@ -5,12 +5,26 @@
 #include "register.h"																		// configuration sheet
 #include <THSensor.h>
 
+//- define hardware -------------------------------------------------------------------------------------------------------
+//- LED's 
+#define ledRedDDR     DDRB																	// define led port and remaining pin
+#define ledRedPort    PORTB
+#define ledRedPin     PORTB7
+
+#define ledGrnDDR     DDRC
+#define ledGrnPort    PORTC
+#define ledGrnPin     PORTC7
+
+#define ledActiveLow  1																		// leds against GND = 0, VCC = 1
+
+//- configuration key
+
+
 
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 THSensor thsens;																			// stage a dummy module
 
-//waitTimer xTmr;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
@@ -19,13 +33,14 @@ void setup() {
 	dbg << F("Main\n");																		// ...and some information
 	#endif
 	
-	dbg << F("Main\n");																		// ...and some information
-
 	// - Hardware setup ---------------------------------------
 	initMillis();																			// milli timer start
 	initPCINT();																			// init the pin change interrupts
-	ccInitHw();
-		
+	ccInitHw();																				// init transceiver hardware
+	initLeds();																				// init the leds
+	
+
+	
 	// everything off
 	//ADCSRA = 0;																				// ADC off
 	//power_all_disable();																	// and everything else
@@ -37,9 +52,6 @@ void setup() {
 	//power_timer0_enable();
 	//power_usart0_enable();
 
-	// led's - D4 and D6
-	//pinOutput(DDRD,4);																		// init the led pins
-	//pinOutput(DDRD,6);
 	
 	// config key pin - D8
 	//pinInput(DDRB,0);																		// init the config key pin
@@ -59,10 +71,10 @@ void setup() {
 	hm.init();																				// init the asksin framework
 	//hm.confButton.config(1,0,0);															// configure the config button, mode, pci byte and pci bit
 	
-	//hm.ld.init(2, &hm);																		// set the led
-	//hm.ld.set(welcome);																		// show something
+	hm.ld.init(2, &hm);																		// set the led
+	hm.ld.set(welcome);																		// show something
 	
-	//hm.pw.setMode(0);																		// set power management mode
+	hm.pw.setMode(0);																		// set power management mode
 	//hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
 
 	//thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
@@ -123,10 +135,23 @@ void serialEvent() {
 	}
 	#endif
 }
-/*void serialEvent() {
-while (Serial.available()) {
-uint8_t inChar = (uint8_t)Serial.read();											// read a byte
-if ((inChar>47) && (inChar<58))
-hm.ld.rmb((ledStat)(inChar-48));
+void initLeds(void) {
+	pinOutput(ledRedDDR,ledRedPin);															// set the led pins in port
+	pinOutput(ledGrnDDR,ledGrnPin);
+	if (ledActiveLow) {
+		setPinHigh(ledRedPort, ledRedPin);
+		setPinHigh(ledGrnPort, ledGrnPin);
+	}
 }
-}*/
+void ledRed(uint8_t stat) {
+	stat ^= ledActiveLow;
+	if      (stat == 1) setPinHigh(ledRedPort, ledRedPin);
+	else if (stat == 0) setPinLow(ledRedPort, ledRedPin);
+	else                setPinCng(ledRedPort, ledRedPin);
+}
+void ledGrn(uint8_t stat) {
+	stat ^= ledActiveLow;
+	if      (stat == 1) setPinHigh(ledGrnPort, ledGrnPin);
+	else if (stat == 0) setPinLow(ledGrnPort, ledGrnPin);
+	else                setPinCng(ledGrnPort, ledGrnPin);
+}

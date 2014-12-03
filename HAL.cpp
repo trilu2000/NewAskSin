@@ -36,7 +36,7 @@ ISR(ISR_VECT) {
 void dbgStart(void) {
 	#if defined(__AVR_ATmega32U4__)
 	if (!(UCSR1B & (1<<RXEN1))) {
-		dbg.begin(57600);										// check if serial was already set
+		dbg.begin(57600);																	// check if serial was already set
 		while(!dbg);																		// wait until serial has connected
 		_delay_ms(100);
 		_delay_ms(100);
@@ -45,7 +45,7 @@ void dbgStart(void) {
 		_delay_ms(100);
 	}
 	#else
-	if (!(UCSR0B & (1<<RXEN0))) dbg.begin(57600);										// check if serial was already set
+	if (!(UCSR0B & (1<<RXEN0))) dbg.begin(57600);											// check if serial was already set
 	#endif
 }
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ void    ccInitHw(void) {
 	pinOutput( SPI_DDR, SPI_SCLK );															// set SCK as output
 	pinInput(  SPI_DDR, SPI_MISO );															// set MISO as input
 
-	SPCR = _BV(SPE) | _BV(MSTR);// | _BV(SPR0);// | _BV(SPR1); 									// SPI enable, master, speed = CLK/4
+	SPCR = _BV(SPE) | _BV(MSTR);// | _BV(SPR0);// | _BV(SPR1); 								// SPI enable, master, speed = CLK/4
 	SPSR &= ~_BV(SPI2X);
 	
 	CC_GDO0_PCICR |= _BV(CC_GDO0_PCIE);														// set interrupt in mask active
@@ -135,28 +135,25 @@ void clearEEPromBlock(uint16_t addr, uint16_t len) {
 		setEEPromBlock(addr+l,1,(void*)&tB);
 	}
 }
-
-
-
+//- -----------------------------------------------------------------------------------------------------------------------
 
 //- power management functions --------------------------------------------------------------------------------------------
-//static volatile uint8_t wdtSleep;
-static uint16_t wdtSlee_TIME;
+static uint16_t wdtSleep_TIME;
 
 void    startWDG32ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP0);
-	wdtSlee_TIME = 32;
+	wdtSleep_TIME = 32;
 }
 void    startWDG250ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP2);
-	wdtSlee_TIME = 256;
+	wdtSleep_TIME = 256;
 }
 void    startWDG8000ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP3) | (1<<WDP0);
-	wdtSlee_TIME = 8192;
+	wdtSleep_TIME = 8192;
 }
 void    setSleep(void) {
 	//dbg << ',';																			// some debug
@@ -198,9 +195,9 @@ void    setSleep(void) {
 
 ISR(WDT_vect) {
 	// nothing to do, only for waking up
-	addMillis(wdtSlee_TIME);
+	addMillis(wdtSleep_TIME);
 }
-
+//- -----------------------------------------------------------------------------------------------------------------------
 
 //- battery measurement functions -----------------------------------------------------------------------------------------
 uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel) {
@@ -262,6 +259,4 @@ uint8_t  getBatteryVoltageExternal(void) {
 	adcValue *= BATTERY_FACTOR; adcValue /= 1000;											// calculate the V/10 and return
 	return (uint8_t)adcValue;
 }
-
-
 //- -----------------------------------------------------------------------------------------------------------------------
