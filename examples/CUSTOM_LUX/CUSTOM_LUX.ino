@@ -46,6 +46,19 @@ THSensor thsens;																			// stage a dummy module
 
 waitTimer xt;
 
+//- load user modules -----------------------------------------------------------------------------------------------------
+#include <Wire.h>
+#define I2C_ADDR     (0x29)
+#define REG_CONTROL  0x00
+#define REG_CONFIG   0x01
+#define REG_DATALOW  0x04
+#define REG_DATAHIGH 0x05
+#define REG_ID       0x0A
+
+static uint8_t M = 0;
+
+
+
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
 	#ifdef SER_DBG
@@ -71,7 +84,7 @@ void setup() {
 	ccInitHw();																				// initialize transceiver hardware
 	initLeds();																				// initialize the leds
 	initConfKey();																			// initialize the port for getting config key interrupts
-	initExtBattMeasurement();																// initialize the external battery measurement
+	//initExtBattMeasurement();																// initialize the external battery measurement
 	
 	
 	// - AskSin related ---------------------------------------
@@ -87,14 +100,42 @@ void setup() {
 
 	//thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
 	//thsens.config(&initTH1, &measureTH1, NULL);
+
+	sei();																					// enable interrupts
 	
 	// - user related -----------------------------------------
 	//uint8_t x[5] = {0x01,0x11,0x02,0x22,0x03};
 	//dbg << "a:" << _HEX(x,5) << _TIME << '\n';
 	//dbg << "b:" << _HEXB(0xff) << '\n';
 
-	//xt.set(100);
-	sei();																					// enable interrupts
+	xt.set(100);
+
+	digitalWrite(5, HIGH);
+	Wire.begin();
+
+	Serial.print("ID: ");
+	Wire.beginTransmission(I2C_ADDR);
+	Wire.write(0x80|REG_ID);
+	Wire.endTransmission();
+	Wire.requestFrom(I2C_ADDR, 1); //request 1 byte
+	while(Wire.available()) {
+	   unsigned char c = Wire.read();
+	   Serial.print(c&0xF0, HEX);
+	}
+	Serial.println("");
+
+	Serial.println("Power on...");
+	Wire.beginTransmission(I2C_ADDR);
+	Wire.write(0x80|REG_CONTROL);
+	Wire.write(0x03); //power on
+	Wire.endTransmission();
+
+	Serial.println("Config...");
+	M = 0;
+	Wire.beginTransmission(I2C_ADDR);
+	Wire.write(0x80|REG_CONFIG);
+	Wire.write(M); //M=1 T=400ms
+	Wire.endTransmission();
 }
 
 void loop() {
@@ -103,10 +144,33 @@ void loop() {
 
 
 	// - user related -----------------------------------------
-	//if (xt.done()) {
+	if (xt.done()) {
 	//	dbg << getBatteryVoltageExternal() << '\n';
-	//	xt.set(1000);
-	//}
+		xt.set(1000);
+
+		uint32_t lux;
+		lux = readTSL();
+   
+		// automatically adjust range
+		if (((lux & 0xc000) == 0xc000) && (M<2)) {
+			M++;
+			configTSL();
+			return;
+		}
+
+		if (!(lux & 0xc000) && (M>0)) {
+			M--;
+			configTSL();
+			return;
+		}
+   
+		lux *= (1<<M);
+		Serial.print("Lux: ");
+		Serial.println(lux, DEC);
+
+		// blink
+		digitalWrite(13, LOW); delay(100); digitalWrite(13, HIGH);
+	}
 }
 
 
@@ -119,6 +183,33 @@ void measureTH1() {
 	dbg << "measure th1\n";
 
 }
+static uint16_t readTSL() {
+	uint16_t l, h, lx;
+
+	Wire.beginTransmission(I2C_ADDR);
+	Wire.write(0x80|REG_DATALOW);
+	Wire.endTransmission();
+	Wire.requestFrom(I2C_ADDR, 2); //request 2 bytes
+	l = Wire.read();
+	h = Wire.read();
+	while(Wire.available()){ Wire.read(); } //received more bytes?
+
+	lx  = (h<<8) | (l<<0);
+	return lx;
+}
+
+static void configTSL() {
+	Serial.print("re-Config... M = ");
+	Serial.println(M, DEC);
+	Wire.beginTransmission(I2C_ADDR);
+	Wire.write(0x80|REG_CONFIG);
+	Wire.write(M); //M=1 T=400ms
+	Wire.endTransmission();
+	delay(500);
+	readTSL(); // dummy read
+	delay(500);
+}
+
 
 //- predefined functions --------------------------------------------------------------------------------------------------
 void serialEvent(void) {
