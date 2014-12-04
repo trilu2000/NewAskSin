@@ -200,7 +200,7 @@ ISR(WDT_vect) {
 //- -----------------------------------------------------------------------------------------------------------------------
 
 //- battery measurement functions -----------------------------------------------------------------------------------------
-uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel) {
+uint16_t getAdcValue(uint8_t admux) {
 	uint16_t adcValue = 0;
 	
 	#if defined(__AVR_ATmega32U4__)															// save content of Power Reduction Register
@@ -211,7 +211,7 @@ uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel) {
 	#endif
 	power_adc_enable();
 
-	ADMUX = (voltageReference | inputChannel);												// start ADC 
+	ADMUX = (admux);																		// start ADC 
 	ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1);										// Enable ADC and set ADC pre scaler
 
 	for (uint8_t i = 0; i < BATTERY_NUM_MESS_ADC + BATTERY_DUMMY_NUM_MESS_ADC; i++) {		// take samples in a round
@@ -237,9 +237,15 @@ uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel) {
 	return adcValue;																		// return the measured value
 }
 uint8_t  getBatteryVoltageInternal(void) {
+
 	uint32_t adcValue = (uint32_t)getAdcValue(
-		(0 << REFS1) | (1 << REFS0),														// Voltage Reference = AVCC with external capacitor at AREF pin
-		(1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (0 << MUX0)								// Input Channel = 1.1V (V BG)
+		#if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+			_BV(REFS0) | _BV(MUX4) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1)
+		#else
+			_BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1)
+		#endif
+		//(0 << REFS1) | (1 << REFS0),														// Voltage Reference = AVCC with external capacitor at AREF pin
+		//(1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (0 << MUX0)								// Input Channel = 1.1V (V BG)
 	);
 
 	//dbg << "x:" << adcValue << '\n';
@@ -250,8 +256,8 @@ uint8_t  getBatteryVoltageExternal(void) {
 	enableBattery();																		// set pin to low, to make it active
 	
 	uint32_t adcValue = (uint32_t)getAdcValue(												// ask the ADC
-		(1 << REFS1) | (1 << REFS0),														// Voltage Reference = Internal 1.1V Voltage Reference
-		0																					// pin 0 on PORTC
+		(1 << REFS1) | (1 << REFS0) | PORTF7 //,														// Voltage Reference = Internal 1.1V Voltage Reference
+		//0																					// pin 0 on PORTC
 	);
 
 	disableBattery();																		// measurement pin to input to save battery

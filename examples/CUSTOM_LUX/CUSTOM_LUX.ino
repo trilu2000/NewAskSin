@@ -18,13 +18,33 @@
 #define ledActiveLow  1																		// leds against GND = 0, VCC = 1
 
 //- configuration key
+#define confKeyDDR    DDRB																	// define config key port and remaining pin
+#define confKeyPort   PORTB
+#define confKeyPin    PORTB0
 
+#define confKeyPCICR  PCICR																	// interrupt register
+#define confKeyPCIE   PCIE0																	// pin change interrupt port bit
+#define confKeyPCMSK  PCMSK0																// interrupt mask
+#define confKeyINT    PCINT0																// pin interrupt
+
+//- external battery measurement
+#define externalMeasurement 1																// set to 1 to enable external battery measurement, to switch off or measure internally set it to 0
+
+#define battEnblDDR   DDRF																	// define battery measurement enable pin, has to be low to start measuring
+#define battEnblPort  PORTF
+#define battEnblPin   PORTF4
+
+#define battMeasDDR   DDRF																	// define battery measure pin, where ADC gets the measurement
+#define battMeasPort  PORTF
+#define battMeasPin   PORTF7
+// external measurement to be reworked
 
 
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 THSensor thsens;																			// stage a dummy module
 
+waitTimer xt;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
@@ -33,15 +53,7 @@ void setup() {
 	dbg << F("Main\n");																		// ...and some information
 	#endif
 	
-	// - Hardware setup ---------------------------------------
-	initMillis();																			// milli timer start
-	initPCINT();																			// init the pin change interrupts
-	ccInitHw();																				// init transceiver hardware
-	initLeds();																				// init the leds
-	
-
-	
-	// everything off
+	// - everything off ---------------------------------------
 	//ADCSRA = 0;																				// ADC off
 	//power_all_disable();																	// and everything else
 	
@@ -52,30 +64,26 @@ void setup() {
 	//power_timer0_enable();
 	//power_usart0_enable();
 
+
+	// - Hardware setup ---------------------------------------
+	initMillis();																			// milli timer start
+	initPCINT();																			// initialize the pin change interrupts
+	ccInitHw();																				// initialize transceiver hardware
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
+	initExtBattMeasurement();																// initialize the external battery measurement
 	
-	// config key pin - D8
-	//pinInput(DDRB,0);																		// init the config key pin
-	//setPinHigh(PORTB,0);
-	//initPCINT();																			// some sanity on interrupts	
-	//regPCIE(PCIE0);																			// set the pin change interrupt
-	//regPCINT(PCMSK0,PCINT0);																// description is in hal.h
-
-	// battery measurement, ADC pin PC0, enable pin PD7
-	//pinInput(DDRC, 0);																		// set the ADC pin as input
-	//setPinLow(PORTC, 0);																	// switch off pull up
-	// enable pin is set via macro in HAL.h
-
 	
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
-	//hm.confButton.config(1,0,0);															// configure the config button, mode, pci byte and pci bit
+	hm.confButton.config(1,0,0);															// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(0);																		// set power management mode
-	//hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
+	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
 
 	//thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
 	//thsens.config(&initTH1, &measureTH1, NULL);
@@ -85,34 +93,35 @@ void setup() {
 	//dbg << "a:" << _HEX(x,5) << _TIME << '\n';
 	//dbg << "b:" << _HEXB(0xff) << '\n';
 
+	//xt.set(100);
 	sei();																					// enable interrupts
 }
 
 void loop() {
 	// - AskSin related ---------------------------------------
 	hm.poll();																				// poll the homematic main loop
-	
-	//if (getMillis()%500 ==0) {
-	//	dbg << getMillis() << '\n';
-	//}
+
 
 	// - user related -----------------------------------------
-
+	//if (xt.done()) {
+	//	dbg << getBatteryVoltageExternal() << '\n';
+	//	xt.set(1000);
+	//}
 }
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
 void initTH1() {
-//	dbg << "init th1\n";
+	dbg << "init th1\n";
 	
 }
 void measureTH1() {
-//	dbg << "measure th1\n";
+	dbg << "measure th1\n";
 
 }
 
-
-void serialEvent() {
+//- predefined functions --------------------------------------------------------------------------------------------------
+void serialEvent(void) {
 	#ifdef SER_DBG
 	
 	static uint8_t i = 0;																	// it is a high byte next time
@@ -154,4 +163,26 @@ void ledGrn(uint8_t stat) {
 	if      (stat == 1) setPinHigh(ledGrnPort, ledGrnPin);
 	else if (stat == 0) setPinLow(ledGrnPort, ledGrnPin);
 	else                setPinCng(ledGrnPort, ledGrnPin);
+}
+void initConfKey(void) {
+	// set port pin and register pin interrupt
+	pinInput(confKeyDDR, PORTB0);															// init the config key pin
+	setPinHigh(confKeyPort,PORTB0);
+
+	initPCINT();																			// some sanity on interrupts
+	regPCIE(confKeyPCIE);																	// set the pin change interrupt
+	regPCINT(confKeyPCMSK,confKeyINT);														// description is in hal.h
+}
+void initExtBattMeasurement(void) {
+	if (!externalMeasurement) return;														// return while external measurement is disabled
+
+	pinInput(battMeasDDR, PORTF7);															// set the ADC pin as input
+	//setPinHigh(battMeasPort, PORTF7);														// switch on pull up, otherwise we waste energy over the resistor network against VCC
+	pinInput(battEnblDDR, PORTF4);															// set the measurement enable pin as input, otherwise we waste energy over the resistor network against VCC
+}
+void switchExtBattMeasurement(uint8_t stat) {
+	if (stat) {
+		pinOutput(battEnblDDR, PORTF4);														// set pin as out put
+		setPinLow(battEnblPort, PORTF4);													// set low to measure the resistor network
+	} else pinInput(battEnblDDR, PORTF4);
 }

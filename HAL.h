@@ -174,6 +174,8 @@ void clearEEPromBlock(uint16_t addr, uint16_t len);
 extern void initLeds(void);																	// initialize leds
 extern void ledRed(uint8_t stat);															// function in main sketch to drive leds
 extern void ledGrn(uint8_t stat);															// stat could be 0 for off, 1 for on, 2 for toggle
+
+extern void initConfKey(void);																// init the config key, function in user sketch
 //- -----------------------------------------------------------------------------------------------------------------------
 
 //- power management functions --------------------------------------------------------------------------------------------
@@ -196,17 +198,20 @@ void setSleep(void);
 #define BATTERY_NUM_MESS_ADC              20												// real measures to get the best average measure
 #define BATTERY_DUMMY_NUM_MESS_ADC        40												// dummy measures to get the ADC working
 #define AVR_BANDGAP_VOLTAGE               1100UL											// band gap reference for Atmega328p
-#define BATTERY_FACTOR                    121												// see excel table
+#define BATTERY_FACTOR                    124												// see excel table
 
 #define BATTERY_MODE_BANDGAP_MESSUREMENT  1
 #define BATTERY_MODE_EXTERNAL_MESSUREMENT 2
 
-#define enableBattery()       pinOutput(DDRD, 7); setPinLow(PORTD, 7)																// to low status, so measurement could be taken
-#define disableBattery()      pinInput(DDRD, 7);
+#define enableBattery()       switchExtBattMeasurement(1)									// to low status, so measurement could be taken
+#define disableBattery()      switchExtBattMeasurement(0)
 
-uint16_t getAdcValue(uint8_t voltageReference, uint8_t inputChannel);
+uint16_t getAdcValue(uint8_t admux);
 uint8_t  getBatteryVoltageInternal(void);
 uint8_t  getBatteryVoltageExternal(void);
+
+extern void initExtBattMeasurement(void);
+extern void switchExtBattMeasurement(uint8_t stat);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #endif 
