@@ -5,6 +5,7 @@
 #include "register.h"																		// configuration sheet
 #include <THSensor.h>
 
+
 //- define hardware -------------------------------------------------------------------------------------------------------
 //- LED's 
 #define ledRedDDR     DDRB																	// define led port and remaining pin
@@ -109,33 +110,8 @@ void setup() {
 	//dbg << "b:" << _HEXB(0xff) << '\n';
 
 	xt.set(100);
+	initTSL();
 
-	digitalWrite(5, HIGH);
-	Wire.begin();
-
-	Serial.print("ID: ");
-	Wire.beginTransmission(I2C_ADDR);
-	Wire.write(0x80|REG_ID);
-	Wire.endTransmission();
-	Wire.requestFrom(I2C_ADDR, 1); //request 1 byte
-	while(Wire.available()) {
-	   unsigned char c = Wire.read();
-	   Serial.print(c&0xF0, HEX);
-	}
-	Serial.println("");
-
-	Serial.println("Power on...");
-	Wire.beginTransmission(I2C_ADDR);
-	Wire.write(0x80|REG_CONTROL);
-	Wire.write(0x03); //power on
-	Wire.endTransmission();
-
-	Serial.println("Config...");
-	M = 0;
-	Wire.beginTransmission(I2C_ADDR);
-	Wire.write(0x80|REG_CONFIG);
-	Wire.write(M); //M=1 T=400ms
-	Wire.endTransmission();
 }
 
 void loop() {
@@ -168,8 +144,6 @@ void loop() {
 		Serial.print("Lux: ");
 		Serial.println(lux, DEC);
 
-		// blink
-		digitalWrite(13, LOW); delay(100); digitalWrite(13, HIGH);
 	}
 }
 
@@ -183,7 +157,36 @@ void measureTH1() {
 	dbg << "measure th1\n";
 
 }
-static uint16_t readTSL() {
+
+static void     initTSL(void) {
+	digitalWrite(5, HIGH);
+	Wire.begin();
+
+	Serial.print("ID: ");
+	Wire.beginTransmission(I2C_ADDR);
+	Wire.write(0x80|REG_ID);
+	Wire.endTransmission();
+	Wire.requestFrom(I2C_ADDR, 1); //request 1 byte
+	while(Wire.available()) {
+		unsigned char c = Wire.read();
+		Serial.print(c&0xF0, HEX);
+	}
+	Serial.println("");
+
+	Serial.println("Power on...");
+	Wire.beginTransmission(I2C_ADDR);
+	Wire.write(0x80|REG_CONTROL);
+	Wire.write(0x03); //power on
+	Wire.endTransmission();
+
+	Serial.println("Config...");
+	M = 0;
+	Wire.beginTransmission(I2C_ADDR);
+	Wire.write(0x80|REG_CONFIG);
+	Wire.write(M); //M=1 T=400ms
+	Wire.endTransmission();	
+}
+static uint16_t readTSL(void) {
 	uint16_t l, h, lx;
 
 	Wire.beginTransmission(I2C_ADDR);
@@ -197,8 +200,7 @@ static uint16_t readTSL() {
 	lx  = (h<<8) | (l<<0);
 	return lx;
 }
-
-static void configTSL() {
+static void     configTSL(void) {
 	Serial.print("re-Config... M = ");
 	Serial.println(M, DEC);
 	Wire.beginTransmission(I2C_ADDR);
