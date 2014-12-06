@@ -1,43 +1,23 @@
 #define SER_DBG
 
+
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <AS.h>
+#include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
 #include <THSensor.h>
 
 
-//- define hardware -------------------------------------------------------------------------------------------------------
-//- LED's 
-#define ledRedDDR     DDRB																	// define led port and remaining pin
-#define ledRedPort    PORTB
-#define ledRedPin     PORTB7
-
-#define ledGrnDDR     DDRC
-#define ledGrnPort    PORTC
-#define ledGrnPin     PORTC7
-
-#define ledActiveLow  1																		// leds against GND = 0, VCC = 1
-
-//- configuration key
-#define confKeyDDR    DDRB																	// define config key port and remaining pin
-#define confKeyPort   PORTB
-#define confKeyPin    PORTB0
-
-#define confKeyPCICR  PCICR																	// interrupt register
-#define confKeyPCIE   PCIE0																	// pin change interrupt port bit
-#define confKeyPCMSK  PCMSK0																// interrupt mask
-#define confKeyINT    PCINT0																// pin interrupt
-
 //- external battery measurement
-#define externalMeasurement 1																// set to 1 to enable external battery measurement, to switch off or measure internally set it to 0
+//#define externalMeasurement 1																// set to 1 to enable external battery measurement, to switch off or measure internally set it to 0
 
-#define battEnblDDR   DDRF																	// define battery measurement enable pin, has to be low to start measuring
-#define battEnblPort  PORTF
-#define battEnblPin   PORTF4
+//#define battEnblDDR   DDRF																	// define battery measurement enable pin, has to be low to start measuring
+//#define battEnblPort  PORTF
+//#define battEnblPin   PORTF4
 
-#define battMeasDDR   DDRF																	// define battery measure pin, where ADC gets the measurement
-#define battMeasPort  PORTF
-#define battMeasPin   PORTF7
+//#define battMeasDDR   DDRF																	// define battery measure pin, where ADC gets the measurement
+//#define battMeasPort  PORTF
+//#define battMeasPin   PORTF7
 // external measurement to be reworked
 
 
@@ -46,6 +26,7 @@ AS hm;																						// stage the asksin framework
 THSensor thsens;																			// stage a dummy module
 
 waitTimer xt;
+
 
 //- load user modules -----------------------------------------------------------------------------------------------------
 #include <Wire.h>
@@ -57,7 +38,6 @@ waitTimer xt;
 #define REG_ID       0x0A
 
 static uint8_t M = 0;
-
 
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
@@ -97,7 +77,7 @@ void setup() {
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
+	//hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
 
 	//thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
 	//thsens.config(&initTH1, &measureTH1, NULL);
@@ -109,9 +89,8 @@ void setup() {
 	//dbg << "a:" << _HEX(x,5) << _TIME << '\n';
 	//dbg << "b:" << _HEXB(0xff) << '\n';
 
-	xt.set(100);
-	initTSL();
-
+	//xt.set(100);
+	//initTSL();
 }
 
 void loop() {
@@ -120,7 +99,8 @@ void loop() {
 
 
 	// - user related -----------------------------------------
-	if (xt.done()) {
+
+	/*if (xt.done()) {
 	//	dbg << getBatteryVoltageExternal() << '\n';
 		xt.set(1000);
 
@@ -144,7 +124,7 @@ void loop() {
 		Serial.print("Lux: ");
 		Serial.println(lux, DEC);
 
-	}
+	}*/
 }
 
 
@@ -237,45 +217,17 @@ void serialEvent(void) {
 	}
 	#endif
 }
-void initLeds(void) {
-	pinOutput(ledRedDDR,ledRedPin);															// set the led pins in port
-	pinOutput(ledGrnDDR,ledGrnPin);
-	if (ledActiveLow) {
-		setPinHigh(ledRedPort, ledRedPin);
-		setPinHigh(ledGrnPort, ledGrnPin);
-	}
-}
-void ledRed(uint8_t stat) {
-	stat ^= ledActiveLow;
-	if      (stat == 1) setPinHigh(ledRedPort, ledRedPin);
-	else if (stat == 0) setPinLow(ledRedPort, ledRedPin);
-	else                setPinCng(ledRedPort, ledRedPin);
-}
-void ledGrn(uint8_t stat) {
-	stat ^= ledActiveLow;
-	if      (stat == 1) setPinHigh(ledGrnPort, ledGrnPin);
-	else if (stat == 0) setPinLow(ledGrnPort, ledGrnPin);
-	else                setPinCng(ledGrnPort, ledGrnPin);
-}
-void initConfKey(void) {
-	// set port pin and register pin interrupt
-	pinInput(confKeyDDR, PORTB0);															// init the config key pin
-	setPinHigh(confKeyPort,PORTB0);
 
-	initPCINT();																			// some sanity on interrupts
-	regPCIE(confKeyPCIE);																	// set the pin change interrupt
-	regPCINT(confKeyPCMSK,confKeyINT);														// description is in hal.h
-}
 void initExtBattMeasurement(void) {
-	if (!externalMeasurement) return;														// return while external measurement is disabled
+//	if (!externalMeasurement) return;														// return while external measurement is disabled
 
-	pinInput(battMeasDDR, PORTF7);															// set the ADC pin as input
+//	pinInput(battMeasDDR, PORTF7);															// set the ADC pin as input
 	//setPinHigh(battMeasPort, PORTF7);														// switch on pull up, otherwise we waste energy over the resistor network against VCC
-	pinInput(battEnblDDR, PORTF4);															// set the measurement enable pin as input, otherwise we waste energy over the resistor network against VCC
+//	pinInput(battEnblDDR, PORTF4);															// set the measurement enable pin as input, otherwise we waste energy over the resistor network against VCC
 }
 void switchExtBattMeasurement(uint8_t stat) {
-	if (stat) {
-		pinOutput(battEnblDDR, PORTF4);														// set pin as out put
-		setPinLow(battEnblPort, PORTF4);													// set low to measure the resistor network
-	} else pinInput(battEnblDDR, PORTF4);
+//	if (stat) {
+//		pinOutput(battEnblDDR, PORTF4);														// set pin as out put
+//		setPinLow(battEnblPort, PORTF4);													// set low to measure the resistor network
+//	} else pinInput(battEnblDDR, PORTF4);
 }

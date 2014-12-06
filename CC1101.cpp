@@ -22,11 +22,11 @@ void    CC::init(void) {																// initialize CC1101
 	
 	ccInitHw();																			// init the hardware to get access to the RF modul
 
-	_ccDeselect;																		// some deselect and selects to init the TRX868modul
+	ccDeselect();																		// some deselect and selects to init the TRX868modul
 	_delay_us(5);
-	_ccSelect;
+	ccSelect();
 	_delay_us(10);
-	_ccDeselect;
+	ccDeselect();
 	_delay_us(41);
 
 	strobe(CC1101_SRES);																// send reset
@@ -206,9 +206,9 @@ uint8_t CC::detectBurst(void) {
 	// possible solution for finding a burst is to check for bit 6, carrier sense
 
 	// power on cc1101 module and set to RX mode
-	_ccSelect;																			// wake up the communication module
-	_waitMiso;
-	_ccDeselect;
+	ccSelect();																			// wake up the communication module
+	waitMiso();
+	ccDeselect();
 
 	for(uint8_t i = 0; i < 200; i++) {													// instead of delay, check the really needed time to wakeup
 		if (readReg(CC1101_MARCSTATE, CC1101_STATUS) != 0xff) break;
@@ -227,40 +227,40 @@ uint8_t CC::detectBurst(void) {
 }
 
 void    CC::strobe(uint8_t cmd) {														// send command strobe to the CC1101 IC via SPI
-	_ccSelect;																			// select CC1101
-	_waitMiso;																			// wait until MISO goes low
+	ccSelect();																			// select CC1101
+	waitMiso();																			// wait until MISO goes low
 	ccSendByte(cmd);																	// send strobe command
-	_ccDeselect;																		// deselect CC1101
+	ccDeselect();																		// deselect CC1101
 }
 void    CC::readBurst(uint8_t *buf, uint8_t regAddr, uint8_t len) {						// read burst data from CC1101 via SPI
-	_ccSelect;																			// select CC1101
-	_waitMiso;																			// wait until MISO goes low
+	ccSelect();																			// select CC1101
+	waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr | READ_BURST);													// send register address
 	for(uint8_t i=0 ; i<len ; i++) {
 		buf[i] = ccSendByte(0x00);														// read result byte by byte
 		//dbg << i << ":" << buf[i] << '\n';
 	}
-	_ccDeselect;																		// deselect CC1101
+	ccDeselect();																		// deselect CC1101
 }
 void    CC::writeBurst(uint8_t regAddr, uint8_t *buf, uint8_t len) {					// write multiple registers into the CC1101 IC via SPI
-	_ccSelect;																			// select CC1101
-	_waitMiso;																			// wait until MISO goes low
+	ccSelect();																			// select CC1101
+	waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr | WRITE_BURST);													// send register address
 	for(uint8_t i=0 ; i<len ; i++) ccSendByte(buf[i]);									// send value
-	_ccDeselect;																		// deselect CC1101
+	ccDeselect();																		// deselect CC1101
 }
 uint8_t CC::readReg(uint8_t regAddr, uint8_t regType) {									// read CC1101 register via SPI
-	_ccSelect;																			// select CC1101
-	_waitMiso;																			// wait until MISO goes low
+	ccSelect();																			// select CC1101
+	waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr | regType);														// send register address
 	uint8_t val = ccSendByte(0x00);														// read result
-	_ccDeselect;																		// deselect CC1101
+	ccDeselect();																		// deselect CC1101
 	return val;
 }
 void    CC::writeReg(uint8_t regAddr, uint8_t val) {									// write single register into the CC1101 IC via SPI
-	_ccSelect;																			// select CC1101
-	_waitMiso;																			// wait until MISO goes low
+	ccSelect();																			// select CC1101
+	waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr);																// send register address
 	ccSendByte(val);																	// send value
-	_ccDeselect;																		// deselect CC1101
+	ccDeselect();																		// deselect CC1101
 }

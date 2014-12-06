@@ -12,8 +12,6 @@
 #include "HAL.h"
 
 
-
-
 class BT {
 	friend class AS;
   

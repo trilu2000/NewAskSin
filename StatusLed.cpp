@@ -10,20 +10,6 @@
 #include "StatusLed.h"
 #include "AS.h"
 
-// some led macros, to avoid errors we set the led to NULL while not available
-#ifdef led0_off()
-	#define led0(x) (x?led0_on():led0_off())
-#else
-	#define led0(x) (NULL)
-#endif
-
-#ifdef led1_off()
-	#define led1(x) (x?led1_on():led1_off())
-#else
-	#define led1(x) (NULL)
-#endif
-
-
 waitTimer ledTmr;																			// config timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
@@ -45,18 +31,18 @@ void    LD::set(ledStat stat) {
 	if (!bLeds) return;																		// no led available, skip...
 	//dbg << "stat: " << stat << '\n';
 
-	led0(0);																				// new program starts, so switch leds off
-	led1(0);
+	ledRed(0);																				// new program starts, so switch leds off
+	ledGrn(0);
 
-	if      (stat == pairing)  blinkPtr = &sPairing;
-	else if (stat == pair_suc) blinkPtr = &sPair_suc;
-	else if (stat == pair_err) blinkPtr = &sPair_err;
-	else if (stat == send)     blinkPtr = &sSend;
-	else if (stat == ack)      blinkPtr = &sAck;
-	else if (stat == noack)    blinkPtr = &sNoack;
-	else if (stat == bat_low)  blinkPtr = &sBattLow;
-	else if (stat == defect)   blinkPtr = &sDefect;
-	else if (stat == welcome)  blinkPtr = &sWelcome;
+	if      (stat == pairing)  blinkPtr = &sPairing[bLeds-1];
+	else if (stat == pair_suc) blinkPtr = &sPair_suc[bLeds-1];
+	else if (stat == pair_err) blinkPtr = &sPair_err[bLeds-1];
+	else if (stat == send)     blinkPtr = &sSend[bLeds-1];
+	else if (stat == ack)      blinkPtr = &sAck[bLeds-1];
+	else if (stat == noack)    blinkPtr = &sNoack[bLeds-1];
+	else if (stat == bat_low)  blinkPtr = &sBattLow[bLeds-1];
+	else if (stat == defect)   blinkPtr = &sDefect[bLeds-1];
+	else if (stat == welcome)  blinkPtr = &sWelcome[bLeds-1];
 
 	active = 1;																				// make module active
 	lCnt = 0;																				// set start position
@@ -74,11 +60,11 @@ void    LD::set(ledStat stat) {
 void    LD::blinkRed(void) {
 	if (!bLeds) return;																		// no led available, skip...
 
-	led0(0);																				// switch led off
+	ledRed(0);																				// switch led off
 	_delay_ms(20);																			// wait
-	led0(1);																				// switch led on
+	ledRed(1);																				// switch led on
 	_delay_ms(20);																			// wait
-	led0(0);																				// switch led off
+	ledRed(0);																				// switch led off
 }
 void	LD::poll(void) {
 	if (!active) return;																	// still waiting to do something
@@ -87,12 +73,12 @@ void	LD::poll(void) {
 	// if we are here we have something to do, set the led, timer and counter
 	ledTmr.set(blinkPtr->pat[lCnt]*10);														// set the timer for next check up
 	if ((blinkPtr->led0) && (blinkPtr->pat[lCnt])) {
-		led0((lCnt % 2)^1);																	// set the led
+		ledRed((lCnt % 2)^1);																	// set the led
 		//dbg << "lCnt:" << lCnt << " led0: " << ((lCnt % 2)^1) << '\n';
 	}
 	
 	if ((blinkPtr->led1) && (blinkPtr->pat[lCnt])) {
-		led1((lCnt % 2)^1);
+		ledGrn((lCnt % 2)^1);
 		//dbg << "lCnt:" << lCnt  << " led1: " << ((lCnt % 2)^1) << '\n';
 	}
 	lCnt++;																					// increase the pointer for the blink string

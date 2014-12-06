@@ -34,7 +34,7 @@ void AS::init(void) {
 	initMillis();																			// start the millis counter
 
 	// everything is setuped, enable RF functionality
-	_enableGDO0Int;																			// enable interrupt to get a signal while receiving data
+	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
 }
 void AS::poll(void) {
 

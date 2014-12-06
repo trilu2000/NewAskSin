@@ -61,9 +61,9 @@ void SN::poll(void) {
 		} else {																			// send it external
 			uint8_t tBurst = this->mBdy.mFlg.BURST;											// get burst flag, while string will get encoded
 			pHM->encode(this->buf);															// encode the string
-			_disableGDO0Int
+			disableGDO0Int();
 			pHM->cc.sndData(this->buf,tBurst);												// send to communication module
-			_enableGDO0Int
+			enableGDO0Int();
 			pHM->decode(this->buf);															// decode the string, so it is readable next time
 			
 			if (reqACK) sndTmr.set(maxTime);												// set the time out for the message

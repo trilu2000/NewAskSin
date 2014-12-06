@@ -23,64 +23,42 @@ struct s_blinkPattern {							// struct for defining the blink pattern
 enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, welcome};
 
 // we need two type of blink patterns, one with only one led and a second one with a bi color led
-#ifdef led1_off()	// - patterns for two leds
-	const struct s_blinkPattern sPairing = {	// 1; define pairing string
-		2, 0, 1, 1, {50, 50,}
+	const struct s_blinkPattern sPairing[2] = {	// 1; define pairing string
+		{2, 0, 1, 0, {50, 50,} },
+		{2, 0, 1, 1, {50, 50,} },
 	};
-	const struct s_blinkPattern sPair_suc = {	// 2; define pairing success
-		2, 1, 0, 1, {200, 0,}
+	const struct s_blinkPattern sPair_suc[2] = {	// 2; define pairing success
+		{2, 1, 1, 0, {200, 0,} },
+		{2, 1, 0, 1, {200, 0,} },
 	};
-	const struct s_blinkPattern sPair_err = {	// 3; define pairing error
-		2, 1, 1, 0, {200, 0,}
+	const struct s_blinkPattern sPair_err[2] = {	// 3; define pairing error
+		{2, 3, 1, 0, {5, 10,} },
+		{2, 1, 1, 0, {200, 0,} },
 	};
-	const struct s_blinkPattern sSend = {		// 4; define send indicator
-		2, 1, 1, 1, {5, 1,}
+	const struct s_blinkPattern sSend[2] = {		// 4; define send indicator
+		{2, 1, 1, 0, {5, 1,} },
+		{2, 1, 1, 1, {5, 1,} },
 	};
-	const struct s_blinkPattern sAck = {		// 5; define ack indicator
-		2, 1, 0, 1, {5, 1,}
+	const struct s_blinkPattern sAck[2] = {		// 5; define ack indicator
+		{0, 0, 0, 0, {0, 0,} },
+		{2, 1, 0, 1, {5, 1,} },
 	};
-	const struct s_blinkPattern sNoack = {		// 6; define no ack indicator
-		2, 1, 1, 0, {10, 1,}
+	const struct s_blinkPattern sNoack[2] = {		// 6; define no ack indicator
+		{0, 0, 0, 0, {0, 0,} },
+		{2, 1, 1, 0, {10, 1,} },
 	};
-	const struct s_blinkPattern sBattLow = {	// 7; define battery low indicator
-		6, 3, 1, 0, {50, 10, 10, 10, 10 ,100}
+	const struct s_blinkPattern sBattLow[2] = {	// 7; define battery low indicator
+		{6, 3, 1, 0, {50, 10, 10, 10, 10, 100} },
+		{6, 3, 1, 0, {50, 10, 10, 10, 10 ,100} },
 	};
-	const struct s_blinkPattern sDefect = {		// 8; define defect indicator
-		6, 3, 1, 0, {10, 10, 10, 10, 10, 100}
+	const struct s_blinkPattern sDefect[2] = {		// 8; define defect indicator
+		{6, 3, 1, 0, {10, 10, 10, 10, 10, 100} },
+		{6, 3, 1, 0, {10, 10, 10, 10, 10, 100} },
 	};
-	const struct s_blinkPattern sWelcome = {	// 9; define welcome indicator
-		6, 1, 0, 1, {10, 10, 50, 10, 50, 100}
+	const struct s_blinkPattern sWelcome[2] = {	// 9; define welcome indicator
+		{6, 1, 1, 0, {10, 10, 50, 10, 50, 100} },
+		{6, 1, 0, 1, {10, 10, 50, 10, 50, 100} },
 	};
-
-#else				// - patterns for one led
-	const struct s_blinkPattern sPairing = {	// 1; define pairing string
-		2, 0, 1, 0, {50, 50,}
-	};
-	const struct s_blinkPattern sPair_suc = {	// 2; define pairing success
-		2, 1, 1, 0, {200, 0,}
-	};
-	const struct s_blinkPattern sPair_err = {	// 3; define pairing error
-		2, 3, 1, 0, {5, 10,}
-	};
-	const struct s_blinkPattern sSend = {		// 4; define send indicator
-		2, 1, 1, 0, {5, 1,}
-	};
-	const struct s_blinkPattern sAck = {		// 5; define ack indicator
-		0, 0, 0, 0, {0, 0,}
-	};
-	const struct s_blinkPattern sNoack = {		// 6; define no ack indicator
-		0, 0, 0, 0, {0, 0,}
-	};
-	const struct s_blinkPattern sBattLow = {	// 7; define battery low indicator
-		6, 3, 1, 0, {50, 10, 10, 10, 10, 100}
-	};
-	const struct s_blinkPattern sDefect = {		// 8; define defect indicator
-		6, 3, 1, 0, {10, 10, 10, 10, 10, 100}
-	};
-	const struct s_blinkPattern sWelcome = {	// 9; define welcome indicator
-		6, 1, 1, 0, {10, 10, 50, 10, 50, 100}
-	};
-#endif
 
 
 class LD {
@@ -95,8 +73,8 @@ class LD {
 	class AS *pHM;								// pointer to main class for function calls
 
 	const struct s_blinkPattern *blinkPtr;		// pointer to blink struct
-	uint8_t bLeds;
 	
+	uint8_t bLeds      :2;						// 1 or 2 leds
 	uint8_t lCnt       :3;						// counter for positioning inside of blink string
 	uint8_t dCnt       :3;						// duration counter	
 	
