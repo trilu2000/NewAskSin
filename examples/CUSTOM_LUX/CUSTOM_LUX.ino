@@ -89,8 +89,8 @@ void setup() {
 	//dbg << "a:" << _HEX(x,5) << _TIME << '\n';
 	//dbg << "b:" << _HEXB(0xff) << '\n';
 
-	//xt.set(100);
-	//initTSL();
+	xt.set(100);
+	initTSL();
 }
 
 void loop() {
@@ -100,7 +100,7 @@ void loop() {
 
 	// - user related -----------------------------------------
 
-	/*if (xt.done()) {
+	if (xt.done()) {
 	//	dbg << getBatteryVoltageExternal() << '\n';
 		xt.set(1000);
 
@@ -124,7 +124,7 @@ void loop() {
 		Serial.print("Lux: ");
 		Serial.println(lux, DEC);
 
-	}*/
+	}
 }
 
 
@@ -210,8 +210,8 @@ void serialEvent(void) {
 		else if ((inChar>47) && (inChar<58))  inChar-=48;									// 0 - 9
 		else continue;
 		
-		if (i % 2 == 0) hm.sn.buf[i/2] = inChar << 4;										// high byte
-		else hm.sn.buf[i/2] |= inChar;														// low byte
+		//if (i % 2 == 0) hm.sn.buf[i/2] = inChar << 4;										// high byte
+		//else hm.sn.buf[i/2] |= inChar;														// low byte
 		
 		i++;
 	}

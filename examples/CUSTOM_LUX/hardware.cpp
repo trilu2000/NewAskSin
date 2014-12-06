@@ -45,8 +45,8 @@ void ledGrn(uint8_t stat) {
 
 void initConfKey(void) {
 	// set port pin and register pin interrupt
-	pinInput(confKeyDDR, PORTB0);															// init the config key pin
-	setPinHigh(confKeyPort,PORTB0);
+	pinInput(confKeyDDR, confKeyPin);														// init the config key pin
+	setPinHigh(confKeyPort,confKeyPin);
 
 	initPCINT();																			// some sanity on interrupts
 	regPCIE(confKeyPCIE);																	// set the pin change interrupt
@@ -110,7 +110,7 @@ void    ccInitHw(void) {
 	pinInput(  SPI_DDR, SPI_MISO );															// set MISO as input
 
 	SPCR = _BV(SPE) | _BV(MSTR);// | _BV(SPR0);// | _BV(SPR1); 								// SPI enable, master, speed = CLK/4
-	SPSR &= ~_BV(SPI2X);
+	//SPSR &= ~_BV(SPI2X);
 	
 	CC_GDO0_PCICR |= _BV(CC_GDO0_PCIE);														// set interrupt in mask active
 }
@@ -266,7 +266,7 @@ ISR(WDT_vect) {
 
 //- battery measurement functions -----------------------------------------------------------------------------------------
 uint16_t getAdcValue(uint8_t admux) {
-	uint16_t adcValue = 0;
+	/*uint16_t adcValue = 0;
 	
 	#if defined(__AVR_ATmega32U4__)															// save content of Power Reduction Register
 	uint8_t tmpPRR0 = PRR0;
@@ -299,10 +299,10 @@ uint16_t getAdcValue(uint8_t admux) {
 	#endif
 
 	ADCSRA = 0;																				// ADC off
-	return adcValue;																		// return the measured value
+	return adcValue;*/																		// return the measured value
 }
 uint8_t  getBatteryVoltageInternal(void) {
-
+/*
 	uint32_t adcValue = (uint32_t)getAdcValue(
 	#if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 	_BV(REFS0) | _BV(MUX4) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1)
@@ -315,10 +315,10 @@ uint8_t  getBatteryVoltageInternal(void) {
 
 	//dbg << "x:" << adcValue << '\n';
 	adcValue = AVR_BANDGAP_VOLTAGE * 1023 / adcValue / 100;									// calculate battery voltage in V/10
-	return (uint8_t)adcValue;
+	return (uint8_t)adcValue;*/
 }
 uint8_t  getBatteryVoltageExternal(void) {
-	enableBattery();																		// set pin to low, to make it active
+	/*enableBattery();																		// set pin to low, to make it active
 	
 	uint32_t adcValue = (uint32_t)getAdcValue(												// ask the ADC
 	//	(1 << REFS1) | (1 << REFS0) | PORTF7 //,														// Voltage Reference = Internal 1.1V Voltage Reference
@@ -328,6 +328,6 @@ uint8_t  getBatteryVoltageExternal(void) {
 	disableBattery();																		// measurement pin to input to save battery
 	//dbg << "x:" << adcValue << '\n';
 	adcValue *= BATTERY_FACTOR; adcValue /= 1000;											// calculate the V/10 and return
-	return (uint8_t)adcValue;
+	return (uint8_t)adcValue;*/
 }
 //- -----------------------------------------------------------------------------------------------------------------------

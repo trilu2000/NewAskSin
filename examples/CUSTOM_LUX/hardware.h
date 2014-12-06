@@ -36,15 +36,29 @@
 
 	#define ledActiveLow  0																	// leds against GND = 0, VCC = 1
 #endif
-//- configuration key
-#define confKeyDDR    DDRB																	// define config key port and remaining pin
-#define confKeyPort   PORTB
-#define confKeyPin    PORTB0
 
-#define confKeyPCICR  PCICR																	// interrupt register
-#define confKeyPCIE   PCIE0																	// pin change interrupt port bit
-#define confKeyPCMSK  PCMSK0																// interrupt mask
-#define confKeyINT    PCINT0																// pin interrupt
+//- configuration key
+#if defined(__AVR_ATmega32U4__)
+	#define confKeyDDR    DDRB																// define config key port and remaining pin
+	#define confKeyPort   PORTB
+	#define confKeyPin    PORTB6
+
+	#define confKeyPCICR  PCICR																// interrupt register
+	#define confKeyPCIE   PCIE0																// pin change interrupt port bit
+	#define confKeyPCMSK  PCMSK0															// interrupt mask
+	#define confKeyINT    PCINT6															// pin interrupt
+
+#else
+	#define confKeyDDR    DDRB																// define config key port and remaining pin
+	#define confKeyPort   PORTB
+	#define confKeyPin    PORTB0
+
+	#define confKeyPCICR  PCICR																// interrupt register
+	#define confKeyPCIE   PCIE0																// pin change interrupt port bit
+	#define confKeyPCMSK  PCMSK0															// interrupt mask
+	#define confKeyINT    PCINT0															// pin interrupt
+
+#endif
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
