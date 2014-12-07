@@ -34,6 +34,7 @@ void setup() {
 	dbg << F("Main\n");																		// ...and some information
 	#endif
 	
+	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
 	//ADCSRA = 0;																				// ADC off
 	//power_all_disable();																	// and everything else
@@ -45,8 +46,6 @@ void setup() {
 	//power_timer0_enable();
 	//power_usart0_enable();
 
-
-	// - Hardware setup ---------------------------------------
 	initMillis();																			// milli timer start
 	initPCINT();																			// initialize the pin change interrupts
 	ccInitHw();																				// initialize transceiver hardware
@@ -66,8 +65,8 @@ void setup() {
 	hm.pw.setMode(0);																		// set power management mode
 	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check, internal, 2.7 reference, measurement each hour
 
-	//thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
-	//thsens.config(&initTH1, &measureTH1, NULL);
+	thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
+	thsens.config(&initTH1, &measureTH1, NULL);
 
 	sei();																					// enable interrupts
 	
