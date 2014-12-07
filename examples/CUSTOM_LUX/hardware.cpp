@@ -6,7 +6,7 @@ void dbgStart(void) {
 	#if defined(__AVR_ATmega32U4__)
 	if (!(UCSR1B & (1<<RXEN1))) {
 		dbg.begin(57600);																	// check if serial was already set
-		while(!dbg);																		// wait until serial has connected
+		//while(!dbg);																		// wait until serial has connected
 		_delay_ms(100);
 		_delay_ms(100);
 		_delay_ms(100);
@@ -170,16 +170,16 @@ ISR(ISR_VECT) {
 
 
 //- eeprom functions ------------------------------------------------------------------------------------------------------
-void initEEProm(void) {
+void    initEEProm(void) {
 	// place the code to init a i2c eeprom
 }
-void getEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
+void    getEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
 	eeprom_read_block((void*)ptr,(const void*)addr,len);									// AVR GCC standard function
 }
-void setEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
+void    setEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
 	eeprom_write_block((const void*)ptr,(void*)addr,len);									// AVR GCC standard function
 }
-void clearEEPromBlock(uint16_t addr, uint16_t len) {
+void    clearEEPromBlock(uint16_t addr, uint16_t len) {
 	uint8_t tB=0;
 	for (uint16_t l = 0; l < len; l++) {													// step through the bytes of eeprom
 		setEEPromBlock(addr+l,1,(void*)&tB);
@@ -266,13 +266,13 @@ ISR(WDT_vect) {
 
 //- battery measurement functions -----------------------------------------------------------------------------------------
 uint16_t getAdcValue(uint8_t admux) {
-	/*uint16_t adcValue = 0;
+	uint16_t adcValue = 0;
 	
 	#if defined(__AVR_ATmega32U4__)															// save content of Power Reduction Register
-	uint8_t tmpPRR0 = PRR0;
-	uint8_t tmpPRR1 = PRR1;
+		uint8_t tmpPRR0 = PRR0;
+		uint8_t tmpPRR1 = PRR1;
 	#else
-	uint8_t tmpPRR = PRR;
+		uint8_t tmpPRR = PRR;
 	#endif
 	power_adc_enable();
 
@@ -292,32 +292,30 @@ uint16_t getAdcValue(uint8_t admux) {
 	adcValue = adcValue / BATTERY_NUM_MESS_ADC;												// divide adcValue by amount of measurements
 
 	#if defined(__AVR_ATmega32U4__)															// restore power management
-	PRR0 = tmpPRR0;
-	PRR1 = tmpPRR1;
+		PRR0 = tmpPRR0;
+		PRR1 = tmpPRR1;
 	#else
-	PRR = tmpPRR;
+		PRR = tmpPRR;
 	#endif
 
 	ADCSRA = 0;																				// ADC off
-	return adcValue;*/																		// return the measured value
+	return adcValue;																		// return the measured value
 }
-uint8_t  getBatteryVoltageInternal(void) {
-/*
+uint8_t getBatteryVoltageInternal(void) {
+
 	uint32_t adcValue = (uint32_t)getAdcValue(
 	#if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-	_BV(REFS0) | _BV(MUX4) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1)
+		_BV(REFS0) | _BV(MUX4) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1)
 	#else
-	_BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1)
+		_BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1)
 	#endif
-	//(0 << REFS1) | (1 << REFS0),														// Voltage Reference = AVCC with external capacitor at AREF pin
-	//(1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (0 << MUX0)								// Input Channel = 1.1V (V BG)
 	);
 
 	//dbg << "x:" << adcValue << '\n';
 	adcValue = AVR_BANDGAP_VOLTAGE * 1023 / adcValue / 100;									// calculate battery voltage in V/10
-	return (uint8_t)adcValue;*/
+	return (uint8_t)adcValue;
 }
-uint8_t  getBatteryVoltageExternal(void) {
+uint8_t getBatteryVoltageExternal(void) {
 	/*enableBattery();																		// set pin to low, to make it active
 	
 	uint32_t adcValue = (uint32_t)getAdcValue(												// ask the ADC
@@ -329,5 +327,17 @@ uint8_t  getBatteryVoltageExternal(void) {
 	//dbg << "x:" << adcValue << '\n';
 	adcValue *= BATTERY_FACTOR; adcValue /= 1000;											// calculate the V/10 and return
 	return (uint8_t)adcValue;*/
+}
+
+void    initExtBattMeasurement(void) {
+	pinInput(battMeasDDR, battMeasPin);														// set the ADC pin as input
+	setPinHigh(battMeasPort, battMeasPin);													// switch on pull up, otherwise we waste energy over the resistor network against VCC
+	pinInput(battEnblDDR, battEnblPin);														// set the measurement enable pin as input, otherwise we waste energy over the resistor network against VCC
+}
+void    switchExtBattMeasurement(uint8_t stat) {
+	if (stat) {
+		pinOutput(battEnblDDR, battEnblPin);												// set pin as out put
+		setPinLow(battEnblPort, battEnblPin);												// set low to measure the resistor network
+	} else pinInput(battEnblDDR, battEnblPin);
 }
 //- -----------------------------------------------------------------------------------------------------------------------

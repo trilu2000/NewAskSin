@@ -139,8 +139,14 @@
 #define AVR_BANDGAP_VOLTAGE               1100UL											// band gap reference for Atmega328p
 #define BATTERY_FACTOR                    124												// see excel table
 
-#define enableBattery()       switchExtBattMeasurement(1)									// to low status, so measurement could be taken
-#define disableBattery()      switchExtBattMeasurement(0)
+//- external battery measurement
+#define battEnblDDR   DDRF																	// define battery measurement enable pin, has to be low to start measuring
+#define battEnblPort  PORTF
+#define battEnblPin   PORTF4
+
+#define battMeasDDR   DDRF																	// define battery measure pin, where ADC gets the measurement
+#define battMeasPort  PORTF
+#define battMeasPin   PORTF7
 //- -----------------------------------------------------------------------------------------------------------------------
 
 

@@ -8,19 +8,6 @@
 #include <THSensor.h>
 
 
-//- external battery measurement
-//#define externalMeasurement 1																// set to 1 to enable external battery measurement, to switch off or measure internally set it to 0
-
-//#define battEnblDDR   DDRF																	// define battery measurement enable pin, has to be low to start measuring
-//#define battEnblPort  PORTF
-//#define battEnblPin   PORTF4
-
-//#define battMeasDDR   DDRF																	// define battery measure pin, where ADC gets the measurement
-//#define battMeasPort  PORTF
-//#define battMeasPin   PORTF7
-// external measurement to be reworked
-
-
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 THSensor thsens;																			// stage a dummy module
@@ -77,7 +64,7 @@ void setup() {
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(0);																		// set power management mode
-	//hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
+	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check, internal, 2.7 reference, measurement each hour
 
 	//thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
 	//thsens.config(&initTH1, &measureTH1, NULL);
@@ -99,8 +86,12 @@ void loop() {
 
 
 	// - user related -----------------------------------------
-
-	if (xt.done()) {
+	//if (xt.done()) {
+	//	dbg << getBatteryVoltageInternal() << '\n';
+	//	xt.set(1000);
+	//}
+	
+	/*if (xt.done()) {
 	//	dbg << getBatteryVoltageExternal() << '\n';
 		xt.set(1000);
 
@@ -124,7 +115,7 @@ void loop() {
 		Serial.print("Lux: ");
 		Serial.println(lux, DEC);
 
-	}
+	}*/
 }
 
 
@@ -218,16 +209,3 @@ void serialEvent(void) {
 	#endif
 }
 
-void initExtBattMeasurement(void) {
-//	if (!externalMeasurement) return;														// return while external measurement is disabled
-
-//	pinInput(battMeasDDR, PORTF7);															// set the ADC pin as input
-	//setPinHigh(battMeasPort, PORTF7);														// switch on pull up, otherwise we waste energy over the resistor network against VCC
-//	pinInput(battEnblDDR, PORTF4);															// set the measurement enable pin as input, otherwise we waste energy over the resistor network against VCC
-}
-void switchExtBattMeasurement(uint8_t stat) {
-//	if (stat) {
-//		pinOutput(battEnblDDR, PORTF4);														// set pin as out put
-//		setPinLow(battEnblPort, PORTF4);													// set low to measure the resistor network
-//	} else pinInput(battEnblDDR, PORTF4);
-}
