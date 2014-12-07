@@ -2,6 +2,7 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <AS.h>
+#include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
 #include <Relay.h>
 
@@ -31,21 +32,12 @@ void setup() {
 	power_timer0_enable();
 	power_usart0_enable();
 
-	// led's - D4 and D6
-	pinOutput(DDRD,4);																		// init the led pins
-	pinOutput(DDRD,6);
-	
-	// config key pin - D8
-	pinInput(DDRB,0);																		// init the config key pin
-	setPinHigh(PORTB,0);
-	initPCINT();																			// some sanity on interrupts	
-	regPCIE(PCIE0);																			// set the pin change interrupt
-	regPCINT(PCMSK0,PCINT0);																// description is in hal.h
-
-	// battery measurement, ADC pin PC0, enable pin PD7
-	pinInput(DDRC, 0);																		// set the ADC pin as input
-	setPinLow(PORTC, 0);																	// switch off pull up
-	// enable pin is set via macro in HAL.h
+	initMillis();																			// milli timer start
+	initPCINT();																			// initialize the pin change interrupts
+	ccInitHw();																				// initialize transceiver hardware
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
+	//initExtBattMeasurement();																// initialize the external battery measurement
 
 	
 	// - AskSin related ---------------------------------------
@@ -92,6 +84,7 @@ void switchRly(uint8_t status) {
 }
 
 
+//- predefined functions --------------------------------------------------------------------------------------------------
 void serialEvent() {
 	#ifdef SER_DBG
 	
@@ -117,7 +110,7 @@ void serialEvent() {
 }
 /*void serialEvent() {
 while (Serial.available()) {
-uint8_t inChar = (uint8_t)Serial.read();											// read a byte
+uint8_t inChar = (uint8_t)Serial.read();													// read a byte
 if ((inChar>47) && (inChar<58))
 hm.ld.rmb((ledStat)(inChar-48));
 }
