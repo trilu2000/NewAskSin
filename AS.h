@@ -113,7 +113,8 @@ class AS {
 	// - poll functions --------------------------------
 	void sendSliceList(void);																// scheduler to send config messages, peers and regs
 	void sendPeerMsg(void);																	// scheduler for peer messages
-	
+	void prepPeerMsg(uint8_t *xPeer, uint8_t retr);
+			
 	// - receive functions -----------------------------
 	void recvMessage(void);
 

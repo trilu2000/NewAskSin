@@ -37,17 +37,29 @@ class THSensor {
   
   //- user defined functions ----------------------------------------------------------------------------------------------
   public://----------------------------------------------------------------------------------------------------------------
-	void (*fInit)(void);																	// pointer to init function in main sketch
-	void (*fSwitch)(uint8_t,uint8_t);														// pointer to switch function (PWM) in main sketch, first value is PWM level, second the characteristics
+	void     (*fInit)(void);																// pointer to init function in main sketch
+	void     (*fMeas)(void);																// pointer to measurement function in main sketch
+	uint8_t  *mVal;																			// pointer to byte which holds the measured value
 
-	void    config();
+	uint8_t  mMode   :1;
+	uint8_t  mLevelChange;
+	uint32_t mSendDelay;
+	
+	uint8_t  sState  :1;																	// indicates if we are in measuring or transmition state
+	uint8_t  msgCnt;
+	
+	void     config(void Init(), void Measure(), uint8_t *Val);
+	void     timing(uint8_t mode, uint32_t sendDelay, uint8_t levelChange);					// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 
+	void     sensPoll(void);																// polling function for tasks done on a regular manner
 
+	uint32_t calcSendSlot(void);															// calculate next send slot based on HMID
+	
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
   public://----------------------------------------------------------------------------------------------------------------
-	uint8_t modStat;																		// module status byte, needed for list3 modules to answer status requests
-	uint8_t modDUL;																			// module down up low battery byte
-	uint8_t regCnl;																			// holds the channel for the module
+	uint8_t  modStat;																		// module status byte, needed for list3 modules to answer status requests
+	uint8_t  modDUL;																		// module down up low battery byte
+	uint8_t  regCnl;																		// holds the channel for the module
 
 	AS      *hm;																			// pointer to HM class instance
 
@@ -58,7 +70,7 @@ class THSensor {
 
 	void    poll(void);																		// poll function, driven by HM loop
 
-	//- predefined, no reason to touch ------------------------------------------------------------------------------------
+  //- predefined, no reason to touch --------------------------------------------------------------------------------------
 	void    regInHM(uint8_t cnl, uint8_t lst, AS *instPtr);									// register this module in HM on the specific channel
 	void    hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
 	void    peerAddEvent(uint8_t *data, uint8_t len);										// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index

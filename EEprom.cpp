@@ -13,7 +13,7 @@ uint8_t MAID[3];
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
-uint8_t EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
+uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
 	
@@ -22,7 +22,7 @@ uint8_t EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	getEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
 }
-uint8_t EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
+uint8_t  EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
 
@@ -31,7 +31,7 @@ uint8_t EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	setEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
 }
-uint8_t EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
+uint8_t  EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
 
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
@@ -48,14 +48,22 @@ uint8_t EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
 		}
 	}
 }
+uint32_t EE::getHMID(void) {
+	uint8_t a[3];
+	a[0] = HMID[2];
+	a[1] = HMID[1];
+	a[2] = HMID[0];
+	a[3] = 0;
 
+	return *(uint32_t*)&a;
+}
 
 // private:		//---------------------------------------------------------------------------------------------------------
 EE::EE() {
 } 
 
 // general functions
-void    EE::init(void) {
+void     EE::init(void) {
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbgStart();																			// serial setup
 	dbg << F("EE.\n");																	// ...and some information
@@ -96,12 +104,12 @@ void    EE::init(void) {
 	getMasterID();	
 
 }
-void    EE::getMasterID(void) {
+void     EE::getMasterID(void) {
 	MAID[0] = getRegAddr(0, 0, 0, 0x0a);
 	MAID[1] = getRegAddr(0, 0, 0, 0x0b);
 	MAID[2] = getRegAddr(0, 0, 0, 0x0c);
 }
-void    EE::testModul(void) {															// prints register.h content on console
+void     EE::testModul(void) {															// prints register.h content on console
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbg << '\n' << pLine;
 	dbg << F("register.h - lists\n");
@@ -199,18 +207,18 @@ void    EE::testModul(void) {															// prints register.h content on cons
 
 	#endif
 }
-uint8_t EE::isHMIDValid(uint8_t *toID) {
+uint8_t  EE::isHMIDValid(uint8_t *toID) {
 	return compArray(toID, HMID, 3);
 }
-uint8_t EE::isPairValid (uint8_t *reID) {
+uint8_t  EE::isPairValid (uint8_t *reID) {
 	return compArray(reID, MAID, 3);
 }
-uint8_t EE::isBroadCast(uint8_t *toID) {
+uint8_t  EE::isBroadCast(uint8_t *toID) {
 	//uint8_t zero[3] = {0,0,0};
 	//return mycmp(toID, zero, 3);
 	return isEmpty(toID, 3);
 }
-uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
+uint8_t  EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
 	if (isBroadCast(toId)) return 'b';													// broadcast message
 	if (!isHMIDValid(toId)) return 'l';													// not for us, only show as log message
 
@@ -224,13 +232,13 @@ uint8_t EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
 }
 
 // peer functions 
-void    EE::clearPeers(void) {
+void     EE::clearPeers(void) {
 	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {										// step through all channels
 		clearEEPromBlock(peerTbl[i].pAddr, peerTbl[i].pMax * 4);
 		//dbg << F("clear eeprom, addr ") << peerTbl[i].pAddr << F(", len ") << (peerTbl[i].pMax * 4) << '\n';																	// ...and some information
 	}
 }
-uint8_t EE::isPeerValid (uint8_t *peer) {
+uint8_t  EE::isPeerValid (uint8_t *peer) {
 	//dbg << "p: " << pHex(peer, 4) << '\n';
 	for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {										// step through all channels
 		if (getIdxByPeer(i, peer) != 0xff) return i;									// if a valid peer is found return the respective channel
@@ -238,7 +246,7 @@ uint8_t EE::isPeerValid (uint8_t *peer) {
 	return 0;																			// otherwise 0
 }
 
-uint8_t EE::countFreeSlots(uint8_t cnl) {
+uint8_t  EE::countFreeSlots(uint8_t cnl) {
 	uint8_t bCounter = 0;																// set counter to zero
 	uint8_t lPeer[4];
 	
@@ -252,7 +260,7 @@ uint8_t EE::countFreeSlots(uint8_t cnl) {
 	}
 	return bCounter;																	// return the counter
 }
-uint8_t EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
+uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t lPeer[4];
 
 	if (cnl == 0) return 0;																// on channel 0 there is no need to search
@@ -265,10 +273,10 @@ uint8_t EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	}
 	return 0xff;
 }
-uint8_t EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
+uint8_t  EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
 	getEEPromBlock(peerTbl[cnl-1].pAddr+(idx*4), 4, peer);
 }
-uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
+uint8_t  EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t lPeer[4];
 	
 	// check if channel exists
@@ -306,7 +314,7 @@ uint8_t EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	}
 	return 1;																			// everything went fine, return success
 }
-uint8_t EE::remPeer(uint8_t cnl, uint8_t *peer) {
+uint8_t  EE::remPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t tPeer[4], lPeer[4];
 	
 	// check if channel exists
@@ -327,7 +335,7 @@ uint8_t EE::remPeer(uint8_t cnl, uint8_t *peer) {
 	}
 	return 1;
 }
-uint8_t EE::countPeerSlc(uint8_t cnl) {
+uint8_t  EE::countPeerSlc(uint8_t cnl) {
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
 
 	int16_t lTmp = peerTbl[cnl-1].pMax - countFreeSlots(cnl) + 1;						// get used slots and add one for terminating zeros
@@ -340,7 +348,7 @@ uint8_t EE::countPeerSlc(uint8_t cnl) {
 	}
 	return bMax;																		// return amount of slices
 }
-uint8_t EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
+uint8_t  EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
 	
 	uint8_t byteCnt = 0, slcCnt = 0;													// start the byte counter
@@ -368,13 +376,13 @@ uint8_t EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 	memset(buf, 0, 4);																	// add the terminating zeros
 	return byteCnt + 4;																	// return the amount of bytes
 }
-uint8_t EE::getPeerSlots(uint8_t cnl) {													// returns the amount of possible peers
+uint8_t  EE::getPeerSlots(uint8_t cnl) {													// returns the amount of possible peers
 	if (cnl > devDef.cnlNbr) return 0;
 	return peerTbl[cnl-1].pMax;															// return the max amount of peers
 }
 
 // register functions
-void    EE::clearRegs(void) {
+void     EE::clearRegs(void) {
 	uint8_t peerMax;
 	
 	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
@@ -392,7 +400,7 @@ void    EE::clearRegs(void) {
 		//    << (peerMax * cnlTbl[i].sLen) << '\n';
 	}
 }
-uint8_t EE::countRegListSlc(uint8_t cnl, uint8_t lst) {
+uint8_t  EE::countRegListSlc(uint8_t cnl, uint8_t lst) {
 	
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
@@ -406,7 +414,7 @@ uint8_t EE::countRegListSlc(uint8_t cnl, uint8_t lst) {
 	}
 	return bMax+1;																		// return amount of slices
 }
-uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf) {
+uint8_t  EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf) {
 	
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
@@ -437,7 +445,7 @@ uint8_t EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, ui
 
 	return remByte*2;																	// return the byte length
 }
-uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf) {
+uint8_t  EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf) {
 
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
@@ -457,14 +465,14 @@ uint8_t EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uin
 		
 	}
 }
-uint8_t EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
+uint8_t  EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
 		// check if we are in the right line by comparing channel and list, otherwise try next
 		if ((cnlTbl[i].cnl == cnl) && (cnlTbl[i].lst == lst)) return i;
 	}
 	return 0xff;																		// respective line not found
 }
-uint8_t EE::checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx) {
+uint8_t  EE::checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx) {
 	//dbg << "cnl: " << cnl << " lst: " << lst << " idx: " << idx << '\n';
 	if ( (cnl > 0) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl-1].pMax) ) return 0;
 	return 1;

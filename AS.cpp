@@ -269,6 +269,14 @@ void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	// BUTTON = bit 0 - 5
 	// LONG   = bit 6
 	// LOWBAT = bit 7
+
+	stcPeer.pL = pL;
+	stcPeer.lenPL = 3;
+	stcPeer.cnl = cnl;
+	stcPeer.burst = burst;
+	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
+	stcPeer.mTyp = 0x41;
+	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
 void AS::sendSensorData(void) {
@@ -341,6 +349,14 @@ void AS::sendPeerMsg(void) {
 	// first run, prepare amount of slots
 	if (!stcPeer.maxIdx) stcPeer.maxIdx = ee.getPeerSlots(stcPeer.cnl);						// get amount of messages of peer channel
 
+	// check if peers exist in db, otherwise send to master and stop function
+	if (ee.countFreeSlots(stcPeer.cnl) == ee.getPeerSlots(stcPeer.cnl) ) {
+		prepPeerMsg(MAID, maxRetries);
+		sn.msgCnt++;																		// increase the send message counter
+		memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
+		return;
+	}
+	
 	// all slots of channel processed, start next round or end processing
 	if (stcPeer.curIdx >= stcPeer.maxIdx) {													// check if all peer slots are done
 		stcPeer.rnd++;																		// increase the round counter
@@ -375,6 +391,7 @@ void AS::sendPeerMsg(void) {
 	uint8_t tPeer[4];																		// get the respective peer
 	ee.getPeerByIdx(stcPeer.cnl, stcPeer.curIdx, tPeer);
 	
+	dbg << "a: " << stcPeer.curIdx << " m " << stcPeer.maxIdx << '\n';
 	if (isEmpty(tPeer,4)) {																	// if peer is 0, set done bit in slt and skip
 		stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// remember empty peer in slt table										// clear bit in slt and increase counter
 		stcPeer.curIdx++;																	// increase counter for next time
@@ -391,6 +408,14 @@ void AS::sendPeerMsg(void) {
 	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
 	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.cnl, 4, stcPeer.curIdx, 0x01);
 	
+	prepPeerMsg(tPeer, 1);
+	
+	if (!sn.mBdy.mFlg.BIDI)
+	stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));						// clear bit, because it is a message without need to be repeated
+
+	stcPeer.curIdx++;																		// increase counter for next time
+}
+void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 
 	// description --------------------------------------------------------
 	//    len  cnt  flg  typ  reID      toID      pl
@@ -405,19 +430,15 @@ void AS::sendPeerMsg(void) {
 	//uint8_t t1[] = {0x23,0x70,0xD8};
 	//memcpy(sn.mBdy.reID, t1, 3);															// sender id
 	memcpy(sn.mBdy.reID, HMID, 3);															// sender id
-	memcpy(sn.mBdy.toID, tPeer, 3);															// receiver id
-	memcpy(sn.buf+10, stcPeer.pL, stcPeer.lenPL);											// payload
+	memcpy(sn.mBdy.toID, xPeer, 3);															// receiver id
+	sn.mBdy.by10 = stcPeer.cnl;
+	memcpy(sn.buf+11, stcPeer.pL, stcPeer.lenPL);											// payload
 	sn.buf[10] |= (bt.getStatus() << 7);													// battery bit
- 	
-	sn.maxRetr = 1;																			// send only one time
+	
+	sn.maxRetr = retr;																			// send only one time
 	sn.active = 1;																			// make send active
-	
-	if (!sn.mBdy.mFlg.BIDI)
-	stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));						// clear bit, because it is a message without need to be repeated
-
-	stcPeer.curIdx++;																		// increase counter for next time
 }
-	
+
 // - receive functions -----------------------------
 void AS::recvMessage(void) {
 	

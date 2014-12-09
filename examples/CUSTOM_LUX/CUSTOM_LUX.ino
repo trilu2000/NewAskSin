@@ -23,8 +23,10 @@ waitTimer xt;
 #define REG_DATALOW  0x04
 #define REG_DATAHIGH 0x05
 #define REG_ID       0x0A
-
 static uint8_t M = 0;
+
+
+uint8_t thVal = 128;																				// variable which holds the measured value
 
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
@@ -66,7 +68,8 @@ void setup() {
 	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check, internal, 2.7 reference, measurement each hour
 
 	thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
-	thsens.config(&initTH1, &measureTH1, NULL);
+	thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
+	thsens.timing(0, 0, 0);																	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change   
 
 	sei();																					// enable interrupts
 	
@@ -124,7 +127,7 @@ void initTH1() {
 	
 }
 void measureTH1() {
-	dbg << "measure th1\n";
+	dbg << "measure th1 " << _TIME << '\n';
 
 }
 

@@ -42,8 +42,6 @@ class SN {
 	};
 
 
-	uint8_t msgCnt;							// message counter for standard sends, while not answering something
-
 	uint8_t retrCnt;						// variable to count how often a message was already send
 	uint8_t maxRetr;						// how often a message has to be send until ACK
 	uint8_t lastMsgCnt;						// store of message counter, needed to identify ACK
@@ -54,6 +52,8 @@ class SN {
   public:		//---------------------------------------------------------------------------------------------------------
 	struct s_msgBody mBdy;					// structure for easier message creation
 	uint8_t *buf;							// cast to byte array
+
+	uint8_t msgCnt;							// message counter for standard sends, while not answering something
 
 	uint8_t active   :1;					// is send module active, 1 indicates yes
 	uint8_t timeOut  :1;					// was last message a timeout

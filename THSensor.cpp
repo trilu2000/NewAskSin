@@ -5,9 +5,60 @@
 //- AskSin th sensor class ------------------------------------------------------------------------------------------------
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define TH_DBG																				// debug message flag
+//#define TH_DBG																				// debug message flag
 #include "THSensor.h"
 
+waitTimer sensTmr;																				// timer instance for timing purpose
+#define measureDelay 500																		// time between measurement and sending the message
+
+//-------------------------------------------------------------------------------------------------------------------------
+//- user defined functions -
+//-------------------------------------------------------------------------------------------------------------------------
+void THSensor::config(void Init(), void Measure(), uint8_t *Val) {
+	fInit = Init;
+	fMeas = Measure;
+	mVal = Val;
+	if (fInit) fInit();
+}
+void THSensor::timing(uint8_t mode, uint32_t sendDelay, uint8_t levelChange) {
+	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
+	mMode = mode;
+	mSendDelay = sendDelay;
+	mLevelChange = levelChange;
+	sensTmr.set(500);
+}
+
+void THSensor::sensPoll(void) {
+
+	if (!sensTmr.done() ) return;																// step out while timer is still running
+	
+	if (mMode == 0) {
+
+		if (!sState) {																			// bit not set, there for measure and set bit
+			sState = 1;
+			sensTmr.set(measureDelay);															// we are upfront of the timing, remain timing with measurement time
+			if (fMeas) fMeas();																	// call the measurement function
+			
+		} else {																				// bit is set, measurement is done, so we should send
+			sState = 0;																			// remove bit while next time measurement is needed
+
+			if (mSendDelay == 0) sensTmr.set((calcSendSlot() *250) - measureDelay);				// set a new measurement time
+			else sensTmr.set(mSendDelay - measureDelay);
+
+			hm->sendSensor_event(regCnl,1,mVal);												// prepare the message and send	
+
+		}
+
+
+	}
+}
+
+uint32_t THSensor::calcSendSlot(void) {
+	uint32_t result = (((hm->ee.getHMID() << 8) | (hm->sn.msgCnt)) * 1103515245 + 12345) >> 16;
+	result = (result & 0xFF) + 480;
+	//dbg << "calcSendSlot: " << result << '\n'; 
+	return result;
+}
 
 //-------------------------------------------------------------------------------------------------------------------------
 //- mandatory functions for every new module to communicate within HM protocol stack -
@@ -55,6 +106,7 @@ void THSensor::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 
 void THSensor::poll(void) {
 	// just polling, as the function name said
+	sensPoll();
 }
 
 
