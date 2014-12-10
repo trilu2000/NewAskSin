@@ -121,6 +121,7 @@ uint8_t ccSendByte(uint8_t data) {
 }
 uint8_t ccGetGDO0() {
 	if (chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT) == 2 ) return 1;								// falling edge detected
+	if (chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT) == 0 ) return 1;								// something in buffer
 	else return 0;
 }
 

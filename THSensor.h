@@ -39,20 +39,20 @@ class THSensor {
   public://----------------------------------------------------------------------------------------------------------------
 	void     (*fInit)(void);																// pointer to init function in main sketch
 	void     (*fMeas)(void);																// pointer to measurement function in main sketch
-	uint8_t  *mVal;																			// pointer to byte which holds the measured value
+	uint8_t  *ptrVal;																		// pointer to byte which holds the measured value
 
-	uint8_t  mMode   :1;
-	uint8_t  mLevelChange;
-	uint32_t mSendDelay;
+	uint8_t  mMode   :1;																	// 0 timer based, 1 level of changed based transmition
+	uint8_t  mLevelChange;																	// value change 
+	uint32_t mSendDelay;																	// delay for transmition or minimum delay while value changed
 	
 	uint8_t  sState  :1;																	// indicates if we are in measuring or transmition state
-	uint8_t  msgCnt;
+	uint8_t  msgCnt;																		// message counter of sensor module
+	uint8_t  sensVal[2];																	// sensor value, byte 1 is message counter, byte 2 is sensor value
 	
-	void     config(void Init(), void Measure(), uint8_t *Val);
+	void     config(void Init(), void Measure(), uint8_t *Val);								// configure the sensor module from outside
 	void     timing(uint8_t mode, uint32_t sendDelay, uint8_t levelChange);					// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 
 	void     sensPoll(void);																// polling function for tasks done on a regular manner
-
 	uint32_t calcSendSlot(void);															// calculate next send slot based on HMID
 	
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------

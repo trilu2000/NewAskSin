@@ -347,14 +347,15 @@ void AS::sendPeerMsg(void) {
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
 	
 	// first run, prepare amount of slots
-	if (!stcPeer.maxIdx) stcPeer.maxIdx = ee.getPeerSlots(stcPeer.cnl);						// get amount of messages of peer channel
-
-	// check if peers exist in db, otherwise send to master and stop function
-	if (ee.countFreeSlots(stcPeer.cnl) == ee.getPeerSlots(stcPeer.cnl) ) {
-		prepPeerMsg(MAID, maxRetries);
-		sn.msgCnt++;																		// increase the send message counter
-		memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
-		return;
+	if (!stcPeer.maxIdx) {
+		stcPeer.maxIdx = ee.getPeerSlots(stcPeer.cnl);										// get amount of messages of peer channel
+	
+		if (stcPeer.maxIdx == ee.countFreeSlots(stcPeer.cnl) ) {							// check if at least one peer exist in db, otherwise send to master and stop function
+			prepPeerMsg(MAID, maxRetries);
+			sn.msgCnt++;																	// increase the send message counter
+			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));									// clean out and return
+			return;
+		}
 	}
 	
 	// all slots of channel processed, start next round or end processing
@@ -420,7 +421,16 @@ void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 	// description --------------------------------------------------------
 	//    len  cnt  flg  typ  reID      toID      pl
 	// l> 0B   0A   A4   40   23 70 EC  1E 7A AD  02 01
-	sn.mBdy.mLen = stcPeer.lenPL +9;														// set message len
+	// description --------------------------------------------------------
+	//                        reID      toID      BLL  Cnt  Val
+	// l> 0C   0A   A4   41   23 70 EC  1E 7A AD  02   01   200
+	// do something with the information ----------------------------------
+	//"41"          => { txt => "Sensor_event", params => {
+	// BUTTON = bit 0 - 5
+	// LONG   = bit 6
+	// LOWBAT = bit 7
+
+	sn.mBdy.mLen = stcPeer.lenPL +9;														// set message length
 	sn.mBdy.mCnt = sn.msgCnt;																// set message counter
 
 	sn.mBdy.mFlg.CFG = 1; sn.mBdy.mFlg.BIDI = stcPeer.bidi;									// message flag
@@ -432,10 +442,10 @@ void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 	memcpy(sn.mBdy.reID, HMID, 3);															// sender id
 	memcpy(sn.mBdy.toID, xPeer, 3);															// receiver id
 	sn.mBdy.by10 = stcPeer.cnl;
+	sn.mBdy.by10 |= (bt.getStatus() << 7);													// battery bit
 	memcpy(sn.buf+11, stcPeer.pL, stcPeer.lenPL);											// payload
-	sn.buf[10] |= (bt.getStatus() << 7);													// battery bit
 	
-	sn.maxRetr = retr;																			// send only one time
+	sn.maxRetr = retr;																		// send only one time
 	sn.active = 1;																			// make send active
 }
 

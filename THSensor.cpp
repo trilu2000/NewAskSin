@@ -17,7 +17,7 @@ waitTimer sensTmr;																				// timer instance for timing purpose
 void THSensor::config(void Init(), void Measure(), uint8_t *Val) {
 	fInit = Init;
 	fMeas = Measure;
-	mVal = Val;
+	ptrVal = Val;
 	if (fInit) fInit();
 }
 void THSensor::timing(uint8_t mode, uint32_t sendDelay, uint8_t levelChange) {
@@ -27,30 +27,30 @@ void THSensor::timing(uint8_t mode, uint32_t sendDelay, uint8_t levelChange) {
 	mLevelChange = levelChange;
 	sensTmr.set(500);
 }
-
 void THSensor::sensPoll(void) {
 
 	if (!sensTmr.done() ) return;																// step out while timer is still running
 	
 	if (mMode == 0) {
-
 		if (!sState) {																			// bit not set, there for measure and set bit
 			sState = 1;
 			sensTmr.set(measureDelay);															// we are upfront of the timing, remain timing with measurement time
 			if (fMeas) fMeas();																	// call the measurement function
-			
+			sensVal[0] = msgCnt;																// copy the current message counter
+			sensVal[1] = *ptrVal;																// copy the current sensor value
+						
 		} else {																				// bit is set, measurement is done, so we should send
 			sState = 0;																			// remove bit while next time measurement is needed
 
 			if (mSendDelay == 0) sensTmr.set((calcSendSlot() *250) - measureDelay);				// set a new measurement time
 			else sensTmr.set(mSendDelay - measureDelay);
 
-			hm->sendSensor_event(regCnl,1,mVal);												// prepare the message and send	
+			msgCnt++;																			// increase the message counter
+			hm->sendSensor_event(regCnl,1,sensVal);												// prepare the message and send	
 
 		}
-
-
 	}
+
 }
 
 uint32_t THSensor::calcSendSlot(void) {
