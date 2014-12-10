@@ -26,7 +26,7 @@ waitTimer xt;
 static uint8_t M = 0;
 
 
-uint8_t thVal = 128;																				// variable which holds the measured value
+uint8_t thVal = 128;																		// variable which holds the measured value
 
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
@@ -88,10 +88,14 @@ void loop() {
 
 
 	// - user related -----------------------------------------
-	//if (xt.done()) {
+	if (xt.done()) {
 	//	dbg << getBatteryVoltageInternal() << '\n';
-	//	xt.set(1000);
-	//}
+		uint32_t startMillis = getMillis();
+		uint16_t lux = readTSL();
+		
+		dbg << "l: " << lux << '\n';
+		xt.set(1000);
+	}
 	
 	/*if (xt.done()) {
 	//	dbg << getBatteryVoltageExternal() << '\n';
@@ -124,7 +128,7 @@ void loop() {
 //- user functions --------------------------------------------------------------------------------------------------------
 void initTH1() {
 	dbg << "init th1\n";
-	
+	initTSL();
 }
 void measureTH1() {
 	dbg << "measure th1 " << _TIME << '\n';
@@ -132,45 +136,52 @@ void measureTH1() {
 }
 
 static void     initTSL(void) {
-	digitalWrite(5, HIGH);
-	Wire.begin();
+	digitalWrite(5, HIGH);																	// set port pin
+	Wire.begin();																			// start the i2c library
 
-	Serial.print("ID: ");
-	Wire.beginTransmission(I2C_ADDR);
-	Wire.write(0x80|REG_ID);
+	#ifdef SER_DBG																			// some debug
+		Wire.beginTransmission(I2C_ADDR);													// start i2c communication with device 0x29
+		Wire.write(0x80|REG_ID);															// identify chip - write 0x80 to register 0x0a 
+		Wire.endTransmission();																// 1000 TSL45317, 1001 TSL45313, 1010 TSL45315,	1011 TSL45311
+
+		Wire.requestFrom(I2C_ADDR, 1);														// request 1 byte
+		while(Wire.available()) {															// reading and printing the identification byte
+			uint8_t c = Wire.read();
+			dbg << F("chip id: ") << _HEXB(c & 0xF0) << '\n';								// print result
+		}
+	#endif
+	
+	
+	#ifdef SER_DBG																			// some debug
+		dbg << F("power on...\n");
+	#endif
+	Wire.beginTransmission(I2C_ADDR);														// start i2c com again
+	Wire.write(0x80|REG_CONTROL);															// control register, 00 Power Down,	10 Run a single ADC cycle and return to PowerDown, 11 Normal Operation
+	Wire.write(0x03);																		// power on
 	Wire.endTransmission();
-	Wire.requestFrom(I2C_ADDR, 1); //request 1 byte
-	while(Wire.available()) {
-		unsigned char c = Wire.read();
-		Serial.print(c&0xF0, HEX);
-	}
-	Serial.println("");
 
-	Serial.println("Power on...");
-	Wire.beginTransmission(I2C_ADDR);
-	Wire.write(0x80|REG_CONTROL);
-	Wire.write(0x03); //power on
-	Wire.endTransmission();
-
-	Serial.println("Config...");
-	M = 0;
-	Wire.beginTransmission(I2C_ADDR);
-	Wire.write(0x80|REG_CONFIG);
-	Wire.write(M); //M=1 T=400ms
+	#ifdef SER_DBG																			// some debug
+		dbg << F("configure...\n");
+	#endif
+	M = 0x02;																				// BIT3 PowerSave Mode, BIT0:1 00 T=400 ms, 01 T=200 ms, 10 T=100ms
+	Wire.beginTransmission(I2C_ADDR);														// start i2c communication
+	Wire.write(0x80|REG_CONFIG);															// write to configuration register
+	Wire.write(M);																			// M=1 T=400ms	
 	Wire.endTransmission();	
 }
 static uint16_t readTSL(void) {
-	uint16_t l, h, lx;
+	uint16_t lx;
 
-	Wire.beginTransmission(I2C_ADDR);
-	Wire.write(0x80|REG_DATALOW);
-	Wire.endTransmission();
-	Wire.requestFrom(I2C_ADDR, 2); //request 2 bytes
-	l = Wire.read();
-	h = Wire.read();
-	while(Wire.available()){ Wire.read(); } //received more bytes?
+	Wire.beginTransmission(I2C_ADDR);														// start communication
+	Wire.write(0x80|REG_DATALOW);															// access the low register
+	Wire.endTransmission();																	// end transmition
+	Wire.requestFrom(I2C_ADDR, 2);															// request 2 bytes
+	lx  = (Wire.read()<<0) | (Wire.read()<<8);												// reading two bytes and writing in integer variable
+	//l = Wire.read();																		
+	//h = Wire.read();
+	while(Wire.available()){ Wire.read(); }													// received more bytes?
 
-	lx  = (h<<8) | (l<<0);
+	//lx  = (h<<8) | (l<<0);
 	return lx;
 }
 static void     configTSL(void) {

@@ -49,6 +49,16 @@ void THSensor::sensPoll(void) {
 			hm->sendSensor_event(regCnl,1,sensVal);												// prepare the message and send	
 
 		}
+	} else if (mMode == 1) {
+		if (sensVal[1] + mLevelChange > *ptrVal) return;										// check if previous value + level change is greater then current value - exit
+		if (sensVal[1] - mLevelChange < *ptrVal) return;										// check if previous value - level change is smaller then current value - exit
+		
+		// if we are here, timeout was gone and we have a significant change of the value
+		sensVal[0] = msgCnt++;																	// copy the current message counter
+		sensVal[1] = *ptrVal;																	// copy the current sensor value
+
+		hm->sendSensor_event(regCnl,1,sensVal);													// prepare the message and send
+	
 	}
 
 }
