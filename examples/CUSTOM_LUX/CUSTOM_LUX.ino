@@ -88,14 +88,14 @@ void loop() {
 
 
 	// - user related -----------------------------------------
-	if (xt.done()) {
+	//if (xt.done()) {
 	//	dbg << getBatteryVoltageInternal() << '\n';
-		uint32_t startMillis = getMillis();
-		uint16_t lux = readTSL();
+	//	uint32_t startMillis = getMillis();
+	//	uint16_t lux = readTSL();
 		
-		dbg << "l: " << lux << '\n';
-		xt.set(1000);
-	}
+	//	dbg << "l: " << lux << '\n';
+	//	xt.set(1000);
+	//}
 	
 	/*if (xt.done()) {
 	//	dbg << getBatteryVoltageExternal() << '\n';
