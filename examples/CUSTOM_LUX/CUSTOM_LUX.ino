@@ -11,12 +11,11 @@
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 THSensor thsens;																			// stage a dummy module
-
-waitTimer xt;
+waitTimer xt;																				// sensor timer
 
 
 //- load user modules -----------------------------------------------------------------------------------------------------
-#include <Wire.h>
+#include <Wire.h>																			// library to communicate with i2c sensor
 #define I2C_ADDR     (0x29)
 #define REG_CONTROL  0x00
 #define REG_CONFIG   0x01
@@ -24,7 +23,6 @@ waitTimer xt;
 #define REG_DATAHIGH 0x05
 #define REG_ID       0x0A
 static uint8_t M = 0;
-
 
 uint8_t thVal = 0;																			// variable which holds the measured value
 
