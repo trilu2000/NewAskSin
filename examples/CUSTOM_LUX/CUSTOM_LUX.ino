@@ -74,9 +74,6 @@ void setup() {
 	sei();																					// enable interrupts
 	
 	// - user related -----------------------------------------
-	//uint8_t x[5] = {0x01,0x11,0x02,0x22,0x03};
-	//dbg << "a:" << _HEX(x,5) << _TIME << '\n';
-	//dbg << "b:" << _HEXB(0xff) << '\n';
 
 }
 
