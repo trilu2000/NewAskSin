@@ -133,12 +133,10 @@ uint8_t ccSendByte(uint8_t data) {
 }
 uint8_t ccGetGDO0() {
 	uint8_t x = chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT);
-	if (x>1) dbg << "x:" << x << '\n';
+	//if (x>1) dbg << "x:" << x << '\n';
 	
-	if (x == 2 ) {																			// falling edge detected
-		//dbg << '2';
-		return 1;
-	} else return 0;
+	if (x == 2 ) return 1;																	// falling edge detected
+	else return 0;
 }
 
 void    enableGDO0Int(void) {

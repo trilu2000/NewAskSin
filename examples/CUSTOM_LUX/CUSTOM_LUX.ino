@@ -26,7 +26,7 @@ waitTimer xt;
 static uint8_t M = 0;
 
 
-uint8_t thVal = 128;																		// variable which holds the measured value
+uint8_t thVal = 0;																			// variable which holds the measured value
 
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
@@ -78,8 +78,6 @@ void setup() {
 	//dbg << "a:" << _HEX(x,5) << _TIME << '\n';
 	//dbg << "b:" << _HEXB(0xff) << '\n';
 
-	xt.set(100);
-	initTSL();
 }
 
 void loop() {
@@ -89,50 +87,32 @@ void loop() {
 
 	// - user related -----------------------------------------
 	//if (xt.done()) {
-	//	dbg << getBatteryVoltageInternal() << '\n';
-	//	uint32_t startMillis = getMillis();
 	//	uint16_t lux = readTSL();
-		
+	//	lux /= 32;
 	//	dbg << "l: " << lux << '\n';
 	//	xt.set(1000);
 	//}
 	
-	/*if (xt.done()) {
-	//	dbg << getBatteryVoltageExternal() << '\n';
-		xt.set(1000);
 
-		uint32_t lux;
-		lux = readTSL();
-   
-		// automatically adjust range
-		if (((lux & 0xc000) == 0xc000) && (M<2)) {
-			M++;
-			configTSL();
-			return;
-		}
-
-		if (!(lux & 0xc000) && (M>0)) {
-			M--;
-			configTSL();
-			return;
-		}
-   
-		lux *= (1<<M);
-		Serial.print("Lux: ");
-		Serial.println(lux, DEC);
-
-	}*/
 }
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
 void initTH1() {
+	initTSL();																				// init the sensor
+
+	#ifdef SER_DBG
 	dbg << "init th1\n";
-	initTSL();
+	#endif
 }
 void measureTH1() {
-	dbg << "measure th1 " << _TIME << '\n';
-
+	uint16_t lux = readTSL();																// read the sensor
+	lux /= 32;																				// further /4 due to setup
+	thVal = lux & 0xff;																		// mask the value to get a byte value
+	
+	#ifdef SER_DBG
+	dbg << "lux/128: " << lux << ' ' << _TIME << '\n';
+	#endif
 }
 
 static void     initTSL(void) {
