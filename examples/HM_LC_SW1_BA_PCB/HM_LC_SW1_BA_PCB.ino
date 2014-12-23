@@ -49,22 +49,21 @@ void setup() {
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(1);																		// set power management mode
-	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
+	hm.bt.set(1, 27, 1800000);		// 1800000 = 0,5h										// set battery check
 
 	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
 	relay.config(&initRly, &switchRly);//, 2);
 	
 	// - user related -----------------------------------------
 
-	
-	sei();																					// enable interrupts
 
+
+	sei();																					// enable interrupts
 }
 
 void loop() {
 	// - AskSin related ---------------------------------------
 	hm.poll();																				// poll the homematic main loop
-	
 
 	// - user related -----------------------------------------
 
@@ -78,7 +77,7 @@ void initRly() {
 	setPinLow(PORTD,3);
 }
 void switchRly(uint8_t status) {
-	dbg << "st: " << status << '\n';
+	//dbg << "st: " << status << '\n';
 	if (status) setPinHigh(PORTD,3);
 	else setPinLow(PORTD,3);
 }

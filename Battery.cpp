@@ -17,6 +17,7 @@ void    BT::set(uint8_t mode, uint8_t tenthVolt, uint32_t duration) {
 	bMode = mode;
 	bDuration = duration;
 	checkTenthVolt = tenthVolt;
+	poll();
 }
 
 // private:		//---------------------------------------------------------------------------------------------------------
