@@ -153,7 +153,7 @@ class waitTimer {
 
 	uint8_t  done(void);
 	void     set(uint32_t ms);
-	uint16_t remain(void);
+	uint32_t remain(void);
 };
 
 

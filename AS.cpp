@@ -1047,18 +1047,17 @@ void AS::explainMessage(uint8_t *buf) {
 uint8_t  waitTimer::done(void) {
 	if (!armed) return 1;																	// not armed, so nothing to do
 	if ( (getMillis() - startTime) < checkTime ) return 0;									// not ready yet
-	// if we are here, timeout was happened 
-	armed = 0;																				// not armed any more
-	return 1;																				// signal done
+	
+	checkTime = armed = 0;																	// if we are here, timeout was happened, next loop status 1 will indicated  
 }
 void     waitTimer::set(uint32_t ms) {
 	armed = ms?1:0;
 	if (armed) {
 		startTime = getMillis();
 		checkTime = ms;
-	}
+	} 		
 }
-uint16_t waitTimer::remain(void) {
+uint32_t waitTimer::remain(void) {
 	if (!armed) return 0;
 	return checkTime - (getMillis() - startTime);
 }
