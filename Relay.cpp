@@ -268,12 +268,9 @@ void Relay::setToggle(void) {
 	dbg << F("RL\n");
 	#endif
 
-	if (setStat) modStat = 0;
-	else modStat = 200;
-
+	modStat ^= 200;																			// xor the relay status
 	sendStat = 2;																			// send next time a info status message
-	msgTmr.set(10);																			// wait a short time to set status
-
+	
 }
 void Relay::configCngEvent(void) {
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
