@@ -139,7 +139,6 @@ class AS {
 extern AS hm;
 
 
-
 class waitTimer {
 	// http://www.gammon.com.au/forum/?id=12127
 	
@@ -149,12 +148,11 @@ class waitTimer {
 	uint32_t startTime;
 
   public:		//---------------------------------------------------------------------------------------------------------
-	waitTimer () {}
-
 	uint8_t  done(void);
 	void     set(uint32_t ms);
 	uint32_t remain(void);
 };
+
 
 
 uint32_t byteTimeCvt(uint8_t tTime);

@@ -1,17 +1,16 @@
-#define SER_DBG
+#define SER_DBG																				// serial debug messages
 
 //- load library's --------------------------------------------------------------------------------------------------------
-#include <AS.h>
+#include <AS.h>																				// ask sin framework
 #include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
-#include <Relay.h>
+#include <Relay.h>																			// relay class module
 
 
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 Relay relay;																				// stage a dummy module
 
-//waitTimer xTmr;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
@@ -24,20 +23,21 @@ void setup() {
 	// everything off
 	ADCSRA = 0;																				// ADC off
 	power_all_disable();																	// and everything else
-	
 	DDRB = DDRC = DDRD = 0x00;																// everything as input
 	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	power_spi_enable();																		// enable only needed functions
-	power_timer0_enable();
-	power_usart0_enable();
+	// enable only what is really needed
+	power_spi_enable();																		// SPI port for transceiver communication
+	power_timer0_enable();																	// timer0 for getMillis and waitTimer
+	power_usart0_enable();																	// serial port for debugging
 
+	// initialize the hardware, functions to be found in hardware.cpp
 	initMillis();																			// milli timer start
-	initPCINT();																			// initialize the pin change interrupts
-	ccInitHw();																				// initialize transceiver hardware
-	initLeds();																				// initialize the leds
-	initConfKey();																			// initialize the port for getting config key interrupts
-	//initExtBattMeasurement();																// initialize the external battery measurement
+	initPCINT();																			// pin change interrupts
+	ccInitHw();																				// transceiver hardware
+	initLeds();																				// leds
+	initConfKey();																			// config key pin and interrupt
+	//initExtBattMeasurement();																// external battery measurement
 
 	
 	// - AskSin related ---------------------------------------
@@ -52,8 +52,9 @@ void setup() {
 	hm.bt.set(1, 27, 1800000);		// 1800000 = 0,5h										// set battery check
 
 	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
-	relay.config(&initRly, &switchRly);//, 2);
+	relay.config(&initRly, &switchRly);														// hand over the relay functions of main sketch
 	
+
 	// - user related -----------------------------------------
 
 
@@ -72,13 +73,15 @@ void loop() {
 
 //- user functions --------------------------------------------------------------------------------------------------------
 void initRly() {
+// setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
 
 	pinOutput(DDRD,3);																		// init the relay pins
-	setPinLow(PORTD,3);
+	setPinLow(PORTD,3);																		// set relay pin to ground
 }
 void switchRly(uint8_t status) {
-	//dbg << "st: " << status << '\n';
-	if (status) setPinHigh(PORTD,3);
+// switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
+
+	if (status) setPinHigh(PORTD,3);														// check status and set relay pin accordingly
 	else setPinLow(PORTD,3);
 }
 

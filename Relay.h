@@ -124,20 +124,22 @@ class Relay {
 	uint16_t  msgDelay;																		// delay for sending initial status
 	uint8_t	  sendStat  :2;																	// indicator for sendStatus function
 
-	uint8_t   tr11   :1;																	// trigger 11 active
+	uint8_t   tr11      :1;																	// trigger 11 active
 	uint8_t   tr11Value;																	// trigger 11 set value
 	uint16_t  rampTme, duraTme;																// time store for trigger 11
 
 	uint8_t   setStat;																		// status to set on the Relay channel
 
-	void      config(void Init(), void Switch(uint8_t)); //, uint8_t minDelay);
-	void      trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);
-	void      trigger40(uint8_t msgLng, uint8_t msgCnt);
-	void      trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);
-	void      adjRly(void);
-	void      sendStatus(void);
+	void      config(void Init(), void Switch(uint8_t));									// handover for jump addresses
 
-	void      rlyPoll(void);
+	void      trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);				// what happens while a trigger11 message arrive
+	void      trigger40(uint8_t msgLng, uint8_t msgCnt);									// same for peer messages
+	void      trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);					// same for sensor messages
+
+	void      adjRly(void);																	// setting of relay status
+	void      sendStatus(void);																// help function to send status messages
+
+	void      rlyPoll(void);																// polling function
 
 
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
