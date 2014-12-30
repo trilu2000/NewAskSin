@@ -1,16 +1,26 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<device version="7">
+<device version="4">
 	<supported_types>
-		<type name="1 channel dimmer PWM (ceiling voids)" id="HM-LC-Dim1PWM-CV" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x20"/>
-			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0067"/>
+		<type name="1 channel dimmer T (plug)" id="HM-LC-Dim1T-Pl" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x19"/>
+			<parameter index="10.0" size="2.0" const_value="0x0057"/>
+		</type>
+		<type name="1 channel dimmer T (ceiling voids)" id="HM-LC-Dim1T-CV" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x19"/>
+			<parameter index="10.0" size="2.0" const_value="0x0058"/>
+		</type>
+		<type name="2 channel dimmer T (surface mount)" id="HM-LC-Dim2T-SM" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x19"/>
+			<parameter index="10.0" size="2.0" const_value="0x005a"/>
+		</type>
+		<type name="1 channel dimmer T (flush mount)" id="HM-LC-Dim1T-FM" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x19"/>
+			<parameter index="10.0" size="2.0" const_value="0x0059"/>
 		</type>
 	</supported_types>
-
 	<paramset type="MASTER" id="dimmer_dev_master">
 		<parameter id="INTERNAL_KEYS_VISIBLE" ui_flags="internal">
-			<logical type="boolean" default="true"/>
+			<logical type="boolean" default="false"/>
 			<physical type="integer" interface="config" list="0" index="2.7" size="0.1"/>
 		</parameter>
 		<parameter id="CONF_BUTTON_TIME">
@@ -20,7 +30,6 @@
 			<physical type="integer" interface="config" list="0" index="0x15" size="1"/>
 		</parameter>
 	</paramset>
-
 	<channels>
 		<channel index="0" type="MAINTENANCE" ui_flags="internal" class="maintenance" count="1">
 			<paramset type="MASTER" id="maint_ch_master">
@@ -44,35 +53,35 @@
 				</parameter>
 			</paramset>
 		</channel>
-		<channel index="1" type="DIMMER" count="1">
+		<channel index="1" type="DIMMER" count_from_sysinfo="23.0:0.2">
 			<link_roles>
 				<target name="SWITCH"/>
 				<target name="WEATHER_CS"/>
 				<target name="WCS_TIPTRONIC_SENSOR"/>
 			</link_roles>
 			<paramset type="MASTER" id="dimmer_ch_master">
-				<subset ref="physical_parameters"/>
-				<subset ref="general_parameters"/>
-			</paramset>
-			<paramset type="VALUES" id="dimmer_ch_values">
-				<subset ref="dimmer_valueset"/>
-			</paramset>
-			<paramset type="LINK" id="dimmer_ch_link">
-				<subset ref="dimmer_linkset"/>
-			</paramset>
-			<enforce_link>
-				<value id="LCD_SYMBOL" value="1"/>
-				<value id="LCD_LEVEL_INTERP" value="1"/>
-			</enforce_link>
-		</channel>
-		<channel index="2" type="VIRTUAL_DIMMER" count="2">
-			<link_roles>
-				<target name="SWITCH"/>
-				<target name="WEATHER_CS"/>
-				<target name="WCS_TIPTRONIC_SENSOR"/>
-			</link_roles>
-			<paramset type="MASTER" id="dimmer_virt_ch_master">
-				<subset ref="general_parameters"/>
+				<parameter id="TRANSMIT_TRY_MAX" operations="read,write">
+					<logical type="integer" min="0" max="10" default="6"/>
+					<physical type="integer" interface="config" list="1" index="48" size="1"/>
+				</parameter>
+				<parameter id="REDUCE_TEMP_LEVEL" operations="read,write">
+					<logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
+					<physical type="integer" interface="config" list="1" index="52" size="1"/>
+				</parameter>
+				<parameter id="REDUCE_LEVEL" operations="read,write">
+					<logical type="float" min="0.0" max="1.0" default="0.4" unit="100%"/>
+					<physical type="integer" interface="config" list="1" index="53" size="1"/>
+					<conversion type="float_integer_scale" factor="200"/>
+				</parameter>
+				<parameter id="OVERTEMP_LEVEL" operations="read,write">
+					<logical type="integer" default="80" min="30" max="100" unit="&#176;C"/>
+					<physical type="integer" interface="config" list="1" index="50" size="1"/>
+				</parameter>
+				<parameter id="FUSE_DELAY" operations="read,write">
+					<logical type="float" default="1.0" min="0.0" max="2.55" unit="s"/>
+					<physical type="integer" interface="config" list="1" index="51" size="1"/>
+					<conversion type="float_integer_scale" factor="100"/>
+				</parameter>
 			</paramset>
 			<paramset type="VALUES" id="dimmer_ch_values">
 				<subset ref="dimmer_valueset"/>
@@ -134,69 +143,7 @@
 			<parameter type="integer" const_value="0" param="INHIBIT"/>
 		</frame>
 	</frames>
-	
 	<paramset_defs>
-		<paramset id="physical_parameters">
-			<parameter id="REDUCE_TEMP_LEVEL" operations="read,write"><logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
-				<physical type="integer" interface="config" list="1" index="52" size="1"/>
-			</parameter>
-			<parameter id="REDUCE_LEVEL" operations="read,write"><logical type="float" min="0.0" max="1.0" default="0.4" unit="100%"/>
-				<physical type="integer" interface="config" list="1" index="53" size="1"/>
-				<conversion type="float_integer_scale" factor="200"/>
-			</parameter>
-			<parameter id="OVERTEMP_LEVEL" operations="read,write"><logical type="integer" default="80" min="30" max="100" unit="&#176;C"/>
-				<physical type="integer" interface="config" list="1" index="50" size="1"/>
-			</parameter>
-			<parameter id="CHARACTERISTIC" operations="read,write"><logical type="option">
-					<option id="CHARACTERISTIC_LINEAR"/>
-					<option id="CHARACTERISTIC_SQUARE" default="true"/>
-				</logical>
-				<physical type="integer" interface="config" list="1" index="88" size="0.1"/>
-			</parameter>
-		</paramset>
-		
-		<paramset id="general_parameters">
-			<parameter id="TRANSMIT_TRY_MAX" operations="read,write"><logical type="integer" min="0" max="10" default="6"/>
-				<physical type="integer" interface="config" list="1" index="48" size="1"/>
-			</parameter>
-			<parameter id="POWERUP_ACTION" operations="read,write"><logical type="option">
-					<option id="POWERUP_OFF" default="true"/>
-					<option id="POWERUP_ON"/>
-				</logical>
-				<physical type="integer" interface="config" list="1" index="86" size="0.1"/>
-			</parameter>
-			<parameter id="STATUSINFO_MINDELAY" operations="read,write"><logical type="float" min="0.5" max="15.5" default="2.0" unit="s">
-					<special_value id="NOT_USED" value="0.0"/>
-				</logical>
-				<physical type="integer" interface="config" list="1" index="87.0" size="0.5"/>
-				<conversion type="float_integer_scale" factor="2"/>
-			</parameter>
-			<parameter id="STATUSINFO_RANDOM" operations="read,write"><logical type="float" min="0.0" max="7.0" default="1.0" unit="s"/>
-				<physical type="integer" interface="config" list="1" index="87.5" size="0.3"/>
-				<conversion type="float_integer_scale" factor="1"/>
-			</parameter>
-			<parameter id="LOGIC_COMBINATION" operations="read,write"><logical type="option">
-					<option id="LOGIC_INACTIVE"/>
-					<option id="LOGIC_OR" default="true"/>
-					<option id="LOGIC_AND"/>
-					<option id="LOGIC_XOR"/>
-					<option id="LOGIC_NOR"/>
-					<option id="LOGIC_NAND"/>
-					<option id="LOGIC_ORINVERS"/>
-					<option id="LOGIC_ANDINVERS"/>
-					<option id="LOGIC_PLUS"/>
-					<option id="LOGIC_MINUS"/>
-					<option id="LOGIC_MUL"/>
-					<option id="LOGIC_PLUSINVERS"/>
-					<option id="LOGIC_MINUSINVERS"/>
-					<option id="LOGIC_MULINVERS"/>
-					<option id="LOGIC_INVERSPLUS"/>
-					<option id="LOGIC_INVERSMINUS"/>
-					<option id="LOGIC_INVERSMUL"/>
-				</logical>
-				<physical type="integer" interface="config" list="1" index="89" size="0.5"/>
-			</parameter>
-		</paramset>
 		<paramset id="dimmer_valueset">
 			<parameter id="LEVEL" operations="read,write,event" control="DIMMER.LEVEL">
 				<logical type="float" default="0.0" min="0.0" max="1.0" unit="100%"/>
@@ -284,6 +231,13 @@
 			<parameter id="ERROR_REDUCED" operations="read,event" ui_flags="service" control="NONE">
 				<logical type="boolean" default="false"/>
 				<physical type="integer" interface="command" value_id="ERROR_REDUCED">
+					<event frame="INFO_LEVEL"/>
+					<event frame="ACK_STATUS"/>
+				</physical>
+			</parameter>
+			<parameter id="ERROR_OVERLOAD" operations="read,event" ui_flags="service" control="NONE">
+				<logical type="boolean" default="false"/>
+				<physical type="integer" interface="command" value_id="ERROR_OVERLOAD">
 					<event frame="INFO_LEVEL"/>
 					<event frame="ACK_STATUS"/>
 				</physical>
@@ -589,106 +543,6 @@
 				<physical type="integer" interface="config" list="3" index="0x1A" size="1"/>
 				<conversion type="float_integer_scale" factor="10" offset="-0.1"/>
 			</parameter>
-			<parameter id="SHORT_ELSE_ON_TIME_MODE">
-				<logical type="option">
-					<option id="ABSOLUTE" default="true"/>
-					<option id="MINIMAL"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x26.7" size="0.1"/>
-			</parameter>
-			<parameter id="SHORT_ELSE_OFF_TIME_MODE">
-				<logical type="option">
-					<option id="ABSOLUTE" default="true"/>
-					<option id="MINIMAL"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x26.6" size="0.1"/>
-			</parameter>
-			<parameter id="SHORT_ELSE_ACTION_TYPE">
-				<logical type="option">
-					<option id="INACTIVE" default="true"/>
-					<option id="JUMP_TO_TARGET"/>
-					<option id="TOGGLE_TO_COUNTER"/>
-					<option id="TOGGLE_INVERS_TO_COUNTER"/>
-					<option id="UPDIM"/>
-					<option id="DOWNDIM"/>
-					<option id="TOGGLEDIM"/>
-					<option id="TOGGLEDIM_TO_COUNTER"/>
-					<option id="TOGGLEDIM_INVERS_TO_COUNTER"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x26.0" size="0.4"/>
-			</parameter>
-			<parameter id="SHORT_ELSE_JT_OFF">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x27.4" size="0.4"/>
-			</parameter>
-			<parameter id="SHORT_ELSE_JT_ON">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x27.0" size="0.4"/>
-			</parameter>
-			<parameter id="SHORT_ELSE_JT_OFFDELAY">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x28.4" size="0.4"/>
-			</parameter>
-			<parameter id="SHORT_ELSE_JT_ONDELAY">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x28.0" size="0.4"/>
-			</parameter>
-			<parameter id="SHORT_ELSE_JT_RAMPOFF">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x29.4" size="0.4"/>
-			</parameter>
-			<parameter id="SHORT_ELSE_JT_RAMPON">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0x29.0" size="0.4"/>
-			</parameter>
 			<parameter id="LONG_CT_RAMPOFF">
 				<logical type="option">
 					<option id="X GE COND_VALUE_LO" default="true"/>
@@ -976,113 +830,6 @@
 				<logical type="float" min="0.1" max="25.6" default="0.5" unit="s"/>
 				<physical type="integer" interface="config" list="3" index="0x9A" size="1"/>
 				<conversion type="float_integer_scale" factor="10" offset="-0.1"/>
-			</parameter>
-			<parameter id="LONG_ELSE_ON_TIME_MODE">
-				<logical type="option">
-					<option id="ABSOLUTE" default="true"/>
-					<option id="MINIMAL"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA6.7" size="0.1"/>
-			</parameter>
-			<parameter id="LONG_ELSE_OFF_TIME_MODE">
-				<logical type="option">
-					<option id="ABSOLUTE" default="true"/>
-					<option id="MINIMAL"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA6.6" size="0.1"/>
-			</parameter>
-			<parameter id="LONG_ELSE_MULTIEXECUTE">
-				<logical type="option">
-					<option id="OFF" default="true"/>
-					<option id="ON"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA6.5" size="0.1"/>
-			</parameter>
-			<parameter id="LONG_ELSE_ACTION_TYPE">
-				<logical type="option">
-					<option id="INACTIVE" default="true"/>
-					<option id="JUMP_TO_TARGET"/>
-					<option id="TOGGLE_TO_COUNTER"/>
-					<option id="TOGGLE_INVERS_TO_COUNTER"/>
-					<option id="UPDIM"/>
-					<option id="DOWNDIM"/>
-					<option id="TOGGLEDIM"/>
-					<option id="TOGGLEDIM_TO_COUNTER"/>
-					<option id="TOGGLEDIM_INVERS_TO_COUNTER"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA6.0" size="0.4"/>
-			</parameter>
-			<parameter id="LONG_ELSE_JT_OFF">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA7.4" size="0.4"/>
-			</parameter>
-			<parameter id="LONG_ELSE_JT_ON">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA7.0" size="0.4"/>
-			</parameter>
-			<parameter id="LONG_ELSE_JT_OFFDELAY">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA8.4" size="0.4"/>
-			</parameter>
-			<parameter id="LONG_ELSE_JT_ONDELAY">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA8.0" size="0.4"/>
-			</parameter>
-			<parameter id="LONG_ELSE_JT_RAMPOFF">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA9.4" size="0.4"/>
-			</parameter>
-			<parameter id="LONG_ELSE_JT_RAMPON">
-				<logical type="option">
-					<option id="NO_JUMP_IGNORE_COMMAND"/>
-					<option id="ONDELAY" default="true"/>
-					<option id="RAMPON"/>
-					<option id="ON"/>
-					<option id="OFFDELAY"/>
-					<option id="RAMPOFF"/>
-					<option id="OFF"/>
-				</logical>
-				<physical type="integer" interface="config" list="3" index="0xA9.0" size="0.4"/>
 			</parameter>
 		</paramset>
 	</paramset_defs>

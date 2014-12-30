@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<device version="7">
+<device version="7" supports_aes="true">
 	<supported_types>
 		<type name="1 channel dimmer PWM (ceiling voids)" id="HM-LC-Dim1PWM-CV" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x20"/>
-			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x24"/>
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x25"/>
 			<parameter index="10.0" size="2.0" const_value="0x0067"/>
 		</type>
+		<type name="1 channel dimmer PWM (ceiling voids)" id="HM-LC-Dim1PWM-CV-2" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x25"/>
+			<parameter index="10.0" size="2.0" const_value="0x00B5"/>
+		</type>
 	</supported_types>
-
 	<paramset type="MASTER" id="dimmer_dev_master">
 		<parameter id="INTERNAL_KEYS_VISIBLE" ui_flags="internal">
 			<logical type="boolean" default="true"/>
@@ -19,8 +21,11 @@
 			</logical>
 			<physical type="integer" interface="config" list="0" index="0x15" size="1"/>
 		</parameter>
+		<parameter id="LOCAL_RESET_DISABLE" operations="read,write">
+			<logical type="boolean" default="false"/>
+			<physical type="integer" interface="config" list="0" index="24.0" size="0.1"/>
+		</parameter>
 	</paramset>
-
 	<channels>
 		<channel index="0" type="MAINTENANCE" ui_flags="internal" class="maintenance" count="1">
 			<paramset type="MASTER" id="maint_ch_master">
@@ -41,6 +46,18 @@
 				<parameter id="DUTYCYCLE" operations="read,event" ui_flags="service">
 					<logical type="boolean"/>
 					<physical type="integer" interface="internal" value_id="DUTYCYCLE"/>
+				</parameter>
+				<parameter id="RSSI_DEVICE" operations="read,event">
+					<logical type="integer"/>
+					<physical type="integer" interface="internal" value_id="RSSI_DEVICE"/>
+				</parameter>
+				<parameter id="RSSI_PEER" operations="read,event">
+					<logical type="integer"/>
+					<physical type="integer" interface="internal" value_id="RSSI_PEER"/>
+				</parameter>
+				<parameter id="AES_KEY" operations="read" ui_flags="invisible">
+					<logical type="integer" min="0" max="127"/>
+					<physical type="integer" interface="internal" value_id="AES_KEY"/>
 				</parameter>
 			</paramset>
 		</channel>
@@ -134,7 +151,6 @@
 			<parameter type="integer" const_value="0" param="INHIBIT"/>
 		</frame>
 	</frames>
-	
 	<paramset_defs>
 		<paramset id="physical_parameters">
 			<parameter id="REDUCE_TEMP_LEVEL" operations="read,write"><logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
@@ -154,8 +170,11 @@
 				<physical type="integer" interface="config" list="1" index="88" size="0.1"/>
 			</parameter>
 		</paramset>
-		
 		<paramset id="general_parameters">
+			<parameter id="AES_ACTIVE" ui_flags="internal">
+				<logical type="boolean" default="false"/>
+				<physical type="boolean" interface="internal" value_id="AES"/>
+			</parameter>
 			<parameter id="TRANSMIT_TRY_MAX" operations="read,write"><logical type="integer" min="0" max="10" default="6"/>
 				<physical type="integer" interface="config" list="1" index="48" size="1"/>
 			</parameter>
@@ -203,9 +222,9 @@
 				<physical type="integer" interface="command" value_id="LEVEL">
 					<set request="LEVEL_SET"/>
 					<get request="LEVEL_GET" response="INFO_LEVEL" process_as_event="true"/>
-					<event frame="INFO_LEVEL"/>
-					<event frame="ACK_STATUS"/>
-					<event frame="INFO_POWERON"/>
+					<event frame="INFO_LEVEL" auth_violate_policy="get"/>
+					<event frame="ACK_STATUS" auth_violate_policy="get"/>
+					<event frame="INFO_POWERON" auth_violate_policy="get"/>
 					<reset_after_send param="RAMP_TIME"/>
 					<reset_after_send param="ON_TIME"/>
 				</physical>

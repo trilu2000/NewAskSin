@@ -22,13 +22,13 @@ void setup() {
 	
 	// - Hardware setup ---------------------------------------
 	// everything off
-	//ADCSRA = 0;																				// ADC off
+	//ADCSRA = 0;																			// ADC off
 	//power_all_disable();																	// and everything else
 	
-	//DDRB = DDRC = DDRD = 0x00;																// everything as input
+	//DDRB = DDRC = DDRD = 0x00;															// everything as input
 	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	//power_spi_enable();																		// enable only needed functions
+	//power_spi_enable();																	// enable only needed functions
 	//power_timer0_enable();
 	//power_usart0_enable();
 

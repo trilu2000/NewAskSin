@@ -91,8 +91,31 @@ void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 		delayTmr.set(0);																	// set timer to 0 for avoiding delays
 
 	} else if (l3->actionType == 2) {		// toogleToCounter
+		l3->actionType = 0;
 
+		if (msgCnt%2) {
+			modStat = 200;
+			adjDlyPWM = byteTimeCvt(l3->rampOnTime) / 200;
+			
+		} else {
+			modStat = 0;
+			adjDlyPWM = byteTimeCvt(l3->rampOffTime) / 200;
+			
+		}
+		
 	} else if (l3->actionType == 3) {		// toogleInversToCounter
+		l3->actionType = 0;
+
+		if (msgCnt%2) {
+			modStat = 0;
+			adjDlyPWM = byteTimeCvt(l3->rampOffTime) / 200;
+			
+			} else {
+			modStat = 200;
+			adjDlyPWM = byteTimeCvt(l3->rampOnTime) / 200;
+			
+		}
+
 
 	} else if (l3->actionType == 4) {		// upDim
 		upDim();
@@ -287,9 +310,14 @@ void Dimmer::sendStatus(void) {
 	else if (sendStat == 2) hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);			// send status
 
 	// check if it is a stable status, otherwise schedule next info message
-	if (modDUL) {																			// status is currently changing
+	if (modDUL >= 0x40) {																	// status is currently changing
+		sendStat = 2;																		// send next time a info status message
+		msgTmr.set(delayTmr.remain()+5);
+
+	} else if (modDUL) {
 		sendStat = 2;																		// send next time a info status message
 		msgTmr.set(msgDelay);
+
 	} else sendStat = 0;																	// no need for next time
 }
 void Dimmer::dimPoll(void) {

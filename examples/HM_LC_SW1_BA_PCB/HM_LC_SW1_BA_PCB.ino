@@ -16,7 +16,7 @@ Relay relay;																				// stage a dummy module
 void setup() {
 	#ifdef SER_DBG
 	dbgStart();																				// serial setup
-	Serial << F("Main\n");																	// ...and some information
+	dbg << F("HM_LC_SW1_BA_PCB\n");															// ...and some information
 	#endif
 	
 	// - Hardware setup ---------------------------------------
@@ -58,7 +58,7 @@ void setup() {
 	// - user related -----------------------------------------
 
 
-
+	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
 	sei();																					// enable interrupts
 }
 

@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
-<device version="7">
+<device version="11">
 	<supported_types>
-		<type name="1 channel dimmer PWM (ceiling voids)" id="HM-LC-Dim1PWM-CV" priority="2">
+		<type name="1 channel dimmer T (plug)" id="HM-LC-Dim1T-Pl-644" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x20"/>
 			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0067"/>
+			<parameter index="10.0" size="2.0" const_value="0x0071"/>
+		</type>
+		<type name="1 channel dimmer T (ceiling voids)" id="HM-LC-Dim1T-CV-644" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x20"/>
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x24"/>
+			<parameter index="10.0" size="2.0" const_value="0x0072"/>
+		</type>
+		<type name="1 channel dimmer T (flush mount)" id="HM-LC-Dim1T-FM-644" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x20"/>
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x24"/>
+			<parameter index="10.0" size="2.0" const_value="0x0073"/>
 		</type>
 	</supported_types>
-
 	<paramset type="MASTER" id="dimmer_dev_master">
 		<parameter id="INTERNAL_KEYS_VISIBLE" ui_flags="internal">
 			<logical type="boolean" default="true"/>
@@ -20,7 +29,6 @@
 			<physical type="integer" interface="config" list="0" index="0x15" size="1"/>
 		</parameter>
 	</paramset>
-
 	<channels>
 		<channel index="0" type="MAINTENANCE" ui_flags="internal" class="maintenance" count="1">
 			<paramset type="MASTER" id="maint_ch_master">
@@ -134,7 +142,6 @@
 			<parameter type="integer" const_value="0" param="INHIBIT"/>
 		</frame>
 	</frames>
-	
 	<paramset_defs>
 		<paramset id="physical_parameters">
 			<parameter id="REDUCE_TEMP_LEVEL" operations="read,write"><logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
@@ -147,14 +154,11 @@
 			<parameter id="OVERTEMP_LEVEL" operations="read,write"><logical type="integer" default="80" min="30" max="100" unit="&#176;C"/>
 				<physical type="integer" interface="config" list="1" index="50" size="1"/>
 			</parameter>
-			<parameter id="CHARACTERISTIC" operations="read,write"><logical type="option">
-					<option id="CHARACTERISTIC_LINEAR"/>
-					<option id="CHARACTERISTIC_SQUARE" default="true"/>
-				</logical>
-				<physical type="integer" interface="config" list="1" index="88" size="0.1"/>
+			<parameter id="FUSE_DELAY" operations="read,write"><logical type="float" default="1.0" min="0.0" max="2.55" unit="s"/>
+				<physical type="integer" interface="config" list="1" index="51" size="1"/>
+				<conversion type="float_integer_scale" factor="100"/>
 			</parameter>
 		</paramset>
-		
 		<paramset id="general_parameters">
 			<parameter id="TRANSMIT_TRY_MAX" operations="read,write"><logical type="integer" min="0" max="10" default="6"/>
 				<physical type="integer" interface="config" list="1" index="48" size="1"/>
@@ -284,6 +288,13 @@
 			<parameter id="ERROR_REDUCED" operations="read,event" ui_flags="service" control="NONE">
 				<logical type="boolean" default="false"/>
 				<physical type="integer" interface="command" value_id="ERROR_REDUCED">
+					<event frame="INFO_LEVEL"/>
+					<event frame="ACK_STATUS"/>
+				</physical>
+			</parameter>
+			<parameter id="ERROR_OVERLOAD" operations="read,event" ui_flags="service" control="NONE">
+				<logical type="boolean" default="false"/>
+				<physical type="integer" interface="command" value_id="ERROR_OVERLOAD">
 					<event frame="INFO_LEVEL"/>
 					<event frame="ACK_STATUS"/>
 				</physical>
