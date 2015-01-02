@@ -5,6 +5,15 @@ use XML::LibXML;
 
 my $dir = 'devicetypes';																					# directory with the HM device files
 
+#-- some functions -------------------------------------------------------------------------------------
+# @array=&del_double(@array);
+sub del_double {
+	my %all=();
+	@all{@_}=1;
+	return (keys %all);
+}
+
+
 #-- quit unless we have the correct number of command-line args ----------------------------------------
 my $num_args = $#ARGV + 1;
 if ($num_args != 2) {
@@ -158,27 +167,106 @@ foreach my $sections ($xc->findnodes('/device/channels/channel')) {											# 
 }
 
 #-- some debug -----------------------------------------------------------------------------------------
+#foreach my $item (sort{$a <=> $b}(keys %cnlConf)) {
+#	my $h = $cnlConf{$item};
+#	print "$item,  $h->{'idx'}  $h->{'cnt'} $h->{'type'} \t $h->{'id'} \t $h->{'ref'}\n";
+#}
+
+
+#-- now getting the registers according the channel config ---------------------------------------------
 foreach my $item (sort{$a <=> $b}(keys %cnlConf)) {
 	my $h = $cnlConf{$item};
-    print "$item,  $h->{'idx'}  $h->{'cnt'} $h->{'type'} \t $h->{'id'} \t $h->{'ref'}\n";
+	#print "$item,   $h->{'cnl'}  $h->{'idx'}  $h->{'cnt'} $h->{'type'} \t $h->{'id'} \t $h->{'ref'}\n";
+	
+	foreach my $sections ($xc->findnodes('/device/paramset_defs/paramset')) {								# set pointer to paramset
+		my $parsetId = $sections->getAttribute('id');														# get the id
+
+		if ($parsetId ne $h->{'ref'} ) {																	# next paramset while id didn't fit
+			next;
+		}
+		
+		#-- now stepping through the parameter ---------------------------------------------------------
+		foreach my $parameter ($sections->findnodes('./parameter')) {										# set pointer to parameter
+			my $paraId = $parameter->getAttribute('id');													# get the id
+			
+			foreach my $physical ($parameter->findnodes('./physical')) {									# set pointer to physical
+				my $phyLst = $physical->getAttribute('list');												# get the list
+				my $phyIdx = $physical->getAttribute('index');												# get the index
+				my $phySze = $physical->getAttribute('size');												# get the size
+
+				if (!$phyIdx) {																				# if no index given, skip
+					next;
+				}
+
+				#-- clean up variables and write in hash -----------------------------------------------
+				#print "$phyLst $phyIdx $phySze  \n";
+				
+				my $idxBgn = 0;																				# default is bit 0 
+
+				if (index($phyIdx, '.') != -1) {															# check for starting bit position
+					$idxBgn = substr $phyIdx, -1;															# bit position is the last number
+					$phyIdx = substr($phyIdx, 0, -2);														# shorten the index to get it converted to a dec number
+				} 
+				my $idxVal = eval $phyIdx;																	# convert from hex to dec if necessary
+
+				#-- getting the size in bit ------------------------------------------------------------
+				my ($hiValue, $loValue) = (0, 0);
+				my $i = index($phySze, '.');
+				
+				if ($i == -1) {																				# no dot in size
+					$hiValue = $phySze;
+		
+				} else {																					# we have to split up 
+					$hiValue = substr($phySze, 0, $i);														# get the bytes in front of the dot
+					$loValue = substr($phySze, $i+1, 1);													# and after the dot
+				}
+				my $idxSze = ($hiValue*8) + $loValue;														# recalculate the amount of bit
+				my $idxIdt = sprintf('0x%.2x.%s', $idxVal, $idxBgn);
+		
+				#-- put details in the hash for further use --------------------------------------------
+				$cnlTypeA{sprintf('%.2x %.2x %s', $h->{'cnl'}, $phyLst, $idxIdt)} = {'idt' => $idxIdt, 'cnl' => $h->{'cnl'}, 'lst' => $phyLst, 'reg' => $idxVal, 'bgn' => $idxBgn, 'sze' => $idxSze };		
+		
+				#print "$idxIdt Idx: $idxVal \t B: $idxBgn \t S: $idxSze \t \n\n";
+				
+				
+			}
+		
+		}
+	
+	}
+	
 }
 
+#-- some debug -----------------------------------------------------------------------------------------
+foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
+	my $h = $cnlTypeA{$item};
+	print "$item,  $h->{'reg'} \n";
+}
 
-#1 1 MASTER dimmer_ch_master 	 physical_parameters
-#1 1 MASTER dimmer_ch_master 	 general_parameters
-#1 1 VALUES dimmer_ch_values 	 dimmer_valueset
-#1 1 LINK dimmer_ch_link 	 dimmer_linkset
-#2 2 MASTER dimmer_virt_ch_master 	 general_parameters
-#2 2 VALUES dimmer_ch_values 	 dimmer_valueset
-#2 2 LINK dimmer_ch_link 	 dimmer_linkset
+#-- everything read, some sanity and creating output ---------------------------------------------------
+my @cnlArray = map { $cnlTypeA{$_}{cnl} } keys %cnlTypeA; 													# getting amount of channels
+@cnlArray = del_double(@cnlArray);
+
+
+print $#cnlArray ." \n";
+
+#foreach my $item ( keys %cnlTypeA) {
+#	my $h = $cnlTypeA{$item};
+#	push (@cnlArray, $h->{'cnl'});
+#}
+
+
+
 
 #-- some debug -----------------------------------------------------------------------------------------
 #foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 #	my $h = $cnlTypeA{$item};
-#    print "$item,  $h->{'reg'} \n";
+#   print "$item,  $h->{'reg'} \n";
 #}
 
 
+
+print "\n\n";
 #-- starting the print out -----------------------------------------------------------------------------
 print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 print "//- generated by createRegisterFromFile.pl\n";
