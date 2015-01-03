@@ -10,10 +10,11 @@ my $dir = 'devicetypes';																					# directory with the HM device file
 sub del_double {
 	my %all=();
 	@all{@_}=1;
-	return (keys %all);
+	return (sort { $a cmp $b } keys %all);
 }
 
 
+#-------------------------------------------------------------------------------------------------------
 #-- quit unless we have the correct number of command-line args ----------------------------------------
 my $num_args = $#ARGV + 1;
 if ($num_args != 2) {
@@ -103,7 +104,7 @@ foreach my $sections ($xc->findnodes('/device/paramset')) {													# set po
 		my $idxIdt = sprintf('0x%.2x.%s', $idxVal, $idxBgn);
 
 		#-- put details in the hash for further use ----------------------------------------------------
-		$cnlTypeA{sprintf('00 %.2x %s', $phyLst, $idxIdt)} = {'idt' => $idxIdt, 'cnl' => 0, 'lst' => $phyLst, 'reg' => $idxVal, 'bgn' => $idxBgn, 'sze' => $idxSze };		
+		$cnlTypeA{sprintf('00 %.2x %s', $phyLst, $idxIdt)} = {'idt' => $idxIdt, 'cnl' => 0, 'lst' => $phyLst, 'id' => $prmID, 'reg' => $idxVal, 'bgn' => $idxBgn, 'sze' => $idxSze };		
 		
 		#print "$idxIdt Idx: $idxVal \t B: $idxBgn \t S: $idxSze \t \n\n";
 	
@@ -111,13 +112,13 @@ foreach my $sections ($xc->findnodes('/device/paramset')) {													# set po
 
 	#-- needed for master id ---------------------------------------------------------------------------
 	if (!$cnlTypeA{'00 00 0x0a.0'}) {
-		$cnlTypeA{'00 00 0x0a.0'} = {'idt' => '0x0a.0', 'cnl' => 0, 'lst' => 0, 'reg' => 0x0a, 'bgn' => 0, 'sze' => 0};
+		$cnlTypeA{'00 00 0x0a.0'} = {'idt' => '0x0a.0', 'cnl' => 0, 'lst' => 0, 'id' => 'Master_ID_A', 'reg' => 0x0a, 'bgn' => 0, 'sze' => 8};
 	}
 	if (!$cnlTypeA{'00 00 0x0b.0'}) {
-		$cnlTypeA{'00 00 0x0b.0'} = {'idt' => '0x0b.0', 'cnl' => 0, 'lst' => 0, 'reg' => 0x0b, 'bgn' => 0, 'sze' => 0};
+		$cnlTypeA{'00 00 0x0b.0'} = {'idt' => '0x0b.0', 'cnl' => 0, 'lst' => 0, 'id' => 'Master_ID_B', 'reg' => 0x0b, 'bgn' => 0, 'sze' => 8};
 	}
 	if (!$cnlTypeA{'00 00 0x0c.0'}) {
-		$cnlTypeA{'00 00 0x0c.0'} = {'idt' => '0x0c.0', 'cnl' => 0, 'lst' => 0, 'reg' => 0x0c, 'bgn' => 0, 'sze' => 0};
+		$cnlTypeA{'00 00 0x0c.0'} = {'idt' => '0x0c.0', 'cnl' => 0, 'lst' => 0, 'id' => 'Master_ID_C', 'reg' => 0x0c, 'bgn' => 0, 'sze' => 8};
 	}
 }	
 
@@ -224,7 +225,7 @@ foreach my $item (sort{$a <=> $b}(keys %cnlConf)) {
 				my $idxIdt = sprintf('0x%.2x.%s', $idxVal, $idxBgn);
 		
 				#-- put details in the hash for further use --------------------------------------------
-				$cnlTypeA{sprintf('%.2x %.2x %s', $h->{'cnl'}, $phyLst, $idxIdt)} = {'idt' => $idxIdt, 'cnl' => $h->{'cnl'}, 'lst' => $phyLst, 'reg' => $idxVal, 'bgn' => $idxBgn, 'sze' => $idxSze };		
+				$cnlTypeA{sprintf('%.2x %.2x %s', $h->{'cnl'}, $phyLst, $idxIdt)} = {'idt' => $idxIdt, 'cnl' => $h->{'cnl'}, 'lst' => $phyLst, 'id' => $paraId, 'reg' => $idxVal, 'bgn' => $idxBgn, 'sze' => $idxSze };		
 		
 				#print "$idxIdt Idx: $idxVal \t B: $idxBgn \t S: $idxSze \t \n\n";
 				
@@ -238,36 +239,132 @@ foreach my $item (sort{$a <=> $b}(keys %cnlConf)) {
 }
 
 #-- some debug -----------------------------------------------------------------------------------------
+#foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
+#	my $h = $cnlTypeA{$item};
+#	print "$item,  $h->{'reg'} \n";
+#}
+#-------------------------------------------------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------------------------------------------------
+#-- creation of channel table --------------------------------------------------------------------------
+my $tempPhyAddr = 15;																						# starts at 15 while in front of the magic number, the serial and the HMID
+my %cnlAddr = ();																							# holds the slice string
+my %cnlTbl = ();																							# the channel table
+my %peerTbl = ();																							# the peer table
+
+my @tempSlcArray = ();
+
+
+#stepping through the table
 foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 	my $h = $cnlTypeA{$item};
-	print "$item,  $h->{'reg'} \n";
+
+	my $cnlTblID = sprintf('%.2x %.2x', $h->{'cnl'}, $h->{'lst'} );											# generating id for the hash
+
+	#check if cnl/lst combination still exist, if not add it and collect the different regs in an array
+	push ( @{ $cnlAddr{$cnlTblID} }, sprintf('0x%.2x,', $h->{'reg'}) );										# writing all regs in the respective array	
+
+	#prepare the channel table
+	$cnlTbl{ $cnlTblID } = {'cnl' => $h->{'cnl'}, 'lst' => $h->{'lst'}, 'sIdx' => 0, 'sLen' => 0, 'pAddr' => 0, 'peer' => 0  };
+
 }
 
-#-- everything read, some sanity and creating output ---------------------------------------------------
-my @cnlArray = map { $cnlTypeA{$_}{cnl} } keys %cnlTypeA; 													# getting amount of channels
-@cnlArray = del_double(@cnlArray);
+#-- cleanout doubles in channel table arrays and further prepare of channel table
+foreach my $item ( sort { $a cmp $b } keys %cnlAddr) {														# stepping through the hash of arrays
+	my $h = $cnlAddr{$item};																				# setting pointer
+	@{ $h } = del_double(@{ $h });																			# deleting doubles
+	
+	$cnlTbl{$item}{'sLen'} = scalar @{ $h };																# calculating and storing slice len
+
+	# shorten the slice table while slices are doubled
+	my $t = 1+index( "@tempSlcArray", "@{$h}" );															# find the index in the slice string
+	if ($t > 0) {$t -= 1; $t /= 6;}																			# divide it by 6 because of length of one element
+	#print "$t, \n";
+
+	if ($t > 0) {																							# while already in the index
+		$cnlTbl{$item}{'sIdx'} = $t;																		# remember the index
+		delete $cnlAddr{$item};																				# item not needed any more
+				
+	} else {																								# not in the index
+		$cnlTbl{$item}{'sIdx'} = scalar @tempSlcArray;														# remember the index
+		push (@tempSlcArray, @{ $h });																		# add current state to slice array but only if cnl/lst slice was not found
+	}
+	
+	# getting the amount of peers
+	if (($cnlTbl{$item}{'lst'} == 3) || ($cnlTbl{$item}{'lst'} == 4)) {
+		print "Please enter the amount of peers you wish for channel: $cnlTbl{$item}{'cnl'}, list: $cnlTbl{$item}{'lst'}\n";
+		print "# Peers: ";
+
+		my $peers = 6;
+		chomp ($peers = <STDIN>);
+		$cnlTbl{$item}{'peer'} = $peers;
+		
+		print "\n";
+	} 
+
+	# calculating the addresses in channel table
+	$cnlTbl{$item}{'pAddr'} = $tempPhyAddr;																	# adding the new start address to the channel table item
+
+	if ( ($cnlTbl{$item}{'peer'}) > 0) {																	# calculation is different when peer is 0
+		$tempPhyAddr += ($cnlTbl{$item}{'sLen'} * $cnlTbl{$item}{'peer'});									# length of string multiplied by amount of peers
+		#print ">0  $tempPhyAddr \n";
+
+		# creating peer table, because only valid for list 3 or 4
+		$peerTbl{$item} = { 'cnl' => $cnlTbl{$item}{'cnl'}, 'peer' => $cnlTbl{$item}{'peer'}, 'pAddr' => 0 };
+		
+	} else {
+		$tempPhyAddr += $cnlTbl{$item}{'sLen'};																# adding only the length
+		#print "=0  $tempPhyAddr \n";
+		
+	}
+}
+@tempSlcArray = ();
+
+#-- calculating peer addresses in eeprom ---------------------------------------------------------------
+foreach my $item ( sort { $a cmp $b } keys %peerTbl) {
+	my $h = $peerTbl{$item};
+
+	$h->{'pAddr'} = $tempPhyAddr;
+	$tempPhyAddr += ($h->{'peer'} * 4);																		# every peer needs 4 bytes
+
+}
 
 
-print $#cnlArray ." \n";
-
-#foreach my $item ( keys %cnlTypeA) {
-#	my $h = $cnlTypeA{$item};
-#	push (@cnlArray, $h->{'cnl'});
-#}
-
-
-
-
+#-------------------------------------------------------------------------------------------------------
 #-- some debug -----------------------------------------------------------------------------------------
 #foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 #	my $h = $cnlTypeA{$item};
-#   print "$item,  $h->{'reg'} \n";
+#	print "$item,  r: $h->{'reg'} \t b: $h->{'bgn'}  \t s: $h->{'sze'} \n";
 #}
+#print "\n\n";
+#
+#foreach my $item ( sort { $a cmp $b } keys %cnlAddr) {
+#	my $h = $cnlAddr{$item};
+#	print "$item, @{$h}   \n";
+#}
+#print "\n\n";
+#
+#print          "cnl, lst, sIdx, sLen, pAddr  \n";
+#foreach my $item ( sort { $a cmp $b } keys %cnlTbl) {
+#	my $h = $cnlTbl{$item};
+#	print sprintf( "{%.2d, %.2d, 0x%.2x, %.2d,  0x%.4x},", $h->{'cnl'}, $h->{'lst'}, $h->{'sIdx'}, $h->{'sLen'}, $h->{'pAddr'} ) ."\n";
+#}
+#print "\n\n";
+#
+#print          "cnl, pMax, pAddr;  \n";
+#foreach my $item ( sort { $a cmp $b } keys %peerTbl) {
+#	my $h = $peerTbl{$item};
+#	print sprintf( "{%.2d, %.2d, 0x%.4x},", $h->{'cnl'}, $h->{'peer'}, $h->{'pAddr'} ) ."\n";
+#}
+#print "\n\n";
+#-------------------------------------------------------------------------------------------------------
 
 
-
-print "\n\n";
+#-------------------------------------------------------------------------------------------------------
 #-- starting the print out -----------------------------------------------------------------------------
+print "\n\n";
 print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 print "//- generated by createRegisterFromFile.pl\n";
 print "//- ID: " .sprintf("0x%.4x", $devCVal) .", File: $rf_file\n";
@@ -281,18 +378,105 @@ print "    /* Model ID         2 byte */  ".sprintf("0x%.2x, 0x%.2x,", ($devCVal
 print                                               "                               // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
 print "    /* Sub Type ID      1 byte */  0x00,                                     // not needed for FHEM, it's something like a group ID\n";
 print "    /* Device Info      3 byte */  0x41, 0x01, 0x00                          // describes device, not completely clear yet. includes amount of channels\n";
-print "};\n\n\n";
+print "};\n\n";
 
 
-#//- ----------------------------------------------------------------------------------------------------------------------
-#//- channel slice address definition -------------------------------------------------------------------------------------
-#const uint8_t cnlAddr[] PROGMEM = {
-#    0x02,0x0a,0x0b,0x0c,0x15,0x18,
-#    0x30,0x32,0x34,0x35,0x56,0x57,0x58,0x59,
-#    0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x19,0x1a,0x26,0x27,0x28,0x29,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x99,0x9a,0xa6,0xa7,0xa8,0xa9,
-#};  // 72 byte
+print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+print "//- channel slice address definition -------------------------------------------------------------------------------------\n";
+print "const uint8_t cnlAddr[] PROGMEM = {\n";
+my $xSize = 0;
+foreach my $item ( sort { $a cmp $b } keys %cnlAddr) {
+	print "    @{$cnlAddr{$item}}\n";
+	$xSize += scalar @{$cnlAddr{$item}};
+}
+print "};  // $xSize byte\n\n";
 
 
+print "//- channel device list table --------------------------------------------------------------------------------------------\n";
+print "EE::s_cnlTbl cnlTbl[] = {\n";
+print "    // cnl, lst, sIdx, sLen, pAddr;\n";
+$xSize = 0;
+foreach my $item ( sort { $a cmp $b } keys %cnlTbl) {
+	my $h = $cnlTbl{$item};
+	print sprintf( "    { %2s, %2s, 0x%.2x, %2s,  0x%.4x },", $h->{'cnl'}, $h->{'lst'}, $h->{'sIdx'}, $h->{'sLen'}, $h->{'pAddr'} ) ."\n";
+	$xSize += 6;
+}
+print "};  // $xSize byte\n\n";
 
 
+print "//- peer device list table -----------------------------------------------------------------------------------------------\n";
+print "EE::s_peerTbl peerTbl[] = {\n";
+print "    // cnl, pMax, pAddr;\n";
+$xSize = 0;
+foreach my $item ( sort { $a cmp $b } keys %peerTbl) {
+	my $h = $peerTbl{$item};
+	print sprintf( "    { %2s, %2s, 0x%.4x },", $h->{'cnl'}, $h->{'peer'}, $h->{'pAddr'} ) ."\n";
+	$xSize += 4;
+}
+print "};  // $xSize byte\n\n";
+
+
+print "//- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
+print "EE::s_devDef devDef = {\n";
+print sprintf("    %d, %d, devIdnt, cnlAddr,", scalar(keys %peerTbl), scalar(keys %cnlTbl)) ."\n";
+print "};  // 10 byte\n\n";
+
+print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
+print "RG::s_modTable modTbl[" .scalar(keys %peerTbl) ."];\n\n";
+
+
+print "\n\n//- ----------------------------------------------------------------------------------------------------------------------\n";
+print "//- only if needed -------------------------------------------------------------------------------------------------------\n";
+print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+
+my $lastCnl = 255; my $lastLst = 255;
+my $lastReg = 0;   my $lastBte = 0;
+my $cnt = 0; my $end = scalar(keys %cnlTypeA);
+
+foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
+	my $h = $cnlTypeA{$item};
+
+	if (( $lastReg != $h->{'reg'} ) && ( $lastBte )) {														# reg change but former reg was not filled to 8
+		print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', 8-$lastBte, $lastReg, $lastBte, 8-$lastBte,  ) ."\n";
+		$lastBte = 0;
+	}
+
+	if ( ($lastCnl != $h->{'cnl'}) || ($lastLst != $h->{'lst'}) ) {											# check if we are in a new struct set
+		if ($lastCnl != 255) {																				# close the former structure, will not work for the very last struct
+			print "};\n";	
+		}
+		
+		print "\nstruct s_lst$h->{'lst'}Cnl$h->{'cnl'} {\n";												# print the struct header
+		$lastReg = 0;																						# no last reg available yet
+		$lastBte = 0;																						# no former byte to fill
+
+	}
+	$lastCnl = $h->{'cnl'};																					# remember the current channel and list
+	$lastLst = $h->{'lst'};
+
+	
+	# add one empty line with the missing bits
+	if ( $h->{'bgn'} > $lastBte ) {																			# identify a gap
+		print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', $h->{'bgn'} - $lastBte, $h->{'reg'}, $lastBte, $h->{'bgn'} - $lastBte,  ) ."\n";
+		
+	}
+
+	# add the real line
+	print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", $h->{'id'}, $h->{'sze'}, $h->{'reg'}, $h->{'bgn'}, $h->{'sze'},  ) ."\n";
+
+	$lastReg = $h->{'reg'};																					# remember the last reg value
+	$lastBte = $h->{'bgn'} + $h->{'sze'};																	# remember last bit position
+	if ( $lastBte >= 8 ) {$lastBte = 0;}																	# if last bit gets above 8, then reset
+
+	# check if we are on the end of the hash table
+	$cnt++;
+	if ($cnt == $end) {																						# definately the last key in table
+		if ( $lastBte ) {																					# former reg was not filled to 8
+			print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', 8-$lastBte, $lastReg, $lastBte, 8-$lastBte,  ) ."\n";
+		}
+
+		print "};\n";	
+		
+	}
+}
 
