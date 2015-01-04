@@ -19,7 +19,7 @@ uint8_t HMSR[10] = {'t','l','u','1','0','0','1','2','3','4'}; // tlu1001234
 //- ----------------------------------------------------------------------------------------------------------------------
 //- settings of HM device for AS class -----------------------------------------------------------------------------------
 const uint8_t devIdnt[] PROGMEM = {
-	/* Firmware version 1 byte */  0x01,                                     // don't know for what it is good for
+	/* Firmware version 1 byte */  0x25,                                     // important for xml files of HM config soft
 	/* Model ID         2 byte */  0x00, 0x67,                               // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0
 	/* Sub Type ID      1 byte */  0x00,                                     // not needed for FHEM, it's something like a group ID
 	/* Device Info      3 byte */  0x41, 0x01, 0x00                          // describes device, not completely clear yet. includes amount of channels

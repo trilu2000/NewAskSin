@@ -447,6 +447,7 @@ foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 		}
 		
 		print "\nstruct s_lst$h->{'lst'}Cnl$h->{'cnl'} {\n";												# print the struct header
+		print "// @{$cnlAddr{ sprintf('%.2x %.2x', $h->{'cnl'}, $h->{'lst'} ) }}\n";
 		$lastReg = 0;																						# no last reg available yet
 		$lastBte = 0;																						# no former byte to fill
 
