@@ -314,7 +314,7 @@ foreach my $item ( sort { $a cmp $b } keys %cnlAddr) {														# stepping t
 		print "# Peers: ";
 
 		my $peers = 6;
-#		chomp ($peers = <STDIN>);
+		chomp ($peers = <STDIN>);
 		$cnlTbl{$item}{'peer'} = $peers;
 		
 		print "\n";
@@ -336,7 +336,7 @@ foreach my $item ( sort { $a cmp $b } keys %cnlAddr) {														# stepping t
 		
 	}
 }
-@tempSlcArray = ();
+
 
 #-- calculating peer addresses in eeprom ---------------------------------------------------------------
 foreach my $item ( sort { $a cmp $b } keys %peerTbl) {
@@ -450,23 +450,31 @@ my $lastCnl = 255; my $lastLst = 255;
 my $lastReg = 0;   my $lastBte = 0;
 my $cnt = 0; my $end = scalar(keys %cnlTypeA);
 
+my $cnlLstCnt;
+
 foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 	my $h = $cnlTypeA{$item};
 
 	if (( $lastReg != $h->{'reg'} ) && ( $lastBte )) {														# reg change but former reg was not filled to 8
 		print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', 8-$lastBte, $lastReg, $lastBte, 8,  ) ."\n";
-		$lastBte = 0;
+		$lastBte = 0;																						# new start, therefore last byte has to be full
+
 	}
 
 	if ( ($lastCnl != $h->{'cnl'}) || ($lastLst != $h->{'lst'}) ) {											# check if we are in a new struct set
 		if ($lastCnl != 255) {																				# close the former structure, will not work for the very last struct
-			print "};\n";	
+			print "};  // $cnlLstCnt byte\n";	
 		}
 		
 		print "\nstruct s_lst$h->{'lst'}Cnl$h->{'cnl'} {\n";												# print the struct header
 		#print "// @{$cnlAddr{ sprintf('%.2x %.2x', $h->{'cnl'}, $h->{'lst'} ) }}\n";
 		$lastReg = 0;																						# no last reg available yet
 		$lastBte = 0;																						# no former byte to fill
+		$cnlLstCnt = 0;
+
+		my $x = $cnlTbl{ sprintf('%.2x %.2x', $h->{'cnl'}, $h->{'lst'} ) };									# generating id for the hash
+		my $sStr = substr("@tempSlcArray", $x->{'sIdx'} * 6, $x->{'sLen'} * 6 );
+		print "// $sStr\n";
 
 	}
 	$lastCnl = $h->{'cnl'};																					# remember the current channel and list
@@ -482,9 +490,12 @@ foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 	# add the real line
 	print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, e:%s ", $h->{'id'}, $h->{'sze'}, $h->{'reg'}, $h->{'bgn'}, $h->{'bgn'} + $h->{'sze'},  ) ."\n";
 
+	if ( $lastReg != $h->{'reg'} ) {$cnlLstCnt++;}															# increase struct byte counter
+
 	$lastReg = $h->{'reg'};																					# remember the last reg value
 	$lastBte = $h->{'bgn'} + $h->{'sze'};																	# remember last bit position
 	if ( $lastBte >= 8 ) {$lastBte = 0;}																	# if last bit gets above 8, then reset
+
 
 	# check if we are on the end of the hash table
 	$cnt++;
@@ -493,7 +504,7 @@ foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 			print sprintf("v   uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', 8-$lastBte, $lastReg, $lastBte, 8-$lastBte,  ) ."\n";
 		}
 
-		print "};\n";	
+		print "};  // $cnlLstCnt byte\n";	
 		
 	}
 }
