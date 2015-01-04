@@ -75,12 +75,12 @@ void loop() {
 void initPWM() {
 	dbg << "init pwm\n";
 	
-	power_timer2_enable();	
+	power_timer2_enable();																	// enable the timer2 in power management
 	
 	pinOutput(DDRD,3);																		// init the relay pins
 	//setPinLow(PORTD,3);
 	
-	TCCR2B |= (1<<CS21);
+	TCCR2B |= (1<<CS21);																	// configure the PWM for the respective output pin
 	OCR2B = 0x00;
 	TCCR2A |= 1<<COM2B1;
 
@@ -88,9 +88,9 @@ void initPWM() {
 void switchPWM(uint8_t status, uint8_t characteristic) {
 	uint16_t x = status*255;
 	//dbg << x << " ";
-	x /= 200;
+	x /= 200;																				// status = 0 to 200, but PWM needs 255 as maximum
 	//dbg << x << '\n';
-	OCR2B = x;
+	OCR2B = x;																				// set the PWM value to the pin
 
 	//if (status) setPinHigh(PORTD,3);
 	//else setPinLow(PORTD,3);

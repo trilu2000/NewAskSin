@@ -35,21 +35,37 @@ my $xc = XML::LibXML::XPathContext->new( $doc->documentElement()  );										# 
 
 #-- open the file and check if dev_id fits -------------------------------------------------------------
 my $devCVal = 0;
+my $devFW = 1;
 
 foreach my $sections ($xc->findnodes('/device/supported_types/type')) {										# set pointer to type
 
+	print $sections->getAttribute('name') ."\n";	
+	
 	foreach my $param ($sections->findnodes('./parameter')) {												# set pointer to parameter
 		my $devIdx = $param->getAttribute('index');															# get the device index	
 		
-		if ($devIdx != '10.0') {																			# only 10.0 is interesting
-			next;
+		if ($devIdx ==  '9.0') {																			# reflects the firmware
+				
+			my $condOP = $param->getAttribute('cond_op');
+			if (( $condOP eq "GE" ) || ( $condOP eq "LE" ) || ( $condOP eq "EQ" )) {
+				$devFW = eval $param->getAttribute('const_value');
+				#print "$devFW\n";
+			}
 		}
-
-		if (eval($param->getAttribute('const_value')) == eval($dev_id)) {									# check const value against device id
-			$devCVal = eval($dev_id);																		# copy into the variable
+	
+		if ($devIdx == '10.0') {																			# only 10.0 is interesting
+			$devCVal = eval($param->getAttribute('const_value'));
+			#print "$devCVal\n";
 		}
+	
 	}
+
+	if (eval( $devCVal) == eval($dev_id) ) {																	# check const value against device id
+		last;
+	}
+
 }
+#exit(0);
 
 if ($devCVal != eval($dev_id)) {																			# check the variable
 	print "\nError: Device ID not found in file $rf_file\n";												# print error message while not fitting
@@ -298,7 +314,7 @@ foreach my $item ( sort { $a cmp $b } keys %cnlAddr) {														# stepping t
 		print "# Peers: ";
 
 		my $peers = 6;
-		chomp ($peers = <STDIN>);
+#		chomp ($peers = <STDIN>);
 		$cnlTbl{$item}{'peer'} = $peers;
 		
 		print "\n";
@@ -373,7 +389,8 @@ print "//- ---------------------------------------------------------------------
 print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 print "//- settings of HM device for AS class -----------------------------------------------------------------------------------\n";
 print "const uint8_t devIdnt[] PROGMEM = {\n";
-print "    /* Firmware version 1 byte */  0x01,                                     // don't know for what it is good for\n";
+print "    /* Firmware version 1 byte */  ".sprintf("0x%.2x,", $devFW);
+print                                         "                                     // don't know for what it is good for\n";
 print "    /* Model ID         2 byte */  ".sprintf("0x%.2x, 0x%.2x,", ($devCVal & 0xff00) / 256, $devCVal & 0xff);
 print                                               "                               // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
 print "    /* Sub Type ID      1 byte */  0x00,                                     // not needed for FHEM, it's something like a group ID\n";
@@ -437,7 +454,7 @@ foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 	my $h = $cnlTypeA{$item};
 
 	if (( $lastReg != $h->{'reg'} ) && ( $lastBte )) {														# reg change but former reg was not filled to 8
-		print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', 8-$lastBte, $lastReg, $lastBte, 8-$lastBte,  ) ."\n";
+		print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', 8-$lastBte, $lastReg, $lastBte, 8,  ) ."\n";
 		$lastBte = 0;
 	}
 
@@ -447,7 +464,7 @@ foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 		}
 		
 		print "\nstruct s_lst$h->{'lst'}Cnl$h->{'cnl'} {\n";												# print the struct header
-		print "// @{$cnlAddr{ sprintf('%.2x %.2x', $h->{'cnl'}, $h->{'lst'} ) }}\n";
+		#print "// @{$cnlAddr{ sprintf('%.2x %.2x', $h->{'cnl'}, $h->{'lst'} ) }}\n";
 		$lastReg = 0;																						# no last reg available yet
 		$lastBte = 0;																						# no former byte to fill
 
@@ -458,12 +475,12 @@ foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 	
 	# add one empty line with the missing bits
 	if ( $h->{'bgn'} > $lastBte ) {																			# identify a gap
-		print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', $h->{'bgn'} - $lastBte, $h->{'reg'}, $lastBte, $h->{'bgn'} - $lastBte,  ) ."\n";
+		print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, e:%s ", '', $h->{'bgn'} - $lastBte, $h->{'reg'}, $lastBte, $h->{'bgn'},  ) ."\n";
 		
 	}
 
 	# add the real line
-	print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", $h->{'id'}, $h->{'sze'}, $h->{'reg'}, $h->{'bgn'}, $h->{'sze'},  ) ."\n";
+	print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, e:%s ", $h->{'id'}, $h->{'sze'}, $h->{'reg'}, $h->{'bgn'}, $h->{'bgn'} + $h->{'sze'},  ) ."\n";
 
 	$lastReg = $h->{'reg'};																					# remember the last reg value
 	$lastBte = $h->{'bgn'} + $h->{'sze'};																	# remember last bit position
@@ -473,7 +490,7 @@ foreach my $item ( sort { $a cmp $b } keys %cnlTypeA) {
 	$cnt++;
 	if ($cnt == $end) {																						# definately the last key in table
 		if ( $lastBte ) {																					# former reg was not filled to 8
-			print sprintf("    uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', 8-$lastBte, $lastReg, $lastBte, 8-$lastBte,  ) ."\n";
+			print sprintf("v   uint8_t %-25s :%s;       // 0x%.2x, s:%s, l:%s ", '', 8-$lastBte, $lastReg, $lastBte, 8-$lastBte,  ) ."\n";
 		}
 
 		print "};\n";	

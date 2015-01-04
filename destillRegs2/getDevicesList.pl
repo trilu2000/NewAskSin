@@ -30,9 +30,21 @@ while (my $file = readdir(DIR)) {																			# step through the files
 
 		
 		my ($devIdx, $devCVal) = (0,0);
+		my $devFW = 0;
+
 		foreach my $param ($sections->findnodes('./parameter')) {											# set pointer to parameter
 			$devIdx = $param->getAttribute('index');														# get the device index	
 			
+			if ($devIdx ==  '9.0') {																		# reflects the firmware
+				
+				my $condOP = $param->getAttribute('cond_op');
+				if (( $condOP eq "GE" ) || ( $condOP eq "LE" ) || ( $condOP eq "EQ" )) {
+					$devFW = eval $param->getAttribute('const_value');
+					#print "$devFW\n";
+				}
+
+			}
+
 			if ($devIdx != '10.0') {																		# only 10.0 is interesting
 				next;
 			}
@@ -41,7 +53,7 @@ while (my $file = readdir(DIR)) {																			# step through the files
 			
 			
 			#-- generating output ---------------------------------------------------------
-			print sprintf("0x%.4x", $devCVal) .sprintf("   %-25s", $devID) .sprintf("   %-65s", $devName) ."   $file\n";
+			print sprintf("0x%.4x   0x%.2x    %-25s   %-65s", $devCVal, $devFW, $devID, $devName) ."   $file\n";
 			
 		}
 
