@@ -420,7 +420,7 @@ print "const uint8_t devIdnt[] PROGMEM = {\n";
 print "    /* Firmware version 1 byte */  ".sprintf("0x%.2x,", $devFW) ."\n";
 print "    /* Model ID         2 byte */  ".sprintf("0x%.2x, 0x%.2x,", ($devCVal & 0xff00) / 256, $devCVal & 0xff) ."\n";
 print "    /* Sub Type ID      1 byte */  0x00,\n";
-print "    /* Device Info      3 byte */  0x41, 0x01, 0x00 \n";
+print "    /* Device Info      3 byte */  0x41, 0x01, 0x00, \n";
 print "};\n\n";
 
 

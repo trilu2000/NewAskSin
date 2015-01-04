@@ -17,27 +17,28 @@ Dimmer dimmer;																				// stage a dummy module
 void setup() {
 	#ifdef SER_DBG
 	dbgStart();																				// serial setup
-	Serial << F("Main\n");																	// ...and some information
+	dbg << F("Main\n");																	// ...and some information
 	#endif
 	
 	// - Hardware setup ---------------------------------------
 	// everything off
-	//ADCSRA = 0;																			// ADC off
+	//ADCSRA = 0;																				// ADC off
 	//power_all_disable();																	// and everything else
-	
-	//DDRB = DDRC = DDRD = 0x00;															// everything as input
+	//DDRB = DDRC = DDRD = 0x00;																// everything as input
 	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	//power_spi_enable();																	// enable only needed functions
-	//power_timer0_enable();
-	//power_usart0_enable();
+	// enable only what is really needed
+	power_spi_enable();																		// SPI port for transceiver communication
+	power_timer0_enable();																	// timer0 for getMillis and waitTimer
+	power_usart0_enable();																	// serial port for debugging
 
+	// initialize the hardware, functions to be found in hardware.cpp
 	initMillis();																			// milli timer start
-	initPCINT();																			// initialize the pin change interrupts
-	ccInitHw();																				// initialize transceiver hardware
-	initLeds();																				// initialize the leds
-	initConfKey();																			// initialize the port for getting config key interrupts
-	//initExtBattMeasurement();																// initialize the external battery measurement
+	initPCINT();																			// pin change interrupts
+	ccInitHw();																				// transceiver hardware
+	initLeds();																				// leds
+	initConfKey();																			// config key pin and interrupt
+	//initExtBattMeasurement();																// external battery measurement
 
 
 	// - AskSin related ---------------------------------------
@@ -56,7 +57,7 @@ void setup() {
 	
 	// - user related -----------------------------------------
 
-	
+	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
 	sei();																					// enable interrupts
 
 }
