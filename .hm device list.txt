@@ -1,0 +1,209 @@
+devID    devFW   devShort                    devFile
+
+0x0060   0x00    HM-PB-4Dis-WM               HM Remote Display 4 buttons                                         rf_4dis.xml
+0x007e   0x00    ZEL STG RM DWT 10           HM Remote Display 4 buttons Roto                                    rf_4dis.xml
+0x008e   0x00    263 155                     HM Remote Display 4 buttons Schueco                                 rf_4dis.xml
+0x000e   0x00    ASH550I                     ASH550I                                                             rf_ash550.xml
+0x000d   0x00    ASH550                      ASH550                                                              rf_ash550.xml
+0x003d   0x00    HM-WDS10-TH-O               HM-WDS10-TH-O                                                       rf_ash550.xml
+0x0093   0x00    263 158                     HM-WDS10-TH-O Schueco                                               rf_ash550.xml
+0x003c   0x00    HM-WDS20-TH-O               HM-WDS20-TH-O                                                       rf_ash550.xml
+0x003f   0x00    HM-WDS40-TH-I               HM-WDS40-TH-I                                                       rf_ash550.xml
+0x0094   0x00    263 157                     HM-WDS40-TH-I Schueco                                               rf_ash550.xml
+0x0048   0x00    IS-WDS-TH-OD-S-R3           IS-WDS-TH-OD-S-R3                                                   rf_ash550.xml
+0x0006   0x00    HM-LC-Bl1-SM                radio-controlled blind actuator 1-channel (surface-mount)           rf_bl.xml
+0x0005   0x00    HM-LC-Bl1-FM                radio-controlled blind actuator 1-channel (flush-mount)             rf_bl.xml
+0x0053   0x00    HM-LC-Bl1-PB-FM             radio-controlled blind actuator 1-channel (flush-mount)             rf_bl.xml
+0x007b   0x00    ZEL STG RM FEP 230V         radio-controlled blind actuator 1-channel (flush-mount) Roto        rf_bl.xml
+0x0086   0x00    263 146                     radio-controlled blind actuator 1-channel (flush-mount) Schueco     rf_bl.xml
+0x006a   0x22    HM-LC-Bl1PBU-FM             radio-controlled blind actuator 1-channel (flush-mount)             rf_bl_conf_644.xml
+0x0087   0x22    263 147                     radio-controlled blind actuator 1-channel (flush-mount) Schueco     rf_bl_conf_644.xml
+0x006a   0x20    HM-LC-Bl1PBU-FM             radio-controlled blind actuator 1-channel (flush-mount)             rf_bl_conf_644_le_v2_1.xml
+0x0087   0x20    263 147                     radio-controlled blind actuator 1-channel (flush-mount) Schueco     rf_bl_conf_644_le_v2_1.xml
+0x0095   0x00    HM-CC-RT-DN                 ClimateControl-RadiatorThermostat                                   rf_cc_rt_dn.xml
+0x00bd   0x00    HM-CC-RT-DN-BoM             ClimateControl-RadiatorThermostat                                   rf_cc_rt_dn_bom.xml
+0x0039   0x20    HM-CC-TC                    ClimateControl-ThermoControl                                        rf_cc_tc.xml
+0x0079   0x20    ZEL STG RM FWT              ClimateControl-ThermoControl Roto                                   rf_cc_tc.xml
+0x0039   0x19    HM-CC-TC                    ClimateControl-ThermoControl                                        rf_cc_tc_le_v1_9.xml
+0x003a   0x00    HM-CC-VD                    ClimateControle-ValveDrive                                          rf_cc_vd.xml
+0x007a   0x00    ZEL STG RM FSA              ClimateControle-ValveDrive Roto                                     rf_cc_vd.xml
+0x005c   0x10    HM-OU-CF-Pl                 radio chime with light flash                                        rf_cf.xml
+0x0075   0x10    HM-OU-CFM-Pl                radio chime with light flash                                        rf_cfm.xml
+0x00af   0x10    HM-OU-CM-PCB                wireless chime module mp3 with memory                               rf_cm.xml
+0x0018   0x00    CMM                         CMM                                                                 rf_cmm.xml
+0x0013   0x20    HM-LC-Dim1L-Pl              1 channel dimmer L (plug)                                           rf_d.xml
+0x00a3   0x20    HM-LC-Dim1L-Pl-2            1 channel dimmer L (plug)                                           rf_d.xml
+0x0012   0x20    HM-LC-Dim1L-CV              1 channel dimmer L (ceiling voids)                                  rf_d.xml
+0x0088   0x20    263 132                     1 channel dimmer L (ceiling voids) Schueco                          rf_d.xml
+0x0016   0x20    HM-LC-Dim2L-CV              2 channel dimmer L (ceiling voids)                                  rf_d.xml
+0x002e   0x20    HM-LC-Dim2L-SM              2 channel dimmer L (surface mount)                                  rf_d.xml
+0x004e   0x16    HM-LC-DDC1-PCB              radio-controlled door drive controller 1-channel (PCB)              rf_ddc.xml
+0x006f   0x25    HM-LC-Dim1L-Pl-644          1 channel dimmer L (plug)                                           rf_dim_1l_644.xml
+0x006e   0x25    HM-LC-Dim1L-CV-644          1 channel dimmer L (ceiling voids)                                  rf_dim_1l_644.xml
+0x00b3   0x25    HM-LC-Dim1L-Pl-3            1 channel dimmer L (plug)                                           rf_dim_1l_644.xml
+0x00b7   0x25    HM-LC-Dim1L-CV-2            1 channel dimmer L (ceiling voids)                                  rf_dim_1l_644.xml
+0x006f   0x24    HM-LC-Dim1L-Pl-644          1 channel dimmer L (plug)                                           rf_dim_1l_644_le_v2_4.xml
+0x006e   0x24    HM-LC-Dim1L-CV-644          1 channel dimmer L (ceiling voids)                                  rf_dim_1l_644_le_v2_4.xml
+0x0067   0x25    HM-LC-Dim1PWM-CV            1 channel dimmer PWM (ceiling voids)                                rf_dim_1pwm_644.xml
+0x00b5   0x25    HM-LC-Dim1PWM-CV-2          1 channel dimmer PWM (ceiling voids)                                rf_dim_1pwm_644.xml
+0x0067   0x24    HM-LC-Dim1PWM-CV            1 channel dimmer PWM (ceiling voids)                                rf_dim_1pwm_644_le_v2_4.xml
+0x0068   0x25    HM-LC-Dim1TPBU-FM           1 channel dimmer TPBU (flush mount)                                 rf_dim_1tconf_644.xml
+0x00b6   0x25    HM-LC-Dim1TPBU-FM-2         1 channel dimmer TPBU (flush mount)                                 rf_dim_1tconf_644.xml
+0x0068   0x24    HM-LC-Dim1TPBU-FM           1 channel dimmer TPBU (flush mount)                                 rf_dim_1tconf_644_le_v2_4.xml
+0x008a   0x24    263 133                     1 channel dimmer TPBU (flush mount) Schueco                         rf_dim_1tconf_644_le_v2_4.xml
+0x0071   0x25    HM-LC-Dim1T-Pl-644          1 channel dimmer T (plug)                                           rf_dim_1t_644.xml
+0x0072   0x25    HM-LC-Dim1T-CV-644          1 channel dimmer T (ceiling voids)                                  rf_dim_1t_644.xml
+0x0073   0x25    HM-LC-Dim1T-FM-644          1 channel dimmer T (flush mount)                                    rf_dim_1t_644.xml
+0x00b4   0x25    HM-LC-Dim1T-Pl-3            1 channel dimmer T (plug)                                           rf_dim_1t_644.xml
+0x00b9   0x25    HM-LC-Dim1T-CV-2            1 channel dimmer T (ceiling voids)                                  rf_dim_1t_644.xml
+0x00ba   0x25    HM-LC-Dim1T-FM-2            1 channel dimmer T (flush mount)                                    rf_dim_1t_644.xml
+0x0071   0x24    HM-LC-Dim1T-Pl-644          1 channel dimmer T (plug)                                           rf_dim_1t_644_le_v2_4.xml
+0x0072   0x24    HM-LC-Dim1T-CV-644          1 channel dimmer T (ceiling voids)                                  rf_dim_1t_644_le_v2_4.xml
+0x0073   0x24    HM-LC-Dim1T-FM-644          1 channel dimmer T (flush mount)                                    rf_dim_1t_644_le_v2_4.xml
+0x0070   0x25    HM-LC-Dim2L-SM-644          2 channel dimmer L (surface mount)                                  rf_dim_2l_644.xml
+0x00b8   0x25    HM-LC-Dim2L-SM-2            2 channel dimmer L (surface mount)                                  rf_dim_2l_644.xml
+0x0070   0x24    HM-LC-Dim2L-SM-644          2 channel dimmer L (surface mount)                                  rf_dim_2l_644_le_v2_4.xml
+0x0074   0x25    HM-LC-Dim2T-SM-644          2 channel dimmer T (surface mount)                                  rf_dim_2t_644.xml
+0x00bb   0x25    HM-LC-Dim2T-SM-2            2 channel dimmer T (surface mount)                                  rf_dim_2t_644.xml
+0x0074   0x24    HM-LC-Dim2T-SM-644          2 channel dimmer T (surface mount)                                  rf_dim_2t_644_le_v2_4.xml
+0x0057   0x20    HM-LC-Dim1T-Pl              1 channel dimmer T (plug)                                           rf_dim_t.xml
+0x00a4   0x20    HM-LC-Dim1T-Pl-2            1 channel dimmer T (plug)                                           rf_dim_t.xml
+0x0058   0x20    HM-LC-Dim1T-CV              1 channel dimmer T (ceiling voids)                                  rf_dim_t.xml
+0x0089   0x20    263 134                     1 channel dimmer T (ceiling voids) Schueco                          rf_dim_t.xml
+0x005a   0x20    HM-LC-Dim2T-SM              2 channel dimmer T (surface mount)                                  rf_dim_t.xml
+0x0059   0x20    HM-LC-Dim1T-FM              1 channel dimmer T (flush mount)                                    rf_dim_t.xml
+0x0057   0x19    HM-LC-Dim1T-Pl              1 channel dimmer T (plug)                                           rf_dim_t_le_v1_9.xml
+0x0058   0x19    HM-LC-Dim1T-CV              1 channel dimmer T (ceiling voids)                                  rf_dim_t_le_v1_9.xml
+0x005a   0x19    HM-LC-Dim2T-SM              2 channel dimmer T (surface mount)                                  rf_dim_t_le_v1_9.xml
+0x0059   0x19    HM-LC-Dim1T-FM              1 channel dimmer T (flush mount)                                    rf_dim_t_le_v1_9.xml
+0x0013   0x17    HM-LC-Dim1L-Pl              1 channel dimmer L (plug)                                           rf_d_le_v1_7.xml
+0x0012   0x17    HM-LC-Dim1L-CV              1 channel dimmer L (ceiling voids)                                  rf_d_le_v1_7.xml
+0x0016   0x17    HM-LC-Dim2L-CV              2 channel dimmer L (ceiling voids)                                  rf_d_le_v1_7.xml
+0x002e   0x17    HM-LC-Dim2L-SM              2 channel dimmer L (surface mount)                                  rf_d_le_v1_7.xml
+0x0013   0x19    HM-LC-Dim1L-Pl              1 channel dimmer L (plug)                                           rf_d_le_v1_9.xml
+0x0012   0x19    HM-LC-Dim1L-CV              1 channel dimmer L (ceiling voids)                                  rf_d_le_v1_9.xml
+0x0016   0x19    HM-LC-Dim2L-CV              2 channel dimmer L (ceiling voids)                                  rf_d_le_v1_9.xml
+0x002e   0x19    HM-LC-Dim2L-SM              2 channel dimmer L (surface mount)                                  rf_d_le_v1_9.xml
+0x00ac   0x00    HM-ES-PMSw1-Pl              power meter switch actuator 1-channel                               rf_es_pmsw.xml
+0x0078   0x10    HM-Dis-TD-T                 radio-controlled flip sign                                          rf_fs_ba.xml
+0x0019   0x00    HM-Sec-Key                  KeyMatic white                                                      rf_keymatic.xml
+0x0026   0x00    HM-Sec-Key-S                KeyMatic silver                                                     rf_keymatic.xml
+0x0027   0x00    HM-Sec-Key-O                KeyMatic bronze                                                     rf_keymatic.xml
+0x0007   0x00    KS550                       KS550                                                               rf_ks550.xml
+0x001f   0x00    KS888                       KS888                                                               rf_ks550.xml
+0x002c   0x00    KS550Tech                   KS550Tech                                                           rf_ks550.xml
+0x0033   0x00    KS550LC                     KS550LC                                                             rf_ks550.xml
+0x0040   0x00    HM-WDS100-C6-O              HM-WDS100-C6-O                                                      rf_ks550.xml
+0x006d   0x11    HM-OU-LED16                 HM output unit LED16                                                rf_ou_led16_ge_v1_1.xml
+0x006d   0x10    HM-OU-LED16                 HM output unit LED16                                                rf_ou_led16_le_v1_0.xml
+0x0034   0x00    HM-PBI-4-FM                 HM Push Button Interface                                            rf_pbi.xml
+0x007f   0x00    ZEL STG RM FST UP4          HM Push Button Interface Roto                                       rf_pbi.xml
+0x008f   0x00    263 145                     HM Push Button Interface Schueco                                    rf_pbi.xml
+0x00a0   0x00    HM-RC-4-2                   HM Remote 4-2                                                       rf_rc-4-2.xml
+0x00a9   0x00    HM-PB-6-WM55                HM Push Button 6                                                    rf_rc-4-2.xml
+0x00a6   0x00    HM-RC-Key4-2                HM Remote KeyMatic 4-2                                              rf_rc-key4-2.xml
+0x00a5   0x00    HM-RC-Sec4-2                HM Remote Security 4-2                                              rf_rc-sec4-2.xml
+0x0008   0x00    HM-RC-4                     HM Remote 4 buttons                                                 rf_rc.xml
+0x003b   0x00    HM-RC-4-B                   HM Remote 4 buttons (black)                                         rf_rc.xml
+0x001a   0x00    HM-RC-P1                    HM Remote 1 button                                                  rf_rc.xml
+0x001b   0x00    HM-RC-Sec3                  HM Remote 3 buttons (Sec)                                           rf_rc.xml
+0x001c   0x00    HM-RC-Sec3-B                HM Remote 3 buttons (Sec black)                                     rf_rc.xml
+0x001d   0x00    HM-RC-Key3                  HM Remote 3 buttons (Key)                                           rf_rc.xml
+0x001e   0x00    HM-RC-Key3-B                HM Remote 3 buttons (Key black)                                     rf_rc.xml
+0x0035   0x00    HM-PB-4-WM                  HM Push Button 4                                                    rf_rc.xml
+0x0036   0x00    HM-PB-2-WM                  HM Push Button 2                                                    rf_rc.xml
+0x0054   0x00    RC-H                        DORMA Remote 4 buttons                                              rf_rc.xml
+0x0064   0x00    atent                       DORMA Remote 3 buttons                                              rf_rc.xml
+0x0080   0x00    ZEL STG RM HS 4             HM Remote 4 buttons Roto                                            rf_rc.xml
+0x0029   0x00    HM-RC-12                    HM Remote 12 buttons                                                rf_rc_12.xml
+0x002a   0x00    HM-RC-12-B                  HM Remote 12 buttons (black)                                        rf_rc_12.xml
+0x004c   0x00    HM-RC-12-SW                 HM Remote 12 buttons (softtouch white)                              rf_rc_12.xml
+0x0037   0x00    HM-RC-19                    HM Remote 19 buttons                                                rf_rc_19.xml
+0x0038   0x00    HM-RC-19-B                  HM Remote 19 buttons (black)                                        rf_rc_19.xml
+0x004d   0x00    HM-RC-19-SW                 HM Remote 19 buttons (softtouch white)                              rf_rc_19.xml
+0x0065   0x00    BRC-H                       Dorma Remote 4 single buttons                                       rf_rc_single_on.xml
+0x006b   0x00    HM-PB-2-WM55                HM Push Button 2                                                    rf_rc_wakeup.xml
+0x007d   0x00    ZEL STG RM WT 2             HM Push Button 2 Roto                                               rf_rc_wakeup.xml
+0x008d   0x00    263 135                     HM Push Button 2 Schueco                                            rf_rc_wakeup.xml
+0x00a7   0x14    HM-Sen-RD-O                 HomeMatic Rain detector                                             rf_rd.xml
+0x00a7   0x13    HM-Sen-RD-O                 HomeMatic Rain detector                                             rf_rd_le_v1_3.xml
+0x0076   0x10    HM-Sys-sRP-Pl               selective repeater                                                  rf_rep.xml
+0x009b   0x00    263_149_/_263_150           WCS-TipTronic-Modul Schueco                                         rf_resc_win_pcb_sc.xml
+0x0030   0x18    HM-Sec-RHS                  HM Rotary Handle Sensor                                             rf_rhs.xml
+0x0081   0x18    ZEL STG RM FDK              HM Rotary Handle Sensor Roto                                        rf_rhs.xml
+0x0030   0x17    HM-Sec-RHS                  HM Rotary Handle Sensor                                             rf_rhs_e_v1_7.xml
+0x0030   0x16    HM-Sec-RHS                  HM Rotary Handle Sensor                                             rf_rhs_le_v1_6.xml
+0x0096   0x00    WDF solar                   ROTO WDF solar                                                      rf_roto_wdf_solar.xml
+0x0011   0x16    HM-LC-Sw1-Pl                radio-controlled socket adapter switch actuator 1-channel           rf_s.xml
+0x00a1   0x16    HM-LC-Sw1-Pl-2              radio-controlled socket adapter switch actuator 1-channel           rf_s.xml
+0x0002   0x16    HM-LC-Sw1-SM                radio-controlled switch actuator 1-channel (surface-mount)          rf_s.xml
+0x000a   0x16    HM-LC-Sw2-SM                radio-controlled switch actuator 2-channel (surface-mount)          rf_s.xml
+0x0003   0x16    HM-LC-Sw4-SM                radio-controlled switch actuator 4-channel (surface-mount)          rf_s.xml
+0x002d   0x16    HM-LC-Sw4-PCB               radio-controlled switch actuator 4-channel (PCB)                    rf_s.xml
+0x0066   0x16    HM-LC-Sw4-WM                radio-controlled switch actuator 4-channel (wall-mount)             rf_s.xml
+0x0004   0x16    HM-LC-Sw1-FM                radio-controlled switch actuator 1-channel (flush-mount)            rf_s.xml
+0x008b   0x16    263 130                     radio-controlled switch actuator 1-channel (flush-mount) Schueco    rf_s.xml
+0x0009   0x16    HM-LC-Sw2-FM                radio-controlled switch actuator 2-channel (flush-mount)            rf_s.xml
+0x0051   0x16    HM-LC-Sw1-PB-FM             radio-controlled switch actuator 1-channel (flush-mount)            rf_s.xml
+0x0052   0x16    HM-LC-Sw2-PB-FM             radio-controlled switch actuator 2-channel (flush-mount)            rf_s.xml
+0x0061   0x16    HM-LC-Sw4-DR                radio-controlled switch actuator 4-channel (DIN rails)              rf_s.xml
+0x0062   0x16    HM-LC-Sw2-DR                radio-controlled switch actuator 2-channel (DIN rails)              rf_s.xml
+0x007c   0x16    ZEL STG RM FZS              radio-controlled socket adapter switch actuator 1-channel Roto      rf_s.xml
+0x00a2   0x16    ZEL STG RM FZS-2            radio-controlled socket adapter switch actuator 1-channel Roto      rf_s.xml
+0x000f   0x00    S550IA                      S550IA                                                              rf_s550ia.xml
+0x003e   0x00    HM-WDS30-T-O                HM-WDS30-T-O                                                        rf_s550ia.xml
+0x002f   0x18    HM-Sec-SC                   HM Shutter Contact                                                  rf_sc.xml
+0x0082   0x18    ZEL STG RM FFK              HM Shutter Contact Roto                                             rf_sc.xml
+0x00b1   0x22    HM-Sec-SC-2                 HM Shutter Contact                                                  rf_sc.xml
+0x0056   0x10    HM-CC-SCD                   HM SENSOR_FOR_CARBON_DIOXIDE                                        rf_scd_v1_0.xml
+0x0084   0x10    263 160                     HM SENSOR_FOR_CARBON_DIOXIDE Schueco                                rf_scd_v1_0.xml
+0x005f   0x01    HM-SCI-3-FM                 HM Shutter Contact Interface                                        rf_sci_3.xml
+0x002f   0x17    HM-Sec-SC                   HM Shutter Contact                                                  rf_sc_e_v1_7.xml
+0x002f   0x16    HM-Sec-SC                   HM Shutter Contact                                                  rf_sc_le_v1_6.xml
+0x004a   0x16    HM-Sec-MDIR                 HM radio-controlled motion detector                                 rf_sec_mdir.xml
+0x0090   0x16    263 162                     HM radio-controlled motion detector Schueco                         rf_sec_mdir.xml
+0x004a   0x15    HM-Sec-MDIR                 HM radio-controlled motion detector                                 rf_sec_mdir_v1_5.xml
+0x0090   0x15    263 162                     HM radio-controlled motion detector Schueco                         rf_sec_mdir_v1_5.xml
+0x0042   0x00    HM-Sec-SD                   HM Smoke Detector                                                   rf_sec_sd.xml
+0x0091   0x00    263 167                     HM Smoke Detector Schueco                                           rf_sec_sd_schueco.xml
+0x0050   0x01    HM-Sec-SFA-SM               radio-controlled siren flash actuator (surface-mount)               rf_sec_sfa.xml
+0x0044   0x00    HM-Sen-EP                   HM Sensor for Electronic Pulses                                     rf_sen_ep.xml
+0x004f   0x16    HM-Sen-MDIR-SM              HM radio-controlled motion detector surface-mount                   rf_sen_mdir.xml
+0x005d   0x16    HM-Sen-MDIR-O               HM radio-controlled motion detector outdoor                         rf_sen_mdir.xml
+0x004f   0x15    HM-Sen-MDIR-SM              HM radio-controlled motion detector surface-mount                   rf_sen_mdir_v1_5.xml
+0x005d   0x15    HM-Sen-MDIR-O               HM radio-controlled motion detector outdoor                         rf_sen_mdir_v1_5.xml
+0x009f   0x10    HM-Sen-Wa-Od                HomeMatic capacitive filling level sensor                           rf_sen_wa_od.xml
+0x0046   0x00    HM-SwI-3-FM                 HM Switch Interface 3 switches                                      rf_swi.xml
+0x0083   0x00    ZEL STG RM FSS UP3          HM Switch Interface 3 switches Roto                                 rf_swi.xml
+0x0092   0x00    263 144                     HM Switch Interface 3 switches Schueco                              rf_swi.xml
+0x0069   0x22    HM-LC-Sw1PBU-FM             radio-controlled switch actuator 1-channel (flush-mount)            rf_s_1conf_644.xml
+0x008c   0x22    263 131                     radio-controlled switch actuator 1-channel (flush-mount) Schueco    rf_s_1conf_644.xml
+0x0069   0x20    HM-LC-Sw1PBU-FM             radio-controlled switch actuator 1-channel (flush-mount)            rf_s_1conf_644_le_v2_1.xml
+0x008c   0x20    263 131                     radio-controlled switch actuator 1-channel (flush-mount) Schueco    rf_s_1conf_644_le_v2_1.xml
+0x00ab   0x10    HM-LC-Sw4-Ba-PCB            radio-controlled switch actuator 4-channel PCB                      rf_s_4_ba.xml
+0x006c   0x10    HM-LC-Sw1-Ba-PCB            radio-controlled switch actuator 1-channel PCB                      rf_s_ba.xml
+0x0011   0x15    HM-LC-Sw1-Pl                radio-controlled socket adapter switch actuator 1-channel           rf_s_le_v1_5.xml
+0x0002   0x15    HM-LC-Sw1-SM                radio-controlled switch actuator 1-channel (surface-mount)          rf_s_le_v1_5.xml
+0x000a   0x15    HM-LC-Sw2-SM                radio-controlled switch actuator 2-channel (surface-mount)          rf_s_le_v1_5.xml
+0x0003   0x15    HM-LC-Sw4-SM                radio-controlled switch actuator 4-channel (surface-mount)          rf_s_le_v1_5.xml
+0x002d   0x15    HM-LC-Sw4-PCB               radio-controlled switch actuator 4-channel (PCB)                    rf_s_le_v1_5.xml
+0x0004   0x15    HM-LC-Sw1-FM                radio-controlled switch actuator 1-channel (flush-mount)            rf_s_le_v1_5.xml
+0x0009   0x15    HM-LC-Sw2-FM                radio-controlled switch actuator 2-channel (flush-mount)            rf_s_le_v1_5.xml
+0x0001   0x00    HM-LC-Sw1-Pl-OM54           1 channel switch (plug OM54)                                        rf_s_mega168.xml
+0x0014   0x00    HM-LC-Sw1-SM-ATmega168      1 channel switch (surface mounted)                                  rf_s_mega168.xml
+0x0015   0x00    HM-LC-Sw4-SM-ATmega168      4 channel switch (surface mounted)                                  rf_s_mega168.xml
+0x00ad   0x00    HM-TC-IT-WM-W-EU            ThermalControl-IndoorTemperatureSensor                              rf_tc_it_wm-w-eu.xml
+0x0043   0x11    HM-Sec-TiS                  HM Tilt Sensor                                                      rf_tis.xml
+0x0043   0x10    HM-Sec-TiS                  HM Tilt Sensor                                                      rf_tis_le_v1_0.xml
+0x00a8   0x00    HM-WDS30-OT2-SM             HM-WDS30-OT2-SM                                                     rf_wds30_ot2.xml
+0x00bc   0x00    HM-WDS40-TH-I-2             HM-WDS40-TH-I-2                                                     rf_wds40_th_i_2.xml
+0x0045   0x10    HM-Sec-WDS                  HM Waterdetectionsensor                                             rf_wds_v1_0.xml
+0x0045   0x11    HM-Sec-WDS                  HM Waterdetectionsensor                                             rf_wds_v1_1.xml
+0x00b2   0x13    HM-Sec-WDS-2                HM Waterdetectionsensor                                             rf_wds_v1_1.xml
+0x0028   0x00    HM-Sec-Win                  WinMatic white                                                      rf_winmatic.xml
+0x000b   0x00    WS550                       WS550                                                               rf_ws550.xml
+0x0022   0x00    WS888                       WS888                                                               rf_ws550.xml
+0x002b   0x00    WS550Tech                   WS550Tech                                                           rf_ws550.xml
+0x0031   0x00    WS550LCB                    WS550LCB                                                            rf_ws550.xml
+0x0032   0x00    WS550LCW                    WS550LCW                                                            rf_ws550.xml
+0x0041   0x00    HM-WDC7000                  HM-WDC7000                                                          rf_ws550.xml

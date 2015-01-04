@@ -61,7 +61,6 @@ while (my $file = readdir(DIR)) {																			# step through the files
 	}
 
 
-
 }
 closedir(DIR);																								# close the directory again
 

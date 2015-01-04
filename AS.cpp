@@ -92,7 +92,7 @@ void AS::sendDEVICE_INFO(void) {
 	sn.mBdy.mLen = 0x1a;
 	sn.mBdy.mCnt = xCnt;
 	sn.mBdy.mFlg.CFG = 1;
-	if (!isEmpty(MAID,3)) sn.mBdy.mFlg.BIDI = 1;
+	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
 
 	sn.mBdy.mTyp = 0x00;
 	memcpy(sn.mBdy.reID,HMID,3);
@@ -196,7 +196,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	} else {
 		sn.mBdy.mCnt = sn.msgCnt++;
 	}
-	sn.mBdy.mFlg.BIDI = 1;
+	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
 	
 	sn.mBdy.mTyp = 0x10;
 	memcpy(sn.mBdy.reID, HMID, 3);

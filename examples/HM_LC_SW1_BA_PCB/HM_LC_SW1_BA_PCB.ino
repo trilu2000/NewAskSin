@@ -65,6 +65,7 @@ void setup() {
 void loop() {
 	// - AskSin related ---------------------------------------
 	hm.poll();																				// poll the homematic main loop
+	
 
 	// - user related -----------------------------------------
 

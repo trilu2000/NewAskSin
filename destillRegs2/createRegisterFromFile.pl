@@ -151,11 +151,29 @@ my $xCnt = 0;
 foreach my $sections ($xc->findnodes('/device/channels/channel')) {											# set pointer to channel
 	my $cnlIdx = $sections->getAttribute('index');															# get the channel index	
 	my $cnlCnt = $sections->getAttribute('count');															# get the channel count	
-
+	my $cntFromSys = $sections->getAttribute('count_from_sysinfo');
+	
 	if ($cnlIdx == '0') {																					# channel 0 already done
 		next;
 	}
 	#print "$cnlIdx $cnlCnt \n"; 
+
+	if (( !$cnlCnt ) && ( !$cntFromSys )) {$cnlCnt = 1;}													# count from sys not given, therefore it is 1
+
+	if ( $cntFromSys ) {
+		#  <channel index="1" type="SWITCH" count_from_sysinfo="23.0:0.4">
+		#       0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+		#<- 1A 03 84 00 01 02 05 00 00 00 15 00 6C 74 6C 75 31 30 30 31 32 33 35 10 41 01 00 (30493)
+
+		print "Please enter the amount of channels with the same configuration as channel $cnlIdx\n";
+		print "# Channel: ";
+
+		$cnlCnt = 1;
+		chomp ($cnlCnt = <STDIN>);
+		
+		print "\n";
+	}
+	
 
 	#-- stepping through the paramsets per channel -----------------------------------------------------
 	my $cnt = $cnlCnt;
@@ -225,7 +243,7 @@ foreach my $item (sort{$a <=> $b}(keys %cnlConf)) {
 					$phyIdx = substr($phyIdx, 0, -2);														# shorten the index to get it converted to a dec number
 				} 
 				my $idxVal = eval $phyIdx;																	# convert from hex to dec if necessary
-
+				
 				#-- getting the size in bit ------------------------------------------------------------
 				my ($hiValue, $loValue) = (0, 0);
 				my $i = index($phySze, '.');
@@ -234,7 +252,7 @@ foreach my $item (sort{$a <=> $b}(keys %cnlConf)) {
 					$hiValue = $phySze;
 		
 				} else {																					# we have to split up 
-					$hiValue = substr($phySze, 0, $i);														# get the bytes in front of the dot
+					$hiValue = substr($phySze, $i-1, 1);													# get the byte in front of the dot
 					$loValue = substr($phySze, $i+1, 1);													# and after the dot
 				}
 				my $idxSze = ($hiValue*8) + $loValue;														# recalculate the amount of bit
@@ -387,14 +405,22 @@ print "//- ID: " .sprintf("0x%.4x", $devCVal) .", File: $rf_file\n";
 print "//- ----------------------------------------------------------------------------------------------------------------------\n\n";
 
 print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+print "//                                   FW  moID   serial                         ST  devInfo\n";
+print "// <- 1A 01 A4 00 01 02 05 63 19 63  15  00 6C  74 6C 75 31 30 30 31 32 33 35  10  11 01 00 \n";
+print "// FW   -> Firmware, sometimes given in xml files of hm config software\n";
+print "// moID -> Model ID, important for identification in hm config software\n";
+print "// ST   -> Subtype, identifier if device is a switch or a dimmer or a remote\n";
+print "// devInfo -> Device Info -> sometimes hm config files are refering on byte 23 for the amount of channels, other bytes not known\n";
+print "//                           23:0 0.4, means first four bit of byte 23 reflecting the amount of channels\n";
+print "//\n";
+
 print "//- settings of HM device for AS class -----------------------------------------------------------------------------------\n";
 print "const uint8_t devIdnt[] PROGMEM = {\n";
-print "    /* Firmware version 1 byte */  ".sprintf("0x%.2x,", $devFW);
-print                                         "                                     // don't know for what it is good for\n";
-print "    /* Model ID         2 byte */  ".sprintf("0x%.2x, 0x%.2x,", ($devCVal & 0xff00) / 256, $devCVal & 0xff);
-print                                               "                               // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
-print "    /* Sub Type ID      1 byte */  0x00,                                     // not needed for FHEM, it's something like a group ID\n";
-print "    /* Device Info      3 byte */  0x41, 0x01, 0x00                          // describes device, not completely clear yet. includes amount of channels\n";
+print "    /* Firmware version 1 byte */  ".sprintf("0x%.2x,", $devFW) ."\n";
+print "    /* Model ID         2 byte */  ".sprintf("0x%.2x, 0x%.2x,", ($devCVal & 0xff00) / 256, $devCVal & 0xff) ."\n";
+print "    /* Sub Type ID      1 byte */  0x00,\n";
+print "    /* Device Info      3 byte */  0x41, 0x01, 0x00 \n";
 print "};\n\n";
 
 
