@@ -99,7 +99,7 @@ void CB::poll(void) {
 		
 	} else if ((btn == 1) && (btnTmr.done() )) {	// button is not pressed for a longer time, check if the double flags timed out
 		//if (armFlg) dbg << "r\n";
-		if (dblLng) hm.ld.set(nothing);
+		if (dblLng) pHM->ld.set(nothing);
 		armFlg = lstSht = lstLng = lngRpt = dblLng = 0;
 
 	}
@@ -108,7 +108,7 @@ void CB::poll(void) {
 void CB::outSignal(uint8_t mode) {
 	
 	pHM->pw.stayAwake(500);																	// stay awake to fulfill the action
-	hm.ld.blinkRed();																		// show via led that we have some action in place
+	pHM->ld.blinkRed();																		// show via led that we have some action in place
 	
 	#ifdef CB_DBG																			// only if ee debug is set
 	if (mode == 1) dbg << F("keyShortSingle\n");											// ...and some information
@@ -129,22 +129,22 @@ void CB::outSignal(uint8_t mode) {
 		
 	} else if (mode == 3) {					// keyLongSingle
 
-		if (scn == 1) hm.ld.set(key_long);
+		if (scn == 1) pHM->ld.set(key_long);
 		if (scn == 2) pHM->sendDEVICE_INFO();												// send pairing string
 
 	} else if (mode == 4) {					// keyLongRepeat
-		hm.ld.set(nothing);
+		pHM->ld.set(nothing);
 
 	} else if (mode == 5) {					// keyLongRelease
 
 	} else if (mode == 6) {					// keyLongDouble
-		hm.ld.set(nothing);
+		pHM->ld.set(nothing);
 
 		// 0x18 localResDis available, take care of it
 		uint8_t localResDis = pHM->ee.getRegAddr(0,0,0,0x18);								// get register address
 		if (localResDis) return;															// if local reset is disabled, reset
 
-		hm.ld.set(welcome);
+		pHM->ld.set(welcome);
 		pHM->ee.clearPeers();
 		pHM->ee.clearRegs();
 		pHM->ee.getMasterID();
