@@ -57,7 +57,7 @@ void setup() {
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
-	hm.confButton.config(1,0,0);															// configure the config button, mode, pci byte and pci bit
+	hm.confButton.config(1,0,6);															// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something

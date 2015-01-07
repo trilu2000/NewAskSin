@@ -43,6 +43,7 @@ void    LD::set(ledStat stat) {
 	else if (stat == bat_low)  blinkPtr = &sBattLow[bLeds-1];
 	else if (stat == defect)   blinkPtr = &sDefect[bLeds-1];
 	else if (stat == welcome)  blinkPtr = &sWelcome[bLeds-1];
+	else if (stat == key_long)  blinkPtr = &sKeyLong[bLeds-1];
 
 	active = 1;																				// make module active
 	lCnt = 0;																				// set start position

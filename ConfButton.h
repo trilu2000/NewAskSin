@@ -40,8 +40,15 @@ class CB {
 
 	uint8_t scn     :3;						// scenario indicator
 	uint8_t btn     :3;						// result of chkPCINT
-	uint8_t rptFlg  :1;						// remember last key press to detect double or long
+
+	uint8_t armFlg  :1;						// armed flag, will be set on first touch
+
 	uint8_t lstLng  :1;						// remember a long press
+	uint8_t lngRpt  :1;						// remember last key press to detect double or long
+	uint8_t dblLng  :1;						// check for a double long
+
+	uint8_t lstSht  :1;						// remember that last key was a short
+
 	uint8_t pciByte;						// PCI byte, indicate interrupt channel
 	uint8_t pciBit;							// PCI bit indicate bit number in PCI channel byte
 

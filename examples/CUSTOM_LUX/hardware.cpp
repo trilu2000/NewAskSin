@@ -56,6 +56,8 @@ void initConfKey(void) {
 
 
 //- pin interrupts --------------------------------------------------------------------------------------------------------
+#define debounce 5
+
 struct  s_pcINT {
 	uint8_t cur;
 	uint8_t prev;
@@ -70,11 +72,15 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin) {
 
 	uint8_t cur  = pcInt[port].cur  & _BV(pin);
 	uint8_t prev = pcInt[port].prev & _BV(pin);
-	
-	if ((cur == prev) || ( ( getMillis() - pcInt[port].time) < debounce )) {				// old and new bit is similar, or debounce time is running
-		return (pcInt[port].cur & _BV(pin))?1:0;											
+
+	if ((cur == prev) || ( (getMillis() - pcInt[port].time) < debounce )) {																		// old and new bit is similar, or debounce time is running
+		return (pcInt[port].cur & _BV(pin))?1:0;
 	}
 	
+	//if ( (getMillis() - pcInt[port].time) < debounce ) {
+	//	dbg << "xxxx\n";
+	//} 
+
 	// detect rising or falling edge
 	//dbg << pcInt[port].cur << ' ' << pcInt[port].prev << ' ';
 	if (cur) {																				// pin is 1
@@ -93,6 +99,7 @@ ISR (PCINT0_vect) {
 	pcInt[0].cur = PINB;
 	pcInt[0].time = getMillis();
 	//dbg << '.';
+	//dbg << pcInt[0].cur << ' ' << pcInt[0].prev << '\n';
 }
 ISR (PCINT1_vect) {
 	pcInt[1].prev = pcInt[1].cur;
@@ -105,7 +112,6 @@ ISR (PCINT2_vect) {
 	pcInt[2].cur = PIND;
 	pcInt[2].time = getMillis();
 	//dbg << ';';
-	//dbg << pcInt[2].cur << ' ' << pcInt[2].prev << '\n';
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 

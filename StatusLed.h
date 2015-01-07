@@ -20,7 +20,7 @@ struct s_blinkPattern {							// struct for defining the blink pattern
 	uint8_t pat[6];								// the pattern it self, pattern starts always with the on time, followed by off time.
 };												// time is given in 10ms steps
 
-enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, welcome};
+enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, welcome, key_long};
 
 // we need two type of blink patterns, one with only one led and a second one with a bi color led
 	const struct s_blinkPattern sPairing[2] = {	// 1; define pairing string
@@ -39,7 +39,7 @@ enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, noack, bat_low, d
 		{2, 1, 1, 0, {5, 1,} },
 		{2, 1, 1, 1, {5, 1,} },
 	};
-	const struct s_blinkPattern sAck[2] = {		// 5; define ack indicator
+	const struct s_blinkPattern sAck[2] = {			// 5; define ack indicator
 		{0, 0, 0, 0, {0, 0,} },
 		{2, 1, 0, 1, {5, 1,} },
 	};
@@ -47,7 +47,7 @@ enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, noack, bat_low, d
 		{0, 0, 0, 0, {0, 0,} },
 		{2, 1, 1, 0, {10, 1,} },
 	};
-	const struct s_blinkPattern sBattLow[2] = {	// 7; define battery low indicator
+	const struct s_blinkPattern sBattLow[2] = {		// 7; define battery low indicator
 		{6, 3, 1, 0, {50, 10, 10, 10, 10, 100} },
 		{6, 3, 1, 0, {50, 10, 10, 10, 10 ,100} },
 	};
@@ -55,10 +55,15 @@ enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, noack, bat_low, d
 		{6, 3, 1, 0, {10, 10, 10, 10, 10, 100} },
 		{6, 3, 1, 0, {10, 10, 10, 10, 10, 100} },
 	};
-	const struct s_blinkPattern sWelcome[2] = {	// 9; define welcome indicator
+	const struct s_blinkPattern sWelcome[2] = {		// 9; define welcome indicator
 		{6, 1, 1, 0, {10, 10, 50, 10, 50, 100} },
 		{6, 1, 0, 1, {10, 10, 50, 10, 50, 100} },
 	};
+	const struct s_blinkPattern sKeyLong[2] = {		// 10; key long indicator
+		{2, 0, 1, 0, {20, 20, } },
+		{2, 0, 1, 0, {20, 20, } },
+	};
+
 
 
 class LD {

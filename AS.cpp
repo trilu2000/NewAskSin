@@ -274,7 +274,8 @@ void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	stcPeer.lenPL = 3;
 	stcPeer.cnl = cnl;
 	stcPeer.burst = burst;
-	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
+	//stcPeer.bidi = 1; // depends on BLL, long didn't need ack
+	stcPeer.bidi = (isEmpty(MAID,3))?0:1;
 	stcPeer.mTyp = 0x41;
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
@@ -342,8 +343,11 @@ void AS::sendSliceList(void) {
 	}
 }
 void AS::sendPeerMsg(void) {
-	#define maxRetries    3
+	uint8_t maxRetries;
 
+	if (stcPeer.bidi) maxRetries = 3;
+	else maxRetries = 1;
+	
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
 	
 	// first run, prepare amount of slots
