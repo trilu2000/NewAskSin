@@ -46,6 +46,7 @@ void Dimmer::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
 	else duraTme = 0;																		// or clear value
 
 	// set value in modStat and ramp time if given
+	if (setValue > 200) setValue = 200;
 	modStat = setValue;
 
 	adjDlyPWM = intTimeCvt(rampTme);														// get the ramp on time
@@ -60,7 +61,7 @@ void Dimmer::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
 		rampTme = duraTme = 0;																// times not needed any more
 
 	}
-	//dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
+	dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
 void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 

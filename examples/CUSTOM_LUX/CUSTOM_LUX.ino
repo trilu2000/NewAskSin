@@ -36,13 +36,14 @@ void setup() {
 	
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
-	//ADCSRA = 0;																				// ADC off
+	//ADCSRA = 0;																			// ADC off
 	//power_all_disable();																	// and everything else
 	
 	//DDRB = DDRC = DDRD = 0x00;																// everything as input
 	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	//power_spi_enable();																		// enable only needed functions
+	// enable only what is really needed
+	//power_spi_enable();																	// enable only needed functions
 	//power_timer0_enable();
 	//power_usart0_enable();
 
@@ -69,10 +70,12 @@ void setup() {
 	thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
 	thsens.timing(0, 0, 0);																	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change   
 
-	sei();																					// enable interrupts
-	
+
 	// - user related -----------------------------------------
 
+
+	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
+	sei();																					// enable interrupts
 }
 
 void loop() {
