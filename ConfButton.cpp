@@ -142,12 +142,14 @@ void CB::outSignal(uint8_t mode) {
 
 		// 0x18 localResDis available, take care of it
 		uint8_t localResDis = pHM->ee.getRegAddr(0,0,0,0x18);								// get register address
-		if (localResDis) return;															// if local reset is disabled, reset
+		//dbg << "x:" << localResDis <<'\n';
+		//if (localResDis) return;															// if local reset is disabled, reset
 
-		pHM->ld.set(welcome);
 		pHM->ee.clearPeers();
 		pHM->ee.clearRegs();
 		pHM->ee.getMasterID();
+
+		pHM->ld.set(welcome);
 
 	}
 }

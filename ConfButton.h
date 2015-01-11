@@ -38,6 +38,7 @@ class CB {
   private:		//---------------------------------------------------------------------------------------------------------
 	class AS *pHM;							// pointer to main class for function calls
 
+  public:		//---------------------------------------------------------------------------------------------------------
 	uint8_t scn     :3;						// scenario indicator
 	uint8_t btn     :3;						// result of chkPCINT
 

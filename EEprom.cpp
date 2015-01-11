@@ -250,11 +250,12 @@ uint8_t  EE::countFreeSlots(uint8_t cnl) {
 	uint8_t bCounter = 0;																// set counter to zero
 	uint8_t lPeer[4];
 	
-	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
+	if ((!cnl) || (cnl > devDef.cnlNbr)) return 0;										// return if channel is out of range
 	//dbg << F("cFS: ") << peerTbl[cnl-1].pMax << '\n';
 	
 	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
 		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+		//if (!*(unsigned long*)lPeer) bCounter++;										// increase counter if peer slot is empty
 		if (isEmpty(lPeer, 4)) bCounter++;												// increase counter if peer slot is empty
 		//dbg << F("addr: ") << (peerTbl[cnl-1].pAddr+(i*4)) << F(", lPeer: ") << pHex(lPeer, 4) << '\n';
 	}
@@ -263,7 +264,7 @@ uint8_t  EE::countFreeSlots(uint8_t cnl) {
 uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t lPeer[4];
 
-	if (cnl == 0) return 0;																// on channel 0 there is no need to search
+	if (!cnl) return 0;																	// on channel 0 there is no need to search
 	if (cnl > devDef.cnlNbr) return 0xff;												// return if channel is out of range
 	
 	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
@@ -282,6 +283,11 @@ uint8_t  EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	// check if channel exists
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
 
+	// check if one of the peers already exists
+	if (getIdxByPeer(cnl, peer) != 0xff) peer[3] = 0;									// peer 1 exists, therefore write a 0 in the peer channel byte
+	memcpy(lPeer, peer, 3); lPeer[3] = peer[4];											// prepare peer 2
+	if (getIdxByPeer(cnl, lPeer) != 0xff) peer[4] = 0;									// peer 2 exists, therefore write a 0 in the peer channel byte
+	
 	// set bit mask against peer cnl
 	uint8_t cnt = 0, ret = 0;
 	if (peer[3]) cnt |= 1;
@@ -474,7 +480,7 @@ uint8_t  EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 }
 uint8_t  EE::checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx) {
 	//dbg << "cnl: " << cnl << " lst: " << lst << " idx: " << idx << '\n';
-	if ( (cnl > 0) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl-1].pMax) ) return 0;
+	if ((cnl) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl-1].pMax) ) return 0;
 	return 1;
 }
 
@@ -492,7 +498,12 @@ uint16_t crc16(uint16_t crc, uint8_t a) {
 	return crc;
 }
 uint8_t  compArray(void *ptr1, void *ptr2, uint8_t len) {
-	return memcmp(ptr1, ptr2, len)?0:1;
+	while (len > 0) {
+		len--;
+		if (*((uint8_t*)ptr1+len) != *((uint8_t*)ptr2+len)) return 0;
+	}
+	return 1;
+	//return memcmp(ptr1, ptr2, len)?0:1;
 }
 uint8_t  isEmpty(void *ptr, uint8_t len) {
 	while (len > 0) {

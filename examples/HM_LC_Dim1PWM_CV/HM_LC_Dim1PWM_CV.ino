@@ -44,7 +44,12 @@ void setup() {
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
-	hm.confButton.config(2,0,0);															// configure the config button, mode, pci byte and pci bit
+
+#if defined(__AVR_ATmega328P__)
+	hm.confButton.config(1,0,0);															// configure the config button, mode, pci byte and pci bit
+#elif defined(__AVR_ATmega32U4__)
+	hm.confButton.config(1,0,6);															// configure the config button, mode, pci byte and pci bit
+#endif
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
@@ -59,7 +64,14 @@ void setup() {
 
 	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
 	sei();																					// enable interrupts
+	
+	//uint8_t xT[] = {0x15, 0xff, 0x16, 0xff};
+	//hm.ee.setListArray(0, 0, 0, 4, xT);	
 
+	uint8_t pT[] = {0x01,0x02,0x04,0x01,0x00};
+	hm.ee.addPeer(1, pT);
+	hm.ee.addPeer(2, pT);
+	hm.ee.addPeer(3, pT);
 }
 
 void loop() {

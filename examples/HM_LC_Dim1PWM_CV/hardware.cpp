@@ -56,45 +56,62 @@ void initConfKey(void) {
 
 
 //- pin interrupts --------------------------------------------------------------------------------------------------------
+#define debounce 5
+
 struct  s_pcINT {
 	uint8_t cur;
 	uint8_t prev;
 	uint32_t time;
 } static volatile pcInt[3];
 void    initPCINT(void) {
-	memset((uint8_t*)pcInt, 0xff, sizeof(pcInt));
+	memset((uint8_t*)pcInt, 0x00, sizeof(pcInt));
 	//dbg << "a: " << pcInt[2].cur << '\n';
 }
 uint8_t chkPCINT(uint8_t port, uint8_t pin) {
-	// returns 0 or 1 for pin level and 2 for falling and 3 for rising edge
-	
-	// old and new bit is similar, return current status
-	if ( (pcInt[port].cur & _BV(pin)) == (pcInt[port].prev & _BV(pin)) ) return pcInt[port].cur & _BV(pin);
+	// returns pin status while no interrupt had happened for the pin, 2 for falling and 3 for rising edge
 
-	// check for debounce time, if still running return previous status
-	if (pcInt[port].time > getMillis()) return pcInt[port].prev & _BV(pin);
+	uint8_t cur  = pcInt[port].cur  & _BV(pin);
+	uint8_t prev = pcInt[port].prev & _BV(pin);
+
+	if ((cur == prev) || ( (getMillis() - pcInt[port].time) < debounce )) {																		// old and new bit is similar, or debounce time is running
+		return (pcInt[port].cur & _BV(pin))?1:0;
+	}
 	
+	//if ( (getMillis() - pcInt[port].time) < debounce ) {
+	//	dbg << "xxxx\n";
+	//} 
+
 	// detect rising or falling edge
-	if (pcInt[port].cur & _BV(pin)) {
+	//dbg << pcInt[port].cur << ' ' << pcInt[port].prev << ' ';
+	if (cur) {																				// pin is 1
 		pcInt[port].prev |= _BV(pin);														// set bit bit in prev
+		//dbg << "y3\n";
 		return 3;
-		} else {
+	} else {																				// pin is 0
+		//dbg << "y2\n";
 		pcInt[port].prev &= ~_BV(pin);														// clear bit in prev
 		return 2;
 	}
 }
 
 ISR (PCINT0_vect) {
+	pcInt[0].prev = pcInt[0].cur;
 	pcInt[0].cur = PINB;
-	pcInt[0].time = getMillis()+debounce;
+	pcInt[0].time = getMillis();
+	//dbg << '.';
+	//dbg << pcInt[0].cur << ' ' << pcInt[0].prev << '\n';
 }
 ISR (PCINT1_vect) {
+	pcInt[1].prev = pcInt[1].cur;
 	pcInt[1].cur = PINC;
-	pcInt[1].time = getMillis()+debounce;
+	pcInt[1].time = getMillis();
+	//dbg << ',';
 }
 ISR (PCINT2_vect) {
+	pcInt[2].prev = pcInt[2].cur;
 	pcInt[2].cur = PIND;
-	pcInt[2].time = getMillis()+debounce;
+	pcInt[2].time = getMillis();
+	//dbg << ';';
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -113,6 +130,7 @@ void    ccInitHw(void) {
 	//SPSR &= ~_BV(SPI2X);
 	
 	CC_GDO0_PCICR |= _BV(CC_GDO0_PCIE);														// set interrupt in mask active
+	//CC_GDO0_PCMSK |=  _BV(CC_GDO0_INT);
 }
 uint8_t ccSendByte(uint8_t data) {
 	SPDR = data;																			// send byte
@@ -120,14 +138,19 @@ uint8_t ccSendByte(uint8_t data) {
 	return SPDR;
 }
 uint8_t ccGetGDO0() {
-	if (chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT) == 2 ) return 1;								// falling edge detected
+	uint8_t x = chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT);
+	//if (x>1) dbg << "x:" << x << '\n';
+	
+	if (x == 2 ) return 1;																	// falling edge detected
 	else return 0;
 }
 
 void    enableGDO0Int(void) {
+	//dbg << "enable int\n";
 	CC_GDO0_PCMSK |=  _BV(CC_GDO0_INT);
 }
 void    disableGDO0Int(void) {
+	//dbg << "disable int\n";
 	CC_GDO0_PCMSK &= ~_BV(CC_GDO0_INT);
 }
 

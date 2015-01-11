@@ -61,7 +61,7 @@ void Dimmer::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
 		rampTme = duraTme = 0;																// times not needed any more
 
 	}
-	dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
+	//dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
 void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
@@ -580,6 +580,7 @@ void Dimmer::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, 
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
 	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
+	else if ((by3 == 0x00) && (by10 == 0x02)) firstStart();
 	else if ((by3 == 0x01) && (by11 == 0x06)) configCngEvent();
 	else if ((by3 == 0x11) && (by10 == 0x02)) pairSetEvent(data, len);
 	else if ((by3 == 0x01) && (by11 == 0x0E)) pairStatusReq();
@@ -607,4 +608,9 @@ void Dimmer::peerAddEvent(uint8_t *data, uint8_t len) {
 		if (data[0]) hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
 		if (data[1]) hm->ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
+}
+void Dimmer::firstStart(void) {
+	//#ifdef DI_DBG
+	dbg << F("firstStart\n");
+	//#endif
 }

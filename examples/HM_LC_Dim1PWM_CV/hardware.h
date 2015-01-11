@@ -14,18 +14,7 @@
 
 //- define hardware -------------------------------------------------------------------------------------------------------
 //- LED's
-#if defined(__AVR_ATmega328P__)
-	#define ledRedDDR     DDRD																// define led port and remaining pin
-	#define ledRedPort    PORTD
-	#define ledRedPin     PORTD6
-
-	#define ledGrnDDR     DDRD
-	#define ledGrnPort    PORTD
-	#define ledGrnPin     PORTD4
-
-	#define ledActiveLow  0																	// leds against GND = 0, VCC = 1
-
-#elif defined(__AVR_ATmega32U4__)
+#if defined(__AVR_ATmega32U4__)
 	#define ledRedDDR     DDRB																// define led port and remaining pin
 	#define ledRedPort    PORTB
 	#define ledRedPin     PORTB7
@@ -37,22 +26,19 @@
 	#define ledActiveLow  1																	// leds against GND = 0, VCC = 1
 
 #else
-	#error "Error: LEDS not defined for your hardware in hardware.h!"
+	#define ledRedDDR     DDRD   //DDRB														// define led port and remaining pin
+	#define ledRedPort    PORTD  //PORTB
+	#define ledRedPin     PORTD6 //PORTB7
 
+	#define ledGrnDDR     DDRD   //DDRC
+	#define ledGrnPort    PORTD  //PORTC
+	#define ledGrnPin     PORTD4 //PORTC7
+
+	#define ledActiveLow  0																	// leds against GND = 0, VCC = 1
 #endif
 
 //- configuration key
-#if defined(__AVR_ATmega328P__)
-	#define confKeyDDR    DDRB																// define config key port and remaining pin
-	#define confKeyPort   PORTB
-	#define confKeyPin    PORTB0
-
-	#define confKeyPCICR  PCICR																// interrupt register
-	#define confKeyPCIE   PCIE0																// pin change interrupt port bit
-	#define confKeyPCMSK  PCMSK0															// interrupt mask
-	#define confKeyINT    PCINT0															// pin interrupt
-
-#elif defined(__AVR_ATmega32U4__)
+#if defined(__AVR_ATmega32U4__)
 	#define confKeyDDR    DDRB																// define config key port and remaining pin
 	#define confKeyPort   PORTB
 	#define confKeyPin    PORTB6
@@ -63,34 +49,21 @@
 	#define confKeyINT    PCINT6															// pin interrupt
 
 #else
-	#error "Error: Configuration key not defined for your hardware in hardware.h!"
+	#define confKeyDDR    DDRB																// define config key port and remaining pin
+	#define confKeyPort   PORTB
+	#define confKeyPin    PORTB0
+
+	#define confKeyPCICR  PCICR																// interrupt register
+	#define confKeyPCIE   PCIE0																// pin change interrupt port bit
+	#define confKeyPCMSK  PCMSK0															// interrupt mask
+	#define confKeyINT    PCINT0															// pin interrupt
 
 #endif
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
 //- cc1100 hardware functions ---------------------------------------------------------------------------------------------
-#if defined(__AVR_ATmega328P__)
-	#define SPI_PORT		PORTB															// SPI port definition
-	#define SPI_DDR			DDRB
-	#define SPI_MISO		PORTB4
-	#define SPI_MOSI		PORTB3
-	#define SPI_SCLK        PORTB5
-
-	#define CC_CS_PORT		PORTB															// SPI chip select definition
-	#define CC_CS_DDR		DDRB
-	#define CC_CS_PIN		PORTB2
-
-	#define CC_GDO0_DDR     DDRD															// GDO0 pin, signals received data
-	#define CC_GDO0_PORT    PIND
-	#define CC_GDO0_PIN     PORTD2
-
-	#define CC_GDO0_PCICR   PCICR															// GDO0 interrupt register
-	#define CC_GDO0_PCIE    PCIE2
-	#define CC_GDO0_PCMSK   PCMSK2															// GDO0 interrupt mask
-	#define CC_GDO0_INT     PCINT18															// pin interrupt
-
-#elif defined(__AVR_ATmega32U4__)
+#if defined(__AVR_ATmega32U4__)
 	#define SPI_PORT		PORTB															// SPI port definition
 	#define SPI_DDR			DDRB
 	#define SPI_MISO		PORTB3
@@ -111,7 +84,24 @@
 	#define CC_GDO0_INT     PCINT5															// pin interrupt
 
 #else
-	#error "Error: CC1101 interface not defined for your hardware in hardware.h!"
+	#define SPI_PORT		PORTB															// SPI port definition
+	#define SPI_DDR			DDRB
+	#define SPI_MISO		PORTB4
+	#define SPI_MOSI		PORTB3
+	#define SPI_SCLK        PORTB5
+
+	#define CC_CS_PORT		PORTB															// SPI chip select definition
+	#define CC_CS_DDR		DDRB
+	#define CC_CS_PIN		PORTB2
+
+	#define CC_GDO0_DDR     DDRD															// GDO0 pin, signals received data
+	#define CC_GDO0_PORT    PIND
+	#define CC_GDO0_PIN     PORTD2
+
+	#define CC_GDO0_PCICR   PCICR															// GDO0 interrupt register
+	#define CC_GDO0_PCIE    PCIE2
+	#define CC_GDO0_PCMSK   PCMSK2															// GDO0 interrupt mask
+	#define CC_GDO0_INT     PCINT18															// pin interrupt
 
 #endif
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -150,16 +140,7 @@
 #define BATTERY_FACTOR                    124												// see excel table
 
 //- external battery measurement
-#if defined(__AVR_ATmega328P__)
-	#define battEnblDDR   DDRB																// define battery measurement enable pin, has to be low to start measuring
-	#define battEnblPort  PORTB
-	#define battEnblPin   PORTB4
-
-	#define battMeasDDR   DDRB																// define battery measure pin, where ADC gets the measurement
-	#define battMeasPort  PORTB
-	#define battMeasPin   PORTB7
-
-#elif defined(__AVR_ATmega32U4__)
+#if defined(__AVR_ATmega32U4__)
 	#define battEnblDDR   DDRF																// define battery measurement enable pin, has to be low to start measuring
 	#define battEnblPort  PORTF
 	#define battEnblPin   PORTF4
@@ -169,7 +150,13 @@
 	#define battMeasPin   PORTF7
 
 #else
-	#error "Error: External battery measurement not defined for your hardware in hardware.h!"
+	#define battEnblDDR   DDRB																// define battery measurement enable pin, has to be low to start measuring
+	#define battEnblPort  PORTB
+	#define battEnblPin   PORTB4
+
+	#define battMeasDDR   DDRB																// define battery measure pin, where ADC gets the measurement
+	#define battMeasPort  PORTB
+	#define battMeasPin   PORTB7
 
 #endif
 //- -----------------------------------------------------------------------------------------------------------------------

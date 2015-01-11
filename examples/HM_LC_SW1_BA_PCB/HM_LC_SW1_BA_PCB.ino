@@ -43,12 +43,17 @@ void setup() {
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
+
+#if defined(__AVR_ATmega328P__)
 	hm.confButton.config(2,0,0);															// configure the config button, mode, pci byte and pci bit
+#elif defined(__AVR_ATmega32U4__)
+	hm.confButton.config(2,0,6);															// configure the config button, mode, pci byte and pci bit
+#endif
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(1);																		// set power management mode
+	hm.pw.setMode(0);																		// set power management mode
 	hm.bt.set(1, 27, 1800000);		// 1800000 = 0,5h										// set battery check
 
 	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance

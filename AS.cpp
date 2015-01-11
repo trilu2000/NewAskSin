@@ -91,7 +91,7 @@ void AS::sendDEVICE_INFO(void) {
 	
 	sn.mBdy.mLen = 0x1a;
 	sn.mBdy.mCnt = xCnt;
-	sn.mBdy.mFlg.CFG = 1;
+	sn.mBdy.mFlg.CFG = 0;
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
 
 	sn.mBdy.mTyp = 0x00;
@@ -514,14 +514,18 @@ void AS::recvMessage(void) {
 		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
 		// do something with the information ----------------------------------
 
-		stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);							// fill struct
+		if ((rv.buf[16] == 3) || (rv.buf[16] == 4)) {										// only list 3 and list 4 needs an peer id and idx	
+			stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);						// get peer index
+		} else stcSlice.idx = 0;															// otherwise peer index is 0
+ 
 		stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);						// how many slices are need
 		stcSlice.mCnt = rv.mBdy.mCnt;														// remember the message count
 		memcpy(stcSlice.toID, rv.mBdy.reID, 3);
 		stcSlice.cnl = rv.mBdy.by10;														// send input to the send peer function
 		stcSlice.lst = rv.buf[16];															// send input to the send peer function
 		stcSlice.reg2 = 1;																	// set the type of answer
-	
+		
+		dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
 		if ((stcSlice.idx != 0xff) && (stcSlice.totSlc > 0)) stcSlice.active = 1;			// only send register content if something is to send															// start the send function
 		else memset((void*)&stcSlice, 0, 10);												// otherwise empty variable
 		// --------------------------------------------------------------------
@@ -574,6 +578,19 @@ void AS::recvMessage(void) {
 
 		if ((cFlag.active) && (cFlag.cnl == rv.mBdy.by10)) {								// check if we are in config mode and if the channel fit
 			ee.setListArray(cFlag.cnl, cFlag.lst, cFlag.idx, rv.buf[0]+1-11, rv.buf+12);	// write the string to eeprom
+			
+			if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
+				uint8_t maIdFlag = 0;				
+				for (uint8_t i = 0; i < (rv.buf[0]+1-11); i+=2) {
+					if (rv.buf[12+i] == 0x0a) maIdFlag = 1;
+					dbg << "x" << i << " :" << _HEXB(rv.buf[12+i]) << '\n';
+				}
+				if (maIdFlag) {
+					ee.getMasterID();
+					dbg << "new masterid\n" << '\n';				
+				}
+				
+			}
 		}
 		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
@@ -850,7 +867,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	sn.mBdy.mTyp = 0x10;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
-	sn.mBdy.by10 = 0x02;
+	sn.mBdy.by10 = (len < 3)?0x03:0x02;														// on end of the message we send a 0x03 message for homegear only
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
