@@ -208,6 +208,7 @@ void     EE::testModul(void) {															// prints register.h content on con
 	#endif
 }
 uint8_t  EE::isHMIDValid(uint8_t *toID) {
+	//dbg << "t: " << _HEX(toID, 3) << ", h: " << _HEX(HMID, 3) << '\n';
 	return compArray(toID, HMID, 3);
 }
 uint8_t  EE::isPairValid (uint8_t *reID) {
@@ -239,7 +240,7 @@ void     EE::clearPeers(void) {
 	}
 }
 uint8_t  EE::isPeerValid (uint8_t *peer) {
-	//dbg << "p: " << pHex(peer, 4) << '\n';
+	//dbg << "p: " << _HEX(peer, 4) << '\n';
 	for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {										// step through all channels
 		if (getIdxByPeer(i, peer) != 0xff) return i;									// if a valid peer is found return the respective channel
 	}
@@ -270,7 +271,7 @@ uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
 		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 		if (compArray(lPeer, peer, 4)) return i;										// if result matches then return slot index
-		//dbg << i << ": " << lPeer << ", s: " << pHex(peer,4) << '\n';
+		//dbg << i << ": " << _HEX(lPeer,4) << ", s: " << _HEX(peer, 4) << '\n';
 	}
 	return 0xff;
 }
@@ -498,12 +499,12 @@ uint16_t crc16(uint16_t crc, uint8_t a) {
 	return crc;
 }
 uint8_t  compArray(void *ptr1, void *ptr2, uint8_t len) {
-	while (len > 0) {
-		len--;
-		if (*((uint8_t*)ptr1+len) != *((uint8_t*)ptr2+len)) return 0;
-	}
-	return 1;
-	//return memcmp(ptr1, ptr2, len)?0:1;
+	//while (len > 0) {
+	//	len--;
+	//	if (*((uint8_t*)ptr1+len) != *((uint8_t*)ptr2+len)) return 0;
+	//}
+	//return 1;
+	return memcmp(ptr1, ptr2, len)?0:1;
 }
 uint8_t  isEmpty(void *ptr, uint8_t len) {
 	while (len > 0) {

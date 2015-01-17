@@ -313,6 +313,7 @@ void Relay::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	dbg << F("PME, type: ")  << _HEXB(type) << F(", data: ")  << _HEX(data, len) << '\n';
 	#endif
 	
+	if (type == 0x3E) trigger40( data[4], data[5]);
 	if (type == 0x40) trigger40((data[0] & 0x40), data[1]);
 	if (type == 0x41) trigger41((data[0] & 0x7F), data[1], data[2]);
 	

@@ -608,7 +608,7 @@ void AS::recvMessage(void) {
 		//                                         serial
 		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A  4B 45 51 30 32 33 37 33 39 36
 		// do something with the information ----------------------------------
-		if (compArray(rv.buf+12,HMSR,10)) sendDEVICE_INFO();									// compare serial and send device info
+		if (compArray(rv.buf+12,HMSR,10)) sendDEVICE_INFO();								// compare serial and send device info
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0E)) {			// CONFIG_STATUS_REQUEST
@@ -773,28 +773,46 @@ void AS::recvMessage(void) {
 
 	} else if  (rv.mBdy.mTyp >= 0x3E) {										// 3E SWITCH, 3F TIMESTAMP, 40 REMOTE, 41 SENSOR_EVENT, 53 SENSOR_DATA, 58 CLIMATE_EVENT, 70 WEATHER_EVENT
 		// description --------------------------------------------------------
-		//
-		// b> 0B 06 84 40 23 70 D8 00 00 00 05 02 - Remote
+		//                 from      to        cnl  cnt
+		// p> 0B 2D B4 40  23 70 D8  01 02 05  06   05 - Remote
 		// do something with the information ----------------------------------
 
+		//                 from      to        dst       na  cnl  cnt
+		// m> 0F 18 B0 3E  FD 24 BE  01 02 05  23 70 D8  40  06   00 - Switch
+		//"3E"          => { txt => "SWITCH"      , params => {
+		//				DST      => "00,6",
+		//				UNKNOWN  => "06,2",
+		//				CHANNEL  => "08,2",
+		//				COUNTER  => "10,2", } },
+
+		uint8_t cnl = 0, pIdx;
+		
 		// check if we have the peer in the database to get the channel
-		uint8_t cnl = ee.isPeerValid(rv.peerId);
-		//dbg << "cnl: " << cnl << " mTyp: " << _HEXB(rv.mBdy.mTyp) << " by10: " << _HEXB(rv.mBdy.by10)  << " by11: " << _HEXB(rv.mBdy.by11) << " data: " << _HEX((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
+		if ((rv.mBdy.mTyp == 0x3E) && (rv.mBdy.mLen == 0x0f)) {
+			rv.buf[13] = rv.buf[14];														// copy the channel byte to the peer
+			cnl = ee.isPeerValid(rv.buf+10);												// check with the right part of the string
+			if (cnl) pIdx = ee.getIdxByPeer(cnl, rv.buf+10);								// get the index of the respective peer in the channel store
+
+		} else {
+			cnl = ee.isPeerValid(rv.peerId);
+			if (cnl) pIdx = ee.getIdxByPeer(cnl, rv.peerId);								// get the index of the respective peer in the channel store
+			
+		}
+		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rv.mBdy.mTyp) << " by10: " << _HEXB(rv.mBdy.by10)  << " by11: " << _HEXB(rv.mBdy.by11) << " data: " << _HEX((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
 		if (cnl == 0) return;
 		
 		// check if a module is registered and send the information, otherwise report an empty status
 		if (modTbl[cnl-1].cnl) {
 
-			// check if we have a list3 or list4 and reload to the module item
-			uint8_t pIdx = ee.getIdxByPeer(cnl, rv.peerId);
 			//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
-			ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);
+			ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);				// get list3 or list4 loaded into the user module
 			
 			// call the user module
 			modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
 
 		} else {
 			sendACK();
+
 		}
 		// --------------------------------------------------------------------
 
