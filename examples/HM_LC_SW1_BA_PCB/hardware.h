@@ -82,9 +82,7 @@
 #endif
 
 //- wake up pin
-#if defined(__AVR_ATmega328P__)
-
-#elif defined(__AVR_ATmega32U4__)
+#if defined(__AVR_ATmega32U4__)
 	#define wakeupDDR     DDRE																// define wake up pin port and remaining pin
 	#define wakeupPRT     PORTE
 	#define wakeupPNR     PINE
@@ -163,7 +161,21 @@
 //- power management functions --------------------------------------------------------------------------------------------
 // http://donalmorrissey.blogspot.de/2010/04/sleeping-arduino-part-5-wake-up-via.html
 // http://www.mikrocontroller.net/articles/Sleep_Mode#Idle_Mode
+// backup the power registers, save content of Power Reduction Register
+#if defined(__AVR_ATmega328P__)	
+	#define backupPwrRegs()  uint8_t xPrr = PRR; PRR = 0xFF;
+	#define recoverPwrRegs() PRR = xPrr;
+	#define offBrownOut()    MCUCR = (1<<BODS)|(1<<BODSE); MCUCR = (1<<BODS);																		// must be done right before sleep
 
+#elif defined(__AVR_ATmega32U4__)
+	#define backupPwrRegs()	 uint8_t xPrr0 = PRR0; uint8_t xPrr1 = PRR1; PRR0 = PRR1= 0xFF;
+	#define recoverPwrRegs() PRR0 = xPrr0; PRR1 = xPrr1;
+	#define offBrownOut()
+
+#else
+	#error "Power reduction registers not defined!"
+
+#endif
 //- -----------------------------------------------------------------------------------------------------------------------
 
 

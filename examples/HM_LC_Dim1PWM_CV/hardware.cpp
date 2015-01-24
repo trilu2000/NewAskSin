@@ -3,7 +3,11 @@
 
 //- some macros for debugging ---------------------------------------------------------------------------------------------
 void dbgStart(void) {
-	#if defined(__AVR_ATmega32U4__)
+
+#if defined(__AVR_ATmega32U4__)
+	pinOutput(DDRB, PINB0);																	// pin output, otherwise USB will not work
+	power_usb_enable();																		// enable the USB port
+
 	if (!(UCSR1B & (1<<RXEN1))) {
 		dbg.begin(57600);																	// check if serial was already set
 		//while(!dbg);																		// wait until serial has connected
@@ -13,16 +17,16 @@ void dbgStart(void) {
 		_delay_ms(100);
 		_delay_ms(100);
 	}
-	#else
+#else
+	power_usart0_enable();																	// serial port for debugging
 	if (!(UCSR0B & (1<<RXEN0))) dbg.begin(57600);											// check if serial was already set
-	#endif
+#endif
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
 //- pin related functions -------------------------------------------------------------------------------------------------
-// AVR 328 uses three port addresses, PortB (digital pin 8 to 13), PortC (analog input pins), PortD (digital pins 0 to 7)
-void initLeds(void) {
+void    initLeds(void) {
 	pinOutput(ledRedDDR,ledRedPin);															// set the led pins in port
 	pinOutput(ledGrnDDR,ledGrnPin);
 	if (ledActiveLow) {
@@ -30,20 +34,20 @@ void initLeds(void) {
 		setPinHigh(ledGrnPort, ledGrnPin);
 	}
 }
-void ledRed(uint8_t stat) {
+void    ledRed(uint8_t stat) {
 	stat ^= ledActiveLow;
 	if      (stat == 1) setPinHigh(ledRedPort, ledRedPin);
 	else if (stat == 0) setPinLow(ledRedPort, ledRedPin);
 	else                setPinCng(ledRedPort, ledRedPin);
 }
-void ledGrn(uint8_t stat) {
+void    ledGrn(uint8_t stat) {
 	stat ^= ledActiveLow;
 	if      (stat == 1) setPinHigh(ledGrnPort, ledGrnPin);
 	else if (stat == 0) setPinLow(ledGrnPort, ledGrnPin);
 	else                setPinCng(ledGrnPort, ledGrnPin);
 }
 
-void initConfKey(void) {
+void    initConfKey(void) {
 	// set port pin and register pin interrupt
 	pinInput(confKeyDDR, confKeyPin);														// init the config key pin
 	setPinHigh(confKeyPort,confKeyPin);
@@ -51,6 +55,25 @@ void initConfKey(void) {
 	initPCINT();																			// some sanity on interrupts
 	regPCIE(confKeyPCIE);																	// set the pin change interrupt
 	regPCINT(confKeyPCMSK,confKeyINT);														// description is in hal.h
+}
+
+void    initWakeupPin(void) {
+	#if defined(wakeupDDR)
+
+	pinInput(wakeupDDR, wakeupPIN);															// set pin as input
+	setPinHigh(wakeupPRT, wakeupPIN);														// enable internal pull up
+
+	#endif
+}
+
+uint8_t checkWakeupPin(void) {
+	// to enable the USB port for upload, configure PE2 as input and check if it is 0, this will avoid sleep mode and enable program upload via serial
+	#if defined(wakeupDDR)
+
+	if (getPin(wakeupPNR, wakeupPIN)) return 1;												// return pin is active
+	#endif
+
+	return 0;																				// normal operation
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -145,7 +168,7 @@ uint8_t ccGetGDO0() {
 	else return 0;
 }
 
-void    enableGDO0Int(void) {
+void    enableGDO0Int(void) { 
 	//dbg << "enable int\n";
 	CC_GDO0_PCMSK |=  _BV(CC_GDO0_INT);
 }
@@ -239,34 +262,17 @@ void    setSleep(void) {
 
 	// some power savings by switching off some CPU functionality
 	ADCSRA = 0;																				// disable ADC
-	#if defined(__AVR_ATmega32U4__)
-	uint8_t xPrr0 = PRR0;																	// save content of Power Reduction Register
-	uint8_t xPrr1 = PRR1;																	// save content of Power Reduction Register
-	PRR0 = PRR1= 0xFF;																		// turn off various modules
-	#else
-	uint8_t xPrr = PRR;																		// save content of Power Reduction Register
-	PRR = 0xFF;																				// turn off various modules
-	#endif
-
+	backupPwrRegs();																		// save content of power reduction register and set it to all off
+	
 	sleep_enable();																			// enable sleep
-	#if defined(__AVR_ATmega32U4__)
-	#else
-	MCUCR = (1<<BODS)|(1<<BODSE);															// turn off brown-out enable in software
-	MCUCR = (1<<BODS);																		// must be done right before sleep
-	#endif
-
+	offBrownOut();																			// turn off brown out detection
+	
 	sleep_cpu();																			// goto sleep
 	// sleeping now
 	// --------------------------------------------------------------------------------------------------------------------
 	// wakeup will be here
 	sleep_disable();																		// first thing after waking from sleep, disable sleep...
-
-	#if defined(__AVR_ATmega32U4__)
-	PRR0 = xPrr0;																			// restore power management
-	PRR1 = xPrr1;																			// restore power management
-	#else
-	PRR = xPrr;																				// restore power management
-	#endif
+	recoverPwrRegs();																		// recover the power reduction register settings
 	//dbg << '.';																			// some debug
 }
 

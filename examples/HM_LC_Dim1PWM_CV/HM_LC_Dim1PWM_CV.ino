@@ -15,11 +15,6 @@ Dimmer dimmer;																				// stage a dummy module
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
-	#ifdef SER_DBG
-	dbgStart();																				// serial setup
-	dbg << F("Main\n");																	// ...and some information
-	#endif
-	
 	// - Hardware setup ---------------------------------------
 	// everything off
 	//ADCSRA = 0;																				// ADC off
@@ -31,6 +26,12 @@ void setup() {
 	power_spi_enable();																		// SPI port for transceiver communication
 	power_timer0_enable();																	// timer0 for getMillis and waitTimer
 	power_usart0_enable();																	// serial port for debugging
+
+ 	#ifdef SER_DBG
+	dbgStart();																				// serial setup
+	dbg << F("HM_LC_Dim1PWM_CV\n");																	// ...and some information
+	#endif
+	
 
 	// initialize the hardware, functions to be found in hardware.cpp
 	initMillis();																			// milli timer start
@@ -45,11 +46,7 @@ void setup() {
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 
-#if defined(__AVR_ATmega328P__)
-	hm.confButton.config(1,0,0);															// configure the config button, mode, pci byte and pci bit
-#elif defined(__AVR_ATmega32U4__)
-	hm.confButton.config(1,0,6);															// configure the config button, mode, pci byte and pci bit
-#endif
+	hm.confButton.config(2, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something

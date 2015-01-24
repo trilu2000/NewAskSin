@@ -262,34 +262,17 @@ void    setSleep(void) {
 
 	// some power savings by switching off some CPU functionality
 	ADCSRA = 0;																				// disable ADC
-	#if defined(__AVR_ATmega32U4__)
-	uint8_t xPrr0 = PRR0;																	// save content of Power Reduction Register
-	uint8_t xPrr1 = PRR1;																	// save content of Power Reduction Register
-	PRR0 = PRR1= 0xFF;																		// turn off various modules
-	#else
-	uint8_t xPrr = PRR;																		// save content of Power Reduction Register
-	PRR = 0xFF;																				// turn off various modules
-	#endif
-
+	backupPwrRegs();																		// save content of power reduction register and set it to all off
+	
 	sleep_enable();																			// enable sleep
-	#if defined(__AVR_ATmega32U4__)
-	#else
-	MCUCR = (1<<BODS)|(1<<BODSE);															// turn off brown-out enable in software
-	MCUCR = (1<<BODS);																		// must be done right before sleep
-	#endif
-
+	offBrownOut();																			// turn off brown out detection
+	
 	sleep_cpu();																			// goto sleep
 	// sleeping now
 	// --------------------------------------------------------------------------------------------------------------------
 	// wakeup will be here
 	sleep_disable();																		// first thing after waking from sleep, disable sleep...
-
-	#if defined(__AVR_ATmega32U4__)
-	PRR0 = xPrr0;																			// restore power management
-	PRR1 = xPrr1;																			// restore power management
-	#else
-	PRR = xPrr;																				// restore power management
-	#endif
+	recoverPwrRegs();																		// recover the power reduction register settings
 	//dbg << '.';																			// some debug
 }
 

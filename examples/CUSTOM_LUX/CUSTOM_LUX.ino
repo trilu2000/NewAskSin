@@ -29,11 +29,6 @@ uint8_t thVal = 0;																			// variable which holds the measured value
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
-	#ifdef SER_DBG
-	dbgStart();																				// serial setup
-	dbg << F("Main\n");																		// ...and some information
-	#endif
-	
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
 	//ADCSRA = 0;																			// ADC off
@@ -47,6 +42,11 @@ void setup() {
 	//power_timer0_enable();
 	//power_usart0_enable();
 
+	#ifdef SER_DBG
+	dbgStart();																				// serial setup
+	dbg << F("CUSTOM_LUX\n");																		// ...and some information
+	#endif
+
 	initMillis();																			// milli timer start
 	initPCINT();																			// initialize the pin change interrupts
 	ccInitHw();																				// initialize transceiver hardware
@@ -59,11 +59,7 @@ void setup() {
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 
-#if defined(__AVR_ATmega328P__)
-	hm.confButton.config(1,0,0);															// configure the config button, mode, pci byte and pci bit
-#elif defined(__AVR_ATmega32U4__)
-	hm.confButton.config(1,0,6);															// configure the config button, mode, pci byte and pci bit
-#endif
+	hm.confButton.config(2, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
