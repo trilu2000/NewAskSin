@@ -10,15 +10,11 @@
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 Relay relay;																				// stage a dummy module
-
+//waitTimer wt;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
-	#ifdef SER_DBG
-	dbgStart();																				// serial setup
-	dbg << F("HM_LC_SW1_BA_PCB\n");															// ...and some information
-	#endif
-	
+
 	// - Hardware setup ---------------------------------------
 	// everything off
 	ADCSRA = 0;																				// ADC off
@@ -29,7 +25,12 @@ void setup() {
 	// enable only what is really needed
 	power_spi_enable();																		// SPI port for transceiver communication
 	power_timer0_enable();																	// timer0 for getMillis and waitTimer
-	power_usart0_enable();																	// serial port for debugging
+
+	#ifdef SER_DBG
+	dbgStart();																				// serial setup
+	dbg << F("HM_LC_SW1_BA_PCB\n");															// ...and some information
+	#endif
+
 
 	// initialize the hardware, functions to be found in hardware.cpp
 	initMillis();																			// milli timer start
@@ -44,16 +45,20 @@ void setup() {
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 
-#if defined(__AVR_ATmega328P__)
-	hm.confButton.config(2,0,0);															// configure the config button, mode, pci byte and pci bit
-#elif defined(__AVR_ATmega32U4__)
-	hm.confButton.config(2,0,6);															// configure the config button, mode, pci byte and pci bit
-#endif
+	hm.confButton.config(2, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(0);																		// set power management mode
+	hm.pw.setMode(1);																		// set power management mode
+
+	// to enable the USB port for upload, configure PE2 as input and check if it is 0, 
+	// this will avoid sleep mode and enable program upload via serial
+	#if defined(__AVR_ATmega32U4__)
+	pinInput(DDRE, PINE2);																	// set pin as input
+	if (getPin(PINE, PINE2)) hm.pw.setMode(0);												// set power management mode
+	#endif 
+
 	hm.bt.set(1, 27, 1800000);		// 1800000 = 0,5h										// set battery check
 
 	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
@@ -71,9 +76,9 @@ void loop() {
 	// - AskSin related ---------------------------------------
 	hm.poll();																				// poll the homematic main loop
 	
-
 	// - user related -----------------------------------------
 
+	
 }
 
 

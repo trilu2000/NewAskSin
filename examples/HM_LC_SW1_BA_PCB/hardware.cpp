@@ -3,7 +3,11 @@
 
 //- some macros for debugging ---------------------------------------------------------------------------------------------
 void dbgStart(void) {
-	#if defined(__AVR_ATmega32U4__)
+
+#if defined(__AVR_ATmega32U4__)
+	pinOutput(DDRB, PINB0);																	// pin output, otherwise USB will not work
+	power_usb_enable();																		// enable the USB port
+
 	if (!(UCSR1B & (1<<RXEN1))) {
 		dbg.begin(57600);																	// check if serial was already set
 		//while(!dbg);																		// wait until serial has connected
@@ -13,9 +17,10 @@ void dbgStart(void) {
 		_delay_ms(100);
 		_delay_ms(100);
 	}
-	#else
+#else
+	power_usart0_enable();																	// serial port for debugging
 	if (!(UCSR0B & (1<<RXEN0))) dbg.begin(57600);											// check if serial was already set
-	#endif
+#endif
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -145,7 +150,7 @@ uint8_t ccGetGDO0() {
 	else return 0;
 }
 
-void    enableGDO0Int(void) {
+void    enableGDO0Int(void) { 
 	//dbg << "enable int\n";
 	CC_GDO0_PCMSK |=  _BV(CC_GDO0_INT);
 }

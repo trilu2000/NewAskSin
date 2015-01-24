@@ -785,13 +785,15 @@ void AS::recvMessage(void) {
 		//				CHANNEL  => "08,2",
 		//				COUNTER  => "10,2", } },
 
-		uint8_t cnl = 0, pIdx;
+		uint8_t cnl = 0, pIdx, tmp;
 		
 		// check if we have the peer in the database to get the channel
 		if ((rv.mBdy.mTyp == 0x3E) && (rv.mBdy.mLen == 0x0f)) {
+			tmp = rv.buf[13];																// save byte13, because we will replace it
 			rv.buf[13] = rv.buf[14];														// copy the channel byte to the peer
 			cnl = ee.isPeerValid(rv.buf+10);												// check with the right part of the string
 			if (cnl) pIdx = ee.getIdxByPeer(cnl, rv.buf+10);								// get the index of the respective peer in the channel store
+			rv.buf[13] = tmp;																// get it back
 
 		} else {
 			cnl = ee.isPeerValid(rv.peerId);
