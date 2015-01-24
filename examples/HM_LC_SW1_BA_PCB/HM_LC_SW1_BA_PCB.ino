@@ -10,7 +10,7 @@
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 Relay relay;																				// stage a dummy module
-//waitTimer wt;
+waitTimer wt;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
@@ -52,12 +52,6 @@ void setup() {
 	
 	hm.pw.setMode(1);																		// set power management mode
 
-	// to enable the USB port for upload, configure PE2 as input and check if it is 0, 
-	// this will avoid sleep mode and enable program upload via serial
-	#if defined(__AVR_ATmega32U4__)
-	pinInput(DDRE, PINE2);																	// set pin as input
-	if (getPin(PINE, PINE2)) hm.pw.setMode(0);												// set power management mode
-	#endif 
 
 	hm.bt.set(1, 27, 1800000);		// 1800000 = 0,5h										// set battery check
 
@@ -77,7 +71,6 @@ void loop() {
 	hm.poll();																				// poll the homematic main loop
 	
 	// - user related -----------------------------------------
-
 	
 }
 

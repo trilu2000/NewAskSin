@@ -26,8 +26,7 @@ void dbgStart(void) {
 
 
 //- pin related functions -------------------------------------------------------------------------------------------------
-// AVR 328 uses three port addresses, PortB (digital pin 8 to 13), PortC (analog input pins), PortD (digital pins 0 to 7)
-void initLeds(void) {
+void    initLeds(void) {
 	pinOutput(ledRedDDR,ledRedPin);															// set the led pins in port
 	pinOutput(ledGrnDDR,ledGrnPin);
 	if (ledActiveLow) {
@@ -35,20 +34,20 @@ void initLeds(void) {
 		setPinHigh(ledGrnPort, ledGrnPin);
 	}
 }
-void ledRed(uint8_t stat) {
+void    ledRed(uint8_t stat) {
 	stat ^= ledActiveLow;
 	if      (stat == 1) setPinHigh(ledRedPort, ledRedPin);
 	else if (stat == 0) setPinLow(ledRedPort, ledRedPin);
 	else                setPinCng(ledRedPort, ledRedPin);
 }
-void ledGrn(uint8_t stat) {
+void    ledGrn(uint8_t stat) {
 	stat ^= ledActiveLow;
 	if      (stat == 1) setPinHigh(ledGrnPort, ledGrnPin);
 	else if (stat == 0) setPinLow(ledGrnPort, ledGrnPin);
 	else                setPinCng(ledGrnPort, ledGrnPin);
 }
 
-void initConfKey(void) {
+void    initConfKey(void) {
 	// set port pin and register pin interrupt
 	pinInput(confKeyDDR, confKeyPin);														// init the config key pin
 	setPinHigh(confKeyPort,confKeyPin);
@@ -56,6 +55,25 @@ void initConfKey(void) {
 	initPCINT();																			// some sanity on interrupts
 	regPCIE(confKeyPCIE);																	// set the pin change interrupt
 	regPCINT(confKeyPCMSK,confKeyINT);														// description is in hal.h
+}
+
+void    initWakeupPin(void) {
+	#if defined(wakeupDDR)
+
+	pinInput(wakeupDDR, wakeupPIN);															// set pin as input
+	setPinHigh(wakeupPRT, wakeupPIN);														// enable internal pull up
+
+	#endif
+}
+
+uint8_t checkWakeupPin(void) {
+	// to enable the USB port for upload, configure PE2 as input and check if it is 0, this will avoid sleep mode and enable program upload via serial
+	#if defined(wakeupDDR)
+
+	if (getPin(wakeupPNR, wakeupPIN)) return 1;												// return pin is active
+	#endif
+
+	return 0;																				// normal operation
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 

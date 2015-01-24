@@ -14,20 +14,6 @@
 	#include "WProgram.h"
 #endif
 
-#include <stdint.h>
-#include <stdlib.h>
-
-#include <avr/pgmspace.h>
-#include <avr/eeprom.h>
-#include <avr/delay.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/atomic.h>
-
-#include <avr/power.h>
-#include <avr/sleep.h>
-#include <avr/wdt.h>
-
 
 //- some macros and definitions -------------------------------------------------------------------------------------------
 #define _pgmB(x) pgm_read_byte(&x)															// short hand for PROGMEM read
@@ -84,6 +70,9 @@ extern void    ledRed(uint8_t stat);														// function in main sketch to 
 extern void    ledGrn(uint8_t stat);														// stat could be 0 for off, 1 for on, 2 for toggle
 
 extern void    initConfKey(void);															// init the config key, function in user sketch
+
+extern void    initWakeupPin(void);															// init the wakeup pin
+extern uint8_t checkWakeupPin(void);														// we could setup a pin which avoid sleep mode
 //- -----------------------------------------------------------------------------------------------------------------------
 
 //- pin interrupts --------------------------------------------------------------------------------------------------------

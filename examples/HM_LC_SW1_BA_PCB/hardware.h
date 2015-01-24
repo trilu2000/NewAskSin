@@ -9,6 +9,20 @@
 #ifndef _HARDWARE_h
 #define _HARDWARE_h
 
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <avr/pgmspace.h>
+#include <avr/eeprom.h>
+#include <avr/delay.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/atomic.h>
+
+#include <avr/power.h>
+#include <avr/sleep.h>
+#include <avr/wdt.h>
+
 #include <HAL.h>
 
 
@@ -66,6 +80,18 @@
 	#error "Error: Configuration key not defined for your hardware in hardware.h!"
 
 #endif
+
+//- wake up pin
+#if defined(__AVR_ATmega328P__)
+
+#elif defined(__AVR_ATmega32U4__)
+	#define wakeupDDR     DDRE																// define wake up pin port and remaining pin
+	#define wakeupPRT     PORTE
+	#define wakeupPNR     PINE
+	#define wakeupPIN     PINE2
+	
+#endif
+
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
