@@ -10,7 +10,7 @@
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 Relay relay;																				// stage a dummy module
-waitTimer wt;
+//waitTimer wt;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {

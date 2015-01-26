@@ -31,20 +31,20 @@ uint8_t thVal = 0;																			// variable which holds the measured value
 void setup() {
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
-	//ADCSRA = 0;																			// ADC off
-	//power_all_disable();																	// and everything else
+	ADCSRA = 0;																				// ADC off
+	power_all_disable();																	// and everything else
 	
-	//DDRB = DDRC = DDRD = 0x00;																// everything as input
-	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
+	DDRB = DDRC = DDRD = 0x00;																// everything as input
+	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
 	// enable only what is really needed
-	//power_spi_enable();																	// enable only needed functions
-	//power_timer0_enable();
-	//power_usart0_enable();
+	power_spi_enable();																		// enable only needed functions
+	power_twi_enable();																		// enable only needed functions
+	power_timer0_enable();
 
 	#ifdef SER_DBG
 	dbgStart();																				// serial setup
-	dbg << F("CUSTOM_LUX\n");																		// ...and some information
+	dbg << F("CUSTOM_LUX\n");																// ...and some information
 	#endif
 
 	initMillis();																			// milli timer start
@@ -59,7 +59,7 @@ void setup() {
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 
-	hm.confButton.config(2, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
+	hm.confButton.config(1, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
