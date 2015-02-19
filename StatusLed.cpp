@@ -34,16 +34,17 @@ void    LD::set(ledStat stat) {
 	ledRed(0);																				// new program starts, so switch leds off
 	ledGrn(0);
 
-	if      (stat == pairing)  blinkPtr = &sPairing[bLeds-1];
-	else if (stat == pair_suc) blinkPtr = &sPair_suc[bLeds-1];
-	else if (stat == pair_err) blinkPtr = &sPair_err[bLeds-1];
-	else if (stat == send)     blinkPtr = &sSend[bLeds-1];
-	else if (stat == ack)      blinkPtr = &sAck[bLeds-1];
-	else if (stat == noack)    blinkPtr = &sNoack[bLeds-1];
-	else if (stat == bat_low)  blinkPtr = &sBattLow[bLeds-1];
-	else if (stat == defect)   blinkPtr = &sDefect[bLeds-1];
-	else if (stat == welcome)  blinkPtr = &sWelcome[bLeds-1];
-	else if (stat == key_long)  blinkPtr = &sKeyLong[bLeds-1];
+	uint8_t leds = bLeds-1;
+	if      (stat == pairing)  blinkPtr = &sPairing[leds];
+	else if (stat == pair_suc) blinkPtr = &sPair_suc[leds];
+	else if (stat == pair_err) blinkPtr = &sPair_err[leds];
+	else if (stat == send)     blinkPtr = &sSend[leds];
+	else if (stat == ack)      blinkPtr = &sAck[leds];
+	else if (stat == noack)    blinkPtr = &sNoack[leds];
+	else if (stat == bat_low)  blinkPtr = &sBattLow[leds];
+	else if (stat == defect)   blinkPtr = &sDefect[leds];
+	else if (stat == welcome)  blinkPtr = &sWelcome[leds];
+	else if (stat == key_long)  blinkPtr = &sKeyLong[leds];
 
 	active = 1;																				// make module active
 	lCnt = 0;																				// set start position

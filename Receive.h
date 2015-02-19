@@ -10,7 +10,7 @@
 #ifndef _RV_H
 #define _RV_H
 
-#include "HAL.h"
+#include "HAL/HAL.h"
 #define MaxDataLen   60						// maximum length of received bytes
 
 class RV {

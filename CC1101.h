@@ -9,7 +9,8 @@
 #ifndef _CC_H
 #define _CC_H
 
-#include "HAL.h"
+#include "HAL/HAL.h"
+#include <util/delay.h>
 
 class CC {
 	friend class AS;

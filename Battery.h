@@ -9,7 +9,7 @@
 #ifndef _BT_H
 #define _BT_H
 
-#include "HAL.h"
+#include "HAL/HAL.h"
 
 
 class BT {

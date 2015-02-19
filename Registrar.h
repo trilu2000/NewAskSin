@@ -10,7 +10,7 @@
 #ifndef _RG_H
 #define _RG_H
 
-#include "HAL.h"
+#include "HAL/HAL.h"
 #include "Fastdelegate.h"
 
 //- typedef for delegate to module function

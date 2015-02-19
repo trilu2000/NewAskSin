@@ -6,7 +6,7 @@
 //- with a lot of support from dirk at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define BT_DBG
+#define BT_DBG
 #include "Battery.h"
 #include "AS.h"
 
@@ -26,8 +26,8 @@ BT::BT() {
 void    BT::init(AS *ptrMain) {
 	
 	#ifdef BT_DBG																			// only if ee debug is set
-	dbgStart();																				// serial setup
-	dbg << F("BT.\n");																		// ...and some information
+		dbgStart();																				// serial setup
+		dbg << F("BT.\n");																		// ...and some information
 	#endif
 
 	pHM = ptrMain;
@@ -35,23 +35,13 @@ void    BT::init(AS *ptrMain) {
 	bDuration = 0;
 }
 void    BT::poll(void) {
-	
 	if (!battTmr.done() ) return;															// timer still running
 
-	if (bMode == 0) {																		// nothing to do, step out
-		return;
-
-	} else  if (bMode == BATTERY_MODE_BANDGAP_MESSUREMENT) {								// measure internal
-		measureTenthVolt = getBatteryVoltageInternal();
-
-	} else  if (bMode == BATTERY_MODE_EXTERNAL_MESSUREMENT) {								// measure external
-		measureTenthVolt = getBatteryVoltageExternal();
-	}
-
+	measureTenthVolt = getBatteryVoltage();
 	bState = (measureTenthVolt < checkTenthVolt) ? 1 : 0;									// set the battery status
 
 	#ifdef BT_DBG																			// only if ee debug is set
-	dbg << "cTV:" << checkTenthVolt << ", mTV:" << measureTenthVolt << " , s:" << bState << '\n';
+		dbg << "cTV:" << checkTenthVolt << ", mTV:" << measureTenthVolt << " , s:" << bState << '\n';
 	#endif
 
 	battTmr.set(bDuration);																	// set next check time
