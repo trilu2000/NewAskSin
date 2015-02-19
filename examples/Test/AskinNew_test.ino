@@ -65,7 +65,7 @@ void setup() {
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(1, 27, 600000);		// 3600000 = 10min.										// set battery check, internal, 2.7 reference, measurement each hour
+	hm.bt.set(27, 600000);		// 3600000 = 10min.											// set battery check, internal, 2.7 reference, measurement each hour
 
 	thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
 	thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables

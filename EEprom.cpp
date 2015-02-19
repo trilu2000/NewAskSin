@@ -280,6 +280,7 @@ uint8_t  EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
 }
 uint8_t  EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t lPeer[4];
+	uint8_t cnl1 = cnl-1;
 	
 	// check if channel exists
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
@@ -295,26 +296,26 @@ uint8_t  EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	if (peer[4]) cnt |= 2;
 
 	// count free peer slots and check against cnt
-	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+	for (uint8_t i = 0; i < peerTbl[cnl1].pMax; i++) {									// step through the possible peer slots
+		getEEPromBlock(peerTbl[cnl1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 		if (isEmpty(lPeer, 4)) ret++;													// increase counter if peer slot is empty
 	}
 	if (((peer[3]) && (peer[4])) && (ret < 2)) return 0;								// not enough space, return failure
 	if (((peer[3]) || (peer[4])) && (ret < 1)) return 0;
 	
 	// search for free peer slots and write content
-	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+	for (uint8_t i = 0; i < peerTbl[cnl1].pMax; i++) {									// step through the possible peer slots
+		getEEPromBlock(peerTbl[cnl1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 
 		if        (isEmpty(lPeer, 4) && (cnt & 1)) {									// slot is empty and peer cnlA is set
 			cnt ^= 1;
-			setEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, peer);
+			setEEPromBlock(peerTbl[cnl1].pAddr+(i*4), 4, peer);
 			peer[5] = i;																// remember the idx position, add to the buffer
 			
 		} else if (isEmpty(lPeer, 4) && (cnt & 2)) {									// slot is empty and peer cnlB is set
 			cnt ^= 2;
-			setEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 3, peer);						// first 3 bytes
-			setEEPromBlock(peerTbl[cnl-1].pAddr+(i*4)+3, 1, peer+4);					// 5th byte
+			setEEPromBlock(peerTbl[cnl1].pAddr+(i*4), 3, peer);						// first 3 bytes
+			setEEPromBlock(peerTbl[cnl1].pAddr+(i*4)+3, 1, peer+4);					// 5th byte
 			peer[6] = i;																// remember the idx position, add to the buffer
 		
 		}

@@ -24,25 +24,23 @@ void dbgStart(void) {
 
 //- cc1100 hardware functions ---------------------------------------------------------------------------------------------
 void    ccInitHw(void) {
-	pinOutput( CC_CS_DDR, CC_CS_PIN );														// set chip select as output
-	pinOutput( SPI_DDR, SPI_MOSI );															// set MOSI as output
-	pinInput(  SPI_DDR, SPI_MISO );															// set MISO as input
-	pinOutput( SPI_DDR, SPI_SCLK );															// set SCK as output
-	pinInput(  CC_GDO0_DDR, CC_GDO0_PIN );													// set GDO0 as input
+	pinOutput( CC_CS_DDR, CC_CS_PIN );											// set chip select as output
+	pinOutput( SPI_DDR, SPI_MOSI );												// set MOSI as output
+	pinInput(  SPI_DDR, SPI_MISO );												// set MISO as input
+	pinOutput( SPI_DDR, SPI_SCLK );												// set SCK as output
+	pinInput(  CC_GDO0_DDR, CC_GDO0_PIN );										// set GDO0 as input
 
 	setPinHigh(SPI_DDR, CC_CS_PIN);												// SPI init
 	setPinHigh(SPI_DDR, SPI_SCLK);
 	setPinLow(SPI_DDR, SPI_MOSI);
 
-	SPCR = _BV(SPE) | _BV(MSTR);// | _BV(SPR0);// | _BV(SPR1); 								// SPI enable, master, speed = CLK/4
-	//SPSR &= ~_BV(SPI2X);
+	SPCR = _BV(SPE) | _BV(MSTR);												// SPI enable, master, speed = CLK/4
 
-	CC_GDO0_PCICR |= _BV(CC_GDO0_PCIE);														// set interrupt in mask active
-	//CC_GDO0_PCMSK |=  _BV(CC_GDO0_INT);
+	CC_GDO0_PCICR |= _BV(CC_GDO0_PCIE);											// set interrupt in mask active
 }
 uint8_t ccSendByte(uint8_t data) {
-	SPDR = data;																			// send byte
-	while (!(SPSR & _BV(SPIF))); 															// wait until transfer finished
+	SPDR = data;																// send byte
+	while (!(SPSR & _BV(SPIF))); 												// wait until transfer finished
 	return SPDR;
 }
 uint8_t ccGetGDO0() {

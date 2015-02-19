@@ -13,8 +13,7 @@
 waitTimer battTmr;																			// battery timer for duration check
 
 // public:		//---------------------------------------------------------------------------------------------------------
-void    BT::set(uint8_t mode, uint8_t tenthVolt, uint32_t duration) {
-	bMode = mode;
+void    BT::set(uint8_t tenthVolt, uint32_t duration) {
 	bDuration = duration;
 	checkTenthVolt = tenthVolt;
 	poll();

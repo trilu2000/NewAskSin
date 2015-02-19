@@ -67,9 +67,10 @@ void    CC::init(void) {																// initialize CC1101
 		0x2D, 0x35,			// TEST1
 		0x3E, 0xC3,			// ?
 	};
-	for (uint8_t i=0; i<sizeof(initVal); i+=2) {										// write init value to TRX868
-		writeReg(_pgmB(initVal[i]), _pgmB(initVal[i+1]));
-		//dbg << i << ": " << _HEXB(_pgmB(initVal[i])) << " " << _HEXB(_pgmB(initVal[i+1])) << '\n';
+
+	for (uint8_t i=1; i<=sizeof(initVal); i+=2) {										// write init value to TRX868
+		writeReg(_pgmB(initVal[i]), _pgmB(initVal[i]));
+		//dbg << i << ": " << _HEXB(_pgmB(initVal[i-1])) << " " << _HEXB(_pgmB(initVal[i])) << '\n';
 	}
 
 	#ifdef CC_DBG																		// only if cc debug is set

@@ -6,7 +6,9 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define AS_DBG
+#define AS_DBG
+//#define RV_DBG_EX
+
 #include "AS.h"
 
 waitTimer cnfTmr;																			// config timer functionality
@@ -17,8 +19,8 @@ AS::AS() {
 }
 void AS::init(void) {
 	#ifdef AS_DBG																			// only if cc debug is set
-	dbgStart();																				// serial setup
-	dbg << F("AS.\n");																		// ...and some information
+		dbgStart();																			// serial setup
+		dbg << F("AS.\n");																	// ...and some information
 	#endif
 	
 	ee.init();																				// eeprom init
@@ -379,8 +381,8 @@ void AS::sendPeerMsg(void) {
 		return;
 
 	} else if ((stcPeer.curIdx) && (!sn.timeOut)) {											// peer index is >0, first round done and no timeout
-		stcPeer.slt[(stcPeer.curIdx-1) >> 3] &=  ~(1<<((stcPeer.curIdx-1) & 0x07));			// clear bit, because message got an ACK
-
+		uint8_t idx = stcPeer.curIdx-1;
+		stcPeer.slt[idx >> 3] &=  ~(1 << (idx & 0x07));										// clear bit, because message got an ACK
 	}
 	
 	// set respective bit to check if ACK was received
@@ -396,7 +398,10 @@ void AS::sendPeerMsg(void) {
 	uint8_t tPeer[4];																		// get the respective peer
 	ee.getPeerByIdx(stcPeer.cnl, stcPeer.curIdx, tPeer);
 	
-	dbg << "a: " << stcPeer.curIdx << " m " << stcPeer.maxIdx << '\n';
+	#ifdef AS_DBG
+		dbg << "a: " << stcPeer.curIdx << " m " << stcPeer.maxIdx << '\n';
+	#endif
+
 	if (isEmpty(tPeer,4)) {																	// if peer is 0, set done bit in slt and skip
 		stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// remember empty peer in slt table										// clear bit in slt and increase counter
 		stcPeer.curIdx++;																	// increase counter for next time
@@ -455,7 +460,9 @@ void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 
 // - receive functions -----------------------------
 void AS::recvMessage(void) {
-	
+	uint8_t by10 = rv.mBdy.by10 -1;
+	uint8_t cnl1 = cFlag.cnl-1;
+
 	// check which type of message was received
 	if         (rv.mBdy.mTyp == 0x00) {										// DEVICE_INFO
 		// description --------------------------------------------------------
@@ -475,8 +482,8 @@ void AS::recvMessage(void) {
 		uint8_t ret = ee.addPeer(rv.mBdy.by10, rv.buf+12);									// send to addPeer function
 
 		// let module registrations know of the change
-		if ((ret) && (modTbl[rv.mBdy.by10 -1].cnl)) {
-			modTbl[rv.mBdy.by10 -1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
+		if ((ret) && (modTbl[by10].cnl)) {
+			modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
 		}
 
 		if ((ret) && (rv.ackRq)) sendACK();													// send appropriate answer
@@ -525,7 +532,10 @@ void AS::recvMessage(void) {
 		stcSlice.lst = rv.buf[16];															// send input to the send peer function
 		stcSlice.reg2 = 1;																	// set the type of answer
 		
-		dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
+		#ifdef AS_DBG
+			dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
+		#endif
+
 		if ((stcSlice.idx != 0xff) && (stcSlice.totSlc > 0)) stcSlice.active = 1;			// only send register content if something is to send															// start the send function
 		else memset((void*)&stcSlice, 0, 10);												// otherwise empty variable
 		// --------------------------------------------------------------------
@@ -561,10 +571,10 @@ void AS::recvMessage(void) {
 		if ((cFlag.cnl == 0) && (cFlag.idx == 0)) ee.getMasterID();
 		// remove message id flag to config in send module
 
-		if ((cFlag.cnl > 0) && (modTbl[cFlag.cnl-1].cnl)) {
+		if ((cFlag.cnl > 0) && (modTbl[cnl1].cnl)) {
 			// check if a new list1 was written and reload, no need for reload list3/4 because they will be loaded on an peer event
-			if (cFlag.lst == 1) ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cFlag.cnl-1].lstCnl); // load list1 in the respective buffer
-			modTbl[cFlag.cnl-1].mDlgt(0x01, 0, 0x06, NULL, 0);								// inform the module of the change
+			if (cFlag.lst == 1) ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cnl1].lstCnl); // load list1 in the respective buffer
+			modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);								// inform the module of the change
 		}
 		
 		if (rv.ackRq) sendACK();															// send appropriate answer
@@ -583,11 +593,15 @@ void AS::recvMessage(void) {
 				uint8_t maIdFlag = 0;				
 				for (uint8_t i = 0; i < (rv.buf[0]+1-11); i+=2) {
 					if (rv.buf[12+i] == 0x0a) maIdFlag = 1;
-					dbg << "x" << i << " :" << _HEXB(rv.buf[12+i]) << '\n';
+					#ifdef AS_DBG
+						dbg << "x" << i << " :" << _HEXB(rv.buf[12+i]) << '\n';
+					#endif
 				}
 				if (maIdFlag) {
 					ee.getMasterID();
-					dbg << "new masterid\n" << '\n';				
+					#ifdef AS_DBG
+						dbg << "new masterid\n" << '\n';
+					#endif
 				}
 				
 			}
@@ -620,8 +634,8 @@ void AS::recvMessage(void) {
 		// do something with the information ----------------------------------
 
 		// check if a module is registered and send the information, otherwise report an empty status
-		if (modTbl[rv.mBdy.by10 -1].cnl) {
-			modTbl[rv.mBdy.by10 -1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen-11);
+		if (modTbl[by10].cnl) {
+			modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen-11);
 		} else {
 			sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);	
 		}
@@ -943,145 +957,146 @@ void AS::encode(uint8_t *buf) {
 
 	buf[i] ^= buf2;
 }
-void AS::explainMessage(uint8_t *buf) {
-	dbg << F("   ");																		// save some byte and send 3 blanks once, instead of having it in every if
-	
-	if        ((buf[3] == 0x00)) {
-		dbg << F("DEVICE_INFO; fw: ") << _HEX((buf+10),1) << F(", type: ") << _HEX((buf+11),2) << F(", serial: ") << _HEX((buf+13),10) << '\n';
-		dbg << F("              , class: ") << _HEXB(buf[23]) << F(", pCnlA: ") << _HEXB(buf[24]) << F(", pCnlB: ") << _HEXB(buf[25]) << F(", na: ") << _HEXB(buf[26]);
+#ifdef RV_DBG_EX																		// only if extended AS debug is set
+	void AS::explainMessage(uint8_t *buf) {
+		dbg << F("   ");																		// save some byte and send 3 blanks once, instead of having it in every if
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x01)) {
-		dbg << F("CONFIG_PEER_ADD; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
+		if        ((buf[3] == 0x00)) {
+			dbg << F("DEVICE_INFO; fw: ") << _HEX((buf+10),1) << F(", type: ") << _HEX((buf+11),2) << F(", serial: ") << _HEX((buf+13),10) << '\n';
+			dbg << F("              , class: ") << _HEXB(buf[23]) << F(", pCnlA: ") << _HEXB(buf[24]) << F(", pCnlB: ") << _HEXB(buf[25]) << F(", na: ") << _HEXB(buf[26]);
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x02)) {
-		dbg << F("CONFIG_PEER_REMOVE; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x01)) {
+			dbg << F("CONFIG_PEER_ADD; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x03)) {
-		dbg << F("CONFIG_PEER_LIST_REQ; cnl: ") << _HEXB(buf[10]);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x02)) {
+			dbg << F("CONFIG_PEER_REMOVE; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x04)) {
-		dbg << F("CONFIG_PARAM_REQ; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x03)) {
+			dbg << F("CONFIG_PEER_LIST_REQ; cnl: ") << _HEXB(buf[10]);
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x05)) {
-		dbg << F("CONFIG_START; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x04)) {
+			dbg << F("CONFIG_PARAM_REQ; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x06)) {
-		dbg << F("CONFIG_END; cnl: ") << _HEXB(buf[10]);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x05)) {
+			dbg << F("CONFIG_START; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x08)) {
-		dbg << F("CONFIG_WRITE_INDEX; cnl: ") << _HEXB(buf[10]) << F(", data: ") << _HEX((buf+12),(buf[0]-11));
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x06)) {
+			dbg << F("CONFIG_END; cnl: ") << _HEXB(buf[10]);
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x09)) {
-		dbg << F("CONFIG_SERIAL_REQ");
-		
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x0A)) {
-		dbg << F("PAIR_SERIAL, serial: ") << _HEX((buf+12),10);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x08)) {
+			dbg << F("CONFIG_WRITE_INDEX; cnl: ") << _HEXB(buf[10]) << F(", data: ") << _HEX((buf+12),(buf[0]-11));
 
-	} else if ((buf[3] == 0x01) && (buf[11] == 0x0E)) {
-		dbg << F("CONFIG_STATUS_REQUEST, cnl: ") << _HEXB(buf[10]);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x09)) {
+			dbg << F("CONFIG_SERIAL_REQ");
 
-	} else if ((buf[3] == 0x02) && (buf[10] == 0x00)) {
-		if (buf[0] == 0x0A) dbg << F("ACK");
-		else dbg << F("ACK; data: ") << _HEX((buf+11),buf[0]-10);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x0A)) {
+			dbg << F("PAIR_SERIAL, serial: ") << _HEX((buf+12),10);
 
-	} else if ((buf[3] == 0x02) && (buf[10] == 0x01)) {
-		dbg << F("ACK_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", down/up/loBat: ") << _HEXB(buf[13]);
-		if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
+		} else if ((buf[3] == 0x01) && (buf[11] == 0x0E)) {
+			dbg << F("CONFIG_STATUS_REQUEST, cnl: ") << _HEXB(buf[10]);
 
-	} else if ((buf[3] == 0x02) && (buf[10] == 0x02)) {
-		dbg << F("ACK2");
-		
-	} else if ((buf[3] == 0x02) && (buf[10] == 0x04)) {
-		dbg << F("ACK_PROC; para1: ") << _HEX((buf+11),2) << F(", para2: ") << _HEX((buf+13),2) << F(", para3: ") << _HEX((buf+15),2) << F(", para4: ") << _HEXB(buf[17]);
+		} else if ((buf[3] == 0x02) && (buf[10] == 0x00)) {
+			if (buf[0] == 0x0A) dbg << F("ACK");
+			else dbg << F("ACK; data: ") << _HEX((buf+11),buf[0]-10);
 
-	} else if ((buf[3] == 0x02) && (buf[10] == 0x80)) {
-		dbg << F("NACK");
+		} else if ((buf[3] == 0x02) && (buf[10] == 0x01)) {
+			dbg << F("ACK_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", down/up/loBat: ") << _HEXB(buf[13]);
+			if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
 
-	} else if ((buf[3] == 0x02) && (buf[10] == 0x84)) {
-		dbg << F("NACK_TARGET_INVALID");
-		
-	} else if ((buf[3] == 0x03)) {
-		dbg << F("AES_REPLY; data: ") << _HEX((buf+10),buf[0]-9);
-		
-	} else if ((buf[3] == 0x04) && (buf[10] == 0x01)) {
-		dbg << F("TOpHMLAN:SEND_AES_CODE; cnl: ") << _HEXB(buf[11]);
+		} else if ((buf[3] == 0x02) && (buf[10] == 0x02)) {
+			dbg << F("ACK2");
 
-	} else if ((buf[3] == 0x04)) {
-		dbg << F("TO_ACTOR:SEND_AES_CODE; code: ") << _HEXB(buf[11]);
-		
-	} else if ((buf[3] == 0x10) && (buf[10] == 0x00)) {
-		dbg << F("INFO_SERIAL; serial: ") << _HEX((buf+11),10);
+		} else if ((buf[3] == 0x02) && (buf[10] == 0x04)) {
+			dbg << F("ACK_PROC; para1: ") << _HEX((buf+11),2) << F(", para2: ") << _HEX((buf+13),2) << F(", para3: ") << _HEX((buf+15),2) << F(", para4: ") << _HEXB(buf[17]);
 
-	} else if ((buf[3] == 0x10) && (buf[10] == 0x01)) {
-		dbg << F("INFO_PEER_LIST; peer1: ") << _HEX((buf+11),4);
-		if (buf[0] >= 19) dbg << F(", peer2: ") << _HEX((buf+15),4);
-		if (buf[0] >= 23) dbg << F(", peer3: ") << _HEX((buf+19),4);
-		if (buf[0] >= 27) dbg << F(", peer4: ") << _HEX((buf+23),4);
+		} else if ((buf[3] == 0x02) && (buf[10] == 0x80)) {
+			dbg << F("NACK");
 
-	} else if ((buf[3] == 0x10) && (buf[10] == 0x02)) {
-		dbg << F("INFO_PARAM_RESPONSE_PAIRS; data: ") << _HEX((buf+11),buf[0]-10);
+		} else if ((buf[3] == 0x02) && (buf[10] == 0x84)) {
+			dbg << F("NACK_TARGET_INVALID");
 
-	} else if ((buf[3] == 0x10) && (buf[10] == 0x03)) {
-		dbg << F("INFO_PARAM_RESPONSE_SEQ; offset: ") << _HEXB(buf[11]) << F(", data: ") << _HEX((buf+12),buf[0]-11);
+		} else if ((buf[3] == 0x03)) {
+			dbg << F("AES_REPLY; data: ") << _HEX((buf+10),buf[0]-9);
 
-	} else if ((buf[3] == 0x10) && (buf[10] == 0x04)) {
-		dbg << F("INFO_PARAMETER_CHANGE; cnl: ") << _HEXB(buf[11]) << F(", peer: ") << _HEX((buf+12),4) << F(", pLst: ") << _HEXB(buf[16]) << F(", data: ") << _HEX((buf+17),buf[0]-16);
+		} else if ((buf[3] == 0x04) && (buf[10] == 0x01)) {
+			dbg << F("TOpHMLAN:SEND_AES_CODE; cnl: ") << _HEXB(buf[11]);
 
-	} else if ((buf[3] == 0x10) && (buf[10] == 0x06)) {
-		dbg << F("INFO_ACTUATOR_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", na: ") << _HEXB(buf[13]);
-		if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
-		
-	} else if ((buf[3] == 0x11) && (buf[10] == 0x02)) {
-		dbg << F("SET; cnl: ") << _HEXB(buf[11]) << F(", value: ") << _HEXB(buf[12]) << F(", rampTime: ") << _HEX((buf+13),2) << F(", duration: ") << _HEX((buf+15),2);
+		} else if ((buf[3] == 0x04)) {
+			dbg << F("TO_ACTOR:SEND_AES_CODE; code: ") << _HEXB(buf[11]);
 
-	} else if ((buf[3] == 0x11) && (buf[10] == 0x03)) {
-		dbg << F("STOP_CHANGE; cnl: ") << _HEXB(buf[11]);
+		} else if ((buf[3] == 0x10) && (buf[10] == 0x00)) {
+			dbg << F("INFO_SERIAL; serial: ") << _HEX((buf+11),10);
 
-	} else if ((buf[3] == 0x11) && (buf[10] == 0x04) && (buf[11] == 0x00)) {
-		dbg << F("RESET");
+		} else if ((buf[3] == 0x10) && (buf[10] == 0x01)) {
+			dbg << F("INFO_PEER_LIST; peer1: ") << _HEX((buf+11),4);
+			if (buf[0] >= 19) dbg << F(", peer2: ") << _HEX((buf+15),4);
+			if (buf[0] >= 23) dbg << F(", peer3: ") << _HEX((buf+19),4);
+			if (buf[0] >= 27) dbg << F(", peer4: ") << _HEX((buf+23),4);
 
-	} else if ((buf[3] == 0x11) && (buf[10] == 0x80)) {
-		dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", color: ") << _HEXB(buf[12]);
+		} else if ((buf[3] == 0x10) && (buf[10] == 0x02)) {
+			dbg << F("INFO_PARAM_RESPONSE_PAIRS; data: ") << _HEX((buf+11),buf[0]-10);
 
-	} else if ((buf[3] == 0x11) && (buf[10] == 0x81) && (buf[11] == 0x00)) {
-		dbg << F("LED_ALL; Led1To16: ") << _HEX((buf+12),4);
-		
-	} else if ((buf[3] == 0x11) && (buf[10] == 0x81)) {
-		dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", time: ") << _HEXB(buf[12]) << F(", speed: ") << _HEXB(buf[13]);
-		
-	} else if ((buf[3] == 0x11) && (buf[10] == 0x82)) {
-		dbg << F("SLEEPMODE; cnl: ") << _HEXB(buf[11]) << F(", mode: ") << _HEXB(buf[12]);
-		
-	} else if ((buf[3] == 0x12)) {
-		dbg << F("HAVE_DATA");
-		
-	} else if ((buf[3] == 0x3E)) {
-		dbg << F("SWITCH; dst: ") << _HEX((buf+10),3) << F(", na: ") << _HEXB(buf[13]) << F(", cnl: ") << _HEXB(buf[14]) << F(", counter: ") << _HEXB(buf[15]);
-		
-	} else if ((buf[3] == 0x3F)) {
-		dbg << F("TIMESTAMP; na: ") << _HEX((buf+10),2) << F(", time: ") << _HEX((buf+12),2);
-		
-	} else if ((buf[3] == 0x40)) {
-		dbg << F("REMOTE; button: ") << _HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", counter: ") << _HEXB(buf[11]);
-		
-	} else if ((buf[3] == 0x41)) {
-		dbg << F("SENSOR_EVENT; button: ") <<_HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", value: ") << _HEXB(buf[11]) << F(", next: ") << _HEXB(buf[12]);
-		
-	} else if ((buf[3] == 0x53)) {
-		dbg << F("SENSOR_DATA; cmd: ") << _HEXB(buf[10]) << F(", fld1: ") << _HEXB(buf[11]) << F(", val1: ") << _HEX((buf+12),2) << F(", fld2: ") << _HEXB(buf[14]) << F(", val2: ") << _HEX((buf+15),2) << F(", fld3: ") << _HEXB(buf[17]) << F(", val3: ") << _HEX((buf+18),2) << F(", fld4: ") << _HEXB(buf[20]) << F(", val4: ") << _HEX((buf+21),2);
-		
-	} else if ((buf[3] == 0x58)) {
-		dbg << F("CLIMATE_EVENT; cmd: ") << _HEXB(buf[10]) << F(", valvePos: ") << _HEXB(buf[11]);
-		
-	} else if ((buf[3] == 0x70)) {
-		dbg << F("WEATHER_EVENT; temp: ") << _HEX((buf+10),2) << F(", hum: ") << _HEXB(buf[12]);
+		} else if ((buf[3] == 0x10) && (buf[10] == 0x03)) {
+			dbg << F("INFO_PARAM_RESPONSE_SEQ; offset: ") << _HEXB(buf[11]) << F(", data: ") << _HEX((buf+12),buf[0]-11);
 
-	} else {
-		dbg << F("Unknown Message, please report!");
+		} else if ((buf[3] == 0x10) && (buf[10] == 0x04)) {
+			dbg << F("INFO_PARAMETER_CHANGE; cnl: ") << _HEXB(buf[11]) << F(", peer: ") << _HEX((buf+12),4) << F(", pLst: ") << _HEXB(buf[16]) << F(", data: ") << _HEX((buf+17),buf[0]-16);
+
+		} else if ((buf[3] == 0x10) && (buf[10] == 0x06)) {
+			dbg << F("INFO_ACTUATOR_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", na: ") << _HEXB(buf[13]);
+			if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
+
+		} else if ((buf[3] == 0x11) && (buf[10] == 0x02)) {
+			dbg << F("SET; cnl: ") << _HEXB(buf[11]) << F(", value: ") << _HEXB(buf[12]) << F(", rampTime: ") << _HEX((buf+13),2) << F(", duration: ") << _HEX((buf+15),2);
+
+		} else if ((buf[3] == 0x11) && (buf[10] == 0x03)) {
+			dbg << F("STOP_CHANGE; cnl: ") << _HEXB(buf[11]);
+
+		} else if ((buf[3] == 0x11) && (buf[10] == 0x04) && (buf[11] == 0x00)) {
+			dbg << F("RESET");
+
+		} else if ((buf[3] == 0x11) && (buf[10] == 0x80)) {
+			dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", color: ") << _HEXB(buf[12]);
+
+		} else if ((buf[3] == 0x11) && (buf[10] == 0x81) && (buf[11] == 0x00)) {
+			dbg << F("LED_ALL; Led1To16: ") << _HEX((buf+12),4);
+
+		} else if ((buf[3] == 0x11) && (buf[10] == 0x81)) {
+			dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", time: ") << _HEXB(buf[12]) << F(", speed: ") << _HEXB(buf[13]);
+
+		} else if ((buf[3] == 0x11) && (buf[10] == 0x82)) {
+			dbg << F("SLEEPMODE; cnl: ") << _HEXB(buf[11]) << F(", mode: ") << _HEXB(buf[12]);
+
+		} else if ((buf[3] == 0x12)) {
+			dbg << F("HAVE_DATA");
+
+		} else if ((buf[3] == 0x3E)) {
+			dbg << F("SWITCH; dst: ") << _HEX((buf+10),3) << F(", na: ") << _HEXB(buf[13]) << F(", cnl: ") << _HEXB(buf[14]) << F(", counter: ") << _HEXB(buf[15]);
+
+		} else if ((buf[3] == 0x3F)) {
+			dbg << F("TIMESTAMP; na: ") << _HEX((buf+10),2) << F(", time: ") << _HEX((buf+12),2);
+
+		} else if ((buf[3] == 0x40)) {
+			dbg << F("REMOTE; button: ") << _HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", counter: ") << _HEXB(buf[11]);
+
+		} else if ((buf[3] == 0x41)) {
+			dbg << F("SENSOR_EVENT; button: ") <<_HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", value: ") << _HEXB(buf[11]) << F(", next: ") << _HEXB(buf[12]);
+
+		} else if ((buf[3] == 0x53)) {
+			dbg << F("SENSOR_DATA; cmd: ") << _HEXB(buf[10]) << F(", fld1: ") << _HEXB(buf[11]) << F(", val1: ") << _HEX((buf+12),2) << F(", fld2: ") << _HEXB(buf[14]) << F(", val2: ") << _HEX((buf+15),2) << F(", fld3: ") << _HEXB(buf[17]) << F(", val3: ") << _HEX((buf+18),2) << F(", fld4: ") << _HEXB(buf[20]) << F(", val4: ") << _HEX((buf+21),2);
+
+		} else if ((buf[3] == 0x58)) {
+			dbg << F("CLIMATE_EVENT; cmd: ") << _HEXB(buf[10]) << F(", valvePos: ") << _HEXB(buf[11]);
+
+		} else if ((buf[3] == 0x70)) {
+			dbg << F("WEATHER_EVENT; temp: ") << _HEX((buf+10),2) << F(", hum: ") << _HEXB(buf[12]);
+
+		} else {
+			dbg << F("Unknown Message, please report!");
+		}
+		dbg << F("\n\n");
 	}
-	dbg << F("\n\n");
-}
-
+#endif
 
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------

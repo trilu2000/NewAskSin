@@ -7,7 +7,6 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #define RV_DBG
-//#define RV_DBG_EX
 #include "Receive.h"
 #include "AS.h"
 
@@ -18,8 +17,8 @@ RV::RV() {
 void    RV::init(AS *ptrMain) {
 	
 	#ifdef RV_DBG																			// only if ee debug is set
-	dbgStart();																				// serial setup
-	dbg << F("RV.\n");																		// ...and some information
+		dbgStart();																			// serial setup
+		dbg << F("RV.\n");																	// ...and some information
 	#endif
 
 	pHM = ptrMain;
@@ -37,11 +36,11 @@ void	RV::poll(void) {
 
 	// some debugs
 	#ifdef RV_DBG																			// only if AS debug is set
-	dbg << (char)bIntend << F("> ") << _HEX(this->buf, this->bufLen) << ' ' << _TIME << '\n';
+		dbg << (char)bIntend << F("> ") << _HEX(this->buf, this->bufLen) << ' ' << _TIME << '\n';
 	#endif
 	
 	#ifdef RV_DBG_EX																		// only if extended AS debug is set
-	pHM->explainMessage(this->buf);
+		pHM->explainMessage(this->buf);
 	#endif
 	
 	// filter out unknown or not for us
@@ -53,7 +52,7 @@ void	RV::poll(void) {
 	// filter out repeated messages
 	if ((this->mBdy.mFlg.RPTED) && (last_rCnt == this->mBdy.mLen)) {						// check if message was already received
 		#ifdef RV_DBG																		// only if AS debug is set
-		dbg << F("  repeated message\n");
+			dbg << F("  repeated message\n");
 		#endif
 
 		this->mBdy.mLen = 0;																// clear receive buffer
