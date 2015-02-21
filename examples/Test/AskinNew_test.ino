@@ -50,9 +50,6 @@ void setup() {
 	dbg << F("AsksinNew Test-LUX 0.1\n");																// ...and some information
 	#endif
 
-	initMillis();																			// milli timer start
-	initPCINT();																			// initialize the pin change interrupts
-	ccInitHw();																				// initialize transceiver hardware
 	initLeds();																				// initialize the leds
 	initConfKey();																			// initialize the port for getting config key interrupts
 	//initExtBattMeasurement();																// initialize the external battery measurement
