@@ -46,8 +46,9 @@ void setup() {
 	power_timer0_enable();
 
 	#ifdef SER_DBG
-	dbgStart();																				// serial setup
-	dbg << F("AsksinNew Test-LUX 0.1\n");																// ...and some information
+		dbgStart();																				// serial setup
+		dbg << F("AsksinNew Test-LUX 0.1\n");
+		_delay_ms (50);																// ...and some information
 	#endif
 
 	initLeds();																				// initialize the leds

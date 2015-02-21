@@ -9,14 +9,6 @@
 #define SPI_MOSI                PORTB3
 #define SPI_SCLK                PORTB5
 
-#define CC_CS_PORT              PORTB											// SPI chip select definition
-#define CC_CS_DDR               DDRB
-#define CC_CS_PIN               PORTB2
-
-#define CC_GDO0_DDR             DDRD											// GDO0 pin, signals received data
-#define CC_GDO0_PORT            PIND
-#define CC_GDO0_PIN             PORTD2
-
 #define CC_GDO0_PCICR           PCICR											// GDO0 interrupt register
 #define CC_GDO0_PCIE            PCIE2
 #define CC_GDO0_PCMSK           PCMSK2											// GDO0 interrupt mask

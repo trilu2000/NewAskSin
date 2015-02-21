@@ -32,6 +32,29 @@
 	#endif
 	//- -----------------------------------------------------------------------------------------------------------------------
 
+	extern volatile uint8_t *cc_csPort;
+	extern volatile uint8_t *cc_csDdr;
+	extern uint8_t cc_csPin;
+
+	extern volatile uint8_t *cc_gdo0Ddr;
+	extern uint8_t cc_gdo0Pin;
+
+	extern volatile uint8_t *cc_gdo0Pcicr;
+	extern volatile uint8_t *cc_gdo0Pcmsk;
+	extern uint8_t cc_gdo0Pcie;
+	extern uint8_t cc_gdo0Int;
+
+	extern volatile uint8_t *ledRedPort;
+	extern volatile uint8_t *ledRedDdr;
+	extern uint8_t ledRedPin;
+
+	extern volatile uint8_t *ledGrnPort;
+	extern volatile uint8_t *ledGrnDdr;
+	extern uint8_t ledGrnPin;
+	extern uint8_t ledActiveLow;
+
+
+
 	static uint16_t wdtSleep_TIME;
 
 	//- timer functions -------------------------------------------------------------------------------------------------------
@@ -70,7 +93,6 @@
 	extern void    addMillis(tMillis ms);
 	//- -----------------------------------------------------------------------------------------------------------------------
 
-
 	//- some macros for debugging ---------------------------------------------------------------------------------------------
 	// http://aeroquad.googlecode.com/svn/branches/pyjamasam/WIFIReceiver/Streaming.h
 	#define dbg Serial
@@ -100,8 +122,8 @@
 
 
 	//- pin related functions -------------------------------------------------------------------------------------------------
-	extern void    initLeds(void);												// initialize leds
-	extern void    ledRed(uint8_t stat);										// function in main sketch to drive leds
+	void    initLeds(void);												// initialize leds
+	void    ledRed(uint8_t stat);										// function in main sketch to drive leds
 	extern void    ledGrn(uint8_t stat);										// stat could be 0 for off, 1 for on, 2 for toggle
 
 	extern void    initConfKey(void);											// init the config key, function in user sketch

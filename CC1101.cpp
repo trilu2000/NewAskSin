@@ -109,12 +109,7 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 
 	if (burst) {																		// BURST-bit set?
 		strobe(CC1101_STX  );															// send a burst
-		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
-		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
-		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
-		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
-		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
-		_delay_ms(60);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
+		_delay_ms(360);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
 		//dbg << "send burst\n";
 	} else {
 		_delay_ms(1);																	// wait a short time to set TX mode
