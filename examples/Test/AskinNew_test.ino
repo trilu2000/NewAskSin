@@ -31,6 +31,9 @@ uint8_t thVal = 0;																			// variable which holds the measured value
 void setup() {
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
+
+	EIMSK = 0;																	// disable external interrupts
+
 	ADCSRA = 0;																				// ADC off
 	power_all_disable();																	// and everything else
 	

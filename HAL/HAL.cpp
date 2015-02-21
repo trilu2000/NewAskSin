@@ -30,10 +30,6 @@ void    ccInitHw(void) {
 	pinOutput( SPI_DDR, SPI_SCLK );												// set SCK as output
 	pinInput(  CC_GDO0_DDR, CC_GDO0_PIN );										// set GDO0 as input
 
-	setPinHigh(SPI_DDR, CC_CS_PIN);												// SPI init
-	setPinHigh(SPI_DDR, SPI_SCLK);
-	setPinLow(SPI_DDR, SPI_MOSI);
-
 	SPCR = _BV(SPE) | _BV(MSTR);												// SPI enable, master, speed = CLK/4
 
 	CC_GDO0_PCICR |= _BV(CC_GDO0_PCIE);											// set interrupt in mask active
