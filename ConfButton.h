@@ -9,7 +9,7 @@
 #ifndef _CB_H
 #define _CB_H
 
-#include "HAL/HAL.h"
+#include "HAL.h"
 
 
 // - scenario 00 ----------------------------

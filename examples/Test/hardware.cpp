@@ -1,5 +1,5 @@
 #include "hardware.h"
-#include <HAL/hwfnck.inc>
+#include <HAL_hwfnck.inc>
 
 //- assigment of cc1100 hardware CS and GDO0 definitions --------------------------------------------------------------
 volatile uint8_t *cc_csDdr    = &CC_CS_DDR;										// SPI chip select definition

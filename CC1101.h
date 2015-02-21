@@ -9,7 +9,7 @@
 #ifndef _CC_H
 #define _CC_H
 
-#include "HAL/HAL.h"
+#include "HAL.h"
 #include <util/delay.h>
 
 class CC {

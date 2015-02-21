@@ -9,7 +9,7 @@
 #ifndef _EE_H
 #define _EE_H
 
-#include "HAL/HAL.h"
+#include "HAL.h"
 #define maxMsgLen 16																		// define max message length in byte
 
 //- class definition ------------------------------------------------------------------------------------------------------

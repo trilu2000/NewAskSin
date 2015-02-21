@@ -9,7 +9,7 @@
 #ifndef _NAS_H
 #define _NAS_H
 
-#include "HAL/HAL.h"
+#include "HAL.h"
 #include "CC1101.h"
 #include "EEprom.h"
 #include "Send.h"

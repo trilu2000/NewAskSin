@@ -6,6 +6,7 @@
 #include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
 #include <THSensor.h>
+
 #include "AskinNew_test.h"
 
 //- load modules ----------------------------------------------------------------------------------------------------------
@@ -47,7 +48,7 @@ void setup() {
 
 	#ifdef SER_DBG
 		dbgStart();																				// serial setup
-		dbg << F("AsksinNew Test-LUX 0.1.1\n");
+		dbg << F("AsksinNew Test-LUX 0.1.2\n");
 		_delay_ms (50);																// ...and some information
 	#endif
 

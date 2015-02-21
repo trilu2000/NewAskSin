@@ -9,7 +9,7 @@
 #ifndef _SN_H
 #define _SN_H
 
-#include "HAL/HAL.h"
+#include "HAL.h"
 #define MaxDataLen   60						// maximum length of received bytes
 
 

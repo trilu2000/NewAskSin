@@ -9,7 +9,7 @@
 #ifndef _LD_H
 #define _LD_H
 
-#include "HAL/HAL.h"
+#include "HAL.h"
 
 
 struct s_blinkPattern {							// struct for defining the blink pattern

@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -------------------------------------------------------------------------------------------------------------------
 
-#include <HAL/HAL.h>
+#include <HAL.h>
 
 #ifndef _HARDWARE_h
 	#define _HARDWARE_h

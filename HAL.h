@@ -24,9 +24,9 @@
 
 	//- MCU dependent HAL definitions -----------------------------------------------------------------------------------------
 	#if defined(__AVR_ATmega328P__)
-		#include "avr_atmega328P.h"
+		#include "HAL_atmega328P.h"
 	#elif defined(__AVR_ATmega32U4__)
-		#include "avr_atmega32U4.h"
+		#include "HAL_atmega32U4.h"
 	#else
 		#error "No HAL definition for current MCU available!"
 	#endif
@@ -52,8 +52,6 @@
 	extern volatile uint8_t *ledGrnDdr;
 	extern uint8_t ledGrnPin;
 	extern uint8_t ledActiveLow;
-
-
 
 	static uint16_t wdtSleep_TIME;
 

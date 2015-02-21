@@ -9,7 +9,7 @@
 #ifndef _PW_H
 #define _PW_H
 
-#include "HAL/HAL.h"
+#include "HAL.h"
 
 // - power modes to implement -----------
 // 0 - 19.9ma; no power management

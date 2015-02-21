@@ -1,6 +1,3 @@
-#ifndef _TEST_c
-	#define _TEST_c
-
 //- pin related functions -------------------------------------------------------------------------------------------------
 void    initConfKey(void) {
 	// set port pin and register pin interrupt
@@ -11,5 +8,3 @@ void    initConfKey(void) {
 	regPCIE(confKeyPCIE);																	// set the pin change interrupt
 	regPCINT(confKeyPCMSK,confKeyINT);														// description is in hal.h
 }
-
-#endif

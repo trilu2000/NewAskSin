@@ -10,7 +10,7 @@
 #define _RELAY_H
 
 #include "AS.h"
-#include "HAL/HAL.h"
+#include "HAL.h"
 
 // default settings for list3 or list4
 const uint8_t peerOdd[] =    {		// cnl 2, 4, 6
