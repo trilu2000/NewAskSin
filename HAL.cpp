@@ -22,73 +22,8 @@ void dbgStart(void) {
 //- Hardware abstraction layer --------------------------------------------------------------------------------------------
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
-void    ccInitHw(void) {
-	pinOutput( *cc_csDdr, cc_csPin );											// set chip select as output
-	pinOutput( SPI_DDR, SPI_MOSI );												// set MOSI as output
-	pinInput ( SPI_DDR, SPI_MISO );												// set MISO as input
-	pinOutput( SPI_DDR, SPI_SCLK );												// set SCK as output
-	pinInput ( *cc_gdo0Ddr, cc_gdo0Pin );										// set GDO0 as input
-
-	SPCR = _BV(SPE) | _BV(MSTR);												// SPI enable, master, speed = CLK/4
-
-	*cc_gdo0Pcicr |= _BV(cc_gdo0Pcie);											// set interrupt in mask active
-}
-uint8_t ccSendByte(uint8_t data) {
-	SPDR = data;																// send byte
-	while (!(SPSR & _BV(SPIF))); 												// wait until transfer finished
-	return SPDR;
-}
-uint8_t ccGetGDO0() {
-	uint8_t x = chkPCINT(cc_gdo0Pcie, cc_gdo0Int);
-	//if (x>1) dbg << "x:" << x << '\n';
-
-	if (x == 2 ) return 1;																	// falling edge detected
-	else return 0;
-}
-
-void    enableGDO0Int(void) {
-	//dbg << "enable int\n";
-	*cc_gdo0Pcmsk |=  _BV(cc_gdo0Int);
-}
-void    disableGDO0Int(void) {
-	//dbg << "disable int\n";
-	*cc_gdo0Pcmsk &= ~_BV(cc_gdo0Int);
-}
-
-void    waitMiso(void) {
-	while(SPI_PORT &   _BV(SPI_MISO));
-}
-void    ccSelect(void) {
-	setPinLow( *cc_csPort, cc_csPin);
-}
-void    ccDeselect(void) {
-	setPinHigh( *cc_csPort, cc_csPin);
-}
-//- -----------------------------------------------------------------------------------------------------------------------
 
 
-//- status led related functions -------------------------------------------------------------------------------------------------
-void    initLeds(void) {
-	pinOutput(*ledRedDdr,ledRedPin);											// set the led pins in port
-	pinOutput(*ledGrnDdr,ledGrnPin);
-	if (ledActiveLow) {
-		setPinHigh(*ledRedPort, ledRedPin);
-		setPinHigh(*ledGrnPort, ledGrnPin);
-	}
-}
-void    ledRed(uint8_t stat) {
-	stat ^= ledActiveLow;
-	if      (stat == 1) setPinHigh(*ledRedPort, ledRedPin);
-	else if (stat == 0) setPinLow(*ledRedPort, ledRedPin);
-	else                setPinCng(*ledRedPort, ledRedPin);
-}
-void    ledGrn(uint8_t stat) {
-	stat ^= ledActiveLow;
-	if      (stat == 1) setPinHigh(*ledGrnPort, ledGrnPin);
-	else if (stat == 0) setPinLow(*ledGrnPort, ledGrnPin);
-	else                setPinCng(*ledGrnPort, ledGrnPin);
-}
 
 //- power management functions --------------------------------------------------------------------------------------------
 // http://donalmorrissey.blogspot.de/2010/04/sleeping-arduino-part-5-wake-up-via.html

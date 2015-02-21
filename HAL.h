@@ -32,27 +32,6 @@
 	#endif
 	//- -----------------------------------------------------------------------------------------------------------------------
 
-	extern volatile uint8_t *cc_csPort;
-	extern volatile uint8_t *cc_csDdr;
-	extern uint8_t cc_csPin;
-
-	extern volatile uint8_t *cc_gdo0Ddr;
-	extern uint8_t cc_gdo0Pin;
-
-	extern volatile uint8_t *cc_gdo0Pcicr;
-	extern volatile uint8_t *cc_gdo0Pcmsk;
-	extern uint8_t cc_gdo0Pcie;
-	extern uint8_t cc_gdo0Int;
-
-	extern volatile uint8_t *ledRedPort;
-	extern volatile uint8_t *ledRedDdr;
-	extern uint8_t ledRedPin;
-
-	extern volatile uint8_t *ledGrnPort;
-	extern volatile uint8_t *ledGrnDdr;
-	extern uint8_t ledGrnPin;
-	extern uint8_t ledActiveLow;
-
 	static uint16_t wdtSleep_TIME;
 
 	//- timer functions -------------------------------------------------------------------------------------------------------
@@ -133,7 +112,6 @@
 	//- pin interrupts --------------------------------------------------------------------------------------------------------
 	// http://www.protostack.com/blog/2010/09/external-interrupts-on-an-atmega168/
 
-	#define debounce 5
 	#define regPCIE(PORT)         (PCICR |= _BV(PORT))
 	#define regPCINT(MASK,PORT)   (MASK  |= _BV(PORT))
 

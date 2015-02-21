@@ -51,13 +51,13 @@
 		#define confKeyINT           PCINT0										// pin interrupt
 
 		//- battery external measurement functions -----------------------------------------------------------------------------------------
-		#define battEnblDDR          DDRD										// define battery measurement enable pin, has to be low to start measuring
-		#define battEnblPort         PORTD
-		#define battEnblPin          PORTD7
+		#define BATT_ENABLE_DDR      DDRD										// define battery measurement enable pin, has to be low to start measuring
+		#define BATT_ENABLE_PORT     PORTD
+		#define BATT_ENABLE_PIN      PORTD7
 
-		#define battMeasDDR          DDRC										// define battery measure pin, where ADC gets the measurement
-		#define battMeasPort         PORTC
-		#define battMeasPin          PORTC1
+		#define BATT_MEASURE_DDR     DDRC										// define battery measure pin, where ADC gets the measurement
+		#define BATT_MEASURE_PORT    PORTC
+		#define BATT_MEASURE_PIN     PORTC1
 
 	#elif defined(__AVR_ATmega32U4__)
 		//- cc1100 hardware CS and GDO0 definitions -------------------------------------------------------------------
@@ -94,13 +94,13 @@
 		#define confKeyINT          PCINT0										// pin interrupt
 
 		//- battery external measurement functions --------------------------------------------------------------------
-		#define battEnblDDR         DDRD										// define battery measurement enable pin, has to be low to start measuring
-		#define battEnblPort        PORTD
-		#define battEnblPin         PORTD7
+		#define BATT_ENABLE_DDR     DDRD										// define battery measurement enable pin, has to be low to start measuring
+		#define BATT_ENABLE_PORT    PORTD
+		#define BATT_ENABLE_PIN     PORTD7
 
-		#define battMeasDDR         DDRC										// define battery measure pin, where ADC gets the measurement
-		#define battMeasPort        PORTC
-		#define battMeasPin         PORTC1
+		#define BATT_MEASURE_DDR    DDRC										// define battery measure pin, where ADC gets the measurement
+		#define BATT_MEASURE_PORT   PORTC
+		#define BATT_MEASURE_PIN    PORTC1
 
 	#else
 		#error "Error: cc1100 CS and GDO0 not defined for your hardware in hardware.h!"
@@ -116,13 +116,6 @@
 		#define wakeupPIN           PINE2
 	#endif
 	//- ---------------------------------------------------------------------------------------------------------------
-
-
-	struct  s_pcINT {
-		uint8_t cur;
-		uint8_t prev;
-		uint32_t time;
-	} static volatile pcInt[3];
 
 
 	//- function prototypes -------------------------------------------------------------------------------------------
