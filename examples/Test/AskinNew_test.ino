@@ -47,7 +47,7 @@ void setup() {
 
 	#ifdef SER_DBG
 		dbgStart();																				// serial setup
-		dbg << F("AsksinNew Test-LUX 0.1\n");
+		dbg << F("AsksinNew Test-LUX 0.1.1\n");
 		_delay_ms (50);																// ...and some information
 	#endif
 

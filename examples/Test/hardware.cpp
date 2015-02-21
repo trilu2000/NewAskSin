@@ -1,4 +1,5 @@
 #include "hardware.h"
+#include <HAL/hwfnck.inc>
 
 //- assigment of cc1100 hardware CS and GDO0 definitions --------------------------------------------------------------
 volatile uint8_t *cc_csDdr    = &CC_CS_DDR;										// SPI chip select definition
@@ -23,17 +24,6 @@ volatile uint8_t *ledGrnPort   = &LED_GRN_PORT;
 uint8_t           ledGrnPin    =  LED_GRN_PIN;
 uint8_t           ledActiveLow =  LED_ACTIVE_LOW;
 
-//- pin related functions -------------------------------------------------------------------------------------------------
-void    initConfKey(void) {
-	// set port pin and register pin interrupt
-	pinInput(confKeyDDR, confKeyPin);														// init the config key pin
-	setPinHigh(confKeyPort,confKeyPin);
-
-	initPCINT();																			// some sanity on interrupts
-	regPCIE(confKeyPCIE);																	// set the pin change interrupt
-	regPCINT(confKeyPCMSK,confKeyINT);														// description is in hal.h
-}
-
 void    initWakeupPin(void) {
 	#if defined(wakeupDDR)
 
@@ -42,6 +32,8 @@ void    initWakeupPin(void) {
 
 	#endif
 }
+
+
 uint8_t checkWakeupPin(void) {
 	// to enable the USB port for upload, configure PE2 as input and check if it is 0, this will avoid sleep mode and enable program upload via serial
 	#if defined(wakeupDDR)
