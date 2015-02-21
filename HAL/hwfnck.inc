@@ -1,5 +1,3 @@
-#include "../../hardware.h"
-
 #ifndef _TEST_c
 	#define _TEST_c
 
