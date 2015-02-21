@@ -36,41 +36,49 @@ void    CC::init(void) {																// initialize CC1101
 	dbg << '1';
 	#endif
 
-	static const uint8_t initVal[] PROGMEM = {											// define init settings for TRX868
-		0x00, 0x2E,			// IOCFG2: tristate											// non inverted GDO2, high impedance tri state
-		0x01, 0x2E,			// IOCFG1: tristate											// low output drive strength, non inverted GD=1, high impedance tri state
-		0x02, 0x06,			// IOCFG0: packet CRC ok									// disable temperature sensor, non inverted GDO0, asserts when a sync word has been sent/received, and de-asserts at the end of the packet. in RX, the pin will also de-assert when a package is discarded due to address or maximum length filtering
-		0x03, 0x0D,			// FIFOTHR: TX:9 / RX:56									// 0 ADC retention, 0 close in RX, TX FIFO = 9 / RX FIFO = 56 byte
-		0x04, 0xE9,			// SYNC1													// Sync word
-		0x05, 0xCA,			// SYNC0
-		0x06, 0x3D,			// PKTLEN(x): 61											// packet length 61
-		0x07, 0x0C,			// PKTCTRL1:												// PQT = 0, CRC auto flush = 1, append status = 1, no address check
-		0x0B, 0x06,			// FSCTRL1:													// frequency synthesizer control
-		0x0D, 0x21,			// FREQ2
-		0x0E, 0x65,			// FREQ1
-		0x0F, 0x6A,			// FREQ0
-		0x10, 0xC8,			// MDMCFG4
-		0x11, 0x93,			// MDMCFG3
-		0x12, 0x03,			// MDMCFG2
-		0x15, 0x34,			// DEVIATN
-		0x16, 0x01,         // MCSM2
-		0x17, 0x30,			// MCSM1: always go into IDLE
-		0x18, 0x18,			// MCSM0
-		0x19, 0x16,			// FOCCFG
-		0x1B, 0x43,			// AGCTRL2
-		//0x1E, 0x28,       // ..WOREVT1: tEVENT0 = 50 ms, RX timeout = 390 us
-		//0x1F, 0xA0,		// ..WOREVT0:
-		//0x20, 0xFB,		// ..WORCTRL: EVENT1 = 3, WOR_RES = 0
-		0x21, 0x56,			// FREND1
-		0x25, 0x00,
-		0x26, 0x11,			// FSCAL0
-		0x2D, 0x35,			// TEST1
-		0x3E, 0xC3,			// ?
-	};
+	// define init settings for TRX868
+	static const uint8_t initVal[] PROGMEM = {
+		CC1101_IOCFG2,    0x2E,	// 												// non inverted GDO2, high impedance tri state
+//		CC1101_IOCFG1,    0x2E,	// (default)									// low output drive strength, non inverted GD=1, high impedance tri state
+		CC1101_IOCFG0,    0x06,	// packet CRC ok								// disable temperature sensor, non inverted GDO0,
+		CC1101_FIFOTHR,   0x0D,													// 0 ADC retention, 0 close in RX, TX FIFO = 9 / RX FIFO = 56 byte
+		CC1101_SYNC1,     0xE9,													// Sync word
+		CC1101_SYNC0,     0xCA,
+		CC1101_PKTLEN,    0x3D,													// packet length 61
+		CC1101_PKTCTRL1,  0x0C,													// PQT = 0, CRC auto flush = 1, append status = 1, no address check
+		CC1101_FSCTRL1,   0x06,													// frequency synthesizer control
 
-	for (uint8_t i=1; i<=sizeof(initVal); i+=2) {										// write init value to TRX868
-		writeReg(_pgmB(initVal[i]), _pgmB(initVal[i]));
-		//dbg << i << ": " << _HEXB(_pgmB(initVal[i-1])) << " " << _HEXB(_pgmB(initVal[i])) << '\n';
+		// 868.299866 MHz
+		//CC1101_FREQ2,     0x21,
+		//CC1101_FREQ1,     0x65,
+		//CC1101_FREQ0,     0x6A,
+
+		// 868.2895508
+		CC1101_FREQ2,     0x21,
+		CC1101_FREQ1,     0x65,
+		CC1101_FREQ0,     0x50,
+
+		CC1101_MDMCFG4,  0xC8,
+		CC1101_MDMCFG3,  0x93,
+		CC1101_MDMCFG2,  0x03,
+		CC1101_DEVIATN,  0x34,													// 19.042969 kHz
+		CC1101_MCSM2,    0x01,
+//		CC1101_MCSM1,    0x30,	// (default)									// always go into IDLE
+		CC1101_MCSM0,    0x18,
+		CC1101_FOCCFG,   0x16,
+		CC1101_AGCCTRL2, 0x43,
+		//CC1101_WOREVT1, 0x28,													// tEVENT0 = 50 ms, RX timeout = 390 us
+		//7CC1101_WOREVT0, 0xA0,
+		//CC1101_WORCTRL, 0xFB,													//EVENT1 = 3, WOR_RES = 0
+		CC1101_FREND1,  0x56,
+		CC1101_FSCAL1,  0x00,
+		CC1101_FSCAL0,  0x11,
+		CC1101_TEST1,   0x35,
+		CC1101_PATABLE, 0xC3,
+	};
+	for (uint8_t i=0; i<sizeof(initVal); i+=2) {										// write init value to TRX868
+		writeReg(_pgmB(initVal[i]), _pgmB(initVal[i+1]));
+		//dbg << i << ": " << _HEXB(_pgmB(initVal[i])) << " " << _HEXB(_pgmB(initVal[i+1])) << '\n';
 	}
 
 	#ifdef CC_DBG																		// only if cc debug is set
