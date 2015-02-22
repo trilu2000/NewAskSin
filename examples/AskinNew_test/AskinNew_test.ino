@@ -1,32 +1,17 @@
 #define SER_DBG
 
 
-//- load library's --------------------------------------------------------------------------------------------------------
+//- load library's ----------------------------------------------------------------------------------------------------
 #include <AS.h>
-#include "hardware.h"																		// hardware definition
-#include "register.h"																		// configuration sheet
 #include <THSensor.h>
 
+#include "hardware.h"															// hardware definition
+#include "register.h"															// configuration sheet
 #include "AskinNew_test.h"
 
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
 THSensor thsens;																			// stage a dummy module
-waitTimer xt;																				// sensor timer
-
-
-//- load user modules -----------------------------------------------------------------------------------------------------
-#include <Wire.h>																			// library to communicate with i2c sensor
-#define I2C_ADDR     0x39
-#define REG_CONTROL  0x00
-#define REG_CONFIG   0x01
-#define REG_DATALOW  0x04
-#define REG_DATAHIGH 0x05
-#define REG_ID       0x0A
-static uint8_t M = 0;
-
-uint8_t thVal = 0;																			// variable which holds the measured value
-
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
@@ -34,51 +19,52 @@ void setup() {
 	// - everything off ---------------------------------------
 
 	EIMSK = 0;																	// disable external interrupts
-
-	ADCSRA = 0;																				// ADC off
-	power_all_disable();																	// and everything else
+	ADCSRA = 0;																	// ADC off
+	power_all_disable();														// and everything else
 	
-	DDRB = DDRC = DDRD = 0x00;																// everything as input
-	PORTB = PORTC = PORTD = 0x00;															// pullup's off
+	DDRB = DDRC = DDRD = 0x00;													// everything as input
+	PORTB = PORTC = PORTD = 0x00;												// pullup's off
+
+	// todo: led and config key should initialized internaly
+	initLeds();																	// initialize the leds
+	initConfKey();																// initialize the port for getting config key interrupts
+
+	// todo: timer0 and spi should enable internaly
+	power_timer0_enable();
+	power_spi_enable();															// enable only needed functions
 
 	// enable only what is really needed
-	power_spi_enable();																		// enable only needed functions
-	power_twi_enable();																		// enable only needed functions
-	power_timer0_enable();
+	power_twi_enable();															// enable only needed functions
 
 	#ifdef SER_DBG
-		dbgStart();																				// serial setup
-		dbg << F("AsksinNew Test-LUX 0.1.2\n");
-		_delay_ms (50);																// ...and some information
+		dbgStart();																// serial setup
+		dbg << F("AsksinNew Test\n");
+		dbg << F(LIB_VERSION_STRING);
+		_delay_ms (50);															// ...and some information
 	#endif
-
-	initLeds();																				// initialize the leds
-	initConfKey();																			// initialize the port for getting config key interrupts
-	//initExtBattMeasurement();																// initialize the external battery measurement
 	
 	
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
-	hm.init();																				// init the asksin framework
+	hm.init();																	// init the asksin framework
 
-	hm.confButton.config(1, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
+	hm.confButton.config(1, CONFIG_KEY_PCIE, CONFIG_KEY_INT);					// configure the config button, mode, pci byte and pci bit
 	
-	hm.ld.init(2, &hm);																		// set the led
-	hm.ld.set(welcome);																		// show something
+	hm.ld.init(2, &hm);															// set the led
+	hm.ld.set(welcome);															// show something
 	
-	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(27, 600000);		// 3600000 = 10min.											// set battery check, internal, 2.7 reference, measurement each hour
+	hm.pw.setMode(0);															// set power management mode
+	hm.bt.set(27, 600000);		// 3600000 = 10min.								// set battery check, internal, 2.7 reference, measurement each hour
 
-	thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
-	thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
-	thsens.timing(0, 0, 0);																	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change   
+	thsens.regInHM(1, 4, &hm);													// register sensor module on channel 1, with a list4 and introduce asksin instance
+	thsens.config(&initTH1, &measureTH1, &thVal);								// configure the user class and handover addresses to respective functions and variables
+	thsens.timing(0, 0, 0);														// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 
+	sei();																		// enable interrupts
 
 	// - user related -----------------------------------------
 
-
 	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
-	sei();																					// enable interrupts
 }
 
 void loop() {

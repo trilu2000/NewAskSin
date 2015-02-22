@@ -19,6 +19,7 @@
 #include "StatusLed.h"
 #include "Power.h"
 #include "Battery.h"
+#include "Version.h"
 
 class AS {
 	friend class SN;

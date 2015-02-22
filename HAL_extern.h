@@ -126,6 +126,24 @@ void    initConfKey(void) {
 	regPCINT(CONFIG_KEY_PCMSK, CONFIG_KEY_INT);									// description is in hal.h
 }
 
+//- -----------------------------------------------------------------------------------------------------------------------
+ISR (PCINT0_vect) {
+	pcInt[0].prev = pcInt[0].cur;
+	pcInt[0].cur = PINB;
+	pcInt[0].time = getMillis();
+}
+ISR (PCINT1_vect) {
+	pcInt[1].prev = pcInt[1].cur;
+	pcInt[1].cur = PINC;
+	pcInt[1].time = getMillis();
+}
+ISR (PCINT2_vect) {
+	pcInt[2].prev = pcInt[2].cur;
+	pcInt[2].cur = PIND;
+	pcInt[2].time = getMillis();
+}
+//- -----------------------------------------------------------------------------------------------------------------------
+
 
 /*************************************
  *** Battery measurement functions ***
