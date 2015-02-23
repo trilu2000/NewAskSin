@@ -5,6 +5,7 @@
 #include <AS.h>
 #include <THSensor.h>
 
+#include <Wire.h>																			// library to communicate with i2c sensor
 #include "hardware.h"															// hardware definition
 #include "register.h"															// configuration sheet
 #include "AskinNew_test.h"
