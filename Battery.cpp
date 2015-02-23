@@ -6,7 +6,7 @@
 //- with a lot of support from dirk at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define BT_DBG
+//#define BT_DBG
 #include "Battery.h"
 #include "AS.h"
 

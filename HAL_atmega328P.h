@@ -8,11 +8,6 @@
 #define SPI_MISO                PORTB4
 #define SPI_MOSI                PORTB3
 #define SPI_SCLK                PORTB5
-
-#define CC_GDO0_PCICR           PCICR											// GDO0 interrupt register
-#define CC_GDO0_PCIE            PCIE2
-#define CC_GDO0_PCMSK           PCMSK2											// GDO0 interrupt mask
-#define CC_GDO0_INT             PCINT18											// pin interrupt
 //- -------------------------------------------------------------------------------------------------------------------------
 
 

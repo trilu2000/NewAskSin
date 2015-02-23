@@ -14,10 +14,9 @@
 //- power management definitions --------------------------------------------------------------------------------------------
 #define backupPwrRegs()         uint8_t xPrr0 = PRR0; uint8_t xPrr1 = PRR1; PRR0 = PRR1= 0xFF;
 #define recoverPwrRegs()        PRR0 = xPrr0; PRR1 = xPrr1;
-// do be done!
-//#define offBrownOut()
+#define offBrownOut()           MCUCR = (1<<BODS)|(1<<BODSE); MCUCR = (1<<BODS);
 //- -------------------------------------------------------------------------------------------------------------------------
 
 
 //- adc definitions ---------------------------------------------------------------------------------------------------------
-#define AVR_BANDGAP_VOLTAGE    1100UL											// band gap reference for Atmega328p
+#define AVR_BANDGAP_VOLTAGE     1100UL											// band gap reference for Atmega328p
