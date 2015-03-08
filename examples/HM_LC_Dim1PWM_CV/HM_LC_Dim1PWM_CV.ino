@@ -2,9 +2,14 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <AS.h>
+#include <Dimmer.h>
+
 #include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
-#include <Dimmer.h>
+
+// some forward declarations
+void initPWM();
+void switchPWM(uint8_t status, uint8_t characteristic);
 
 
 //- load modules ----------------------------------------------------------------------------------------------------------
@@ -17,50 +22,55 @@ Dimmer dimmer;																				// stage a dummy module
 void setup() {
 	// - Hardware setup ---------------------------------------
 	// everything off
-	//ADCSRA = 0;																				// ADC off
+	// - Hardware setup ---------------------------------------
+	// - everything off ---------------------------------------
+
+	//EIMSK = 0;																			// disable external interrupts
+	//ADCSRA = 0;																			// ADC off
 	//power_all_disable();																	// and everything else
-	//DDRB = DDRC = DDRD = 0x00;																// everything as input
+	
+	//DDRB = DDRC = DDRD = 0x00;															// everything as input
 	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	// enable only what is really needed
-	power_spi_enable();																		// SPI port for transceiver communication
-	power_timer0_enable();																	// timer0 for getMillis and waitTimer
-	power_usart0_enable();																	// serial port for debugging
+	// todo: led and config key should initialized internally
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
 
- 	#ifdef SER_DBG
-	dbgStart();																				// serial setup
-	dbg << F("HM_LC_Dim1PWM_CV\n");																	// ...and some information
+	// todo: timer0 and SPI should enable internally
+	power_timer0_enable();
+	power_spi_enable();																		// enable only needed functions
+
+	// enable only what is really needed
+
+
+	#ifdef SER_DBG
+		dbgStart();																			// serial setup
+		dbg << F("HM_LC_Dim1PWM_CV\n");
+		dbg << F(LIB_VERSION_STRING);
+		_delay_ms (50);																		// ...and some information
 	#endif
 	
-
-	// initialize the hardware, functions to be found in hardware.cpp
-	initMillis();																			// milli timer start
-	initPCINT();																			// pin change interrupts
-	ccInitHw();																				// transceiver hardware
-	initLeds();																				// leds
-	initConfKey();																			// config key pin and interrupt
-	//initExtBattMeasurement();																// external battery measurement
-
-
+	
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 
-	hm.confButton.config(2, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
+	hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check
+	hm.bt.set(27, 3600000);		// 3600000 = 1h												// set battery check
 
 	dimmer.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
 	dimmer.config(&initPWM, &switchPWM, NULL);
+
+	sei();																					// enable interrupts
+
 	
 	// - user related -----------------------------------------
-
 	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
-	sei();																					// enable interrupts
 	
 	//uint8_t xT[] = {0x15, 0xff, 0x16, 0xff};
 	//hm.ee.setListArray(0, 0, 0, 4, xT);	
