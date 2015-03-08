@@ -3,9 +3,10 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <AS.h>
+#include <THSensor.h>
+
 #include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
-#include <THSensor.h>
 
 
 //- load modules ----------------------------------------------------------------------------------------------------------
@@ -59,13 +60,13 @@ void setup() {
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 
-	hm.confButton.config(1, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
+	hm.confButton.config(1, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(1, 27, 3600000);		// 3600000 = 1h											// set battery check, internal, 2.7 reference, measurement each hour
+	hm.bt.set(27, 600000);		// 3600000 = 1h												// set battery check, internal, 2.7 reference, measurement each hour
 
 	thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
 	thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables

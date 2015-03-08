@@ -6,8 +6,8 @@
 #include <THSensor.h>
 
 #include <Wire.h>																			// library to communicate with i2c sensor
-#include "hardware.h"															// hardware definition
-#include "register.h"															// configuration sheet
+#include "hardware.h"																		// hardware definition
+#include "register.h"																		// configuration sheet
 
 #define I2C_ADDR     0x39
 #define REG_CONTROL  0x00
@@ -42,11 +42,11 @@ void setup() {
 	DDRB = DDRC = DDRD = 0x00;													// everything as input
 	PORTB = PORTC = PORTD = 0x00;												// pullup's off
 
-	// todo: led and config key should initialized internaly
+	// todo: led and config key should initialized internally
 	initLeds();																	// initialize the leds
 	initConfKey();																// initialize the port for getting config key interrupts
 
-	// todo: timer0 and spi should enable internaly
+	// todo: timer0 and SPI should enable internally
 	power_timer0_enable();
 	power_spi_enable();															// enable only needed functions
 
@@ -70,7 +70,7 @@ void setup() {
 	hm.ld.init(2, &hm);															// set the led
 	hm.ld.set(welcome);															// show something
 	
-	hm.pw.setMode(0);															// set power management mode
+	hm.pw.setMode(1);															// set power management mode
 	hm.bt.set(27, 600000);		// 3600000 = 10min.								// set battery check, internal, 2.7 reference, measurement each hour
 
 	thsens.regInHM(1, 4, &hm);													// register sensor module on channel 1, with a list4 and introduce asksin instance

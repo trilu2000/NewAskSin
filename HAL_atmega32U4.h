@@ -14,7 +14,7 @@
 //- power management definitions --------------------------------------------------------------------------------------------
 #define backupPwrRegs()         uint8_t xPrr0 = PRR0; uint8_t xPrr1 = PRR1; PRR0 = PRR1= 0xFF;
 #define recoverPwrRegs()        PRR0 = xPrr0; PRR1 = xPrr1;
-#define offBrownOut()           MCUCR = (1<<BODS)|(1<<BODSE); MCUCR = (1<<BODS);
+#define offBrownOut()           //MCUCR = (1<<BODS)|(1<<BODSE); MCUCR = (1<<BODS);
 //- -------------------------------------------------------------------------------------------------------------------------
 
 
