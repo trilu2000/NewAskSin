@@ -2,9 +2,14 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <AS.h>																				// ask sin framework
+#include <Relay.h>																			// relay class module
+
 #include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
-#include <Relay.h>																			// relay class module
+
+// some forward declarations
+void initRly();
+void switchRly(uint8_t status);
 
 
 //- load modules ----------------------------------------------------------------------------------------------------------
@@ -12,58 +17,59 @@ AS hm;																						// stage the asksin framework
 Relay relay;																				// stage a dummy module
 //waitTimer wt;
 
+
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
 
 	// - Hardware setup ---------------------------------------
-	// everything off
+	// - everything off ---------------------------------------
+
+	EIMSK = 0;																				// disable external interrupts
 	ADCSRA = 0;																				// ADC off
 	power_all_disable();																	// and everything else
+	
 	DDRB = DDRC = DDRD = 0x00;																// everything as input
 	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
+	// todo: led and config key should initialized internally
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
+
+	// todo: timer0 and SPI should enable internally
+	power_timer0_enable();
+	power_spi_enable();																		// enable only needed functions
+
 	// enable only what is really needed
-	power_spi_enable();																		// SPI port for transceiver communication
-	power_timer0_enable();																	// timer0 for getMillis and waitTimer
 
 	#ifdef SER_DBG
-	dbgStart();																				// serial setup
-	dbg << F("HM_LC_SW1_BA_PCB\n");															// ...and some information
+		dbgStart();																			// serial setup
+		dbg << F("HM_LC_SW1_BA_PCB\n");	
+		dbg << F(LIB_VERSION_STRING);
+		_delay_ms (50);																		// ...and some information
 	#endif
-
-
-	// initialize the hardware, functions to be found in hardware.cpp
-	initMillis();																			// milli timer start
-	initPCINT();																			// pin change interrupts
-	ccInitHw();																				// transceiver hardware
-	initLeds();																				// leds
-	initConfKey();																			// config key pin and interrupt
-	//initExtBattMeasurement();																// external battery measurement
 
 	
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 
-	hm.confButton.config(2, confKeyPCIE, confKeyINT);										// configure the config button, mode, pci byte and pci bit
+	hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit
 	
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
 	hm.pw.setMode(1);																		// set power management mode
 
-
-	hm.bt.set(1, 27, 1800000);		// 1800000 = 0,5h										// set battery check
+	hm.bt.set(27, 1800000);		// 1800000 = 0,5h											// set battery check
 
 	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
 	relay.config(&initRly, &switchRly);														// hand over the relay functions of main sketch
 	
+	sei();																					// enable interrupts
+
 
 	// - user related -----------------------------------------
-
-
 	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
-	sei();																					// enable interrupts
 }
 
 void loop() {
