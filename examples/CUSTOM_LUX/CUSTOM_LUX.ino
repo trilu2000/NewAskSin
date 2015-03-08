@@ -1,23 +1,15 @@
 #define SER_DBG
 
 
-//- load library's --------------------------------------------------------------------------------------------------------
+//- load library's ----------------------------------------------------------------------------------------------------
 #include <AS.h>
 #include <THSensor.h>
 
+#include <Wire.h>																			// library to communicate with i2c sensor
 #include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
 
-
-//- load modules ----------------------------------------------------------------------------------------------------------
-AS hm;																						// stage the asksin framework
-THSensor thsens;																			// stage a dummy module
-waitTimer xt;																				// sensor timer
-
-
-//- load user modules -----------------------------------------------------------------------------------------------------
-#include <Wire.h>																			// library to communicate with i2c sensor
-#define I2C_ADDR     (0x29)
+#define I2C_ADDR     0x39
 #define REG_CONTROL  0x00
 #define REG_CONFIG   0x01
 #define REG_DATALOW  0x04
@@ -27,33 +19,47 @@ static uint8_t M = 0;
 
 uint8_t thVal = 0;																			// variable which holds the measured value
 
+// some forward declarations
+void initTH1();
+void measureTH1();
+static void     initTSL(void);
+static uint16_t readTSL(void);
+
+
+//- load modules ----------------------------------------------------------------------------------------------------------
+AS hm;																						// stage the asksin framework
+THSensor thsens;																			// stage a dummy module
+
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
+
+	EIMSK = 0;																				// disable external interrupts
 	ADCSRA = 0;																				// ADC off
 	power_all_disable();																	// and everything else
 	
 	DDRB = DDRC = DDRD = 0x00;																// everything as input
 	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	// enable only what is really needed
-	power_spi_enable();																		// enable only needed functions
-	power_twi_enable();																		// enable only needed functions
-	power_timer0_enable();
-
-	#ifdef SER_DBG
-	dbgStart();																				// serial setup
-	dbg << F("CUSTOM_LUX\n");																// ...and some information
-	#endif
-
-	initMillis();																			// milli timer start
-	initPCINT();																			// initialize the pin change interrupts
-	ccInitHw();																				// initialize transceiver hardware
+	// todo: led and config key should initialized internally
 	initLeds();																				// initialize the leds
 	initConfKey();																			// initialize the port for getting config key interrupts
-	//initExtBattMeasurement();																// initialize the external battery measurement
+
+	// todo: timer0 and SPI should enable internally
+	power_timer0_enable();
+	power_spi_enable();																		// enable only needed functions
+
+	// enable only what is really needed
+	power_twi_enable();																		// enable only needed functions
+
+	#ifdef SER_DBG
+		dbgStart();																			// serial setup
+		dbg << F("AsksinNew Test\n");
+		dbg << F(LIB_VERSION_STRING);
+		_delay_ms (50);																		// ...and some information
+	#endif
 	
 	
 	// - AskSin related ---------------------------------------
@@ -65,19 +71,18 @@ void setup() {
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(27, 600000);		// 3600000 = 1h												// set battery check, internal, 2.7 reference, measurement each hour
+	hm.pw.setMode(1);																		// set power management mode
+	hm.bt.set(27, 600000);		// 3600000 = 10min.											// set battery check, internal, 2.7 reference, measurement each hour
 
 	thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
 	thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
-	thsens.timing(0, 0, 0);																	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change   
+	thsens.timing(0, 0, 0);																	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 
+	sei();																					// enable interrupts
 
 	// - user related -----------------------------------------
 
-
 	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
-	sei();																					// enable interrupts
 }
 
 void loop() {

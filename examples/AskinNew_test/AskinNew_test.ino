@@ -35,49 +35,49 @@ void setup() {
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
 
-	EIMSK = 0;																	// disable external interrupts
-	ADCSRA = 0;																	// ADC off
-	power_all_disable();														// and everything else
+	EIMSK = 0;																				// disable external interrupts
+	ADCSRA = 0;																				// ADC off
+	power_all_disable();																	// and everything else
 	
-	DDRB = DDRC = DDRD = 0x00;													// everything as input
-	PORTB = PORTC = PORTD = 0x00;												// pullup's off
+	DDRB = DDRC = DDRD = 0x00;																// everything as input
+	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
 	// todo: led and config key should initialized internally
-	initLeds();																	// initialize the leds
-	initConfKey();																// initialize the port for getting config key interrupts
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
 
 	// todo: timer0 and SPI should enable internally
 	power_timer0_enable();
-	power_spi_enable();															// enable only needed functions
+	power_spi_enable();																		// enable only needed functions
 
 	// enable only what is really needed
-	power_twi_enable();															// enable only needed functions
+	power_twi_enable();																		// enable only needed functions
 
 	#ifdef SER_DBG
-		dbgStart();																// serial setup
+		dbgStart();																			// serial setup
 		dbg << F("AsksinNew Test\n");
 		dbg << F(LIB_VERSION_STRING);
-		_delay_ms (50);															// ...and some information
+		_delay_ms (50);																		// ...and some information
 	#endif
 	
 	
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
-	hm.init();																	// init the asksin framework
+	hm.init();																				// init the asksin framework
 
-	hm.confButton.config(1, CONFIG_KEY_PCIE, CONFIG_KEY_INT);					// configure the config button, mode, pci byte and pci bit
+	hm.confButton.config(1, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit
 	
-	hm.ld.init(2, &hm);															// set the led
-	hm.ld.set(welcome);															// show something
+	hm.ld.init(2, &hm);																		// set the led
+	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(1);															// set power management mode
-	hm.bt.set(27, 600000);		// 3600000 = 10min.								// set battery check, internal, 2.7 reference, measurement each hour
+	hm.pw.setMode(1);																		// set power management mode
+	hm.bt.set(27, 600000);		// 3600000 = 10min.											// set battery check, internal, 2.7 reference, measurement each hour
 
-	thsens.regInHM(1, 4, &hm);													// register sensor module on channel 1, with a list4 and introduce asksin instance
-	thsens.config(&initTH1, &measureTH1, &thVal);								// configure the user class and handover addresses to respective functions and variables
-	thsens.timing(0, 0, 0);														// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
+	thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
+	thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
+	thsens.timing(0, 0, 0);																	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 
-	sei();																		// enable interrupts
+	sei();																					// enable interrupts
 
 	// - user related -----------------------------------------
 
