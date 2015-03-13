@@ -124,7 +124,8 @@ sub searchXMLFiles($) {
 }
 ## ----------------------------------------------------------------------------------------------------------
 
-sub frmHexStr {
+## -- print out functions -----------------------------------------------------------------------------------
+sub prnHexStr {
 	my $in = shift;
 	my $len = shift;
 	#$len = "%." .$len 
@@ -133,38 +134,32 @@ sub frmHexStr {
 	$in =~ s/(..)/0x$&,/g;
 	return $in;
 }
-
+sub prnASCIIStr {
+	my $in = shift;
+	$in =~ s/(.)/'$&',/g;
+	return $in;
+}
 
 sub printDefaltTable {
 	my %dT = %{shift()};
-	my @se = split("", $dT{'serial'});
-	my @hm = split("", $dT{'hmID'}); 
-	my @mi = split("", $dT{'modelID'}); 
-
-
-	#print "x1: $dT{'hmID'}[1]  \n";
-	#print "x1: $dT{'hmID'}[2]  \n";
-
 
 	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 	print "//- eeprom defaults table ------------------------------------------------------------------------------------------------\n";
 	print "uint16_t EEMEM eMagicByte;\n";
-	print "uint8_t  EEMEM eHMID[3]  = {" .frmHexStr($dT{'hmID'},6) ."};\n";
-	print "uint8_t  EEMEM eHMSR[10] = {'$se[0]','$se[1]','$se[2]','$se[3]','$se[4]','$se[5]','$se[6]','$se[7]','$se[8]','$se[9]'};\n";
+	print "uint8_t  EEMEM eHMID[3]  = {" .prnHexStr($dT{'hmID'},6) ."};\n";
+	print "uint8_t  EEMEM eHMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."};\n";
 	print "\n";
 	print "// if HMID and Serial are not set, then eeprom ones will be used\n";
-	print "uint8_t HMID[3] = {0x$hm[0]$hm[1],0x$hm[2]$hm[3],0x$hm[4]$hm[5]};\n";
-	print "uint8_t HMSR[10] = {'$se[0]','$se[1]','$se[2]','$se[3]','$se[4]','$se[5]','$se[6]','$se[7]','$se[8]','$se[9]'}; // $dT{'serial'}\n";
+	print "uint8_t HMID[3] = {" .prnHexStr($dT{'hmID'},6) ."};\n";
+	print "uint8_t HMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."}; // $dT{'serial'}\n";
 	print "\n";
 	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 	print "//- settings of HM device for AS class -----------------------------------------------------------------------------------\n";
 	print "const uint8_t devIdnt[] PROGMEM = {\n";
-	print "     /* Firmware version  1 byte */  " .sprintf("0x%.2x,",$dT{'firmwareVer'}) ."                               // don't know for what it is good for\n";
-	print "     /* Model ID          2 byte */  0x$mi[0]$mi[1], 0x$mi[2]$mi[3],                         // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
-	print "     /* Sub Type ID       1 byte */  0x70,                               // not needed for FHEM, it's something like a group ID\n";
-	print "     /* Device Info       3 byte */  0x03, 0x01, 0x00                    // describes device, not completely clear yet. includes amount of channels\n";
+	print "     /* Firmware version  1 byte */  " .prnHexStr($dT{'firmwareVer'},2) ."                               // don't know for what it is good for\n";
+	print "     /* Model ID          2 byte */  " .prnHexStr($dT{'modelID'},4) ."                          // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
+	print "     /* Sub Type ID       1 byte */  " .prnHexStr($dT{'subtypeID'},2) ."                               // not needed for FHEM, it's something like a group ID\n";
+	print "     /* Device Info       3 byte */  " .prnHexStr($dT{'deviceInfo'},6) ."                     // describes device, not completely clear yet. includes amount of channels\n";
 	print "};\n\n";
-	
-	
 }
 

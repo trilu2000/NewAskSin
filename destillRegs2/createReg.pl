@@ -71,43 +71,24 @@ if      ($numArr > 1) {
 
 } 
 
+## ---------- subtype id check ------------------------
+if ($numArr > 0) {
+# get subtypeID from original document
+#	$cType{'subtypeID'} = int(rand(0xFFFFFF));
+}
 
-#print "fw: $cType{'firmwareVer'}\n";
+## ---------- deviceInfo check ------------------------
+if ($numArr > 0) {
+# get deviceInfo from original document
+#	$cType{'deviceInfo'} = int(rand(0xFFFFFF));
+}
+
+
 
 print "\n\n\n";
 usrMods::printDefaltTable(\%cType);
 
-#print "hmID dec: $cType{'hmID'}\n";
-#print "hmID hex: " .sprintf("0x%.2x", $cType{'hmID'}) ."\n";
 
-
-#print "x: " .usrMods::frmHexStr($cType{'hmID'}, 6) ." \n";
-
-
-
-
-
-
-
-
-
-	
-#	print "$type, $listTypes{$type}\n";
-
-	#foreach my $reg(sort(keys %{$listTypes{$type}} )) {
-		
-
-
-	#	if ($culHmRegDefShLg{$reg}){
-	#		delete $listTypes{$type}{$reg};
-	#		$listTypes{$type}{"sh".$reg} = 1;
-	#		$listTypes{$type}{"lg".$reg} = 1;
-	#	}
-	#}
-#}
-
-#foreach my $type(sort(keys %listTypes)) { 
-#	my $value = $listTypes{$type};
 
 
 #print "test\n";
