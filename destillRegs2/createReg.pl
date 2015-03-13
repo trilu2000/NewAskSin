@@ -20,44 +20,68 @@ if ($ret != 0) {
 }
 
 ## ---------- hm id check ------------------------
-# check content, only A-F, 0-9 allowed 
-$ret = usrMods::checkString($cType{'hmID'}, 'H', 6);
-if ($ret != 0) {
+if ($cType{'hmID'} == 0) {
 	print "generating new hm ID...\n";
-	$cType{'hmID'} = usrMods::randString('H',6);
+	$cType{'hmID'} = int(rand(0xFFFFFF));
 }
 
 ## ---------- model id check ---------------------
-# check content, only A-F, 0-9 allowed 
-$ret = usrMods::checkString($cType{'modelID'}, 'H', 4);
-if ($ret != 0) {
-	print "model ID in wrong format, exit...\n";
+# model id is mandatory, if 0 then exit
+if ($cType{'modelID'} == 0) {
+	print "model ID empty, exit...\n";
 	exit;
 }
 
 # check if we will find a version in the hm config directory
 my @fileList          =usrMods::searchXMLFiles($cType{'modelID'});
-for my $href ( @fileList ) {
-    print sprintf("modelID: %.4x, FW: %.2x, File: %-25s\n", $href->{'modelID'}, $href->{'firmwareVer'},$href->{'file'});
-}
+#for my $href ( @fileList ) {
+#    print sprintf("modelID: %.4x, FW: %.2x, File: %-25s\n", $href->{'modelID'}, $href->{'firmwareVer'},$href->{'file'});
+#}
 
 
 ## ---------- firmware version check -------------
 # found more than one file, lets choose
 # if we found one file take over the firmware
-# firmware is zero, write something like 10
-# firmware is > 0, take it
 my $numArr= scalar @fileList;
+
 if      ($numArr > 1) {
+	print "\nthere is more then one device with the given model ID available, please select one...\n";
 	# lets choose one line
+	for(my $i=0; $i < $numArr; $i++) {
+		my $href = $fileList[$i];
+    	print sprintf("%d    modelID: %.4x, FW: %.2x, File: %-25s\n", $i, $href->{'modelID'}, $href->{'firmwareVer'},$href->{'file'});
+	}
+
+	print "please select a line by number and press return <default 0>: ";
+	my $cnlCnt = 0;
+	chomp ($cnlCnt = <STDIN>);
+	if ($cnlCnt eq '') {
+		$cnlCnt = 0;
+	}
+
+	if ($cnlCnt > $numArr) {
+		print "out of range, exit!\n";
+		exit;
+	}
+	
+	$cType{'firmwareVer'} = $fileList[$cnlCnt]{'firmwareVer'};	
 
 } elsif ($numArr == 1) {
-	$cType{'firmwareVer'} = $fileList[0]{'firmwareVer'};
+	$cType{'firmwareVer'} = $fileList[$numArr]{'firmwareVer'};
 
 } 
 
 
-print "fw: $cType{'firmwareVer'}\n";
+#print "fw: $cType{'firmwareVer'}\n";
+
+print "\n\n\n";
+usrMods::printDefaltTable(\%cType);
+
+#print "hmID dec: $cType{'hmID'}\n";
+#print "hmID hex: " .sprintf("0x%.2x", $cType{'hmID'}) ."\n";
+
+
+#print "x: " .usrMods::frmHexStr($cType{'hmID'}, 6) ." \n";
 
 
 

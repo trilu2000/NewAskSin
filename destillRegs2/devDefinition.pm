@@ -5,39 +5,39 @@ use strict;
 package usrRegs;
 
 ## Sub Type ID ---------------------------------------
-#  "01" => "AlarmControl",
-#  "10" => "switch",
-#  "12" => "outputUnit",
-#  "20" => "dimmer",
-#  "30" => "blindActuator",
-#  "39" => "ClimateControl",
-#  "40" => "remote",
-#  "41" => "sensor",
-#  "42" => "swi",
-#  "43" => "pushButton",
-#  "44" => "singleButton",
-#  "51" => "powerMeter",
-#  "58" => "thermostat",
-#  "60" => "KFM100",
-#  "70" => "THSensor",
-#  "80" => "threeStateSensor"
-#  "81" => "motionDetector",
-#  "C0" => "keyMatic",
-#  "C1" => "winMatic",
-#  "C3" => "tipTronic",
-#  "CD" => "smokeDetector",
+#  "0x01" => "AlarmControl",
+#  "0x10" => "switch",
+#  "0x12" => "outputUnit",
+#  "0x20" => "dimmer",
+#  "0x30" => "blindActuator",
+#  "0x39" => "ClimateControl",
+#  "0x40" => "remote",
+#  "0x41" => "sensor",
+#  "0x42" => "swi",
+#  "0x43" => "pushButton",
+#  "0x44" => "singleButton",
+#  "0x51" => "powerMeter",
+#  "0x58" => "thermostat",
+#  "0x60" => "KFM100",
+#  "0x70" => "THSensor",
+#  "0x80" => "threeStateSensor"
+#  "0x81" => "motionDetector",
+#  "0xC0" => "keyMatic",
+#  "0xC1" => "winMatic",
+#  "0xC3" => "tipTronic",
+#  "0xCD" => "smokeDetector",
 
 my %configTypes = (
 	serial      => '0', 												# 0 to get it automatically generated - otherwise 10 byte ASCII format
 	hmID        => '0', 												# 0 to get it automatically generated - otherwise 6 HEX digits
 	
-	modelID     => '0043',												# if model id is known, details will taken from HM config xml files, 4 HEX digits
-	firmwareVer => '10', 												# firmware version, 2 HEX digits - important if you took a model id where more then one device exists
+	modelID     => 0x0f43,											# if model id is known, details will taken from HM config xml files, 4 HEX digits
+	firmwareVer => 0x10, 												# firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
 	## no inpt needed if model id is valid and device already exists 
 	## in HM config software, otherwise fill accordingly
-	subtypeID   => 4,													# depending on type of device
-	deviceInfo  => 5,													# not complete clear yes, but 3 bytes HEX needed
+	subtypeID   => 0x70,												# depending on type of device
+	deviceInfo  => 0x030100,											# not complete clear yes, but 3 bytes HEX needed
 	
 
 	
