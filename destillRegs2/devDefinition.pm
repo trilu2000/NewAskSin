@@ -28,24 +28,29 @@ package usrRegs;
 #  "0xCD" => "smokeDetector",
 
 my %configTypes = (
-	serial      => '0', 												# 0 to get it automatically generated - otherwise 10 byte ASCII format
+	name        => 'Test127',											# name of the device, ascii [A-Z, a-z, 0-9, '-'], no blanks
+	description => 'das ist ein test',									# short description of the device
+	
+	serial      => 'XMS1234567', 										# 0 to get it automatically generated - otherwise 10 byte ASCII format
 	hmID        => '0', 												# 0 to get it automatically generated - otherwise 6 HEX digits
 	
-	modelID     => 0x0f43,											# if model id is known, details will taken from HM config xml files, 4 HEX digits
+	modelID     => 0x0f43,												# if model id is known, details will taken from HM config xml files, 4 HEX digits
 	firmwareVer => 0x10, 												# firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
-	## no inpt needed if model id is valid and device already exists 
+	## no input needed if model id is valid and device already exists 
 	## in HM config software, otherwise fill accordingly
 	subtypeID   => 0x70,												# depending on type of device
 	deviceInfo  => 0x030100,											# not complete clear yes, but 3 bytes HEX needed
 	
+	batteryValue      => 0, 											# one byte default value in milli volt, 0 if not a battery device 
+	batteryVisibility => 0,												# battery flag visible in registers of channel 0
 
+	burstReceive      => 1,                                             # device needs a burst signal to wakeup
+	localResDis       => 1,												# local reset disable 
+
+
+	## channel config
 	
-	#devDesc => {	serial   => ,
-	#				battery  => 0,										# is it a battery powered device
-	#				battery		 	
-	#	
-	#},
 
 	#regDev    => { burstRx=>1, intKeyVisib=>1, pairCentral=>1, localResDis=>1,
 	#regDev    => { burstRx=>1, intKeyVisib=>1, pairCentral=>1, 
