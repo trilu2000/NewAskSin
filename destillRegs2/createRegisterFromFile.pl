@@ -60,7 +60,7 @@ foreach my $sections ($xc->findnodes('/device/supported_types/type')) {									
 	
 	}
 
-	if (eval( $devCVal) == eval($dev_id) ) {																	# check const value against device id
+	if (eval( $devCVal) == eval($dev_id) ) {																# check const value against device id
 		last;
 	}
 

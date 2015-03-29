@@ -1,9 +1,11 @@
 use strict;
-
 package usrMods;
+use XML::LibXML;
+
+use Data::Dumper;                                                                                                                
 
 
-## checks a given string if its content is ASCII or HEX and checks also length
+## -- checks a given string if its content is ASCII or HEX and checks also length ---------------------------
 #  parameter needed by the function
 #  checkString('string to check', 'ASCII or HEX', 'length to check')
 #  returns 0 = ok, 1 = ASCII or HEX didn't fit, 2 = wrong length
@@ -26,7 +28,7 @@ sub checkString {
 	return 0;
 }
 
-## generates an DEC or HEX string with the given length
+## -- generates an DEC or HEX string with the given length --------------------------------------------------
 #  parameter needed by the function
 #  randString('DEC or HEX', 'length of string')
 #  returns the generated string
@@ -48,7 +50,72 @@ sub randString {
 	return $ret;
 }
 
-## steps through the defined directory, reads every single file untill it finds the given model id ----------
+## -- read paramset in XML by giving filehandle, sectionname, paramset name and id -----------------------------------------------------
+sub getParamSet {
+	my $xO = shift;																							# xml object
+	my $sN = shift;																							# section name
+	my $pN = shift;																							# parameter set name
+	my $iD = shift;																							# parameter id
+	my %retObj = ();
+	
+	#-- get the respective parameter 
+	# here we take the whole block an the details in physical
+	
+	#<parameter id="LOW_BAT_LIMIT">
+	#	<logical type="float" min="5.0" max="15.0" default="10.5" unit="V"/>
+	#	<physical type="integer" interface="config" list="0" index="18" size="1"/>
+	#	<conversion type="float_integer_scale" factor="10"/>
+	#</parameter>
+
+	my ($section) = $xO->findnodes('/xmlSet/'.$sN.'/paramset[@type="'.$pN.'"]/parameter[@id="'.$iD.'"]');	# set pointer to parameter
+	$retObj{'id'} = $section->getAttribute('id');
+
+	# get out the parameter
+	my ($physical) = $section->findnodes('./physical');														# search for the physical part and copy whole section
+	
+	# check for the point value, and take the right part, it indicates the bit start value
+	# if no point is inside the value, then assume a bit start value of 0	
+	my $index; my $startBit = 0;
+	
+	my $rawIndex = $physical->getAttribute('index');														# get out the raw index figure
+	my $pos = index( $rawIndex, '.');																		# search for a . value
+	$startBit = substr( $rawIndex, $pos+1 )   if ( $pos > 0 );												# if we found a . value
+	$rawIndex = substr( $rawIndex, 0, $pos )  if ( $pos > 0 );												# clean up the raw index
+	
+	# now we are checking on the raw index figure if it is hex formated
+	$pos = index( $rawIndex, 'x');																			# search for hex format
+	$rawIndex = hex($rawIndex)	              if ( $pos > 0 );												# if we found a hex formated string
+	$index    = int($rawIndex);																				# generate a valid number
+	
+
+	# get the size attribute and format it accordingly
+	my $size = $physical->getAttribute('size');
+	$pos = index( $size, '.');
+	$size = substr( $size, $pos+1 )          if ($pos >= 0);
+	$size = $size * 8                        if ($pos < 0);
+
+	# put all variables in the return object	
+	$retObj{'physical'}  = $physical;
+	$retObj{'idx'}       = sprintf('0x%.2x.%s', $index, $startBit);
+	$retObj{'type'}      = $physical->getAttribute('type');
+	$retObj{'interface'} = $physical->getAttribute('interface');
+	$retObj{'list'}      = $physical->getAttribute('list');
+	$retObj{'index'}     = $index;
+	$retObj{'bit'}       = $startBit;
+	$retObj{'size'}      = $size;
+
+	# some debug
+	#foreach my $test (keys %retObj) {
+	#	print "$test    $retObj{$test}  \n";
+	#}
+	
+	return %retObj;
+}
+
+	
+
+
+## -- steps through the defined directory, reads every single file untill it finds the given model id -------
 my @handover;
 my $dir = 'devicetypes';																					# directory with the HM device files
 
@@ -151,7 +218,7 @@ sub printDefaltTable {
 	print "\n";
 	print "// if HMID and Serial are not set, then eeprom ones will be used\n";
 	print "uint8_t HMID[3] = {" .prnHexStr($dT{'hmID'},6) ."};\n";
-	print "uint8_t HMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."}; // $dT{'serial'}\n";
+	print "uint8_t HMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."};            // $dT{'serial'}\n";
 	print "\n";
 	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 	print "//- settings of HM device for AS class -----------------------------------------------------------------------------------\n";

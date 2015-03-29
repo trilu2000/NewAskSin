@@ -4,16 +4,16 @@ use XML::LibXML;
 
 
 
-## --------------import constants----------------------------------------------
+## --------------import constants----------------------------------------------------------------------------
 use devDefinition;
 use destillRegsModules;
 
-my %cType             =usrRegs::usr_getHash("configTypes");
+my %cType             =usrRegs::usr_getHash("configType");
 
 
 
 
-## ---------- checking basic informations -------------------------------------
+## ---------- checking basic informations -------------------------------------------------------------------
 
 ## ---------- serial check -----------------------
 # serial - check content, only A-Z, a-z, 0-9 allowed 
@@ -38,7 +38,7 @@ if ($cType{'modelID'} == 0) {
 
 # check if we will find a version in the hm config directory
 my @fileList          =usrMods::searchXMLFiles($cType{'modelID'});
-#for my $href ( @fileList ) {
+#for my $href ( @fileList ) {													# some debug
 #    print sprintf("modelID: %.4x, FW: %.2x, File: %-25s\n", $href->{'modelID'}, $href->{'firmwareVer'},$href->{'file'});
 #}
 
@@ -75,28 +75,116 @@ if      ($numArr > 1) {
 
 } 
 
-## ---------- subtype id check ------------------------
-if ($numArr > 0) {
-# get subtypeID from original document
-#	$cType{'subtypeID'} = int(rand(0xFFFFFF));
+if ($numArr < 1) {																					# check while info is not available from an existing device
+	## ---------- name ------------------------------------
+	# get subtypeID from original document
+	#	$cType{'subtypeID'} = int(rand(0xFFFFFF));
+
+	## ---------- description -----------------------------
+
+	## ---------- subtype id check ------------------------
+
+	## ---------- deviceInfo check ------------------------
+
+	## ---------- battValue -------------------------------	
+	
+	## ---------- battVisib -------------------------------
+	
+	## ---------- burstRx ---------------------------------
+	
+	## ---------- localResDis -----------------------------
+
+
 }
 
-## ---------- deviceInfo check ------------------------
-if ($numArr > 0) {
-# get deviceInfo from original document
-#	$cType{'deviceInfo'} = int(rand(0xFFFFFF));
+## ----------------------------------------------------------------------------------------------------------
+
+
+
+## ---------- generating channel address table --------------------------------------------------------------
+my %cnlTypeA = ();
+
+if ($numArr > 0) {																					# get the information from an existing file
+
+
+
+
+} else {																							# get the information from devDefinition.pm
+	
+	## ---------- channel 0, list 0 -----------------------
+
+	# -- 0x0A - 0x0C mandatory for the master ID so add
+	$cnlTypeA{'00 00 0x0a.0'}  = { 'idx' => '0x0a.0', 'cnl' => '0', 'list' => '0', 'id' => 'MASTER_ID_BYTE_1', 'type' => 'integer', 'interface' => 'config', 'index' => '10', 'bit' => '0', 'size' => '8' };
+	$cnlTypeA{'00 00 0x0b.0'}  = { 'idx' => '0x0b.0', 'cnl' => '0', 'list' => '0', 'id' => 'MASTER_ID_BYTE_2', 'type' => 'integer', 'interface' => 'config', 'index' => '11', 'bit' => '0', 'size' => '8' };
+	$cnlTypeA{'00 00 0x0c.0'}  = { 'idx' => '0x0c.0', 'cnl' => '0', 'list' => '0', 'id' => 'MASTER_ID_BYTE_3', 'type' => 'integer', 'interface' => 'config', 'index' => '12', 'bit' => '0', 'size' => '8' };
+
+	# -- open file and store handle
+	my $xmlParser = XML::LibXML->new();																# create the xml object
+	my $xmlDoc    = $xmlParser->parse_file("linkset.xml");											# open the file
+	my $xO        = XML::LibXML::XPathContext->new( $xmlDoc->documentElement() );					# create parser object
+	my %rO;																							# return object for getParamSet function
+	
+	# -- check local reset disable
+	if ($cType{'localResDis'} == 1) {
+		# get parameter from linkset.xml in <xmlMain>
+		%rO = usrMods::getParamSet($xO, 'xmlMain', 'MASTER', 'LOCAL_RESET_DISABLE');
+		#foreach my $test (keys %rO) { print "$test    $rO{$test}  \n"; }							# some debug
+		$cnlTypeA{"00 00 $rO{'idx'}"}  = { 'cnl' => '0', %rO };										# copy the hash
+	}
+
+	# -- check battery value
+	if ($cType{'battValue'} > 0) {
+		# get parameter from linkset.xml in <xmlMain>
+		%rO = usrMods::getParamSet($xO, 'xmlMain', 'MASTER', 'LOW_BAT_LIMIT');
+		#foreach my $test (keys %rO) { print "$test    $rO{$test}  \n"; }							# some debug
+		$cnlTypeA{"00 00 $rO{'idx'}"}  = { 'cnl' => '0', %rO };										# copy the hash
+	}
+
+	# -- internal keys visible
+	if ($cType{'intKeysVis'} > 0) {
+		# get parameter from linkset.xml in <xmlMain>
+		%rO = usrMods::getParamSet($xO, 'xmlMain', 'MASTER', 'INTERNAL_KEYS_VISIBLE');
+		#foreach my $test (keys %rO) { print "$test    $rO{$test}  \n"; }							# some debug
+		$cnlTypeA{"00 00 $rO{'idx'}"}  = { 'cnl' => '0', %rO };										# copy the hash
+	}
+
+
+
+	# -- step through the channel array
+	my %rL = usrRegs::usr_getHash('regList');
+	foreach my $rLKey (sort keys %rL) {	
+		print "xx: $rLKey\n";
+		
+		# getting all keys for the respective device file
+		#$rLKey{'type'}
+	
+	
+	
+	}
+	
+	
+	
+	# -- close file
+	
+		
 }
 
-## ----------------------------------------------------------------------------
 
 
 
+# some debug
+foreach my $test (sort keys %cnlTypeA) { 
+	print "$test : ";#   $rO{$test}  \n"; 
+	print "cnl: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'list'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}  \n"
+}
 
+
+## ---------- print register.h ------------------------------------------------------------------------------
 print "\n\n\n";
 usrMods::printDefaltTable(\%cType);
 print "\n\n";
 
-print $cType{'battery'};
+print $cType{'battValue'};
 
 
 #//- ----------------------------------------------------------------------------------------------------------------------

@@ -1,8 +1,11 @@
-## ----------------------------------------------------------------------------
-## -- main device -------------------------------------------------------------
-## ----------------------------------------------------------------------------
+<?xml version="1.0" encoding="iso-8859-1"?>
+<xmlSet>
 
+<?ignore ---------------------------------------------------------------------------- ?>
+<?ignore -- main channel ------------------------------------------------------------ ?>
+<?ignore ---------------------------------------------------------------------------- ?>
 
+<xmlMain>
 	<paramset type="MASTER" id="xxx">
 		<parameter id="INTERNAL_KEYS_VISIBLE" ui_flags="internal">
 			<logical type="boolean" default="true"/>
@@ -10,7 +13,7 @@
 		</parameter>
 
 		<parameter id="LOW_BAT_LIMIT">
-			<logical type="float" min="5.0" max="15.0" default="10.5" unit="V"/>
+			<logical type="float" min="0.0" max="15.0" default="10.5" unit="V"/>
 			<physical type="integer" interface="config" list="0" index="18" size="1"/>
 			<conversion type="float_integer_scale" factor="10"/>
 		</parameter>
@@ -21,8 +24,6 @@
 		</parameter>
 	</paramset>
 
-
-	
 	<channel index="0" type="MAINTENANCE" ui_flags="internal" class="maintenance" count="1">
 		<paramset type="MASTER" id="maint_ch_master">
 		</paramset>
@@ -81,13 +82,9 @@
 
 		</paramset>
 	</channel>
-	
-	
-	
-## ----------------------------------------------------------------------------
-## -- dimmer channel ----------------------------------------------------------
-## ----------------------------------------------------------------------------
+</xmlMain>
 
+<xmlDimmer>
 	<channel index="1" type="DIMMER" count="1">
 		<link_roles>
 			<target name="SWITCH"/>
@@ -113,8 +110,6 @@
 			<value id="LCD_LEVEL_INTERP" value="1"/>
 		</enforce_link>
 	</channel>
-
-	
 
 	<frames>
 		<frame id="LEVEL_SET" direction="to_device" type="0x11" subtype="0x02" subtype_index="9" channel_field="10">
@@ -173,8 +168,6 @@
 		</frame>
 	</frames>
 
-
-
 	<paramset id="physical_parameters">
 		<parameter id="REDUCE_TEMP_LEVEL" operations="read,write"><logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="1" index="52" size="1"/>
@@ -196,8 +189,6 @@
 			<physical type="integer" interface="config" list="1" index="88" size="0.1"/>
 		</parameter>
 	</paramset>
-
-
 
 	<paramset id="general_parameters">
 		<parameter id="TRANSMIT_TRY_MAX" operations="read,write"><logical type="integer" min="0" max="10" default="6"/>
@@ -248,8 +239,6 @@
 			<physical type="integer" interface="config" list="1" index="89" size="0.5"/>
 		</parameter>
 	</paramset>
-
-
 
 	<paramset id="dimmer_valueset">
 		<parameter id="LEVEL" operations="read,write,event" control="DIMMER.LEVEL">
@@ -375,8 +364,6 @@
 			<conversion type="toggle" value="LEVEL" on="200" off="0"/>
 		</parameter>
 	</paramset>	
-	
-	
 	
 	<paramset id="dimmer_linkset">
 		<parameter id="UI_HINT">
@@ -1312,13 +1299,12 @@
 			<physical type="integer" interface="config" list="3" index="0xA9.0" size="0.4"/>
 		</parameter>
 	</paramset>
+</xmlDimmer>
 
 
 
-## ----------------------------------------------------------------------------
-## -- switch channel ----------------------------------------------------------
-## ----------------------------------------------------------------------------
 
+<xmlSwitch>
 	<channel index="1" type="SWITCH" count_from_sysinfo="23.0:0.4">
 		<link_roles>
 			<target name="SWITCH"/>
@@ -1893,7 +1879,7 @@
 			<value id="SHORT_JT_ONDELAY" value="ON"/>
 		</default_values>
 	</paramset>	
-	
+</xmlSwitch>	
 	
 	
 ## ----------------------------------------------------------------------------
@@ -2123,4 +2109,5 @@
 ## ----------------------------------------------------------------------------
 ## -- weather channel ---------------------------------------------------------
 ## ----------------------------------------------------------------------------
+</xmlSet>
 	
