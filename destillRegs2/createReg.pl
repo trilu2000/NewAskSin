@@ -157,8 +157,9 @@ if ($numArr > 0) {																					# get the information from an existing fi
 		
 		# getting all keys for the respective device file
 		#$rLKey{'type'}
-	
-	
+		#<xmlDimmer> <channel index="1" type="DIMMER" count="1">
+		#<paramset type="MASTER"	
+		
 	
 	}
 	
