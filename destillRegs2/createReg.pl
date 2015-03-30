@@ -3,7 +3,6 @@ use warnings;
 use XML::LibXML;
 
 
-
 ## --------------import constants----------------------------------------------------------------------------
 use devDefinition;
 use destillRegsModules;
@@ -127,7 +126,7 @@ if ($numArr > 0) {																					# get the information from an existing fi
 	# -- check local reset disable
 	if ($cType{'localResDis'} == 1) {
 		# get parameter from linkset.xml in <xmlMain>
-		%rO = usrMods::getParamSet($xO, 'xmlMain', 'MASTER', 'LOCAL_RESET_DISABLE');
+		%rO = usrMods::getParamSet($xO, 'xmlMain', 'type', 'MASTER', 'LOCAL_RESET_DISABLE');
 		#foreach my $test (keys %rO) { print "$test    $rO{$test}  \n"; }							# some debug
 		$cnlTypeA{"00 00 $rO{'idx'}"}  = { 'cnl' => '0', %rO };										# copy the hash
 	}
@@ -135,7 +134,7 @@ if ($numArr > 0) {																					# get the information from an existing fi
 	# -- check battery value
 	if ($cType{'battValue'} > 0) {
 		# get parameter from linkset.xml in <xmlMain>
-		%rO = usrMods::getParamSet($xO, 'xmlMain', 'MASTER', 'LOW_BAT_LIMIT');
+		%rO = usrMods::getParamSet($xO, 'xmlMain', 'type', 'MASTER', 'LOW_BAT_LIMIT');
 		#foreach my $test (keys %rO) { print "$test    $rO{$test}  \n"; }							# some debug
 		$cnlTypeA{"00 00 $rO{'idx'}"}  = { 'cnl' => '0', %rO };										# copy the hash
 	}
@@ -143,7 +142,7 @@ if ($numArr > 0) {																					# get the information from an existing fi
 	# -- internal keys visible
 	if ($cType{'intKeysVis'} > 0) {
 		# get parameter from linkset.xml in <xmlMain>
-		%rO = usrMods::getParamSet($xO, 'xmlMain', 'MASTER', 'INTERNAL_KEYS_VISIBLE');
+		%rO = usrMods::getParamSet($xO, 'xmlMain', 'type', 'MASTER', 'INTERNAL_KEYS_VISIBLE');
 		#foreach my $test (keys %rO) { print "$test    $rO{$test}  \n"; }							# some debug
 		$cnlTypeA{"00 00 $rO{'idx'}"}  = { 'cnl' => '0', %rO };										# copy the hash
 	}
@@ -153,16 +152,30 @@ if ($numArr > 0) {																					# get the information from an existing fi
 	# -- step through the channel array
 	my %rL = usrRegs::usr_getHash('regList');
 	foreach my $rLKey (sort keys %rL) {	
-		print "xx: $rLKey\n";
-		
-		# getting all keys for the respective device file
-		#$rLKey{'type'}
-		#<xmlDimmer> <channel index="1" type="DIMMER" count="1">
-		#<paramset type="MASTER"	
-		
-	
+		#print "x:  $rL{$rLKey}{'type'}\n";															# some debug
+
+		# step through the referer list
+		foreach my $xPrms ($xO->findnodes('/xmlSet/'.$rL{$rLKey}{'type'}.'/channel/paramset/subset')) {	
+			my $secName = $xPrms->getAttribute('ref');
+			#print "$rLKey:   $secName\n";															# some debug
+			
+			# step through the single items
+			my @xa = $xO->findnodes('/xmlSet/'.$rL{$rLKey}{'type'}.'/paramset[@id="'.$secName.'"]/parameter/@id');
+			#print "  @xa\n";																		# some debug
+
+			# now, as we have a list in the array, step through the array and get the registers
+			foreach my $xName (@xa) {
+				$xName =~ s/id="|\"|\s//g;															# filter the string
+				#print "$xName\n";																	# some debug
+				
+				# now it is about populating the $cnlTypeA
+				%rO = usrMods::getParamSet($xO, $rL{$rLKey}{'type'}, 'id', $secName, $xName);
+			}
+			
+		}
+
 	}
-	
+
 	
 	
 	# -- close file

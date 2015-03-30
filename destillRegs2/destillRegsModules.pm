@@ -54,6 +54,7 @@ sub randString {
 sub getParamSet {
 	my $xO = shift;																							# xml object
 	my $sN = shift;																							# section name
+	my $iT = shift;
 	my $pN = shift;																							# parameter set name
 	my $iD = shift;																							# parameter id
 	my %retObj = ();
@@ -67,11 +68,12 @@ sub getParamSet {
 	#	<conversion type="float_integer_scale" factor="10"/>
 	#</parameter>
 
-	my ($section) = $xO->findnodes('/xmlSet/'.$sN.'/paramset[@type="'.$pN.'"]/parameter[@id="'.$iD.'"]');	# set pointer to parameter
+	my ($section) = $xO->findnodes('/xmlSet/'.$sN.'/paramset[@'.$iT.'="'.$pN.'"]/parameter[@id="'.$iD.'"]');	# set pointer to parameter
 	$retObj{'id'} = $section->getAttribute('id');
 
 	# get out the parameter
 	my ($physical) = $section->findnodes('./physical');														# search for the physical part and copy whole section
+	print "phy: $physical\n";
 	
 	# check for the point value, and take the right part, it indicates the bit start value
 	# if no point is inside the value, then assume a bit start value of 0	

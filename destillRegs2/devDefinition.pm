@@ -51,6 +51,7 @@ my %regList;
 ## with linked you can link channels together by giving the channel number, e.g. key to dimmer
 
 $regList{1}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0 };
+#$regList{2}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0 };
 	
 
 
