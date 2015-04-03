@@ -1,9 +1,5 @@
 ## -- definitions -------------------------------------------------------------------------------------------
-use strict;
-package usrRegs;
-my %confType;
-my %regList;
-
+use strict; package usrRegs; my %regList;
 
 ## -- Sub Type ID information -------------------------------------------------------------------------------
 ##  "0x01" => "AlarmControl"      "0x41" => "sensor"          "0x70" => "THSensor"
@@ -16,7 +12,7 @@ my %regList;
 
 
 ## -- device config -----------------------------------------------------------------------------------------
-%confType = (
+my %confType = (
 	## some basic information to create a new device, serial number and hm id has to be unique
 	## on modelID you could select already existing configurations or create a new device
 	
@@ -49,10 +45,13 @@ my %regList;
 ## choose xmlDimmer, xmlSwitch, xmlKey, xmlWeather as predefined channels
 ## peers reflects the amount of possible peers, hidden makes a channel hidden for the config software, but will still work
 ## with linked you can link channels together by giving the channel number, e.g. key to dimmer
+## todo: linked
 
 $regList{1}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0 };
-#$regList{2}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0 };
+$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 1, linked => 0 };
+$regList{3}     = {type => "xmlKey",    peers => 6, hidden => 1, linked => 0 };
 	
+
 
 
 

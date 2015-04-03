@@ -84,6 +84,14 @@
 	</channel>
 </xmlMain>
 
+
+
+
+
+<?ignore ---------------------------------------------------------------------------- ?>
+<?ignore -- dimmer channel ---------------------------------------------------------- ?>
+<?ignore ---------------------------------------------------------------------------- ?>
+
 <xmlDimmer>
 	<channel index="1" type="DIMMER" count="1">
 		<link_roles>
@@ -1304,6 +1312,11 @@
 
 
 
+
+<?ignore ---------------------------------------------------------------------------- ?>
+<?ignore -- switch channel ---------------------------------------------------------- ?>
+<?ignore ---------------------------------------------------------------------------- ?>
+
 <xmlSwitch>
 	<channel index="1" type="SWITCH" count_from_sysinfo="23.0:0.4">
 		<link_roles>
@@ -1330,8 +1343,6 @@
 			<value id="PEER_NEEDS_BURST" value="true"/>
 		</enforce_link>
 	</channel>
-
-
 
 	<frames>
 		<frame id="LEVEL_SET" direction="to_device" type="0x11" subtype="0x02" subtype_index="9" channel_field="10">
@@ -1370,8 +1381,6 @@
 			<parameter type="integer" const_value="0" param="INHIBIT"/>
 		</frame>
 	</frames>
-		
-
 
 	<paramset id="switch_paramset">
 		<parameter id="AES_ACTIVE" ui_flags="internal">
@@ -1380,9 +1389,6 @@
 		</parameter>
 	
 	</paramset>
-	
-	
-		
 		
 	<paramset id="switch_valueset">
 		<parameter id="STATE" operations="read,write,event" control="SWITCH.STATE">
@@ -1434,8 +1440,6 @@
 			<conversion type="toggle" value="STATE"/>
 		</parameter>
 	</paramset>		
-	
-	
 	
 	<paramset id="switch_linkset">
 		<parameter id="UI_HINT">
@@ -1880,12 +1884,16 @@
 		</default_values>
 	</paramset>	
 </xmlSwitch>	
-	
-	
-## ----------------------------------------------------------------------------
-## -- key channel -------------------------------------------------------------
-## ----------------------------------------------------------------------------
 
+
+
+
+
+<?ignore ---------------------------------------------------------------------------- ?>
+<?ignore -- key channel ------------------------------------------------------------- ?>
+<?ignore ---------------------------------------------------------------------------- ?>
+
+<xmlKey>
 	<channel autoregister="true" index="1" type="KEY" count_from_sysinfo="23.0:1.0" pair_function="BA" function="A" paired="true" aes_default="false">
 		<link_roles>
 			<source name="SWITCH"/>
@@ -1906,8 +1914,6 @@
 			<subset ref="key_linkset"/>
 		</paramset>
 	</channel>
-
-
 
 	<frames>
 		<frame id="KEY_EVENT_SHORT" direction="from_device" allowed_receivers="CENTRAL,BROADCAST,OTHER" event="true" type="0x40" channel_field="9:0.6">
@@ -1941,8 +1947,6 @@
 			<parameter type="integer" index="10.0" size="1.0" param="SIM_COUNTER"/>
 		</frame>
 	</frames>
-	
-
 
 	<paramset id="key_paramset">
 		<parameter id="LONG_PRESS_TIME">
@@ -1962,9 +1966,6 @@
 			<physical type="boolean" interface="internal" value_id="AES"/>
 		</parameter>
 	</paramset>
-	
-	
-	
 	
 	<paramset id="key_valueset">
 		<parameter id="PRESS_SHORT" operations="write,event" loopback="true" control="BUTTON.SHORT" burst_suppression="0">
@@ -2011,9 +2012,6 @@
 		</parameter>
 	</paramset>
 
-
-
-
 	<paramset id="key_linkset">
 		<parameter id="PEER_NEEDS_BURST">
 			<logical type="boolean" default="false"/>
@@ -2027,13 +2025,17 @@
 
 		<enforce id="EXPECT_AES" value="$PEER.AES"/>
 	</paramset>
+</xmlKey>
 
 
 
-## ----------------------------------------------------------------------------
-## -- weather channel ---------------------------------------------------------
-## ----------------------------------------------------------------------------
 
+
+<?ignore ---------------------------------------------------------------------------- ?>
+<?ignore -- weather channel --------------------------------------------------------- ?>
+<?ignore ---------------------------------------------------------------------------- ?>
+
+<xmlWeather>
 	<channel index="1" type="WEATHER" aes_cbc="true">
 		<link_roles>
 			<source name="WEATHER_TH"/>
@@ -2052,16 +2054,12 @@
 		</paramset>
 	</channel>
 
-
-
 	<frames>
 		<frame id="WEATHER_EVENT" direction="from_device" event="true" fixed_channel="1" type="0x70">
 			<parameter type="integer" signed="true" index="9.0" size="1.7" param="TEMPERATURE"/>
 			<parameter type="integer" index="11.0" size="1.0" param="HUMIDITY"/>
 		</frame>
 	</frames>
-
-
 
 	<paramset id="weather_paramset">
 		<parameter id="AES_ACTIVE" ui_flags="internal">
@@ -2070,8 +2068,6 @@
 		</parameter>
 
 	</paramset>
-
-
 
 	<paramset id="weather_valueset">
 		<parameter id="TEMPERATURE" operations="read,event">
@@ -2099,15 +2095,11 @@
 		</parameter>
 	</paramset>
 
-
-
 	<paramset id="weather_linkset">
 	</paramset>
+</xmlWeather>
 
 
 
-## ----------------------------------------------------------------------------
-## -- weather channel ---------------------------------------------------------
-## ----------------------------------------------------------------------------
 </xmlSet>
 	
