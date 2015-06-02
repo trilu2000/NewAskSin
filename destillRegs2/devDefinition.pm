@@ -13,8 +13,8 @@ use strict; package usrRegs; my %regList;
 
 ## -- device config -----------------------------------------------------------------------------------------
 my %confType = (
-	## some basic information to create a new device, serial number and hm id has to be unique
-	## on modelID you could select already existing configurations or create a new device
+	## some basic information to create a new device, serial number and hm id has to be unique in your network
+	## on modelID you could choose between an already existing configuration or you can create a new device
 	
 	serial      => 'XMS1234567', 												# 0 to get it automatically generated - otherwise 10 byte ASCII format
 	hmID        => '0', 														# 0 to get it automatically generated - otherwise 6 HEX digits
@@ -23,8 +23,8 @@ my %confType = (
 	firmwareVer => 0x10, 														# firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
 
-	## no input needed if model id is valid and device already exists 
-	## in HM config software, otherwise fill accordingly
+	## no input needed if model id is valid and device already exists in HM config software,
+	## otherwise fill accordingly to create a proper register.h and xml config file 
 
 	name        => 'Test127',													# name of the device, ascii [A-Z, a-z, 0-9, '-'], no blanks
 	description => 'das ist ein test',											# short description of the device
@@ -41,15 +41,15 @@ my %confType = (
 );
 
 ## -- channel config ----------------------------------------------------------------------------------------
-## predefined type in linkset.xml 
-## choose xmlDimmer, xmlSwitch, xmlKey, xmlWeather as predefined channels
+## predefined type in linkset.xml choose xmlDimmer, xmlSwitch, xmlKey, xmlWeather - more to come
 ## peers reflects the amount of possible peers, hidden makes a channel hidden for the config software, but will still work
-## with linked you can link channels together by giving the channel number, e.g. key to dimmer
+## with linked you can link channels together, e.g. key to dimmer
 ## todo: linked
 
-$regList{1}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0 };
-$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 1, linked => 0 };
-$regList{3}     = {type => "xmlKey",    peers => 6, hidden => 1, linked => 0 };
+$regList{1}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0     };
+$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 1, linked => {3,4} };
+$regList{3}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
+$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
 	
 
 

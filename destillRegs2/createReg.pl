@@ -11,6 +11,7 @@ my %cType             =usrRegs::usr_getHash("configType");
 
 
 
+## ----------------------------------------------------------------------------------------------------------
 ## ---------- checking basic informations -------------------------------------------------------------------
 
 ## ---------- serial check -----------------------
@@ -95,10 +96,13 @@ if ($numArr < 1) {																					# check while info is not available from 
 
 }
 
+
+
+
+
+
+
 ## ----------------------------------------------------------------------------------------------------------
-
-
-
 ## ---------- generating channel address table --------------------------------------------------------------
 my %cnlTypeA = ();
 my %cnlType  = ();
@@ -176,7 +180,6 @@ if ($numArr > 0) {																					# get the information from an existing fi
 		}
 	}
 
-
 }
 
 
@@ -247,19 +250,57 @@ foreach my $test (sort keys %cnlType) {
 	}	
 }
 
+# -- prepare the reglist object with the details of the user module, which library to load and so on
+	# step through the modules definition, find dublicates by sort and comparsion with the former statement 
+	# eliminate the xml appreviation and print it with the include statement
 
+	my $oldRLKey=""; my $oldModIdx;
+	foreach my $rLKey (sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} } keys %rL) {	
+		$rL{$rLKey}{'libName'} = substr($rL{$rLKey}{'type'},3) .".h";
+
+		$rL{$rLKey}{'modName'} = substr($rL{$rLKey}{'type'},3);
+		$rL{$rLKey}{'modClass'} = lc substr($rL{$rLKey}{'type'},3);
+
+		if ( $rL{$rLKey}{'type'} eq  $oldRLKey) {
+			$oldModIdx += 1; 
+		} else {
+			$oldModIdx = 0; 
+		}
+		$rL{$rLKey}{'modIdx'} = $oldModIdx;
+		$rL{$rLKey}{'maxIdxSize'} = $oldModIdx+1;
+		
+		$oldRLKey = $rL{$rLKey}{'type'} ;
+	}
+	
+	# correct the max index size, sort for lib name and sort for max idx size, remember the biggest value and write it to the remaining ones
+	my @sortRlKey = sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} || $rL{$b}{'maxIdxSize'} cmp $rL{$a}{'maxIdxSize'} } keys(%rL);
+	$oldRLKey=""; my $oldMaxIdx=0;
+	foreach my $rLKey ( @sortRlKey ) {	
+		if ( $rL{$rLKey}{'type'} eq  $oldRLKey) {
+			$rL{$rLKey}{'maxIdxSize'} = $oldMaxIdx;
+		}
+		$oldRLKey = $rL{$rLKey}{'type'};
+		$oldMaxIdx = $rL{$rLKey}{'maxIdxSize'};
+		#print $rL{$rLKey}{'modName'} ." " .$rL{$rLKey}{'modIdx'} ." " .$rL{$rLKey}{'maxIdxSize'} ."\n";
+	}	
+
+## ----------------------------------------------------------------------------------------------------------
 ## ---------- print register.h ------------------------------------------------------------------------------
 print "\n\n\n";
+printLoadLibs();
 printDefaltTable(\%cType);
 printChannelSliceTable(\%cnlType);
 printChannelDeviceListTable(\%cnlType);
 printPeerDeviceListTable(\%cnlType);
 printDevDeviceListTable(\%cnlType);
 printModuleTable(\%cnlType);
+printStartFunctions();
 
 #print $cType{'battValue'};
 
 
+## generate sub routine which could be called for first time start
+## to setup peer connections, power savings, etc
 
 
 
@@ -285,6 +326,51 @@ sub prnASCIIStr {
 	return $in;
 }
 
+sub printLoadLibs {
+	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+	print "//- load libraries -------------------------------------------------------------------------------------------------------\n";
+	print "#include <AS.h>                                                         // the asksin framework\n";
+	print "#include \"hardware.h\"                                                   // hardware definition\n";
+
+	my $oldLibName ="";
+	foreach my $rLKey (sort { $rL{$a}{'libName'} cmp $rL{$b}{'libName'} }  keys %rL) {	
+		if ($rL{$rLKey}{'libName'} eq $oldLibName) {next;};
+		print "#include <" .$rL{$rLKey}{'libName'} .">\n";
+		$oldLibName = $rL{$rLKey}{'libName'};
+	}
+	print "\n";
+
+
+	print "//- stage modules --------------------------------------------------------------------------------------------------------\n";
+	print "AS hm;                                                                  // asksin framework\n";
+
+	$oldRLKey = "";	
+	foreach my $rLKey (sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} } keys %rL) {	
+		if ($rL{$rLKey}{'type'} eq $oldRLKey) {next;};
+		print "$rL{$rLKey}{'modName'} $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'maxIdxSize'}]; \n";
+		$oldRLKey = $rL{$rLKey}{'type'};
+	}
+
+	print "\n";
+}
+
+sub printStartFunctions {
+	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+	print "//- first time and regular start functions -------------------------------------------------------------------------------\n\n";
+	
+	print "void everyTimeStart(void) {\n";
+	print "    // place here everything which should be done on each start or reset of the device\n";	
+	print "    // typical usecase are loading default values or user class configurations\n\n";	
+	
+	print "}\n\n";
+
+	print "void firstTimeStart(void) {\n";
+	print "    // place here everything which should be done on the first start or after a complete reset of the sketch\n";	
+	print "    // typical usecase are default values which should be written into the register or peer database\n\n";	
+	
+	print "}\n\n";	
+}
+
 sub printDefaltTable {
 	my %dT = %{shift()};
 
@@ -296,7 +382,7 @@ sub printDefaltTable {
 	print "\n";
 	print "// if HMID and Serial are not set, then eeprom ones will be used\n";
 	print "uint8_t HMID[3] = {" .prnHexStr($dT{'hmID'},6) ."};\n";
-	print "uint8_t HMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."};            // $dT{'serial'}\n";
+	print "uint8_t HMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."};          // $dT{'serial'}\n";
 	print "\n";
 	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 	print "//- settings of HM device for AS class -----------------------------------------------------------------------------------\n";

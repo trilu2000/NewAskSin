@@ -1,10 +1,7 @@
 #define SER_DBG
 
 //- load library's --------------------------------------------------------------------------------------------------------
-#include <AS.h>
-#include <Dimmer.h>
-
-#include "hardware.h"																		// hardware definition
+#include <AS.h>																				// the asksin framework
 #include "register.h"																		// configuration sheet
 
 // some forward declarations
@@ -12,9 +9,6 @@ void initPWM();
 void switchPWM(uint8_t status, uint8_t characteristic);
 
 
-//- load modules ----------------------------------------------------------------------------------------------------------
-AS hm;																						// stage the asksin framework
-Dimmer dimmer;																				// stage a dummy module
 
 //waitTimer xTmr;
 
