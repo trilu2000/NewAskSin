@@ -32,12 +32,13 @@ my %confType = (
 	subtypeID   => 0x70,														# depending on type of device
 	deviceInfo  => 0x030100,													# not complete clear yes, but 3 bytes HEX needed
 	
-	battValue   => 30, 															# one byte default value in milli volt, 0 if not a battery device 
-	battVisib   => 0,															# battery flag visible in registers of channel 0
-
 	burstRx     => 1,               		                              		# device needs a burst signal to wakeup
 	localResDis => 1,															# local reset disable 
 	intKeysVis  => 1,  															# internal keys visible
+
+	battValue   => 30, 															# one byte default value in milli volt, 0 if not a battery device 
+	battVisib   => 0,															# battery flag visible in registers of channel 0
+
 );
 
 ## -- channel config ----------------------------------------------------------------------------------------

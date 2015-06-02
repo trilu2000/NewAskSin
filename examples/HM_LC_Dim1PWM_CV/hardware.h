@@ -13,7 +13,7 @@
 
 	#define EXT_BATTERY_MEASUREMENT												// comment out to use internal battery measurement
 	#define BATTERY_FACTOR             17										// see excel table
-	#define DEBOUNCE                   5
+	#define DEBOUNCE                   5										// input debounce time in ms - 5 seems to be a good value
 
 	#if defined(__AVR_ATmega328P__)
 		//- cc1100 hardware CS and GDO0 definitions -------------------------------------------------------------------
