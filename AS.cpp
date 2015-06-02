@@ -282,6 +282,21 @@ void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
+void AS::send_generic_event(uint8_t cnl, uint8_t burst, uint8_t mTyp, uint8_t len, uint8_t *pL) {
+        // description --------------------------------------------------------
+        //                 reID      toID      BLL  Cnt  Val
+        // l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200
+        // do something with the information ----------------------------------
+	stcPeer.pL = pL;
+	stcPeer.lenPL = len;
+	stcPeer.cnl = cnl;
+	stcPeer.burst = burst;
+	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
+	stcPeer.bidi = (isEmpty(MAID,3))?0:1;
+	stcPeer.mTyp = mTyp;
+	stcPeer.active = 1;
+	// --------------------------------------------------------------------
+}
 void AS::sendSensorData(void) {
 	//"53"          => { txt => "SensorData"  , params => {
 	//CMD => "00,2",
