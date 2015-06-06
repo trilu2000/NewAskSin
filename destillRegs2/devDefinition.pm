@@ -38,6 +38,7 @@ my %confType = (
 
 	battValue   => 30, 															# one byte default value in milli volt, 0 if not a battery device 
 	battVisib   => 0,															# battery flag visible in registers of channel 0
+	battChkDura => 3600000,														# the time between two measurements, value in milli seconds
 
 );
 
