@@ -287,8 +287,14 @@ void AS::send_generic_event(uint8_t cnl, uint8_t burst, uint8_t mTyp, uint8_t le
         //                 reID      toID      BLL  Cnt  Val
         // l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200
         // do something with the information ----------------------------------
+        if (len>16) {
+        	#ifdef AS_DBG
+		dbg << "AS::send_generic_event("<<cnl<<","<<burst<<",0x"<<_HEX(&mTyp,1)<<","<<len<<",...): payload exceeds maximum length of 16\n";
+		#endif
+		len= 16;
+        }
 	stcPeer.pL = pL;
-	stcPeer.lenPL = len;
+	stcPeer.lenPL = len+1;
 	stcPeer.cnl = cnl;
 	stcPeer.burst = burst;
 	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
