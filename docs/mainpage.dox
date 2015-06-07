@@ -1,0 +1,12 @@
+/**
+@brief Documentation file for Mainpage, and defgroups.
+@author trilu2000 at github
+@file
+*/
+/** @defgroup NewAskSin Library Sources */
+/**
+@mainpage New AskSin framework to develop HomeBrew (HM-compatible) devices based on Arduino hardware.
+
+The NewAskSin framework provides classes to implement a BidCos compatible protocol stack for use in
+Arduino based hardware.
+*/
