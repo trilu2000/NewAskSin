@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.6"/>
-<title>NewAskSin: New AskSin framework to develop HomeBrew (HM-compatible) devices based on Arduino hardware.</title>
+<title>NewAskSin: _HEX Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -36,10 +36,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </script>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
+      <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -59,7 +59,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
-</div><!-- top -->
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
+      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
+      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
+      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
+    </ul>
+  </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -74,27 +81,39 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
+</div><!-- top -->
 <div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="struct__HEX-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">New AskSin framework to develop HomeBrew (HM-compatible) devices based on Arduino hardware. </div>  </div>
+<div class="title">_HEX Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="main_overview"></a>
-Overview</h1>
-<p>This is the NewAskSin API-Documentation. It includes a growing, increasingly detailed documentation of most of the classes, some design overviews and examples. See <a class="el" href="index.html#starting_points">Quick start</a> for a quick introduction.</p>
-<h1><a class="anchor" id="starting_points"></a>
-Quick start</h1>
-<p>The examples subdirectory contains working examples of devices that can be readily compiled and uploaded to AVR based hardware. They can be used as starting points to derive firmware for similar hardware by applying minor modifications.</p>
-<h1><a class="anchor" id="pitfalls"></a>
-Things to consider</h1>
-<p>When using the NewAskSin framework, a few things need to be considered, to avoid pitfalls and unwanted side-effects</p>
-<h2><a class="anchor" id="millis"></a>
-System time</h2>
-<p>The arduino function millis() can not be used together with NewAskSin. If your code requires the time since startup in milli-seconds, use getMillis(), instead. </p>
-</div></div><!-- contents -->
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:ad8f16cc8a5a86a0469e639d16229b95b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad8f16cc8a5a86a0469e639d16229b95b"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>_HEX</b> (uint8_t *v, uint8_t l)</td></tr>
+<tr class="separator:ad8f16cc8a5a86a0469e639d16229b95b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:abab3a746e8891a45f2e243f9ce72bf9d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="abab3a746e8891a45f2e243f9ce72bf9d"></a>
+uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><b>val</b></td></tr>
+<tr class="separator:abab3a746e8891a45f2e243f9ce72bf9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a244d21b3e7c3509212e890907160b229"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a244d21b3e7c3509212e890907160b229"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>len</b></td></tr>
+<tr class="separator:a244d21b3e7c3509212e890907160b229"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<hr/>The documentation for this struct was generated from the following file:<ul>
+<li><a class="el" href="HAL_8h_source.html">HAL.h</a></li>
+</ul>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Jun 7 2015 16:28:46 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jun 7 2015 16:28:45 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

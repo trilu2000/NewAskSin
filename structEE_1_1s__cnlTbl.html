@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.6"/>
-<title>NewAskSin: New AskSin framework to develop HomeBrew (HM-compatible) devices based on Arduino hardware.</title>
+<title>NewAskSin: EE::s_cnlTbl Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -36,10 +36,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </script>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
+      <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -59,7 +59,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
-</div><!-- top -->
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
+      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
+      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
+      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
+    </ul>
+  </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -74,27 +81,45 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="classEE.html">EE</a></li><li class="navelem"><a class="el" href="structEE_1_1s__cnlTbl.html">s_cnlTbl</a></li>  </ul>
+</div>
+</div><!-- top -->
 <div class="header">
+  <div class="summary">
+<a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="structEE_1_1s__cnlTbl-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">New AskSin framework to develop HomeBrew (HM-compatible) devices based on Arduino hardware. </div>  </div>
+<div class="title">EE::s_cnlTbl Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="main_overview"></a>
-Overview</h1>
-<p>This is the NewAskSin API-Documentation. It includes a growing, increasingly detailed documentation of most of the classes, some design overviews and examples. See <a class="el" href="index.html#starting_points">Quick start</a> for a quick introduction.</p>
-<h1><a class="anchor" id="starting_points"></a>
-Quick start</h1>
-<p>The examples subdirectory contains working examples of devices that can be readily compiled and uploaded to AVR based hardware. They can be used as starting points to derive firmware for similar hardware by applying minor modifications.</p>
-<h1><a class="anchor" id="pitfalls"></a>
-Things to consider</h1>
-<p>When using the NewAskSin framework, a few things need to be considered, to avoid pitfalls and unwanted side-effects</p>
-<h2><a class="anchor" id="millis"></a>
-System time</h2>
-<p>The arduino function millis() can not be used together with NewAskSin. If your code requires the time since startup in milli-seconds, use getMillis(), instead. </p>
-</div></div><!-- contents -->
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:ac7a413b2f1ec9e3bdf6be4cf510fe85b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac7a413b2f1ec9e3bdf6be4cf510fe85b"></a>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>cnl</b></td></tr>
+<tr class="separator:ac7a413b2f1ec9e3bdf6be4cf510fe85b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09d017f0de6b6864059234a3b0fb7b7e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a09d017f0de6b6864059234a3b0fb7b7e"></a>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>lst</b></td></tr>
+<tr class="separator:a09d017f0de6b6864059234a3b0fb7b7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9baa276940cb9986b6a83f7573da5b26"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9baa276940cb9986b6a83f7573da5b26"></a>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>sIdx</b></td></tr>
+<tr class="separator:a9baa276940cb9986b6a83f7573da5b26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06e414e936a0c8a6f4b3de869b7565d6"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a06e414e936a0c8a6f4b3de869b7565d6"></a>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>sLen</b></td></tr>
+<tr class="separator:a06e414e936a0c8a6f4b3de869b7565d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a815f9f2cb9885118b09233e6497b8e2b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a815f9f2cb9885118b09233e6497b8e2b"></a>
+const uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>pAddr</b></td></tr>
+<tr class="separator:a815f9f2cb9885118b09233e6497b8e2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<hr/>The documentation for this struct was generated from the following file:<ul>
+<li><a class="el" href="EEprom_8h_source.html">EEprom.h</a></li>
+</ul>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Jun 7 2015 16:28:46 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jun 7 2015 16:28:45 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

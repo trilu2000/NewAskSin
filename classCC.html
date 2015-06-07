@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.6"/>
-<title>NewAskSin: New AskSin framework to develop HomeBrew (HM-compatible) devices based on Arduino hardware.</title>
+<title>NewAskSin: CC Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -36,10 +36,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </script>
   <div id="navrow1" class="tabs">
     <ul class="tablist">
-      <li class="current"><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="modules.html"><span>Modules</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
+      <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -59,7 +59,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
-</div><!-- top -->
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
+      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
+      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
+      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
+    </ul>
+  </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -74,27 +81,46 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
+</div><!-- top -->
 <div class="header">
+  <div class="summary">
+<a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#friends">Friends</a> &#124;
+<a href="classCC-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">New AskSin framework to develop HomeBrew (HM-compatible) devices based on Arduino hardware. </div>  </div>
+<div class="title">CC Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="main_overview"></a>
-Overview</h1>
-<p>This is the NewAskSin API-Documentation. It includes a growing, increasingly detailed documentation of most of the classes, some design overviews and examples. See <a class="el" href="index.html#starting_points">Quick start</a> for a quick introduction.</p>
-<h1><a class="anchor" id="starting_points"></a>
-Quick start</h1>
-<p>The examples subdirectory contains working examples of devices that can be readily compiled and uploaded to AVR based hardware. They can be used as starting points to derive firmware for similar hardware by applying minor modifications.</p>
-<h1><a class="anchor" id="pitfalls"></a>
-Things to consider</h1>
-<p>When using the NewAskSin framework, a few things need to be considered, to avoid pitfalls and unwanted side-effects</p>
-<h2><a class="anchor" id="millis"></a>
-System time</h2>
-<p>The arduino function millis() can not be used together with NewAskSin. If your code requires the time since startup in milli-seconds, use getMillis(), instead. </p>
-</div></div><!-- contents -->
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
+Public Member Functions</h2></td></tr>
+<tr class="memitem:a564fe6994e3d2151c9c8f9117cf07f89"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a564fe6994e3d2151c9c8f9117cf07f89"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setIdle</b> (void)</td></tr>
+<tr class="separator:a564fe6994e3d2151c9c8f9117cf07f89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a28d4e02a1d22bd8749ceefe73b6005d7"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a28d4e02a1d22bd8749ceefe73b6005d7"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>detectBurst</b> (void)</td></tr>
+<tr class="separator:a28d4e02a1d22bd8749ceefe73b6005d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a35cbd82d484c913680575911e770c471"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a35cbd82d484c913680575911e770c471"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>AS</b></td></tr>
+<tr class="separator:a35cbd82d484c913680575911e770c471"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a44af33a116753cbda792e3b994a099"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2a44af33a116753cbda792e3b994a099"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>SN</b></td></tr>
+<tr class="separator:a2a44af33a116753cbda792e3b994a099"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1aaae81c8074ddb8605470eeb5ba6fda"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1aaae81c8074ddb8605470eeb5ba6fda"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>PW</b></td></tr>
+<tr class="separator:a1aaae81c8074ddb8605470eeb5ba6fda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<hr/>The documentation for this class was generated from the following files:<ul>
+<li><a class="el" href="CC1101_8h_source.html">CC1101.h</a></li>
+<li>CC1101.cpp</li>
+</ul>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sun Jun 7 2015 16:28:46 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jun 7 2015 16:28:45 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>
