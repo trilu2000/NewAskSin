@@ -7,6 +7,26 @@
 /**
 @mainpage New AskSin framework to develop HomeBrew (HM-compatible) devices based on Arduino hardware.
 
-The NewAskSin framework provides classes to implement a BidCos compatible protocol stack for use in
-Arduino based hardware.
+@section main_overview Overview
+
+This is the NewAskSin API-Documentation. It includes a growing, increasingly detailed
+documentation of most of the classes, some design overviews and examples. 
+See @ref starting_points for a quick introduction.
+
+@section starting_points Quick start
+
+The examples subdirectory contains working examples of devices that can be readily compiled
+and uploaded to AVR based hardware. They can be used as starting points to derive firmware for
+similar hardware by applying minor modifications.
+
+@section pitfalls Things to consider
+
+When using the NewAskSin framework, a few things need to be considered, to avoid pitfalls and
+unwanted side-effects
+
+@subsection millis System time
+
+The arduino function millis() can not be used together with NewAskSin. If your code requires 
+the time since startup in milli-seconds, use getMillis(), instead.
+
 */

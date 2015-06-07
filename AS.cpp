@@ -282,6 +282,22 @@ void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
+/**
+ * @brief Send an event with arbitrary payload
+ *
+ * Take care when sending generic events, since there are no consistency
+ * checks if the specified event type and payload make any sense. Rather use
+ * predefined special send methods.
+ *
+ * @param cnl The channel
+ * @param burst Set to 1 for burst mode, or 0
+ * @param mTyp Event frame type
+ * @param len Length of payload in bytes, not more than 16
+ * @param pL pointer to first byte of payload
+ *
+ * @attention The payload length may not exceed 16 bytes. If a greater value
+ * for len is given, it is limited to 16 to prevent HM-CFG-LAN (v0.961) to crash.
+ */
 void AS::send_generic_event(uint8_t cnl, uint8_t burst, uint8_t mTyp, uint8_t len, uint8_t *pL) {
         // description --------------------------------------------------------
         //                 reID      toID      BLL  Cnt  Val
@@ -1121,19 +1137,39 @@ void AS::encode(uint8_t *buf) {
 
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------
+
+/**
+ * @brief Query if the timer has expired
+ *
+ * @return 0 if timer is still running, 1 if not.
+ *         If the timer was never set(), return value is 1
+ */
 uint8_t  waitTimer::done(void) {
-	if (!armed) return 1;																	// not armed, so nothing to do
-	if ( (getMillis() - startTime) < checkTime ) return 0;									// not ready yet
-	
-	checkTime = armed = 0;																	// if we are here, timeout was happened, next loop status 1 will indicated  
+	if (!armed) return 1;							// not armed, so nothing to do
+	if ( (getMillis() - startTime) < checkTime ) return 0;			// not ready yet
+
+	checkTime = armed = 0;							// if we are here, timeout was happened, next loop status 1 will indicated
+	return 1;
 }
+
+/**
+ * @brief Start the timer
+ *
+ * @param ms Time until timer is done() (unit: ms)
+ */
 void     waitTimer::set(uint32_t ms) {
 	armed = ms?1:0;
 	if (armed) {
 		startTime = getMillis();
 		checkTime = ms;
-	} 		
+	}
 }
+
+/**
+ * @brief Query the remaing time until the timer is done
+ *
+ * @return Time until timer is done() (unit: ms)
+ */
 uint32_t waitTimer::remain(void) {
 	if (!armed) return 0;
 	return checkTime - (getMillis() - startTime);
