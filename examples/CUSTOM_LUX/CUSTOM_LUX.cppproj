@@ -1,0 +1,390 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>6.2</ProjectVersion>
+    <ToolchainName>com.Atmel.AVRGCC8.CPP</ToolchainName>
+    <ProjectGuid>{07b459b4-8d76-4638-bc6d-a459ba2d616b}</ProjectGuid>
+    <avrdevice>atmega32u4</avrdevice>
+    <avrdeviceseries>none</avrdeviceseries>
+    <OutputType>Executable</OutputType>
+    <Language>CPP</Language>
+    <OutputFileName>$(MSBuildProjectName)</OutputFileName>
+    <OutputFileExtension>.elf</OutputFileExtension>
+    <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
+    <AssemblyName>CUSTOM_LUX</AssemblyName>
+    <Name>CUSTOM_LUX</Name>
+    <RootNamespace>CUSTOM_LUX</RootNamespace>
+    <ToolchainFlavour>Native</ToolchainFlavour>
+    <KeepTimersRunning>true</KeepTimersRunning>
+    <OverrideVtor>false</OverrideVtor>
+    <OverrideVtorValue>
+    </OverrideVtorValue>
+    <eraseonlaunchrule>0</eraseonlaunchrule>
+    <ProgFlashFromRam>true</ProgFlashFromRam>
+    <RamSnippetAddress>0x20000000</RamSnippetAddress>
+    <CacheFlash>true</CacheFlash>
+    <UncachedRange />
+    <BootSegment>0</BootSegment>
+    <AsfFrameworkConfig>
+      <framework-data>
+        <options />
+        <configurations />
+        <files />
+        <documentation help="" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.6.0" />
+        </dependencies>
+      </framework-data>
+    </AsfFrameworkConfig>
+    <preserveEEPROM>true</preserveEEPROM>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <ToolchainSettings>
+      <AvrGccCpp>
+  <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+  <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+  <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+  <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+  <avrgcc.common.outputfiles.usersignatures>False</avrgcc.common.outputfiles.usersignatures>
+  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcc.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>__AVR_ATmega32u4__</Value>
+      <Value>__AVR_ATmega32U4__</Value>
+      <Value>ARDUINO=158</Value>
+      <Value>ARDUINO_MAIN</Value>
+      <Value>F_CPU=8000000L</Value>
+      <Value>printf=iprintf</Value>
+      <Value>__ICT_BOARDS__</Value>
+    </ListValues>
+  </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.directories.IncludePaths>
+    <ListValues>
+      <Value></Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/lib/gcc/avr/4.8.1/include/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/avr/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries</Value>
+      <Value>C:/Program Files/Visual Micro/Visual Micro for Arduino/Micro Platforms/default/debuggers</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/libraries</Value>
+      <Value>C:/Program Files/arduino-1.5.8/libraries</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin/utility</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire/utility</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire</Value>
+      <Value>../../CUSTOM_LUX</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/variants/ictmicro</Value>
+      <Value>C:/Program Files/arduino-1.5.8/hardware/arduino/avr/cores/arduino</Value>
+    </ListValues>
+  </avrgcc.compiler.directories.IncludePaths>
+  <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
+  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+  <avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcccpp.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>__AVR_ATmega32u4__</Value>
+      <Value>__AVR_ATmega32U4__</Value>
+      <Value>ARDUINO=158</Value>
+      <Value>ARDUINO_MAIN</Value>
+      <Value>F_CPU=8000000L</Value>
+      <Value>printf=iprintf</Value>
+      <Value>__ICT_BOARDS__</Value>
+    </ListValues>
+  </avrgcccpp.compiler.symbols.DefSymbols>
+  <avrgcccpp.compiler.directories.IncludePaths>
+    <ListValues>
+      <Value></Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/lib/gcc/avr/4.8.1/include/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/avr/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries</Value>
+      <Value>C:/Program Files/Visual Micro/Visual Micro for Arduino/Micro Platforms/default/debuggers</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/libraries</Value>
+      <Value>C:/Program Files/arduino-1.5.8/libraries</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin/utility</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire/utility</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire</Value>
+      <Value>../../CUSTOM_LUX</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/variants/ictmicro</Value>
+      <Value>C:/Program Files/arduino-1.5.8/hardware/arduino/avr/cores/arduino</Value>
+    </ListValues>
+  </avrgcccpp.compiler.directories.IncludePaths>
+  <avrgcccpp.compiler.optimization.level>Optimize (-O1)</avrgcccpp.compiler.optimization.level>
+  <avrgcccpp.compiler.optimization.PackStructureMembers>True</avrgcccpp.compiler.optimization.PackStructureMembers>
+  <avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcccpp.compiler.optimization.DebugLevel>Default (-g2)</avrgcccpp.compiler.optimization.DebugLevel>
+  <avrgcccpp.compiler.warnings.AllWarnings>True</avrgcccpp.compiler.warnings.AllWarnings>
+  <avrgcccpp.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcccpp.assembler.debugging.DebugLevel>
+</AvrGccCpp>
+    </ToolchainSettings>
+    <VisualMicroSettings>
+      <VisualMicroSettings>
+        <arduino.board.name>radinoCC1101</arduino.board.name>
+        <arduino.board.desc>In-Circuit radino CC1101</arduino.board.desc>
+        <arduino.board.property_bag>name=In-Circuit radino CC1101
+upload.protocol=avr109
+upload.maximum_size=28672
+upload.speed=57600
+upload.disable_flushing=true
+bootloader.low_fuses=0xfb
+bootloader.high_fuses=0xd8
+bootloader.extended_fuses=0xff
+bootloader.path=caterina
+bootloader.file=Caterina-radino_CC1101.hex
+bootloader.unlock_bits=0x3F
+bootloader.lock_bits=0x2F
+build.mcu=atmega32u4
+build.f_cpu=8000000L
+build.vid=0x1DA9
+build.pid=0x002C
+build.core=arduino:arduino
+build.variant=ictmicro
+runtime.ide.path=C:\Program Files\arduino-1.5.7
+build.system.path=C:\Users\MCHHBITT\Documents\Arduino\hardware\radino\ICT_Boards\system
+runtime.ide.version=157
+originalid=radinoCC1101
+vm.platform.root.path=C:\Program Files\Visual Micro\Visual Micro for Arduino\Micro Platforms\arduino15x
+vm.core.include=arduino.h
+ide.hint=Arduino 1.5 Ide
+ide.location.key=Arduino15x
+ide.location.ide.winreg=Arduino 1.5.x Application
+ide.location.sketchbook.winreg=Arduino 1.5.x Sketchbook
+ide.location.sketchbook.preferences=sketchbook.path
+ide.location.preferences=%VM_APPDATA_ROAMING%\arduino15\preferences.txt
+ide.location.preferences_fallback=%VM_APPDATA_ROAMING%\arduino\preferences.txt
+ide.default.version=150
+ide.default.package=arduino
+ide.default.platform=avr
+ide.multiplatform=true
+ide.includes=arduino.h
+ide.platformswithoutpackage=false
+ide.includes.fallback=wprogram.h
+ide.extension=ino
+ide.extension.fallback=pde
+ide.versionGTEQ=150
+ide.exe=arduino.exe
+ide.hosts=atmel
+ide.url=http://arduino.cc/en/Main/Software
+vm.debug=true
+software=ARDUINO
+ssh.user.name=root
+ssh.user.default.password=arduino
+ssh.host.wwwfiles.path=/www/sd
+build.working_directory={runtime.ide.path}
+ide.appid=arduino15x
+location.sketchbook=C:\Users\MCHHBITT\Documents\Arduino
+build.board=ICT_BOARDS_RADINOCC1101
+vm.boardsource.path=C:\Users\MCHHBITT\Documents\Arduino\hardware\radino\ICT_Boards
+vm.platformname.name=ICT_Boards
+build.arch=ICT_BOARDS
+</arduino.board.property_bag>
+        <arduino.build.mcu>atmega32u4</arduino.build.mcu>
+        <arduino.build.f_cpu>8000000L</arduino.build.f_cpu>
+        <arduino.build.core>arduino</arduino.build.core>
+        <arduino.upload.protocol>avr109</arduino.upload.protocol>
+        <arduino.upload.speed>57600</arduino.upload.speed>
+        <arduino.upload.maximum_size>28672</arduino.upload.maximum_size>
+        <visualmicro.application.name>arduino15x</visualmicro.application.name>
+        <visualmicro.package.name>radino</visualmicro.package.name>
+        <visualmicro.platform.name>ICT_Boards</visualmicro.platform.name>
+        <arduino.upload.port>COM19</arduino.upload.port>
+      </VisualMicroSettings>
+    </VisualMicroSettings>
+    <VMSETTING_IncludePaths>C:/Program Files/arduino-1.5.8/hardware/arduino/avr/cores/arduino;C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/variants/ictmicro;C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire;C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire/utility;C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin;C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin/utility;C:/Program Files/arduino-1.5.8/libraries;C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/libraries;C:/Program Files/Visual Micro/Visual Micro for Arduino/Micro Platforms/default/debuggers;C:/Users/MCHHBITT/Documents/02_Arduino/libraries;c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/;c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/avr/;c:/program files/arduino-1.5.8/hardware/tools/avr/avr/;c:/program files/arduino-1.5.8/hardware/tools/avr/lib/gcc/avr/4.3.2/include/;;../../CUSTOM_LUX;c:/program files/arduino-1.5.8/hardware/tools/avr/lib/gcc/avr/4.8.1/include/;</VMSETTING_IncludePaths>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ToolchainSettings>
+      <AvrGccCpp>
+  <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+  <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+  <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+  <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+  <avrgcc.common.outputfiles.usersignatures>False</avrgcc.common.outputfiles.usersignatures>
+  <avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcc.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcc.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcc.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>__AVR_ATmega32u4__</Value>
+      <Value>__AVR_ATmega32U4__</Value>
+      <Value>ARDUINO=158</Value>
+      <Value>ARDUINO_MAIN</Value>
+      <Value>F_CPU=8000000L</Value>
+      <Value>printf=iprintf</Value>
+      <Value>__ICT_BOARDS__</Value>
+    </ListValues>
+  </avrgcc.compiler.symbols.DefSymbols>
+  <avrgcc.compiler.directories.IncludePaths>
+    <ListValues>
+      <Value></Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/lib/gcc/avr/4.8.1/include/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/avr/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries</Value>
+      <Value>C:/Program Files/Visual Micro/Visual Micro for Arduino/Micro Platforms/default/debuggers</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/libraries</Value>
+      <Value>C:/Program Files/arduino-1.5.8/libraries</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin/utility</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire/utility</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire</Value>
+      <Value>../../CUSTOM_LUX</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/variants/ictmicro</Value>
+      <Value>C:/Program Files/arduino-1.5.8/hardware/arduino/avr/cores/arduino</Value>
+    </ListValues>
+  </avrgcc.compiler.directories.IncludePaths>
+  <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
+  <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
+  <avrgcc.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcc.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+  <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+  <avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>
+  <avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>
+  <avrgcccpp.compiler.symbols.DefSymbols>
+    <ListValues>
+      <Value>__AVR_ATmega32u4__</Value>
+      <Value>__AVR_ATmega32U4__</Value>
+      <Value>ARDUINO=158</Value>
+      <Value>ARDUINO_MAIN</Value>
+      <Value>F_CPU=8000000L</Value>
+      <Value>printf=iprintf</Value>
+      <Value>__ICT_BOARDS__</Value>
+    </ListValues>
+  </avrgcccpp.compiler.symbols.DefSymbols>
+  <avrgcccpp.compiler.directories.IncludePaths>
+    <ListValues>
+      <Value></Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/lib/gcc/avr/4.8.1/include/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/avr/</Value>
+      <Value>c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries</Value>
+      <Value>C:/Program Files/Visual Micro/Visual Micro for Arduino/Micro Platforms/default/debuggers</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/libraries</Value>
+      <Value>C:/Program Files/arduino-1.5.8/libraries</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin/utility</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire/utility</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire</Value>
+      <Value>../../CUSTOM_LUX</Value>
+      <Value>C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/variants/ictmicro</Value>
+      <Value>C:/Program Files/arduino-1.5.8/hardware/arduino/avr/cores/arduino</Value>
+    </ListValues>
+  </avrgcccpp.compiler.directories.IncludePaths>
+  <avrgcccpp.compiler.optimization.level>Optimize (-O1)</avrgcccpp.compiler.optimization.level>
+  <avrgcccpp.compiler.optimization.PackStructureMembers>True</avrgcccpp.compiler.optimization.PackStructureMembers>
+  <avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>True</avrgcccpp.compiler.optimization.AllocateBytesNeededForEnum>
+  <avrgcccpp.compiler.optimization.DebugLevel>Default (-g2)</avrgcccpp.compiler.optimization.DebugLevel>
+  <avrgcccpp.compiler.warnings.AllWarnings>True</avrgcccpp.compiler.warnings.AllWarnings>
+  <avrgcccpp.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcccpp.assembler.debugging.DebugLevel>
+</AvrGccCpp>
+    </ToolchainSettings>
+    <VisualMicroSettings>
+      <VisualMicroSettings>
+        <arduino.board.name>radinoCC1101</arduino.board.name>
+        <arduino.board.desc>In-Circuit radino CC1101</arduino.board.desc>
+        <arduino.board.property_bag>name=In-Circuit radino CC1101
+upload.protocol=avr109
+upload.maximum_size=28672
+upload.speed=57600
+upload.disable_flushing=true
+bootloader.low_fuses=0xfb
+bootloader.high_fuses=0xd8
+bootloader.extended_fuses=0xff
+bootloader.path=caterina
+bootloader.file=Caterina-radino_CC1101.hex
+bootloader.unlock_bits=0x3F
+bootloader.lock_bits=0x2F
+build.mcu=atmega32u4
+build.f_cpu=8000000L
+build.vid=0x1DA9
+build.pid=0x002C
+build.core=arduino:arduino
+build.variant=ictmicro
+runtime.ide.path=C:\Program Files\arduino-1.5.7
+build.system.path=C:\Users\MCHHBITT\Documents\Arduino\hardware\radino\ICT_Boards\system
+runtime.ide.version=157
+originalid=radinoCC1101
+vm.platform.root.path=C:\Program Files\Visual Micro\Visual Micro for Arduino\Micro Platforms\arduino15x
+vm.core.include=arduino.h
+ide.hint=Arduino 1.5 Ide
+ide.location.key=Arduino15x
+ide.location.ide.winreg=Arduino 1.5.x Application
+ide.location.sketchbook.winreg=Arduino 1.5.x Sketchbook
+ide.location.sketchbook.preferences=sketchbook.path
+ide.location.preferences=%VM_APPDATA_ROAMING%\arduino15\preferences.txt
+ide.location.preferences_fallback=%VM_APPDATA_ROAMING%\arduino\preferences.txt
+ide.default.version=150
+ide.default.package=arduino
+ide.default.platform=avr
+ide.multiplatform=true
+ide.includes=arduino.h
+ide.platformswithoutpackage=false
+ide.includes.fallback=wprogram.h
+ide.extension=ino
+ide.extension.fallback=pde
+ide.versionGTEQ=150
+ide.exe=arduino.exe
+ide.hosts=atmel
+ide.url=http://arduino.cc/en/Main/Software
+vm.debug=true
+software=ARDUINO
+ssh.user.name=root
+ssh.user.default.password=arduino
+ssh.host.wwwfiles.path=/www/sd
+build.working_directory={runtime.ide.path}
+ide.appid=arduino15x
+location.sketchbook=C:\Users\MCHHBITT\Documents\Arduino
+build.board=ICT_BOARDS_RADINOCC1101
+vm.boardsource.path=C:\Users\MCHHBITT\Documents\Arduino\hardware\radino\ICT_Boards
+vm.platformname.name=ICT_Boards
+build.arch=ICT_BOARDS
+</arduino.board.property_bag>
+        <arduino.build.mcu>atmega32u4</arduino.build.mcu>
+        <arduino.build.f_cpu>8000000L</arduino.build.f_cpu>
+        <arduino.build.core>arduino</arduino.build.core>
+        <arduino.upload.protocol>avr109</arduino.upload.protocol>
+        <arduino.upload.speed>57600</arduino.upload.speed>
+        <arduino.upload.maximum_size>28672</arduino.upload.maximum_size>
+        <visualmicro.application.name>arduino15x</visualmicro.application.name>
+        <visualmicro.package.name>radino</visualmicro.package.name>
+        <visualmicro.platform.name>ICT_Boards</visualmicro.platform.name>
+        <arduino.upload.port>COM19</arduino.upload.port>
+      </VisualMicroSettings>
+    </VisualMicroSettings>
+    <VMSETTING_IncludePaths>C:/Program Files/arduino-1.5.8/hardware/arduino/avr/cores/arduino;C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/variants/ictmicro;C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire;C:/Users/MCHHBITT/Documents/02_Arduino/libraries/Wire/utility;C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin;C:/Users/MCHHBITT/Documents/02_Arduino/libraries/NewAskSin/utility;C:/Program Files/arduino-1.5.8/libraries;C:/Users/MCHHBITT/Documents/02_Arduino/hardware/radino/ICT_Boards/libraries;C:/Program Files/Visual Micro/Visual Micro for Arduino/Micro Platforms/default/debuggers;C:/Users/MCHHBITT/Documents/02_Arduino/libraries;c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/;c:/program files/arduino-1.5.8/hardware/tools/avr/avr/include/avr/;c:/program files/arduino-1.5.8/hardware/tools/avr/avr/;c:/program files/arduino-1.5.8/hardware/tools/avr/lib/gcc/avr/4.3.2/include/;;../../CUSTOM_LUX;c:/program files/arduino-1.5.8/hardware/tools/avr/lib/gcc/avr/4.8.1/include/;</VMSETTING_IncludePaths>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="CUSTOM_LUX.ino">
+      <SubType>compile</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Visual Micro\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="hardware.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hardware.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="register.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Visual Micro\.CUSTOM_LUX.vsarduino.h">
+      <SubType>compile</SubType>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
+</Project>
