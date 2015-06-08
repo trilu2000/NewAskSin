@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define PW_DBG
+//#define PW_DBG
 #include "Power.h"
 #include "AS.h"
 
