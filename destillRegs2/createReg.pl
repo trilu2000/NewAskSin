@@ -362,6 +362,21 @@ sub printStartFunctions {
 	print "    // place here everything which should be done on each start or reset of the device\n";	
 	print "    // typical usecase are loading default values or user class configurations\n\n";	
 	
+	print "    // init the homematic framework and register user modules\n";
+	print "    hm.init();                                                          // init the asksin framework\n";
+	print "    hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);           // configure the config button, mode, pci byte and pci bit\n";
+	
+	#hm.ld.init(2, &hm);																		// set the led
+	#hm.ld.set(welcome);																		// show something
+	
+	#hm.pw.setMode(1);																		// set power management mode
+	#hm.bt.set(27, 600000);		// 3600000 = 10min.											// set battery check, internal, 2.7 reference, measurement each hour
+
+	#thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
+	#thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
+	#thsens.timing(0, 0, 0);																	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
+	
+	
 	print "}\n\n";
 
 	print "void firstTimeStart(void) {\n";

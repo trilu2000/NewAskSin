@@ -13,32 +13,37 @@ use strict; package usrRegs; my %regList;
 
 ## -- device config -----------------------------------------------------------------------------------------
 my %confType = (
-	## some basic information to create a new device, serial number and hm id has to be unique in your network
-	## on modelID you could choose between an already existing configuration or you can create a new device
+    ## some basic information to create a new device, serial number and hm id has to be unique in your network
+    ## on modelID you could choose between an already existing configuration or you can create a new device
 	
-	serial      => 'XMS1234567', 												# 0 to get it automatically generated - otherwise 10 byte ASCII format
-	hmID        => '0', 														# 0 to get it automatically generated - otherwise 6 HEX digits
+    serial      => 'XMS1234567',                           # 0 to get it automatically generated - otherwise 10 byte ASCII format
+    hmID        => '0',                                    # 0 to get it automatically generated - otherwise 6 HEX digits
 	
-	modelID     => 0x0f43,														# if model id is known, details will taken from HM config xml files, 4 HEX digits
-	firmwareVer => 0x10, 														# firmware version, 2 HEX digits - important if you took a model id where more then one device exists
+    modelID     => 0x0f43,                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
+    firmwareVer => 0x10,                                   # firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
 
-	## no input needed if model id is valid and device already exists in HM config software,
-	## otherwise fill accordingly to create a proper register.h and xml config file 
+    ## no input needed if model id is valid and device already exists in HM config software,
+    ## otherwise fill accordingly to create a proper register.h and xml config file 
 
-	name        => 'Test127',													# name of the device, ascii [A-Z, a-z, 0-9, '-'], no blanks
-	description => 'das ist ein test',											# short description of the device
+    name        => 'Test127',                              # name of the device, ascii [A-Z, a-z, 0-9, '-'], no blanks
+    description => 'das ist ein test',                     # short description of the device
 
-	subtypeID   => 0x70,														# depending on type of device
-	deviceInfo  => 0x030100,													# not complete clear yes, but 3 bytes HEX needed
+    subtypeID   => 0x70,                                   # depending on type of device
+    deviceInfo  => 0x030100,                               # not complete clear yes, but 3 bytes HEX needed
 	
-	burstRx     => 1,               		                              		# device needs a burst signal to wakeup
-	localResDis => 1,															# local reset disable 
-	intKeysVis  => 1,  															# internal keys visible
+    burstRx     => 1,                                      # device needs a burst signal to wakeup
+    localResDis => 1,                                      # local reset disable 
+    intKeysVis  => 1,                                      # internal keys visible
 
-	battValue   => 30, 															# one byte default value in milli volt, 0 if not a battery device 
-	battVisib   => 0,															# battery flag visible in registers of channel 0
-	battChkDura => 3600000,														# the time between two measurements, value in milli seconds
+    confKeyMode => 1,                                      # config key mode; 
+	                                                       # 0 = no config key; 
+	                                                       # 1 = pair on short press, reset device on double long key press
+                                                           # 2 = short press to toogle channel one, long press to pair, and double long to reset device
+                                                           
+    battValue   => 30,                                     # one byte default value in milli volt, 0 if not a battery device 
+    battVisib   => 0,                                      # battery flag visible in registers of channel 0
+    battChkDura => 3600000,	                               # the time between two measurements, value in milli seconds
 
 );
 
