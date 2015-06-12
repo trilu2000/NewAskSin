@@ -11,22 +11,149 @@
 
 This is the NewAskSin API-Documentation. It includes a growing, increasingly detailed
 documentation of most of the classes, some design overviews and examples. 
-See @ref starting_points for a quick introduction.
 
-@section starting_points Quick start
+@subsection literature Suggested Reading
+
+Read page @ref basics to learn about @ref protocol_basics and the @ref device_model_basics.
 
 The examples subdirectory contains working examples of devices that can be readily compiled
 and uploaded to AVR based hardware. They can be used as starting points to derive firmware for
 similar hardware by applying minor modifications.
 
-@section pitfalls Things to consider
+@todo Add a few links to external resources, e.g. fhem forum, fhem wiki or other useful information
+
+@section homebrew Do it yourself - The HomeBrew device
+
+In order to develop your own device, you will start to layout the device properties, decide 
+over channels and think about parameters and message frames. Once this is done, you can start
+defining the device using the NewAskSin framework
+
+@todo Provide Step-by-step instruction how to start from scratch. Maybe on a separate page?
+
+@subsection pitfalls Things to consider
 
 When using the NewAskSin framework, a few things need to be considered, to avoid pitfalls and
 unwanted side-effects
 
-@subsection millis System time
+@subsubsection millis System time
 
 The arduino function millis() can not be used together with NewAskSin. If your code requires 
 the time since startup in milli-seconds, use getMillis(), instead.
 
+*/
+/** @page basics Basic Concepts
+
+@section protocol_basics Protocol Basics
+
+Messages are exchanged between devices (including central units) by way of message frames sent 
+out by a device (source). These messages can be received by any other device. Depending on the 
+destination address and configuration of the receiving device, it will decide how to handle the
+message:
+- A receiving device configured as peer will be adressed as destination of the message and 
+  acknowledge the reception of the message by means of an ACK frame. This way the source device 
+  will know if the message was received and can try retransmission upon timeout.
+- Messages addressed to the special broadcast address will not be acknowledged and can be used
+  for measurement data or alike that are of volatile nature.
+
+@subsection message_frame Message Frames
+
+All message frames follow the same structure with a fixed-length message header and a variable-length
+payload:
+<pre>
+             |                               Message Header                                  |              Payload             
+-------------+-------------------------------------------------------------------------------+----------------------------------
+Index        |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |   8   |   9   |   10  |        ...       | Len-1 
+-------------+-------+-------+-------+-------+-----------------------+-----------------------+----------------------------------
+Description  |  Len  | Count | Flags | Type  |     Source-Address    |  Destination-Address  |    (depending on message type)   
+</pre>
+
+<DL>
+<DT>Len</DT>
+<DD>Length of the complete message frame, including header and payload. Maximum allowed length is 26.</DD>
+
+<DT>Count</DT>
+<DD>Message frame counter, incremented by the source device each time a message is sent.</DD>
+
+<DT>Flags</DT>
+<DD>Message status flags, for more information see @ref message_flags</DD>
+
+<DT>Type</DT>
+<DD>Defines how the payload is to be interpreted. For more details, see @ref message_type</DD>
+
+<DT>Source-Address</DT>
+<DD>3-Byte address of the source device. Often referred to as @ref HMID.</DD>
+
+<DT>Destination-Address</DT>
+<DD>3-Byte address of the destination. Broadcasts are addressed to 000000. Also see @ref HMID.</DD>
+
+<DT>Payload</DT>
+<DD>Carries the information transported by the message frame. Payload content is to be interpreted according to the @ref message_type</DD>
+
+</DL>
+
+@subsection message_flags Message Flags
+
+The message flags byte carries status information relevant for protocol handling. It comprises the following bits:
+
+- 0x80: Message to master or message could be repeated
+- 0x40: Repeated message
+- 0x20: ACK requested
+- 0x10: Burst transmission
+- 0x08: unknown
+- 0x04: Config mode (broadcast)
+- 0x02: Wake me up
+- 0x01: Wakeup
+
+@subsection message_types Message Types
+
+The message type defines how the payload oof the message is to be interpreted. 
+@todo Write much more about message types.
+@todo Decide if every message type should have its own subsubsection
+
+
+@section device_model_basics Device Model
+
+@subsection basics_device_channels Device Channels
+
+Device properties are organized in form of channels, with special channel 0 that represents 
+the device entity that communicates with others and at least one more channel that represents 
+a sensor, actuator, or alike.
+
+@subsection basics_device_registers Device Registers
+
+Seen from the protocol prespective, the configuration of a device is represented in form 
+of registers each of which has an ID for identification and a one-byte-content that affects 
+the behavior of the device. Registers are solely used for configuration purposes. 
+Static information that is hardcoded into the device software, like serial number or @ref HMID, 
+is not represented by registers but can be queried using special messages.
+
+Often, register specifications are written as a list of ID:VALUE pairs:
+
+ List0: 02:01 05:00 0A:AB 0B:CD 0C:EF 14:05 24:05 25:DC 26:05 27:03 00:00
+
+This example shows that the device is paired to ID 'ABCDEF', represented by registers 0A, 0B and 0C. 
+
+A device organizes registers in the context of lists that are used for specific purposes:
+<DL>
+<DT>List0</DT>
+<DD>Represents the device configuration. Each device has exactly one instance of this list and it is associated with channel 0.</DD>
+
+<DT>List1</DT>
+<DD>Represents per-channel configuration. Each channel of a device must have a List1 and one of List3 or List4.</DD>
+
+<DT>List2</DT>
+<DD></DD>
+
+<DT>List3</DT>
+<DD></DD>
+
+<DT>List4</DT>
+<DD></DD>
+
+<DT>List5..List9</DT>
+<DD></DD>
+
+</DL>
+
+In the NewAskSin framework, registers are defined 
 */
