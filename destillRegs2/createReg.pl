@@ -362,22 +362,34 @@ sub printStartFunctions {
 	print "    // place here everything which should be done on each start or reset of the device\n";	
 	print "    // typical usecase are loading default values or user class configurations\n\n";	
 	
-	print "    // init the homematic framework and register user modules\n";
-	print "    hm.init();                                                          // init the asksin framework\n";
-	print "    hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);           // configure the config button, mode, pci byte and pci bit\n";
-	
-	#hm.ld.init(2, &hm);																		// set the led
-	#hm.ld.set(welcome);																		// show something
-	
-	#hm.pw.setMode(1);																		// set power management mode
-	#hm.bt.set(27, 600000);		// 3600000 = 10min.											// set battery check, internal, 2.7 reference, measurement each hour
+	print "    // init the homematic framework\n";
 
-	#thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance
+	print "    hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);"  ." "x11  ."// configure the config button, mode, pci byte and pci bit\n";
+	print "    hm.ld.init($cType{'statusLED'}, &hm);"  ." "x49  ."// set the led\n";
+	print "    hm.ld.set(welcome);"  ." "x49  ."// show something\n";
+	
+	if ($cType{'battValue'} > 0 ) {
+		print "    hm.bt.set($cType{'battValue'}, $cType{'battChkDura'});"  ." "x(52-length($cType{'battChkDura'}))  ."// set battery check, internal, 2.7 reference, measurement each hour\n";
+	}
+
+	#if ($cType{'powerMode'} > 0 ) {
+		print "    hm.pw.setMode(1);"  ." "x51  ."// set power management mode\n";
+	#}
+	
+	print "\n    // register user modules\n";
+	
+	foreach my $rLKey (sort  keys %rL) {	
+		# get the respective list 3 or 4 for the channel
+		my ($xl) = (grep { ($cnlType{$_}{'cnl'} == $rLKey) && ($cnlType{$_}{'lst'} > 1) && ($cnlType{$_}{'lst'} < 5) } keys %cnlType);
+		print "    $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm); \n";
+	}
+	print "    // don't forget to set somewhere the .config of the respective user class!\n";	
+	
 	#thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
-	#thsens.timing(0, 0, 0);																	// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
+	#thsens.timing(0, 0, 0);																// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 	
 	
-	print "}\n\n";
+	print "\n}\n\n";
 
 	print "void firstTimeStart(void) {\n";
 	print "    // place here everything which should be done on the first start or after a complete reset of the sketch\n";	
@@ -402,10 +414,10 @@ sub printDefaltTable {
 	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 	print "//- settings of HM device for AS class -----------------------------------------------------------------------------------\n";
 	print "const uint8_t devIdnt[] PROGMEM = {\n";
-	print "    /* Firmware version  1 byte */  " .prnHexStr($dT{'firmwareVer'},2) ."                               // don't know for what it is good for\n";
-	print "    /* Model ID          2 byte */  " .prnHexStr($dT{'modelID'},4) ."                          // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
-	print "    /* Sub Type ID       1 byte */  " .prnHexStr($dT{'subtypeID'},2) ."                               // not needed for FHEM, it's something like a group ID\n";
-	print "    /* Device Info       3 byte */  " .prnHexStr($dT{'deviceInfo'},6) ."                     // describes device, not completely clear yet. includes amount of channels\n";
+	print "    /* Firmware version  1 byte */  " .prnHexStr($dT{'firmwareVer'},2) ." "x31 ."// don't know for what it is good for\n";
+	print "    /* Model ID          2 byte */  " .prnHexStr($dT{'modelID'},4) ." "x26 ."// model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
+	print "    /* Sub Type ID       1 byte */  " .prnHexStr($dT{'subtypeID'},2) ." "x31 ."// not needed for FHEM, it's something like a group ID\n";
+	print "    /* Device Info       3 byte */  " .prnHexStr($dT{'deviceInfo'},6) ." "x21 ."// describes device, not completely clear yet. includes amount of channels\n";
 	print "};  // 7 byte\n\n";
 }
 

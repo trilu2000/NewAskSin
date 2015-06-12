@@ -40,10 +40,19 @@ my %confType = (
 	                                                       # 0 = no config key; 
 	                                                       # 1 = pair on short press, reset device on double long key press
                                                            # 2 = short press to toogle channel one, long press to pair, and double long to reset device
+    
+    statusLED   => 2,                                      # amount of available status leds, possible values 0, 1 ,2
                                                            
     battValue   => 30,                                     # one byte default value in milli volt, 0 if not a battery device 
     battVisib   => 0,                                      # battery flag visible in registers of channel 0
     battChkDura => 3600000,	                               # the time between two measurements, value in milli seconds
+
+	powerMode   => 1,                                      # there are 5 power modes available, which could be choosed to get the best ratio between power consumption and availablity
+                                                           # 0, now power saving - 19.9ma
+                                                           # 1, wake up every 250ms, check for wakeup signal on air and stay awake accordingly, timer gets updated every 256ms
+                                                           # 2, deep sleep, wakeup every 250ms, not able to receive anything while sleeping, timer gets updated every 256ms
+                                                           # 3, deep sleep, wakeup every 8 seconds, not able to receive anything while sleeping, timer gets updated every 8192ms - 0.04ma
+                                                           # 4, deep sleep, wakeup only on interrupt - 0.00ma
 
 );
 
