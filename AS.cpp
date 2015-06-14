@@ -35,6 +35,7 @@ void AS::init(void) {
 	
 	initMillis();																			// start the millis counter
 
+	this->initRandomSeed();
 	// DEBUG
 	makeSigningRequest();
 	// everything is setuped, enable RF functionality
@@ -1166,10 +1167,9 @@ void AS::encode(uint8_t *buf) {
 
 // - AES Signing related methods -------------------
 void AS::makeSigningRequest(void) {
-	for (uint8_t i =0; i < 6; i++) {
-		srandom(analogRead(0));
-		signingRequestData[i] = random() % 255;
-	}
+	getRandomBytes(signingRequestData, 6);
+
+	dbg << F(">>> signingRequestData  : ") << _HEX(signingRequestData, 6) << F(" <<<") << "\n";
 }
 
 void AS::makeTmpKey(uint8_t *challenge) {
@@ -1251,6 +1251,23 @@ void AS::sendSigningResponse(void) {
 	sn.active = 1;																// fire the message
 }
 
+/**
+ * get number of random bytes
+ */
+void AS::getRandomBytes(uint8_t *buffer, uint8_t length) {
+	srand(this->randomSeed ^ uint16_t (millis() & 0xFFFF));
+	for (uint8_t i =0; i < length; i++) {
+		buffer[i] = rand() % 0xFF;
+	}
+}
+
+void AS::initRandomSeed() {
+	uint16_t *p = (uint16_t*) (RAMEND+1);
+	extern uint16_t __heap_start;
+	while (p >= &__heap_start + 1) {
+		this->randomSeed ^= * (--p);
+	}
+}
 
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------

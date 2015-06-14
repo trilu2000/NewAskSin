@@ -108,6 +108,8 @@ class AS {
 
 	uint8_t tempHmKey[16];
 
+	uint16_t randomSeed = 0;
+
 	aes128_ctx_t ctx; 						// the context where the round keys are stored
 
   public:		//---------------------------------------------------------------------------------------------------------
@@ -171,6 +173,9 @@ class AS {
 	void payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc);
 	void payloadDecrypt (uint8_t *data, uint8_t *msgOriginal);
 	void sendSigningResponse(void);
+
+	void getRandomBytes(uint8_t *buffer, uint8_t length);
+	void initRandomSeed();
 
 	
   protected:	//---------------------------------------------------------------------------------------------------------
