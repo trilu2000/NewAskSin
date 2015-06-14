@@ -36,7 +36,7 @@
 
 		#define LED_GRN_DDR            DDRD
 		#define LED_GRN_PORT           PORTD
-		#define LED_GRN_PIN            PORTD4
+		#define LED_GRN_PIN            PORTD5
 
 		#define LED_ACTIVE_LOW         0										// leds connected to GND = 0, VCC = 1
 

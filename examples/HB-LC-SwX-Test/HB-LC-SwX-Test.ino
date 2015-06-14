@@ -87,14 +87,16 @@ void loop() {
 void initRly() {
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
 
-	pinOutput(DDRD,3);																		// init the relay pins
-	setPinLow(PORTD,3);																		// set relay pin to ground
+	pinOutput(DDRC,0);																		// init the relay pins
+	setPinLow(PORTC,0);																		// set relay pin to ground
 }
 void switchRly(uint8_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
-
-	if (status) setPinHigh(PORTD,3);														// check status and set relay pin accordingly
-	else setPinLow(PORTD,3);
+	if (status > 0) {
+		setPinHigh(PORTC,0);														// check status and set relay pin accordingly
+	} else {
+		setPinLow(PORTC,0);
+	}
 }
 
 
