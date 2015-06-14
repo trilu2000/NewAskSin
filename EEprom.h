@@ -95,6 +95,7 @@ extern EE::s_devDef devDef;																// initial register.h
 extern uint8_t MAID[];
 extern uint8_t HMID[];
 extern uint8_t HMSR[];
+extern uint8_t HMKEY[];
 
 
 //- some helpers ----------------------------------------------------------------------------------------------------------

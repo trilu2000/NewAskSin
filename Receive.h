@@ -45,6 +45,9 @@ class RV {
 	uint8_t peerId[4];						// hold for messages >= 3E the peerID with channel
 	uint8_t *buf;							// cast to byte array
 
+	uint8_t prevBuf[60];					// store the last receive message to verify with AES signed data. we need only the first 27 bytes without byte 0
+	uint8_t nextIsEncrypted;
+
 	#define hasData		buf[0]?1:0			// check if something is in the buffer
 
   private:		//---------------------------------------------------------------------------------------------------------

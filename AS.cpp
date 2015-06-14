@@ -44,6 +44,33 @@ void AS::poll(void) {
 	if (ccGetGDO0()) {																		// check if something was received
 		cc.rcvData(rv.buf);																	// copy the data into the receiver module
 		if (rv.hasData) decode(rv.buf);														// decode the string
+
+		// TEST Begin
+		if (rv.hasData) {
+			if (rv.nextIsEncrypted == 0) {
+				if (rv.buf[03] == 02 && rv.buf[10] == 04) {
+					dbg << "Request AES" << '\n';
+
+					uint8_t challenge[6];
+					memcpy(challenge, rv.buf+11, 6);											// get challenge
+					this->makeTmpKey(challenge);
+
+					dbg << F(">>> ch :  ") << _HEX(challenge, 6) << F(" <<<") << "\n";
+					rv.nextIsEncrypted = 1;
+				} else {
+					memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);
+				}
+			} else {
+				uint8_t payload[16];
+				memcpy(payload, rv.buf+10, 16);
+				dbg << F(">>> pl   : ") << _HEX(payload, 16) << F(" <<<") << "\n";
+
+				this->payloadDecrypt(payload, rv.prevBuf);
+				dbg << "\n\n";
+				rv.nextIsEncrypted = 0;
+			}
+		}
+		// TEST End
 	}
 
 	// handle send and receive buffer
@@ -1134,6 +1161,94 @@ void AS::encode(uint8_t *buf) {
 		dbg << F("\n\n");
 	}
 #endif
+
+// - AES Signing related methods -------------------
+void AS::makeSigningRequest(void) {
+	for (uint8_t i =0; i < 6; i++) {
+		srandom(analogRead(0));
+		signingRequestData[i] = random() % 255;
+	}
+}
+
+void AS::makeTmpKey(uint8_t *challenge) {
+	memcpy(this->tempHmKey, HMKEY, 16);
+
+	for (uint8_t i = 0; i < 6; i++) {
+		this->tempHmKey[i] = HMKEY[i] ^ challenge[i];
+	}
+	aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
+}
+
+void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
+	uint32_t mill = millis();
+	encPayload[0] = 0;
+	encPayload[1] = 0;
+	encPayload[2] = (mill & 0xFF000000) >> 24;									// first 6 bytes of payload probably is a counter
+	encPayload[3] = (mill & 0x00FF0000) >> 16;									// we store current millis in bytes 2-5 of payload
+	encPayload[4] = (mill & 0x0000FF00) >> 8;
+	encPayload[5] = (mill & 0x000000FF);
+
+	memcpy(encPayload+6, msgToEnc+1, ((msgToEnc[0] < 10) ? 9 : 10) );			// build payload to encrypt
+
+	uint8_t iv[16] = {															// initial vector
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	memcpy(iv, msgToEnc+11, msgToEnc[0]-10);									// build initial vector
+
+	aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey first time
+
+	for (uint8_t i = 0; i < 16; i++)	encPayload[i] ^= iv[i];					// xor encrypted payload with iv
+
+	aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey again
+}
+
+void AS::payloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
+	uint8_t iv[16] = {															// initial vector
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	memcpy(iv, msgOriginal+11, msgOriginal[0]-10);								// build initial vector
+//	dbg << F(">>> kex  : ") << _HEX(HMKEY, 16) << F(" <<<") << "\n";
+//	dbg << F(">>> kexTm: ") << _HEX(this->tempHmKey, 16) << F(" <<<") << "\n";
+//	dbg << F(">>> iv   : ") << _HEX(iv, 16) << F(" <<<") << "\n";
+
+	aes128_dec(data, &ctx);														// decrypt payload width tmpKey first time
+//	dbg << F(">>> plD  : ") << _HEX(data, 16) << F(" <<<") << "\n";
+
+	for (uint8_t i = 0; i < 16; i++) data[i] ^= iv[i];							// xor encrypted payload with iv
+//	dbg << F(">>> plD^ : ") << _HEX(data, 16) << F(" <<<") << "\n";
+
+	uint8_t authAck[4];
+	memcpy(authAck, data, 4);													// build auth ACK
+	dbg << F(">>> ack  : ") << _HEX(authAck, 4) << F(" <<<") << "\n";
+
+	aes128_dec(data, &ctx);														// decrypt payload width tmpKey again
+
+	dbg << F(">>> plD^D: ") << _HEX(data, 6) << " | "<< _HEX(data+6, 10) << F(" <<<") << "\n";
+}
+
+void AS::sendSigningResponse(void) {
+	sn.mBdy.mLen = 0x19;
+	sn.mBdy.mCnt = rv.mBdy.mLen;
+	sn.mBdy.mTyp = 0x03;
+	memcpy(sn.mBdy.reID,HMID,3);
+	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+
+	uint8_t challenge[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};				// challenge
+	memcpy(challenge, rv.mBdy.pyLd, 6);										// get challenge
+	this->makeTmpKey(challenge);
+
+	uint8_t payload[16];
+//	this->payloadEncrypt(payload, sn.msgPartToSign);
+
+	sn.mBdy.by10 = payload[0];
+	memcpy(sn.buf+10, payload, 16);
+	sn.active = 1;																// fire the message
+}
+
 
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------

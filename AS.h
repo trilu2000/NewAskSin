@@ -21,6 +21,8 @@
 #include "Battery.h"
 #include "Version.h"
 
+#include "aes.h"
+
 /**
  * @short Main class for implementation of the AskSin protocol stack.
  * Every device needs exactly one instance of this class.
@@ -59,11 +61,11 @@ class AS {
 	RV rv;			///< receive module
 
 	/** @brief Helper structure for keeping track of active config mode */
-	struct s_confFlag {					// - remember that we are in config mode, for config start message receive
-		uint8_t  active   :1;	//< indicates status, 1 if config mode is active
-		uint8_t  cnl;		//< channel
-		uint8_t  lst;		//< list
-		uint8_t  idx;		//< peer index
+	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
+		uint8_t  active   :1;				//< indicates status, 1 if config mode is active
+		uint8_t  cnl;						//< channel
+		uint8_t  lst;						//< list
+		uint8_t  idx;						//< peer index
 	} cFlag;
 
 	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
@@ -101,6 +103,12 @@ class AS {
 	} l4_0x01;
 
 	uint8_t pairActive    :1;
+
+	uint8_t signingRequestData[8];
+
+	uint8_t tempHmKey[16];
+
+	aes128_ctx_t ctx; 						// the context where the round keys are stored
 
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
@@ -156,6 +164,13 @@ class AS {
 	void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
 	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
 	void sendINFO_PARAMETER_CHANGE(void);
+
+	// - AES Signing related methods -------------------
+	void makeTmpKey(uint8_t *challenge);
+	void makeSigningRequest(void);
+	void payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc);
+	void payloadDecrypt (uint8_t *data, uint8_t *msgOriginal);
+	void sendSigningResponse(void);
 
 	
   protected:	//---------------------------------------------------------------------------------------------------------
