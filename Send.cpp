@@ -61,7 +61,6 @@ void SN::poll(void) {
 		} else {																			// send it external
 			uint8_t tBurst = this->mBdy.mFlg.BURST;											// get burst flag, while string will get encoded
 
-			this->msgPartToSignLen = sndLen;
 			memcpy(this->msgPartToSign, this->buf, sndLen);									// copy the first 10 bytes without length of message for calculating AES signing response
 
 			pHM->encode(this->buf);															// encode the string

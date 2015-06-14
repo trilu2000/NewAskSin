@@ -165,4 +165,6 @@
 	uint8_t  getBatteryVoltage(void);
 	//- -----------------------------------------------------------------------------------------------------------------------
 
+	extern void getRandomBytes(uint8_t *buffer, uint8_t length);
+
 #endif 

@@ -58,6 +58,7 @@
 		#define BATT_MEASURE_DDR       DDRC										// define battery measure pin, where ADC gets the measurement
 		#define BATT_MEASURE_PORT      PORTC
 		#define BATT_MEASURE_PIN       PORTC1
+		#define ADC_RANDOM_VALUE_PIN   PORTC2									// define pin off adc for getting some noise to initialize the random generator
 
 	#elif defined(__AVR_ATmega32U4__)
 		//- cc1100 hardware CS and GDO0 definitions -------------------------------------------------------------------

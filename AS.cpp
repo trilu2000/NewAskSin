@@ -35,6 +35,8 @@ void AS::init(void) {
 	
 	initMillis();																			// start the millis counter
 
+	// DEBUG
+	makeSigningRequest();
 	// everything is setuped, enable RF functionality
 	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
 }

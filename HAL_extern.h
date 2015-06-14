@@ -151,6 +151,11 @@ ISR (PCINT2_vect) {
 void    initExtBattMeasurement(void);
 void    switchExtBattMeasurement(uint8_t stat);
 
+/************************
+ *** Helper functions ***
+ ************************/
+void    getRandomBytes(uint8_t *buffer, uint8_t length);
+
 /**
  * get the voltage off battery
  */
@@ -200,5 +205,21 @@ void    switchExtBattMeasurement(uint8_t stat) {
 
 		// todo: check
 		setPinHigh(BATT_MEASURE_PORT, BATT_MEASURE_PIN);						// switch on pull up, otherwise we waste energy over the resistor network against VCC
+	}
+}
+
+/**
+ * get the voltage off battery
+ */
+void    getRandomBytes(uint8_t *buffer, uint8_t length) {
+	pinInput(DDRC, ADC_RANDOM_VALUE_PIN);										// set the ADC pin as input
+
+	for (uint8_t i =0; i < length; i++) {
+		uint16_t adcValue = getAdcValue(										// Voltage Reference = Internal 1.1V; Input Channel = external battery measure pin
+			(1 << REFS1) | (1 << REFS0) | ADC_RANDOM_VALUE_PIN
+		);
+
+		srandom(uint8_t(adcValue & 0xFF));
+		buffer[i] = random() % 255;
 	}
 }

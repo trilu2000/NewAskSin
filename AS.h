@@ -104,7 +104,7 @@ class AS {
 
 	uint8_t pairActive    :1;
 
-	uint8_t signingRequestData[8];
+	uint8_t signingRequestData[6];
 
 	uint8_t tempHmKey[16];
 
