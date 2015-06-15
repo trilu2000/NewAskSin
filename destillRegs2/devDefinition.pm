@@ -62,10 +62,15 @@ my %confType = (
 ## with linked you can link channels together, e.g. key to dimmer
 ## todo: linked
 
-$regList{1}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0     };
-$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 1, linked => {3,4} };
-$regList{3}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
-$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
+#$regList{1}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0     };
+#$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 1, linked => {3,4} };
+#$regList{3}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
+#$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
+
+$regList{1}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
+$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => {3,4} };
+$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 2     };
+$regList{4}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 2     };
 	
 
 
