@@ -19,7 +19,7 @@ uint8_t ccGetGDO0() {
 	uint8_t x = chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT);
 	//if (x>1) dbg << "x:" << x << '\n';
 
-	if (x == 2 ) return 1;																	// falling edge detected
+	if (x == 2 ) return 1;														// falling edge detected
 	else return 0;
 }
 
@@ -124,6 +124,13 @@ void    initConfKey(void) {
 	initPCINT();																// some sanity on interrupts
 	regPCIE(CONFIG_KEY_PCIE);													// set the pin change interrupt
 	regPCINT(CONFIG_KEY_PCMSK, CONFIG_KEY_INT);									// description is in hal.h
+
+	//dbg << "pb:" << PINB  << " pc:" << PINC  << " pd:" << PIND << "\n";
+	//dbg << "ckDDR:" << CONFIG_KEY_DDR << "ckPort:" << CONFIG_KEY_PORT  << " ckpin:" << CONFIG_KEY_PIN << "\n";
+
+	pcInt[0].cur = PINB;
+	pcInt[1].cur = PINC;
+	pcInt[2].cur = PIND;
 }
 
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -131,16 +138,19 @@ ISR (PCINT0_vect) {
 	pcInt[0].prev = pcInt[0].cur;
 	pcInt[0].cur = PINB;
 	pcInt[0].time = getMillis();
+	//dbg << "i1:" << PINB  << "\n";
 }
 ISR (PCINT1_vect) {
 	pcInt[1].prev = pcInt[1].cur;
 	pcInt[1].cur = PINC;
 	pcInt[1].time = getMillis();
+	//dbg << "i2:" << PINC << "\n";
 }
 ISR (PCINT2_vect) {
 	pcInt[2].prev = pcInt[2].cur;
 	pcInt[2].cur = PIND;
 	pcInt[2].time = getMillis();
+	//dbg << "i3:" << PIND  << "\n";
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 

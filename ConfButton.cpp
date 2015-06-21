@@ -17,6 +17,7 @@ void CB::config(uint8_t mode, uint8_t pcIntByte, uint8_t pcIntBit) {
 	scn = mode;
 	pciByte = pcIntByte;
 	pciBit = pcIntBit;
+
 }
 
 // private:		//---------------------------------------------------------------------------------------------------------
@@ -33,7 +34,7 @@ void CB::init(AS *ptrMain) {
 void CB::poll(void) {
 	#define detectLong      3000
 	#define repeatedLong    300
-	#define timeoutDouble   2000
+	#define timeoutDouble   1000
 	
 	if (!scn) return;																		// mode not set, nothing to do
 	

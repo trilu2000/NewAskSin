@@ -31,10 +31,6 @@ void setup() {
 	DDRB = DDRC = DDRD = 0x00;																// everything as input
 	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	// todo: led and config key should initialized internally
-	initLeds();																				// initialize the leds
-	initConfKey();																			// initialize the port for getting config key interrupts
-
 	// todo: timer0 and SPI should enable internally
 	power_timer0_enable();
 	power_spi_enable();																		// enable only needed functions
@@ -51,6 +47,7 @@ void setup() {
 	
 	// - AskSin related ---------------------------------------
 	// init the homematic framework and register user modules
+
 	hm.init();																				// init the asksin framework
 
 	hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit

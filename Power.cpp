@@ -28,13 +28,13 @@ void PW::init(AS *ptrMain) {
 void PW::setMode(uint8_t mode) {
 	pwrMode = mode;
 
-	#ifdef PW_DBG																			// only if pw debug is set
+	//#ifdef PW_DBG																			// only if pw debug is set
 	dbg << F("PowerMode: ") << pwrMode << '\n';												// ...and some information
-	#endif
+	//#endif
 
 	initWakeupPin();
-	setSleepMode();
-	stayAwake(2000);																		// startup means stay awake for next 20 seconds
+	//setSleepMode();
+	stayAwake(10000);																		// startup means stay awake for next 20 seconds
 }
 void PW::stayAwake(uint16_t time) {
 	if (time < pwrTmr.remain()) return;														// set new timeout only if we have to add something

@@ -23,6 +23,9 @@ void AS::init(void) {
 		dbg << F("AS.\n");																	// ...and some information
 	#endif
 	
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
+
 	ee.init();																				// eeprom init
 	cc.init();																				// init the rf module
 
@@ -1172,7 +1175,7 @@ void     waitTimer::set(uint32_t ms) {
  */
 uint32_t waitTimer::remain(void) {
 	if (!armed) return 0;
-	return checkTime - (getMillis() - startTime);
+	return (checkTime - (getMillis() - startTime));
 }
 
 uint32_t byteTimeCvt(uint8_t tTime) {
