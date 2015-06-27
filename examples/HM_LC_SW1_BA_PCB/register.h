@@ -45,6 +45,7 @@ const uint8_t cnlAddr[] PROGMEM = {
 EE::s_cnlTbl cnlTbl[] = {
 	// cnl, lst, sIdx, sLen, pAddr;
 	{  0,  0, 0x00,  5,  0x000f },
+	{  1,  1, 0x05,  0,  0x0014 },
 	{  1,  3, 0x05, 22,  0x0014 },
 };  // 12 byte
 
@@ -56,7 +57,7 @@ EE::s_peerTbl peerTbl[] = {
 
 //- handover to AskSin lib -----------------------------------------------------------------------------------------------
 EE::s_devDef devDef = {
-	1, 2, devIdnt, cnlAddr,
+	1, 3, devIdnt, cnlAddr,
 };  // 10 byte
 
 //- module registrar -----------------------------------------------------------------------------------------------------

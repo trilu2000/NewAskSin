@@ -560,7 +560,7 @@ void AS::recvMessage(void) {
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
 		// do something with the information ----------------------------------
-
+		
 		if ((rv.buf[16] == 3) || (rv.buf[16] == 4)) {										// only list 3 and list 4 needs an peer id and idx	
 			stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);						// get peer index
 		} else stcSlice.idx = 0;															// otherwise peer index is 0
@@ -574,6 +574,7 @@ void AS::recvMessage(void) {
 		
 		#ifdef AS_DBG
 			dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
+			dbg << "totSlc: " << stcSlice.totSlc << '\n';
 		#endif
 
 		if ((stcSlice.idx != 0xff) && (stcSlice.totSlc > 0)) stcSlice.active = 1;			// only send register content if something is to send															// start the send function

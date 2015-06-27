@@ -223,10 +223,42 @@ foreach my $test (sort keys %cnlType) {
 	$phyAddr += $peers * $slcLen;
 	$slcIdx  += $slcLen;
 	
-	#print "$test: @{ $cnlType{$test}{'regSet'} }\n";											# some debug
-	#print "cnl, lst, sIdx, sLen, pAddr\n";
-	#print sprintf("%.1d, %.1d, 0x%.2x, %.1d, 0x%.4x,", $cnlType{$test}{'cnl'}, $cnlType{$test}{'lst'}, $cnlType{$test}{'slcIdx'}, $cnlType{$test}{'slcLen'}, $cnlType{$test}{'phyAddr'} ) ."\n";
+	print "$test: @{ $cnlType{$test}{'regSet'} }\n";											# some debug
+	print "cnl, lst, sIdx, sLen, pAddr\n";
+	print sprintf("%.1d, %.1d, 0x%.2x, %.1d, 0x%.4x,", $cnlType{$test}{'cnl'}, $cnlType{$test}{'lst'}, $cnlType{$test}{'slcIdx'}, $cnlType{$test}{'slcLen'}, $cnlType{$test}{'phyAddr'} ) ."\n";
 }
+# prefil cnlType with list1's
+foreach my $rLKey (sort keys %rL) {	
+	my $test = sprintf("%.2d %.2d", $rLKey, 1);
+	
+	if (!$cnlType{$test}) {
+		$cnlType{$test}{'cnl'} = $rLKey;
+		$cnlType{$test}{'lst'} = 1;
+		$cnlType{$test}{'slcIdx'} = 0;
+		$cnlType{$test}{'slcLen'} = 0;
+		$cnlType{$test}{'phyAddr'} = 0;
+		$cnlType{$test}{'hidden'} = $rL{$rLKey}{'hidden'};	
+		
+		#my @x=();
+		#$cnlType{$test}{'regSet'} = @x;
+		print "nicht vorhanden\n";
+
+	}
+
+	
+
+		
+	print "x:  $rL{$rLKey}{'type'}     $rLKey    $test\n";
+	
+	#$peers = $rL{$cnlType{$test}{'cnl'}}{'peers'}    if( ( $cnlType{$test}{'cnl'} > 0 ) && ( $cnlType{$test}{'lst'} >= 3 ) && ( $cnlType{$test}{'lst'} <= 4 ) );
+	
+	#$cnlType{$test}{'slcIdx'}  = $slcIdx;
+	#$cnlType{$test}{'slcLen'}  = $slcLen;
+	#$cnlType{$test}{'phyAddr'} = $phyAddr;
+	#$cnlType{$test}{'peers'}   = $peers;
+
+}
+
 
 # -- cleanup the channel array, find dublicates and reshape the addressing - fix the peers physical address, while phyAddr is at max from earlier function
 foreach my $test (sort keys %cnlType) {
@@ -236,9 +268,11 @@ foreach my $test (sort keys %cnlType) {
 		#print "xxx\n";
 	}
 
+	next          if ( !$cnlType{$test}{'regSet'} );  
 	next          if (!"@{ $cnlType{$test}{'regSet'}}");										# skip empty regSets
 	
 	foreach my $rest (sort {$b cmp $a} keys %cnlType) {
+		next      if ( !$cnlType{$rest}{'regSet'} );  
 		next      if ( ($test eq $rest) || (!"@{ $cnlType{$rest}{'regSet'}}") );				# comparsion of same regset makes no sense
 		
 		#print "search in $rest: @{ $cnlType{$rest}{'regSet'} } \n";							# some debug
@@ -429,6 +463,7 @@ sub printChannelSliceTable {
 	print "const uint8_t cnlAddr[] PROGMEM = {\n";
 	
 	foreach my $test (sort keys %dT) {
+		next    if ( !$cnlType{$test}{'regSet'} );  
 		next    if(!"@{$dT{$test}{'regSet'}}");	
 		print "    " .sprintf( "0x%.2x," x @{$dT{$test}{'regSet'}}, @{$dT{$test}{'regSet'}} )."\n";
 		$cnt += scalar(@{$dT{$test}{'regSet'}});
