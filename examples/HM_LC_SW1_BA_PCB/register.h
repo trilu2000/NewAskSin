@@ -63,3 +63,16 @@ EE::s_devDef devDef = {
 //- module registrar -----------------------------------------------------------------------------------------------------
 RG::s_modTable modTbl[1];
 
+void everyTimeStart(void) {
+	// place here everything which should be done on each start or reset of the device
+	// typical use case are loading default values or user class configurations
+
+
+}
+
+void firstTimeStart(void) {
+	// place here everything which should be done on the first start or after a complete reset of the sketch
+	// typical use case are default values which should be written into the register or peer database
+
+
+}

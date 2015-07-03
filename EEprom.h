@@ -12,6 +12,9 @@
 #include "HAL.h"
 #define maxMsgLen 16																		// define max message length in byte
 
+extern void everyTimeStart(void);															// add this function in register.h to setup default values every start
+extern void firstTimeStart(void);															// only on first start of the device
+
 //- class definition ------------------------------------------------------------------------------------------------------
 class EE {
 	friend class AS;

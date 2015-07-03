@@ -94,6 +94,8 @@ void     EE::init(void) {
 		dbg << F("writing magic byte\n");												// ...and some information
 		#endif
 		setEEPromBlock(0,2,(void*)&flashCRC);											// write magic byte to eeprom
+
+		firstTimeStart();																// function to be placed in register.h, to setup default values on first time start
 	}
 
 	// load HMID and serial from eeprom
@@ -102,6 +104,8 @@ void     EE::init(void) {
 	
 	// load the master id
 	getMasterID();	
+
+	everyTimeStart();																	// add this function in register.h to setup default values every start
 
 }
 void     EE::getMasterID(void) {
