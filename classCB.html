@@ -92,6 +92,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">CB Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Class for the handling the configuration key of the device Right now there are three possible scenarios which could be configured via the mode flag.  
+ <a href="classCB.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="ConfButton_8h_source.html">ConfButton.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -135,14 +140,22 @@ Friends</h2></td></tr>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>AS</b></td></tr>
 <tr class="separator:a35cbd82d484c913680575911e770c471"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this class was generated from the following files:<ul>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Class for the handling the configuration key of the device Right now there are three possible scenarios which could be configured via the mode flag. </p>
+<ul>
+<li>scenario 00 -------------------------&mdash; no config button used</li>
+<li>scenario 01 -------------------------&mdash; short press = pair long press = nothing double long = nothing double long release = reset</li>
+<li>scenario 02 -------------------------&mdash; short press = toggle channel one long press = pair double long = nothing double long release = reset</li>
+</ul>
+<p>Interface to the hardware is done via the register byte address of the port and hand over of the respective bit number within this byte </p>
+</div><hr/>The documentation for this class was generated from the following files:<ul>
 <li><a class="el" href="ConfButton_8h_source.html">ConfButton.h</a></li>
 <li>ConfButton.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jun 12 2015 21:27:08 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Jul 3 2015 11:45:27 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

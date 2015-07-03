@@ -81,26 +81,20 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <div class="textblock"><h1><a class="anchor" id="main_overview"></a>
 Overview</h1>
-<p>This is the NewAskSin API-Documentation. It includes a growing, increasingly detailed documentation of most of the classes, some design overviews and examples.</p>
-<h2><a class="anchor" id="literature"></a>
-Suggested Reading</h2>
-<p>Read page <a class="el" href="basics.html">Basic Concepts</a> to learn about <a class="el" href="basics.html#protocol_basics">Protocol Basics</a> and the <a class="el" href="basics.html#device_model_basics">Device Model</a>.</p>
+<p>This is the NewAskSin API-Documentation. It includes a growing, increasingly detailed documentation of most of the classes, some design overviews and examples. See <a class="el" href="index.html#starting_points">Quick start</a> for a quick introduction.</p>
+<h1><a class="anchor" id="starting_points"></a>
+Quick start</h1>
 <p>The examples subdirectory contains working examples of devices that can be readily compiled and uploaded to AVR based hardware. They can be used as starting points to derive firmware for similar hardware by applying minor modifications.</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>Add a few links to external resources, e.g. fhem forum, fhem wiki or other useful information</dd></dl>
-<h1><a class="anchor" id="homebrew"></a>
-Do it yourself - The HomeBrew device</h1>
-<p>In order to develop your own device, you will start to layout the device properties, decide over channels and think about parameters and message frames. Once this is done, you can start defining the device using the NewAskSin framework</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd>Provide Step-by-step instruction how to start from scratch. Maybe on a separate page?</dd></dl>
-<h2><a class="anchor" id="pitfalls"></a>
-Things to consider</h2>
+<h1><a class="anchor" id="pitfalls"></a>
+Things to consider</h1>
 <p>When using the NewAskSin framework, a few things need to be considered, to avoid pitfalls and unwanted side-effects</p>
-<h3><a class="anchor" id="millis"></a>
-System time</h3>
+<h2><a class="anchor" id="millis"></a>
+System time</h2>
 <p>The arduino function millis() can not be used together with NewAskSin. If your code requires the time since startup in milli-seconds, use getMillis(), instead. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jun 12 2015 21:27:08 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Jul 3 2015 11:45:27 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

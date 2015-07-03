@@ -98,109 +98,113 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="preprocessor">#include &quot;HAL.h&quot;</span></div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#define maxMsgLen 16                                                                        // define max message length in byte</span></div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor"></span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">//- class definition ------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="classEE.html">   16</a></span>&#160;<span class="keyword">class </span><a class="code" href="classEE.html">EE</a> {</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classAS.html">AS</a>;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classRV.html">RV</a>;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classCB.html">CB</a>;</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;  <span class="keyword">public</span>:       <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;</div>
-<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="structEE_1_1s__cnlTbl.html">   23</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structEE_1_1s__cnlTbl.html">s_cnlTbl</a> {   <span class="comment">// channel table holds all information regarding channels and lists</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        <span class="keyword">const</span> uint8_t cnl;</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keyword">const</span> uint8_t lst;</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        <span class="keyword">const</span> uint8_t sIdx;</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <span class="keyword">const</span> uint8_t sLen;</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keyword">const</span> uint16_t pAddr;</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    };</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="structEE_1_1s__peerTbl.html">   31</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structEE_1_1s__peerTbl.html">s_peerTbl</a> {  <span class="comment">// peer table holds information were to find peers in eeprom</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keyword">const</span> uint8_t cnl;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keyword">const</span> uint8_t pMax;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keyword">const</span> uint16_t pAddr;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    };</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;</div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="structEE_1_1s__devDef.html">   37</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structEE_1_1s__devDef.html">s_devDef</a> {   <span class="comment">// device definition table</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keyword">const</span> uint8_t   cnlNbr;                                                         <span class="comment">// number of channels</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keyword">const</span> uint8_t   lstNbr;                                                         <span class="comment">// number of lists</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">const</span> uint8_t   *devIdnt;                                                       <span class="comment">// pointer to device identifier</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keyword">const</span> uint8_t   *cnlAddr;                                                       <span class="comment">// pointer to slice addresses</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    };</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;  <span class="keyword">protected</span>:    <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  <span class="keyword">private</span>:      <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">extern</span> <span class="keywordtype">void</span> everyTimeStart(<span class="keywordtype">void</span>);                                                           <span class="comment">// add this function in register.h to setup default values every start</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">extern</span> <span class="keywordtype">void</span> firstTimeStart(<span class="keywordtype">void</span>);                                                           <span class="comment">// only on first start of the device</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">//- class definition ------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="classEE.html">   19</a></span>&#160;<span class="keyword">class </span><a class="code" href="classEE.html">EE</a> {</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classAS.html">AS</a>;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classRV.html">RV</a>;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classCB.html">CB</a>;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;  <span class="keyword">public</span>:       <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;</div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="structEE_1_1s__cnlTbl.html">   26</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structEE_1_1s__cnlTbl.html">s_cnlTbl</a> {   <span class="comment">// channel table holds all information regarding channels and lists</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <span class="keyword">const</span> uint8_t cnl;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keyword">const</span> uint8_t lst;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="keyword">const</span> uint8_t sIdx;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keyword">const</span> uint8_t sLen;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        <span class="keyword">const</span> uint16_t pAddr;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    };</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;</div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="structEE_1_1s__peerTbl.html">   34</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structEE_1_1s__peerTbl.html">s_peerTbl</a> {  <span class="comment">// peer table holds information were to find peers in eeprom</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="keyword">const</span> uint8_t cnl;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keyword">const</span> uint8_t pMax;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keyword">const</span> uint16_t pAddr;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    };</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="structEE_1_1s__devDef.html">   40</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structEE_1_1s__devDef.html">s_devDef</a> {   <span class="comment">// device definition table</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keyword">const</span> uint8_t   cnlNbr;                                                         <span class="comment">// number of channels</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">const</span> uint8_t   lstNbr;                                                         <span class="comment">// number of lists</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keyword">const</span> uint8_t   *devIdnt;                                                       <span class="comment">// pointer to device identifier</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keyword">const</span> uint8_t   *cnlAddr;                                                       <span class="comment">// pointer to slice addresses</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    };</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;  <span class="keyword">public</span>:       <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    uint8_t  getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);              <span class="comment">// get a complete list in to a given buffer</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);              <span class="comment">// set a complete list to the eeprom</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);           <span class="comment">// ok, gets a single register value</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    uint32_t getHMID(<span class="keywordtype">void</span>);                                                             <span class="comment">// get HMID as 32 bit integer</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;  <span class="keyword">protected</span>:    <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;  <span class="keyword">public</span>:       <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;  <span class="comment">//private:    //---------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classEE.html">EE</a>();                                                                               <span class="comment">// class constructor</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordtype">void</span>     init(<span class="keywordtype">void</span>);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordtype">void</span>     getMasterID(<span class="keywordtype">void</span>);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keywordtype">void</span>     testModul(<span class="keywordtype">void</span>);                                                           <span class="comment">// prints register.h definition on console</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    uint8_t  isHMIDValid(uint8_t *toID);                                                <span class="comment">// ok, check if a valid pair was given</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    uint8_t  isPairValid(uint8_t *reID);                                                <span class="comment">// ok, check if a valid pair was given</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    uint8_t  isBroadCast(uint8_t *reID);</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    uint8_t  getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="comment">// peer functions</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordtype">void</span>     clearPeers(<span class="keywordtype">void</span>);                                                          <span class="comment">// ok, clears complete peer database</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    uint8_t  isPeerValid (uint8_t *peer);                                               <span class="comment">// ok, checks if a valid peer was given</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    uint8_t  countFreeSlots(uint8_t cnl);                                               <span class="comment">// ok, counts the free peer slots of a channel</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    uint8_t  getIdxByPeer(uint8_t cnl, uint8_t *peer);                                  <span class="comment">// ok, find the index of the respective peer</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    uint8_t  getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);                     <span class="comment">// ok, returns the respective peer of the given index</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    uint8_t  addPeer(uint8_t cnl, uint8_t *peer);                                       <span class="comment">// ok, writes a peer in the database on first free slot </span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    uint8_t  remPeer(uint8_t cnl, uint8_t *peer);                                       <span class="comment">// ok, writes a zero to the respective slot</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    uint8_t  countPeerSlc(uint8_t cnl);                                                 <span class="comment">// ok, count the slices for function getPeerListSlc</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    uint8_t  getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);                    <span class="comment">// ok, returns the whole peer database as a string  </span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    uint8_t  getPeerSlots(uint8_t cnl);                                                 <span class="comment">// ok, returns max peers per channel</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="comment">// register functions</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordtype">void</span>     clearRegs(<span class="keywordtype">void</span>);                                                           <span class="comment">// ok, clears register space</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    uint8_t  countRegListSlc(uint8_t cnl, uint8_t lst);                                 <span class="comment">// ok, counts the slices for a complete regs transmition</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    uint8_t  getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);<span class="comment">// ok, generates answer to a channel/list request</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    uint8_t  setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);<span class="comment">// ok, set registers from a string</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="comment">//uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);        </span></div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="comment">//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);                            </span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="comment">//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); </span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    uint8_t  getRegListIdx(uint8_t cnl, uint8_t lst);                                   <span class="comment">// ok, returns the respective line of cnlTbl</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    uint8_t  checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}; </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keyword">extern</span> <a class="code" href="structEE_1_1s__cnlTbl.html">EE::s_cnlTbl</a> cnlTbl[];                                                           <span class="comment">// initial register.h</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="keyword">extern</span> <a class="code" href="structEE_1_1s__peerTbl.html">EE::s_peerTbl</a> peerTbl[];                                                         <span class="comment">// initial register.h</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">extern</span> <a class="code" href="structEE_1_1s__devDef.html">EE::s_devDef</a> devDef;                                                             <span class="comment">// initial register.h</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keyword">extern</span> uint8_t MAID[];</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">extern</span> uint8_t HMID[];</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword">extern</span> uint8_t HMSR[];</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="comment">//- some helpers ----------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;uint16_t crc16(uint16_t crc, uint8_t a);                                                <span class="comment">// crc function</span></div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;uint8_t  compArray(<span class="keywordtype">void</span> *p1, <span class="keywordtype">void</span> *p2, uint8_t len);                                    <span class="comment">// compare two byte arrays</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;uint8_t  isEmpty(<span class="keywordtype">void</span> *p1, uint8_t len);                                                <span class="comment">// check if a byte array is empty</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="preprocessor"></span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;  <span class="keyword">protected</span>:    <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;  <span class="keyword">private</span>:      <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;  <span class="keyword">public</span>:       <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    uint8_t  getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);              <span class="comment">// get a complete list in to a given buffer</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);              <span class="comment">// set a complete list to the eeprom</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);           <span class="comment">// ok, gets a single register value</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    uint32_t getHMID(<span class="keywordtype">void</span>);                                                             <span class="comment">// get HMID as 32 bit integer</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;  <span class="keyword">protected</span>:    <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;  <span class="keyword">public</span>:       <span class="comment">//---------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  <span class="comment">//private:    //---------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="classEE.html">EE</a>();                                                                               <span class="comment">// class constructor</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordtype">void</span>     init(<span class="keywordtype">void</span>);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordtype">void</span>     getMasterID(<span class="keywordtype">void</span>);</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordtype">void</span>     testModul(<span class="keywordtype">void</span>);                                                           <span class="comment">// prints register.h definition on console</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    uint8_t  isHMIDValid(uint8_t *toID);                                                <span class="comment">// ok, check if a valid pair was given</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    uint8_t  isPairValid(uint8_t *reID);                                                <span class="comment">// ok, check if a valid pair was given</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    uint8_t  isBroadCast(uint8_t *reID);</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    uint8_t  getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="comment">// peer functions</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordtype">void</span>     clearPeers(<span class="keywordtype">void</span>);                                                          <span class="comment">// ok, clears complete peer database</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    uint8_t  isPeerValid (uint8_t *peer);                                               <span class="comment">// ok, checks if a valid peer was given</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    uint8_t  countFreeSlots(uint8_t cnl);                                               <span class="comment">// ok, counts the free peer slots of a channel</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    uint8_t  getIdxByPeer(uint8_t cnl, uint8_t *peer);                                  <span class="comment">// ok, find the index of the respective peer</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    uint8_t  getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);                     <span class="comment">// ok, returns the respective peer of the given index</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    uint8_t  addPeer(uint8_t cnl, uint8_t *peer);                                       <span class="comment">// ok, writes a peer in the database on first free slot </span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    uint8_t  remPeer(uint8_t cnl, uint8_t *peer);                                       <span class="comment">// ok, writes a zero to the respective slot</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    uint8_t  countPeerSlc(uint8_t cnl);                                                 <span class="comment">// ok, count the slices for function getPeerListSlc</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    uint8_t  getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);                    <span class="comment">// ok, returns the whole peer database as a string  </span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    uint8_t  getPeerSlots(uint8_t cnl);                                                 <span class="comment">// ok, returns max peers per channel</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    </div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="comment">// register functions</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordtype">void</span>     clearRegs(<span class="keywordtype">void</span>);                                                           <span class="comment">// ok, clears register space</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    uint8_t  countRegListSlc(uint8_t cnl, uint8_t lst);                                 <span class="comment">// ok, counts the slices for a complete regs transmition</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    uint8_t  getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);<span class="comment">// ok, generates answer to a channel/list request</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    uint8_t  <a class="code" href="classEE.html#aa672cca3b4cd59300e5c358c1a94f596">setListArray</a>(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, <span class="keyword">const</span> uint8_t *buf);<span class="comment">// ok, set registers from a string</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="comment">//uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);        </span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="comment">//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);                            </span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="comment">//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len); </span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    uint8_t  getRegListIdx(uint8_t cnl, uint8_t lst);                                   <span class="comment">// ok, returns the respective line of cnlTbl</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    uint8_t  checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx);</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;}; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keyword">extern</span> <a class="code" href="structEE_1_1s__cnlTbl.html">EE::s_cnlTbl</a> cnlTbl[];                                                           <span class="comment">// initial register.h</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">extern</span> <a class="code" href="structEE_1_1s__peerTbl.html">EE::s_peerTbl</a> peerTbl[];                                                         <span class="comment">// initial register.h</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword">extern</span> <a class="code" href="structEE_1_1s__devDef.html">EE::s_devDef</a> devDef;                                                             <span class="comment">// initial register.h</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword">extern</span> uint8_t MAID[];</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="keyword">extern</span> uint8_t HMID[];</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">extern</span> uint8_t HMSR[];</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="comment">//- some helpers ----------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;uint16_t crc16(uint16_t crc, uint8_t a);                                                <span class="comment">// crc function</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;uint8_t  compArray(<span class="keywordtype">void</span> *p1, <span class="keywordtype">void</span> *p2, uint8_t len);                                    <span class="comment">// compare two byte arrays</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;uint8_t  isEmpty(<span class="keywordtype">void</span> *p1, uint8_t len);                                                <span class="comment">// check if a byte array is empty</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="preprocessor"></span></div>
 <div class="ttc" id="classAS_html"><div class="ttname"><a href="classAS.html">AS</a></div><div class="ttdoc">Main class for implementation of the AskSin protocol stack. Every device needs exactly one instance o...</div><div class="ttdef"><b>Definition:</b> AS.h:39</div></div>
-<div class="ttc" id="structEE_1_1s__peerTbl_html"><div class="ttname"><a href="structEE_1_1s__peerTbl.html">EE::s_peerTbl</a></div><div class="ttdef"><b>Definition:</b> EEprom.h:31</div></div>
-<div class="ttc" id="classCB_html"><div class="ttname"><a href="classCB.html">CB</a></div><div class="ttdef"><b>Definition:</b> ConfButton.h:33</div></div>
-<div class="ttc" id="structEE_1_1s__devDef_html"><div class="ttname"><a href="structEE_1_1s__devDef.html">EE::s_devDef</a></div><div class="ttdef"><b>Definition:</b> EEprom.h:37</div></div>
-<div class="ttc" id="classEE_html"><div class="ttname"><a href="classEE.html">EE</a></div><div class="ttdef"><b>Definition:</b> EEprom.h:16</div></div>
-<div class="ttc" id="structEE_1_1s__cnlTbl_html"><div class="ttname"><a href="structEE_1_1s__cnlTbl.html">EE::s_cnlTbl</a></div><div class="ttdef"><b>Definition:</b> EEprom.h:23</div></div>
+<div class="ttc" id="structEE_1_1s__peerTbl_html"><div class="ttname"><a href="structEE_1_1s__peerTbl.html">EE::s_peerTbl</a></div><div class="ttdef"><b>Definition:</b> EEprom.h:34</div></div>
+<div class="ttc" id="classCB_html"><div class="ttname"><a href="classCB.html">CB</a></div><div class="ttdoc">Class for the handling the configuration key of the device Right now there are three possible scenari...</div><div class="ttdef"><b>Definition:</b> ConfButton.h:54</div></div>
+<div class="ttc" id="structEE_1_1s__devDef_html"><div class="ttname"><a href="structEE_1_1s__devDef.html">EE::s_devDef</a></div><div class="ttdef"><b>Definition:</b> EEprom.h:40</div></div>
+<div class="ttc" id="classEE_html"><div class="ttname"><a href="classEE.html">EE</a></div><div class="ttdef"><b>Definition:</b> EEprom.h:19</div></div>
+<div class="ttc" id="classEE_html_aa672cca3b4cd59300e5c358c1a94f596"><div class="ttname"><a href="classEE.html#aa672cca3b4cd59300e5c358c1a94f596">EE::setListArray</a></div><div class="ttdeci">uint8_t setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, const uint8_t *buf)</div><div class="ttdoc">Set individual registers of a list. </div><div class="ttdef"><b>Definition:</b> EEprom.cpp:505</div></div>
+<div class="ttc" id="structEE_1_1s__cnlTbl_html"><div class="ttname"><a href="structEE_1_1s__cnlTbl.html">EE::s_cnlTbl</a></div><div class="ttdef"><b>Definition:</b> EEprom.h:26</div></div>
 <div class="ttc" id="classRV_html"><div class="ttname"><a href="classRV.html">RV</a></div><div class="ttdef"><b>Definition:</b> Receive.h:16</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jun 12 2015 21:27:08 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Jul 3 2015 11:45:27 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>
