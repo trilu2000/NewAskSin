@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['poll',['poll',['../classAS.html#a1fb1446fc713c4b27dee63f4708f2b6e',1,'AS']]]
+  ['firsttimestart',['firstTimeStart',['../EEprom_8h.html#a24a5ce20657a2331a789ef0401ca7464',1,'EEprom.h']]]
 ];

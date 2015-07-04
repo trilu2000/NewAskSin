@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['remain',['remain',['../classwaitTimer.html#afe95b3a61f3b92fffa224a5018404fa5',1,'waitTimer']]]
+  ['init',['init',['../classAS.html#a00e19a3218c18d0aabf1de8a273067dd',1,'AS']]]
 ];

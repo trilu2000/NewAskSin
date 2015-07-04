@@ -94,32 +94,54 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">EE::s_cnlTbl Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Channel Table Entry This structure is used in the channels definition, where all existing channels are assigned with channel slice address information and EEprom addresses.  
+ <a href="structEE_1_1s__cnlTbl.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="EEprom_8h_source.html">EEprom.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ac7a413b2f1ec9e3bdf6be4cf510fe85b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac7a413b2f1ec9e3bdf6be4cf510fe85b"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>cnl</b></td></tr>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__cnlTbl.html#ac7a413b2f1ec9e3bdf6be4cf510fe85b">cnl</a></td></tr>
+<tr class="memdesc:ac7a413b2f1ec9e3bdf6be4cf510fe85b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Channel. <br/></td></tr>
 <tr class="separator:ac7a413b2f1ec9e3bdf6be4cf510fe85b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09d017f0de6b6864059234a3b0fb7b7e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a09d017f0de6b6864059234a3b0fb7b7e"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>lst</b></td></tr>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__cnlTbl.html#a09d017f0de6b6864059234a3b0fb7b7e">lst</a></td></tr>
+<tr class="memdesc:a09d017f0de6b6864059234a3b0fb7b7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">List within the channel. <br/></td></tr>
 <tr class="separator:a09d017f0de6b6864059234a3b0fb7b7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9baa276940cb9986b6a83f7573da5b26"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9baa276940cb9986b6a83f7573da5b26"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>sIdx</b></td></tr>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__cnlTbl.html#a9baa276940cb9986b6a83f7573da5b26">sIdx</a></td></tr>
+<tr class="memdesc:a9baa276940cb9986b6a83f7573da5b26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Index of first entry in channel slice address definition. <br/></td></tr>
 <tr class="separator:a9baa276940cb9986b6a83f7573da5b26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06e414e936a0c8a6f4b3de869b7565d6"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a06e414e936a0c8a6f4b3de869b7565d6"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>sLen</b></td></tr>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__cnlTbl.html#a06e414e936a0c8a6f4b3de869b7565d6">sLen</a></td></tr>
+<tr class="memdesc:a06e414e936a0c8a6f4b3de869b7565d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of registers. <br/></td></tr>
 <tr class="separator:a06e414e936a0c8a6f4b3de869b7565d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a815f9f2cb9885118b09233e6497b8e2b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a815f9f2cb9885118b09233e6497b8e2b"></a>
-const uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>pAddr</b></td></tr>
+const uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__cnlTbl.html#a815f9f2cb9885118b09233e6497b8e2b">pAddr</a></td></tr>
+<tr class="memdesc:a815f9f2cb9885118b09233e6497b8e2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Address of first byte in EEprom memory. <br/></td></tr>
 <tr class="separator:a815f9f2cb9885118b09233e6497b8e2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Channel Table Entry This structure is used in the channels definition, where all existing channels are assigned with channel slice address information and EEprom addresses. </p>
+<div class="fragment"><div class="line"><span class="keyword">const</span> uint8_t cnlAddr[] PROGMEM = {</div>
+<div class="line">    0x02, 0x05, 0x0a, 0x0b, 0x0c, 0x14, 0x24, 0x25, 0x26, 0x27, <span class="comment">// sIdx 0x00, 10 bytes for Channel0/List0</span></div>
+<div class="line">    0x01,                                                       <span class="comment">// sIdx 0x0a,  1 byte  for Channel1/List4</span></div>
+<div class="line">}; <span class="comment">// 11 byte</span></div>
+<div class="line"></div>
+<div class="line"><a class="code" href="structEE_1_1s__cnlTbl.html">EE::s_cnlTbl</a> cnlTbl[] = {</div>
+<div class="line">    <span class="comment">// cnl, lst, sIdx, sLen, pAddr;</span></div>
+<div class="line">    {  0,  0, 0x00, 10,  0x000f }, <span class="comment">// Channel0/List0, 10 bytes at sIdx 0x00, Addr 0x000f</span></div>
+<div class="line">    {  1,  4, 0x0a,  1,  0x0019 }, <span class="comment">// Channel1/List4,  1 byte  at sIdx 0x0a, Addr 0x0019</span></div>
+<div class="line">};</div>
+</div><!-- fragment --> </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="EEprom_8h_source.html">EEprom.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jul 3 2015 11:45:27 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jul 4 2015 17:03:20 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

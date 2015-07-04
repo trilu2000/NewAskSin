@@ -86,15 +86,18 @@ Protocol Basics</h1>
 <li>A receiving device configured as peer will be adressed as destination of the message and acknowledge the reception of the message by means of an ACK frame. This way the source device will know if the message was received and can try retransmission upon timeout.</li>
 <li>Messages addressed to the special broadcast address will not be acknowledged and can be used for measurement data or alike that are of volatile nature.</li>
 </ul>
+<h2><a class="anchor" id="device_address"></a>
+Device Address</h2>
+<p>Every device is addressed by a unique 3-byte ID (aka 'HM-ID'). This address is usually expressed in hexadezimal form, ommiting any hex denominating prefix commonly used in programming languages (prefix '0x'). Valid device IDs range from <code>000001</code> to <code>FFFFFE</code>. ID <code>000000</code> is reserved as broadcast address when sending out data frames that do not require acknowledgement.</p>
 <h2><a class="anchor" id="message_frame"></a>
 Message Frames</h2>
 <p>All message frames follow the same structure with a fixed-length message header and a variable-length payload: </p>
 <pre>
-             |                               Message Header                                  |              Payload             
+             |                               Message Header                                  |              Payload
 -------------+-------------------------------------------------------------------------------+----------------------------------
-Index        |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |   8   |   9   |   10  |        ...       | Len-1 
+Index        |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |   8   |   9   |   10  |        ...       | Len-1
 -------------+-------+-------+-------+-------+-----------------------+-----------------------+----------------------------------
-Description  |  Len  | Count | Flags | Type  |     Source-Address    |  Destination-Address  |    (depending on message type)   
+Description  |  Len  | Count | Flags | Type  |     Source-Address    |  Destination-Address  |    (depending on message type)
 </pre><dl>
 <dt>Len </dt>
 <dd><p class="startdd">Length of the complete message frame, including header and payload. Maximum allowed length is 26.</p>
@@ -113,11 +116,11 @@ Description  |  Len  | Count | Flags | Type  |     Source-Address    |  Destinat
 <p class="enddd"></p>
 </dd>
 <dt>Source-Address </dt>
-<dd><p class="startdd">3-Byte address of the source device. Often referred to as HMID.</p>
+<dd><p class="startdd">3-Byte address of the source device. Often referred to as <a class="el" href="EEprom_8h.html#a58db4a599efa5be22a0ff4543951d6ff">HMID</a>.</p>
 <p class="enddd"></p>
 </dd>
 <dt>Destination-Address </dt>
-<dd><p class="startdd">3-Byte address of the destination. Broadcasts are addressed to 000000. Also see HMID.</p>
+<dd><p class="startdd">3-Byte address of the destination. Broadcasts are addressed to 000000. Also see <a class="el" href="EEprom_8h.html#a58db4a599efa5be22a0ff4543951d6ff">HMID</a>.</p>
 <p class="enddd"></p>
 </dd>
 <dt>Payload </dt>
@@ -141,7 +144,7 @@ Message Flags</h2>
 <h2><a class="anchor" id="message_types"></a>
 Message Types</h2>
 <p>The message type defines how the payload oof the message is to be interpreted. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd><p class="startdd">Write much more about message types. </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000010">Todo:</a></b></dt><dd><p class="startdd">Write much more about message types. </p>
 <p class="enddd">Decide if every message type should have its own subsubsection</p>
 </dd></dl>
 <h1><a class="anchor" id="device_model_basics"></a>
@@ -151,7 +154,7 @@ Device Channels</h2>
 <p>Device properties are organized in form of channels, with special channel 0 that represents the device entity that communicates with others and at least one more channel that represents a sensor, actuator, or alike.</p>
 <h2><a class="anchor" id="basics_device_registers"></a>
 Device Registers</h2>
-<p>Seen from the protocol prespective, the configuration of a device is represented in form of registers each of which has an ID for identification and a one-byte-content that affects the behavior of the device. Registers are solely used for configuration purposes. Static information that is hardcoded into the device software, like serial number or HMID, is not represented by registers but can be queried using special messages.</p>
+<p>Seen from the protocol prespective, the configuration of a device is represented in form of registers each of which has an ID for identification and a one-byte-content that affects the behavior of the device. Registers are solely used for configuration purposes. Static information that is hardcoded into the device software, like serial number or <a class="el" href="EEprom_8h.html#a58db4a599efa5be22a0ff4543951d6ff">HMID</a>, is not represented by registers but can be queried using special messages.</p>
 <p>Often, register specifications are written as a list of ID:VALUE pairs:</p>
 <p>List0: 02:01 05:00 0A:AB 0B:CD 0C:EF 14:05 24:05 25:DC 26:05 27:03 00:00</p>
 <p>This example shows that the device is paired to ID 'ABCDEF', represented by registers 0A, 0B and 0C.</p>
@@ -186,7 +189,7 @@ Device Registers</h2>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jun 12 2015 21:27:08 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jul 4 2015 17:03:20 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

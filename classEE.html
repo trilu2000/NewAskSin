@@ -92,10 +92,16 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">EE Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Helper class for providing access to non-volatile data in the EEprom.  
+ <a href="classEE.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="EEprom_8h_source.html">EEprom.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__cnlTbl.html">s_cnlTbl</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Channel Table Entry This structure is used in the channels definition, where all existing channels are assigned with channel slice address information and EEprom addresses.  <a href="structEE_1_1s__cnlTbl.html#details">More...</a><br/></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__devDef.html">s_devDef</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -107,8 +113,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a2fac005657c90befc342cd0ac98b30c1"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2fac005657c90befc342cd0ac98b30c1"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getList</b> (uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf)</td></tr>
 <tr class="separator:a2fac005657c90befc342cd0ac98b30c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65415a4f2c8dc520c88b2383939a3d19"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a65415a4f2c8dc520c88b2383939a3d19"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>setList</b> (uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf)</td></tr>
+<tr class="memitem:a65415a4f2c8dc520c88b2383939a3d19"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classEE.html#a65415a4f2c8dc520c88b2383939a3d19">setList</a> (uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf)</td></tr>
+<tr class="memdesc:a65415a4f2c8dc520c88b2383939a3d19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write arbitrary data as list content to EEprom.  <a href="#a65415a4f2c8dc520c88b2383939a3d19">More...</a><br/></td></tr>
 <tr class="separator:a65415a4f2c8dc520c88b2383939a3d19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad1176c548a20363cfbe03e3f523cc80e"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad1176c548a20363cfbe03e3f523cc80e"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getRegAddr</b> (uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr)</td></tr>
@@ -176,9 +182,9 @@ uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>countRegListSlc</b
 <tr class="memitem:a012d0ef0b2ea9096591182f8e89b0cc1"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a012d0ef0b2ea9096591182f8e89b0cc1"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getRegListSlc</b> (uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf)</td></tr>
 <tr class="separator:a012d0ef0b2ea9096591182f8e89b0cc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa672cca3b4cd59300e5c358c1a94f596"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classEE.html#aa672cca3b4cd59300e5c358c1a94f596">setListArray</a> (uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, const uint8_t *buf)</td></tr>
-<tr class="memdesc:aa672cca3b4cd59300e5c358c1a94f596"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set individual registers of a list.  <a href="#aa672cca3b4cd59300e5c358c1a94f596">More...</a><br/></td></tr>
-<tr class="separator:aa672cca3b4cd59300e5c358c1a94f596"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3eedd13d4960199f023deb4676b5aee6"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classEE.html#a3eedd13d4960199f023deb4676b5aee6">setListArray</a> (uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf)</td></tr>
+<tr class="memdesc:a3eedd13d4960199f023deb4676b5aee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set individual registers of a list.  <a href="#a3eedd13d4960199f023deb4676b5aee6">More...</a><br/></td></tr>
+<tr class="separator:a3eedd13d4960199f023deb4676b5aee6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab6a1434c1381cf8ccadb709ef5ed650"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aab6a1434c1381cf8ccadb709ef5ed650"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getRegListIdx</b> (uint8_t cnl, uint8_t lst)</td></tr>
 <tr class="separator:aab6a1434c1381cf8ccadb709ef5ed650"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -198,8 +204,96 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>RV</b></td></tr>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
 <tr class="separator:ac5a75f7ea8ec6d10bfc5b2b573982c8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a class="anchor" id="aa672cca3b4cd59300e5c358c1a94f596"></a>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Helper class for providing access to non-volatile data in the EEprom. </p>
+<p>This class is used by the main <a class="el" href="classAS.html" title="Main class for implementation of the AskSin protocol stack. Every device needs exactly one instance o...">AS</a> class to handle non-volatile data stored in the EEprom and accessed in form of Registers in the context of Lists.</p>
+<p>Every device requires a set of definitions that define its properties and capabilities.</p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000005">Todo:</a></b></dt><dd><p class="startdd">Describe device properties and how they are represented (register.h) </p>
+<p class="enddd">Describe registers, channel slice addresses, list tables and peer tables </p>
+</dd></dl>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a class="anchor" id="a65415a4f2c8dc520c88b2383939a3d19"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t EE::setList </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramname"><em>cnl</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramname"><em>lst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t&#160;</td>
+          <td class="paramname"><em>idx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t *&#160;</td>
+          <td class="paramname"><em>buf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Write arbitrary data as list content to EEprom. </p>
+<p><a class="el" href="classEE.html#a65415a4f2c8dc520c88b2383939a3d19" title="Write arbitrary data as list content to EEprom. ">setList()</a> can be used to set the values of all registers in a list (see <a class="el" href="basics.html#basics_device_registers">Device Registers</a>).</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">cnl</td><td>Channel </td></tr>
+    <tr><td class="paramname">lst</td><td>List </td></tr>
+    <tr><td class="paramname">idx</td><td>Index of peer (0 if not applicable) </td></tr>
+    <tr><td class="paramname">buf</td><td>Array with all new list values (must match size of list)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>Describe how to determine size of list</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>1 for success, 0 for failure</dd></dl>
+<p>The specified channel, list and index are used to identify the eeprom section to write to. </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd>Write something about how channel,list,index relate to the eeprom data and how we define them in the first place</dd></dl>
+<p>If a valid eeprom section can be identified, the content of buf will be written to the associated EEprom memory section.</p>
+<dl class="section note"><dt>Note</dt><dd>Use <a class="el" href="classEE.html#a3eedd13d4960199f023deb4676b5aee6" title="Set individual registers of a list. ">setListArray()</a> to write to individual registers rather than the complete list.</dd></dl>
+<p>In a simple example, the channel slice address definition for List0 is: </p>
+<div class="fragment"><div class="line"><span class="keyword">const</span> uint8_t cnlAddr[] PROGMEM = {</div>
+<div class="line">    0x02, 0x05, 0x0a, 0x0b, 0x0c, 0x14, 0x24, 0x25, 0x26, 0x27, <span class="comment">// sIdx 0x00, 10 bytes for Channel0/List0</span></div>
+<div class="line">    0x01,                                                       <span class="comment">// sIdx 0x0a,  1 byte  for Channel1/List4</span></div>
+<div class="line">}; <span class="comment">// 11 byte</span></div>
+<div class="line"></div>
+<div class="line"><a class="code" href="structEE_1_1s__cnlTbl.html">EE::s_cnlTbl</a> <a class="code" href="EEprom_8h.html#a546231a7e238de181dd330781f10f1b1">cnlTbl</a>[] = {</div>
+<div class="line">    <span class="comment">// cnl, lst, sIdx, sLen, pAddr;</span></div>
+<div class="line">    {  0,  0, 0x00, 10,  0x000f }, <span class="comment">// Channel0/List0, 10 bytes at sIdx 0x00, Addr 0x000f</span></div>
+<div class="line">    {  1,  4, 0x0a,  1,  0x0019 }, <span class="comment">// Channel1/List4,  1 byte  at sIdx 0x0a, Addr 0x0019</span></div>
+<div class="line">};</div>
+</div><!-- fragment --><p> In order to write the contents of list0 (10 bytes) to the EEprom, we simply use: </p>
+<div class="fragment"><div class="line"><span class="keyword">const</span> uint8_t list0defaults[] = {</div>
+<div class="line">    0x01,           <span class="comment">//  0x02, led-mode on</span></div>
+<div class="line">    0x00,           <span class="comment">//  0x05,</span></div>
+<div class="line">    0x00,0x00,0x00, <span class="comment">//  0x0a, Master-ID, leave at 000000 to allow for pairing</span></div>
+<div class="line">    0x00,           <span class="comment">//  0x14,</span></div>
+<div class="line">    0x02,0x01       <span class="comment">//  0x24, measureInterval = 513sec = 0x0201</span></div>
+<div class="line">    0x03,           <span class="comment">//  0x26, pwmStableDelay = 3sec = 0x03</span></div>
+<div class="line">    0x05            <span class="comment">//  0x27, pwmStableDelta = 2.5% = 0x05</span></div>
+<div class="line">};</div>
+<div class="line">hm.<a class="code" href="classAS.html#a9b75b6a425ac3f72ad5fc840fef70c62">ee</a>.<a class="code" href="classEE.html#a3eedd13d4960199f023deb4676b5aee6">setListArray</a>(0,0,0,<span class="keyword">sizeof</span>(list0defaults),list0defaults);</div>
+</div><!-- fragment --><p> Note how registers with data types bigger than one byte use consecutive addresses for the required number of bytes.</p>
+<p>Commonly, it is good practice to keep the declaration of the register contents close to that of the channel slice address definition to simplify book-keeping during development.</p>
+<dl class="section see"><dt>See Also</dt><dd><a class="el" href="classEE.html#a3eedd13d4960199f023deb4676b5aee6" title="Set individual registers of a list. ">setListArray()</a>, <a class="el" href="EEprom_8h.html#a24a5ce20657a2331a789ef0401ca7464" title="Callback for actions after EEprom deletion. ">firstTimeStart()</a> </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a3eedd13d4960199f023deb4676b5aee6"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -230,7 +324,7 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const uint8_t *&#160;</td>
+          <td class="paramtype">uint8_t *&#160;</td>
           <td class="paramname"><em>buf</em>&#160;</td>
         </tr>
         <tr>
@@ -242,7 +336,7 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
 </div><div class="memdoc">
 
 <p>Set individual registers of a list. </p>
-<p>setListArray can be used to set indivual registers of a list: List0 for channel 0, List1/List2 and List3/List4 for sensors and actors. Any number of registers defined for a list by the respective channel slice address definition can we written with a new value.</p>
+<p>setListArray can be used to set indivual registers of a list (see <a class="el" href="basics.html#basics_device_registers">Device Registers</a>). Any number of registers defined for a list by the respective channel slice address definition can we written with a new value.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">cnl</td><td>Channel </td></tr>
@@ -255,13 +349,25 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>1 for success, 0 for failure</dd></dl>
 <p>The specified channel, list and index are used to identify the eeprom section to write to. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>Write something about how channel,list,index relate to the eeprom data and how we define them in the first place</dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>Write something about how channel,list,index relate to the eeprom data and how we define them in the first place</dd></dl>
 <p>If a valid eeprom section is identified, each REGNUM:VALUE pair in the array for validity and write will be used to write VALUE as the new content of register REGNUM in the specified List.</p>
+<dl class="section note"><dt>Note</dt><dd>Use <a class="el" href="classEE.html#a65415a4f2c8dc520c88b2383939a3d19" title="Write arbitrary data as list content to EEprom. ">setList()</a> to write to the complete list rather than individual registers.</dd></dl>
 <p>In a simple example, the channel slice address definition for List0 is: </p>
 <div class="fragment"><div class="line"><span class="keyword">const</span> uint8_t cnlAddr[] PROGMEM = {</div>
-<div class="line">    0x02, 0x05, 0x0a, 0x0b, 0x0c, 0x14, 0x24, 0x25, 0x26, 0x27, <span class="comment">// List0, 10 bytes</span></div>
-<div class="line">    0x01,                                                       <span class="comment">// List1,  1 byte</span></div>
+<div class="line">    0x02, 0x05, 0x0a, 0x0b, 0x0c, 0x14, 0x24, 0x25, 0x26, 0x27, <span class="comment">// sIdx 0x00, 10 bytes for Channel0/List0</span></div>
+<div class="line">    0x01,                                                       <span class="comment">// sIdx 0x0a,  1 byte  for Channel1/List4</span></div>
 <div class="line">}; <span class="comment">// 11 byte</span></div>
+</div><!-- fragment --><p> docs/snippets/register-h-cnlTbl.cpp </p>
+<div class="fragment"><div class="line"><span class="keyword">const</span> uint8_t cnlAddr[] PROGMEM = {</div>
+<div class="line">    0x02, 0x05, 0x0a, 0x0b, 0x0c, 0x14, 0x24, 0x25, 0x26, 0x27, <span class="comment">// sIdx 0x00, 10 bytes for Channel0/List0</span></div>
+<div class="line">    0x01,                                                       <span class="comment">// sIdx 0x0a,  1 byte  for Channel1/List4</span></div>
+<div class="line">}; <span class="comment">// 11 byte</span></div>
+<div class="line"></div>
+<div class="line"><a class="code" href="structEE_1_1s__cnlTbl.html">EE::s_cnlTbl</a> cnlTbl[] = {</div>
+<div class="line">    <span class="comment">// cnl, lst, sIdx, sLen, pAddr;</span></div>
+<div class="line">    {  0,  0, 0x00, 10,  0x000f }, <span class="comment">// Channel0/List0, 10 bytes at sIdx 0x00, Addr 0x000f</span></div>
+<div class="line">    {  1,  4, 0x0a,  1,  0x0019 }, <span class="comment">// Channel1/List4,  1 byte  at sIdx 0x0a, Addr 0x0019</span></div>
+<div class="line">};</div>
 </div><!-- fragment --><p> In order to write the contents for only a few of the registers of List0 to the EEprom, we simply use: </p>
 <div class="fragment"><div class="line"><span class="keyword">const</span> uint8_t list0defaults[] = {</div>
 <div class="line">    0x01, 0x01,  <span class="comment">// led-mode on</span></div>
@@ -270,8 +376,8 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
 <div class="line">    0x26, 0x03,  <span class="comment">// pwmStableDelay = 3sec = 0x03</span></div>
 <div class="line">    0x27, 0x05   <span class="comment">// pwmStableDelta = 2.5% = 0x05</span></div>
 <div class="line">};</div>
-<div class="line">hm.<a class="code" href="classAS.html#a9b75b6a425ac3f72ad5fc840fef70c62">ee</a>.<a class="code" href="classEE.html#aa672cca3b4cd59300e5c358c1a94f596">setListArray</a>(0,0,0,<span class="keyword">sizeof</span>(list0defaults),list0defaults);</div>
-</div><!-- fragment --><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd>Add references to related methods </dd></dl>
+<div class="line">hm.<a class="code" href="classAS.html#a9b75b6a425ac3f72ad5fc840fef70c62">ee</a>.<a class="code" href="classEE.html#a3eedd13d4960199f023deb4676b5aee6">setListArray</a>(0,0,0,<span class="keyword">sizeof</span>(list0defaults),list0defaults);</div>
+</div><!-- fragment --><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000004">Todo:</a></b></dt><dd>Add references to related methods </dd></dl>
 
 </div>
 </div>
@@ -282,7 +388,7 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Jul 3 2015 11:45:27 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Jul 4 2015 17:03:20 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>
