@@ -10,7 +10,7 @@
 @section main_overview Overview
 
 This is the NewAskSin API-Documentation. It includes a growing, increasingly detailed
-documentation of most of the classes, some design overviews and examples. 
+documentation of most of the classes, some design overviews and examples.
 
 @subsection literature Suggested Reading
 
@@ -24,7 +24,7 @@ similar hardware by applying minor modifications.
 
 @section homebrew Do it yourself - The HomeBrew device
 
-In order to develop your own device, you will start to layout the device properties, decide 
+In order to develop your own device, you will start to layout the device properties, decide
 over channels and think about parameters and message frames. Once this is done, you can start
 defining the device using the NewAskSin framework
 
@@ -37,7 +37,7 @@ unwanted side-effects
 
 @subsubsection millis System time
 
-The arduino function millis() can not be used together with NewAskSin. If your code requires 
+The arduino function millis() can not be used together with NewAskSin. If your code requires
 the time since startup in milli-seconds, use getMillis(), instead.
 
 */
@@ -45,26 +45,33 @@ the time since startup in milli-seconds, use getMillis(), instead.
 
 @section protocol_basics Protocol Basics
 
-Messages are exchanged between devices (including central units) by way of message frames sent 
-out by a device (source). These messages can be received by any other device. Depending on the 
+Messages are exchanged between devices (including central units) by way of message frames sent
+out by a device (source). These messages can be received by any other device. Depending on the
 destination address and configuration of the receiving device, it will decide how to handle the
 message:
-- A receiving device configured as peer will be adressed as destination of the message and 
-  acknowledge the reception of the message by means of an ACK frame. This way the source device 
+- A receiving device configured as peer will be adressed as destination of the message and
+  acknowledge the reception of the message by means of an ACK frame. This way the source device
   will know if the message was received and can try retransmission upon timeout.
 - Messages addressed to the special broadcast address will not be acknowledged and can be used
   for measurement data or alike that are of volatile nature.
+
+@subsection device_address Device Address
+
+Every device is addressed by a unique 3-byte ID (aka 'HM-ID'). This address is usually expressed
+in hexadezimal form, ommiting any hex denominating prefix commonly used in programming languages
+(prefix '0x'). Valid device IDs range from @c 000001 to @c FFFFFE. ID @c 000000 is reserved as
+broadcast address when sending out data frames that do not require acknowledgement.
 
 @subsection message_frame Message Frames
 
 All message frames follow the same structure with a fixed-length message header and a variable-length
 payload:
 <pre>
-             |                               Message Header                                  |              Payload             
+             |                               Message Header                                  |              Payload
 -------------+-------------------------------------------------------------------------------+----------------------------------
-Index        |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |   8   |   9   |   10  |        ...       | Len-1 
+Index        |   0   |   1   |   2   |   3   |   4   |   5   |   6   |   7   |   8   |   9   |   10  |        ...       | Len-1
 -------------+-------+-------+-------+-------+-----------------------+-----------------------+----------------------------------
-Description  |  Len  | Count | Flags | Type  |     Source-Address    |  Destination-Address  |    (depending on message type)   
+Description  |  Len  | Count | Flags | Type  |     Source-Address    |  Destination-Address  |    (depending on message type)
 </pre>
 
 <DL>
@@ -106,7 +113,7 @@ The message flags byte carries status information relevant for protocol handling
 
 @subsection message_types Message Types
 
-The message type defines how the payload oof the message is to be interpreted. 
+The message type defines how the payload oof the message is to be interpreted.
 @todo Write much more about message types.
 @todo Decide if every message type should have its own subsubsection
 
@@ -115,23 +122,23 @@ The message type defines how the payload oof the message is to be interpreted.
 
 @subsection basics_device_channels Device Channels
 
-Device properties are organized in form of channels, with special channel 0 that represents 
-the device entity that communicates with others and at least one more channel that represents 
+Device properties are organized in form of channels, with special channel 0 that represents
+the device entity that communicates with others and at least one more channel that represents
 a sensor, actuator, or alike.
 
 @subsection basics_device_registers Device Registers
 
-Seen from the protocol prespective, the configuration of a device is represented in form 
-of registers each of which has an ID for identification and a one-byte-content that affects 
-the behavior of the device. Registers are solely used for configuration purposes. 
-Static information that is hardcoded into the device software, like serial number or @ref HMID, 
+Seen from the protocol prespective, the configuration of a device is represented in form
+of registers each of which has an ID for identification and a one-byte-content that affects
+the behavior of the device. Registers are solely used for configuration purposes.
+Static information that is hardcoded into the device software, like serial number or @ref HMID,
 is not represented by registers but can be queried using special messages.
 
 Often, register specifications are written as a list of ID:VALUE pairs:
 
  List0: 02:01 05:00 0A:AB 0B:CD 0C:EF 14:05 24:05 25:DC 26:05 27:03 00:00
 
-This example shows that the device is paired to ID 'ABCDEF', represented by registers 0A, 0B and 0C. 
+This example shows that the device is paired to ID 'ABCDEF', represented by registers 0A, 0B and 0C.
 
 A device organizes registers in the context of lists that are used for specific purposes:
 <DL>
@@ -155,5 +162,5 @@ A device organizes registers in the context of lists that are used for specific 
 
 </DL>
 
-In the NewAskSin framework, registers are defined 
+In the NewAskSin framework, registers are defined
 */
