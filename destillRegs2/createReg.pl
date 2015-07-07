@@ -737,6 +737,9 @@ sub searchXMLFiles {
 	
 				$devCVal = eval $param->getAttribute('const_value');										# getting the const value
 
+				#-- generating output ---------------------------------------------------------
+				#print sprintf("0x%.4x   0x%.2x    %-25s   %-65s", $devCVal, $devFW, $devID, $devName) ."   $file\n";
+
 				if (hex("0x$hn") == $devCVal) {
 					push @handover, { modelID => "$devCVal", firmwareVer => "$devFW", file => "$dir/$file" };
 				} 
@@ -746,7 +749,7 @@ sub searchXMLFiles {
 				}
 
 				#-- generating output ---------------------------------------------------------
-				print sprintf("0x%.4x   0x%.2x    %-25s   %-65s", $devCVal, $devFW, $devID, $devName) ."   $file\n";
+				#print sprintf("0x%.4x   0x%.2x    %-25s   %-65s", $devCVal, $devFW, $devID, $devName) ."   $file\n";
 			}
 		}
 	}
