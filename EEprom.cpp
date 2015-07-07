@@ -30,14 +30,12 @@ uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
  * @param cnl Channel
  * @param lst List
  * @param idx Index of peer (0 if not applicable)
- * @param buf Array with all new list values (must match size of list)
- *
- * @todo Describe how to determine size of list
+ * @param buf Array with all new list values (must match size of channel-list)
  *
  * @return 1 for success, 0 for failure
  *
- * The specified channel, list and index are used to identify the eeprom section to write to.
- * @todo Write something about how channel,list,index relate to the eeprom data and how we define them in the first place
+ * The specified channel, list and index are used to identify the eeprom section to write to
+ * (see @ref section_eeprom_memory_layout).
  *
  * If a valid eeprom section can be identified, the content of buf will be written to the associated
  * EEprom memory section.
@@ -529,8 +527,8 @@ uint8_t  EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, u
  *
  * @return 1 for success, 0 for failure
  *
- * The specified channel, list and index are used to identify the eeprom section to write to.
- * @todo Write something about how channel,list,index relate to the eeprom data and how we define them in the first place
+ * The specified channel, list and index are used to identify the eeprom section to write to
+ * (see @ref section_eeprom_memory_layout).
  *
  * If a valid eeprom section is identified, each REGNUM:VALUE pair in the array
  * for validity and write will be used to write VALUE as the new content of

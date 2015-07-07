@@ -40,13 +40,54 @@ extern void firstTimeStart(void);															// only on first start of the de
 /**
  * @brief Helper class for providing access to non-volatile data in the EEprom.
  *
- * This class is used by the main AS class to handle non-volatile data stored in the EEprom
- * and accessed in form of Registers in the context of Lists.
+ * This class is used by the main AS class to handle non-volatile data stored in
+ * the EEprom and accessed in form of Registers in the context of Lists.
+ * Additionally, it maintains the peer database to validate incoming messages and
+ * help formulate outgoing messages.
  *
- * Every device requires a set of definitions that define its properties and capabilities.
+ * @paragraph section_device_properties Device properties
+ * Every device requires a set of definitions that define its properties and capabilities:
+ *   - the device definition @c EE::s_devDef @c devDef comprising
+ *     device identity and the channel slice address definition
+ *   - the channel table @c EE::s_cnlTbl @c cnlTbl referring to the channel slice address definition
+ *   - the peer device table @c EE::s_peerTbl @c peerTbl
  *
- * @todo Describe device properties and how they are represented (register.h)
- * @todo Describe registers, channel slice addresses, list tables and peer tables
+ * @todo Insert defDev example here.
+ *
+ * @paragraph section_eeprom_memory_layout EEprom memory layout
+ *
+ * | Start      | Length | Content                     |
+ * | ---------- | -----: | --------------------------- |
+ * | 0x0000     |      2 | magic byte                  |
+ * | 0x0002     |      3 | HMID                        |
+ * | 0x0005     |     10 | serial number               |
+ * | 0x000f     |    N_l | register values (see below) |
+ * | 0x000f+N_l |    N_p | peer list (see below)       |
+ *
+ * Register values are stored for each possible Channel/List combination.
+ * A typical device knows exactly one List0 (Channel 0), and for each channel a combination of
+ * List1 and either List3 or List4.
+ *
+ * For each channel, the number of possible peer devices can be specified individually.
+ * With chanX_listY_len as the number of register bytes for list Y in channel X and
+ * peers_chanX as the maximum number of peers for channel X, the memory footprint can be
+ * calculated as follows:
+ *
+ * | Channel | List0 | List1 | List3 | List4 | Size                   | Note      |
+ * | :-----: | :---: | :---- | :---: | :---: | :--------------------- | --------- |
+ * |    0    | chan0_list0_len | | | | chan0_l0_len                   | mandatory |
+ * |    1    | | chan1_list1_len | | | peers_chan1 * chan1_list1_len  | mandatory |
+ * |    1    | | | chan1_list3_len | | peers_chan1 * chan1_list3_len  | actor     |
+ * |    1    | | | | chan1_list4_len | peers_chan1 * chan1_list4_len  | sensor    |
+ * |    2    | | chan2_list1_len | | | peers_chan2 * chan1_list1_len  | mandatory |
+ * |    2    | | | chan2_list3_len | | peers_chan2 * chan1_list3_len  | actor     |
+ * |    2    | | | | chan2_list4_len | peers_chan2 * chan1_list4_len  | sensor    |
+ * |         | | | |                 |                                |           |
+ * |    N    | | chanN_list1_len | | | peers_chan2 * chan1_list1_len  | mandatory |
+ * |    N    | | | chanN_list3_len | | peers_chan2 * chan1_list3_len  | actor     |
+ * |    N    | | | | chanN_list4_len | peers_chan2 * chan1_list4_len  | sensor    |
+ *
+ * @todo Insert description of peerTbl here
  */
 class EE {
 	friend class AS;
@@ -57,11 +98,19 @@ class EE {
 
     /**
      * @brief Channel Table Entry
+     *
      * This structure is used in the channels definition, where all existing channels
-     * are assigned with channel slice address information and EEprom addresses.
+     * are assigned with channel slice address information and EEprom addresses, where
+     * actual register data is to be stored.
+     *
+     * For each channel
      *
      * @include docs/snippets/register-h-cnlTblAddr.cpp
      *
+     * @note The number of entries in the list @c EE::s_cnlTbl @c cnlTbl must match
+     * the number of channels specified in @c EE::s_devDef @c devDef.
+     *
+     * For other configuration data stored in EEprom memory, see s_peerTbl.
      */
 	struct s_cnlTbl {	// channel table holds all information regarding channels and lists
 		const uint8_t cnl;     ///< Channel
@@ -71,17 +120,46 @@ class EE {
 		const uint16_t pAddr;  ///< Address of first byte in EEprom memory
 	};
 
+    /**
+     * @brief Peer Device Table Entry
+     *
+     * This structure is used to specify the number of possible peers per channel and
+     * assign corresponding EEprom memory sections where peer information is to be stored.
+     *
+     * For each channel and peered device, 4 bytes are written to EEprom memory denoting the
+     * peer device HMID (3 bytes) and peer device channel (1 byte). Consequently, the following
+     * definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory,
+     * starting at address 0x0098:
+     *
+     * @include docs/snippets/register-h-peerTbl.cpp
+     *
+     * @note The number of entries in the list @c EE::s_peerTbl @c peerTbl must match
+     * the number of lists specified in @c EE::s_devDef @c devDef.
+     *
+     * For other configuration data stored in EEprom memory, see s_cnlTbl.
+     */
 	struct s_peerTbl {	// peer table holds information were to find peers in eeprom
-		const uint8_t cnl;
-		const uint8_t pMax;
-		const uint16_t pAddr;
+		const uint8_t cnl;     ///< Channel
+		const uint8_t pMax;    ///< Maximum number of peer devices
+		const uint16_t pAddr;  ///< Address of configuration data in EEprom memory
 	};
 
+    /**
+     * @brief Device Definition
+     *
+     * This structure is used to define basic device properties:
+     *   - The channel/list combinations are specified in the channel table EE::s_cnlTbl cnlTbl
+     *   - The device identity is specified in a separate byte array (see example)
+     *   - The channel slice address information is specified in a separate byte array
+     *
+     * @include docs/snippets/register-h-devDef.cpp
+     *
+     */
 	struct s_devDef {	// device definition table
-		const uint8_t   cnlNbr;															// number of channels
-		const uint8_t   lstNbr;															// number of lists
-		const uint8_t   *devIdnt;														// pointer to device identifier
-		const uint8_t   *cnlAddr;														// pointer to slice addresses
+		const uint8_t   cnlNbr;    ///< Number of channels
+		const uint8_t   lstNbr;    ///< Number of lists
+		const uint8_t   *devIdnt;  ///< Pointer to device identifier
+		const uint8_t   *cnlAddr;  ///< Pointer to the channel slice address definition
 	};
 
   protected:	//---------------------------------------------------------------------------------------------------------
@@ -94,7 +172,7 @@ class EE {
 	uint32_t getHMID(void);																// get HMID as 32 bit integer
 
   protected:	//---------------------------------------------------------------------------------------------------------
-  public:		//---------------------------------------------------------------------------------------------------------
+  public:		//--------------------------------------------------------------------------------------------------------
   //private:	//---------------------------------------------------------------------------------------------------------
 	EE();																				// class constructor
 	void     init(void);
@@ -145,7 +223,7 @@ extern EE::s_cnlTbl cnlTbl[];															// initial register.h
  * @brief Global peer table definition. Must be declared in user space.
  *
  *
- * @todo Provide description and example for peerTbl
+ * @todo Insert description and example for peerTbl
  */
 extern EE::s_peerTbl peerTbl[];															// initial register.h
 
@@ -153,7 +231,7 @@ extern EE::s_peerTbl peerTbl[];															// initial register.h
  * @brief Global device definition. Must be declared in user space.
  *
  *
- * @todo Provide description and example for devDef
+ * @todo Insert description and example for devDef
  */
 extern EE::s_devDef devDef;																// initial register.h
 
