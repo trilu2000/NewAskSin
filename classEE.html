@@ -101,11 +101,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__cnlTbl.html">s_cnlTbl</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Channel Table Entry This structure is used in the channels definition, where all existing channels are assigned with channel slice address information and EEprom addresses.  <a href="structEE_1_1s__cnlTbl.html#details">More...</a><br/></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Channel Table Entry.  <a href="structEE_1_1s__cnlTbl.html#details">More...</a><br/></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__devDef.html">s_devDef</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device Definition.  <a href="structEE_1_1s__devDef.html#details">More...</a><br/></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__peerTbl.html">s_peerTbl</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Peer Device Table Entry.  <a href="structEE_1_1s__peerTbl.html#details">More...</a><br/></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -206,11 +208,57 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Helper class for providing access to non-volatile data in the EEprom. </p>
-<p>This class is used by the main <a class="el" href="classAS.html" title="Main class for implementation of the AskSin protocol stack. Every device needs exactly one instance o...">AS</a> class to handle non-volatile data stored in the EEprom and accessed in form of Registers in the context of Lists.</p>
-<p>Every device requires a set of definitions that define its properties and capabilities.</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000005">Todo:</a></b></dt><dd><p class="startdd">Describe device properties and how they are represented (register.h) </p>
-<p class="enddd">Describe registers, channel slice addresses, list tables and peer tables </p>
-</dd></dl>
+<p>This class is used by the main <a class="el" href="classAS.html" title="Main class for implementation of the AskSin protocol stack. Every device needs exactly one instance o...">AS</a> class to handle non-volatile data stored in the EEprom and accessed in form of Registers in the context of Lists. Additionally, it maintains the peer database to validate incoming messages and help formulate outgoing messages.</p>
+<p>Every device requires a set of definitions that define its properties and capabilities:</p>
+<ul>
+<li>the device definition <code><a class="el" href="structEE_1_1s__devDef.html" title="Device Definition. ">EE::s_devDef</a></code> <code>devDef</code> comprising device identity and the channel slice address definition</li>
+<li>the channel table <code><a class="el" href="structEE_1_1s__cnlTbl.html" title="Channel Table Entry. ">EE::s_cnlTbl</a></code> <code>cnlTbl</code> referring to the channel slice address definition</li>
+<li>the peer device table <code><a class="el" href="structEE_1_1s__peerTbl.html" title="Peer Device Table Entry. ">EE::s_peerTbl</a></code> <code>peerTbl</code> </li>
+</ul>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd>Insert defDev example here.</dd></dl>
+<table class="doxtable">
+<tr>
+<th>Start </th><th align="right">Length </th><th>Content  </th></tr>
+<tr>
+<td>0x0000 </td><td align="right">2 </td><td>magic byte </td></tr>
+<tr>
+<td>0x0002 </td><td align="right">3 </td><td>HMID </td></tr>
+<tr>
+<td>0x0005 </td><td align="right">10 </td><td>serial number </td></tr>
+<tr>
+<td>0x000f </td><td align="right">N_l </td><td>register values (see below) </td></tr>
+<tr>
+<td>0x000f+N_l </td><td align="right">N_p </td><td>peer list (see below) </td></tr>
+</table>
+<p>Register values are stored for each possible Channel/List combination. A typical device knows exactly one List0 (Channel 0), and for each channel a combination of List1 and either List3 or List4.</p>
+<p>For each channel, the number of possible peer devices can be specified individually. With chanX_listY_len as the number of register bytes for list Y in channel X and peers_chanX as the maximum number of peers for channel X, the memory footprint can be calculated as follows:</p>
+<table class="doxtable">
+<tr>
+<th align="center">Channel </th><th align="center">List0 </th><th align="left">List1 </th><th align="center">List3 </th><th align="center">List4 </th><th align="left">Size </th><th>Note  </th></tr>
+<tr>
+<td align="center">0 </td><td align="center">chan0_list0_len </td><td align="left"></td><td align="center"></td><td align="center"></td><td align="left">chan0_l0_len </td><td>mandatory </td></tr>
+<tr>
+<td align="center">1 </td><td align="center"></td><td align="left">chan1_list1_len </td><td align="center"></td><td align="center"></td><td align="left">peers_chan1 * chan1_list1_len </td><td>mandatory </td></tr>
+<tr>
+<td align="center">1 </td><td align="center"></td><td align="left"></td><td align="center">chan1_list3_len </td><td align="center"></td><td align="left">peers_chan1 * chan1_list3_len </td><td>actor </td></tr>
+<tr>
+<td align="center">1 </td><td align="center"></td><td align="left"></td><td align="center"></td><td align="center">chan1_list4_len </td><td align="left">peers_chan1 * chan1_list4_len </td><td>sensor </td></tr>
+<tr>
+<td align="center">2 </td><td align="center"></td><td align="left">chan2_list1_len </td><td align="center"></td><td align="center"></td><td align="left">peers_chan2 * chan1_list1_len </td><td>mandatory </td></tr>
+<tr>
+<td align="center">2 </td><td align="center"></td><td align="left"></td><td align="center">chan2_list3_len </td><td align="center"></td><td align="left">peers_chan2 * chan1_list3_len </td><td>actor </td></tr>
+<tr>
+<td align="center">2 </td><td align="center"></td><td align="left"></td><td align="center"></td><td align="center">chan2_list4_len </td><td align="left">peers_chan2 * chan1_list4_len </td><td>sensor </td></tr>
+<tr>
+<td align="center"></td><td align="center"></td><td align="left"></td><td align="center"></td><td align="center"></td><td align="left"></td><td></td></tr>
+<tr>
+<td align="center">N </td><td align="center"></td><td align="left">chanN_list1_len </td><td align="center"></td><td align="center"></td><td align="left">peers_chan2 * chan1_list1_len </td><td>mandatory </td></tr>
+<tr>
+<td align="center">N </td><td align="center"></td><td align="left"></td><td align="center">chanN_list3_len </td><td align="center"></td><td align="left">peers_chan2 * chan1_list3_len </td><td>actor </td></tr>
+<tr>
+<td align="center">N </td><td align="center"></td><td align="left"></td><td align="center"></td><td align="center">chanN_list4_len </td><td align="left">peers_chan2 * chan1_list4_len </td><td>sensor </td></tr>
+</table>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>Insert description of peerTbl here </dd></dl>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a class="anchor" id="a65415a4f2c8dc520c88b2383939a3d19"></a>
 <div class="memitem">
@@ -255,14 +303,12 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
     <tr><td class="paramname">cnl</td><td>Channel </td></tr>
     <tr><td class="paramname">lst</td><td>List </td></tr>
     <tr><td class="paramname">idx</td><td>Index of peer (0 if not applicable) </td></tr>
-    <tr><td class="paramname">buf</td><td>Array with all new list values (must match size of list)</td></tr>
+    <tr><td class="paramname">buf</td><td>Array with all new list values (must match size of channel-list)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>Describe how to determine size of list</dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>1 for success, 0 for failure</dd></dl>
-<p>The specified channel, list and index are used to identify the eeprom section to write to. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd>Write something about how channel,list,index relate to the eeprom data and how we define them in the first place</dd></dl>
+<p>The specified channel, list and index are used to identify the eeprom section to write to (see <a class="el" href="classEE.html#section_eeprom_memory_layout">EEprom memory layout</a>).</p>
 <p>If a valid eeprom section can be identified, the content of buf will be written to the associated EEprom memory section.</p>
 <dl class="section note"><dt>Note</dt><dd>Use <a class="el" href="classEE.html#a3eedd13d4960199f023deb4676b5aee6" title="Set individual registers of a list. ">setListArray()</a> to write to individual registers rather than the complete list.</dd></dl>
 <p>In a simple example, the channel slice address definition for List0 is: </p>
@@ -348,8 +394,7 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>1 for success, 0 for failure</dd></dl>
-<p>The specified channel, list and index are used to identify the eeprom section to write to. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>Write something about how channel,list,index relate to the eeprom data and how we define them in the first place</dd></dl>
+<p>The specified channel, list and index are used to identify the eeprom section to write to (see <a class="el" href="classEE.html#section_eeprom_memory_layout">EEprom memory layout</a>).</p>
 <p>If a valid eeprom section is identified, each REGNUM:VALUE pair in the array for validity and write will be used to write VALUE as the new content of register REGNUM in the specified List.</p>
 <dl class="section note"><dt>Note</dt><dd>Use <a class="el" href="classEE.html#a65415a4f2c8dc520c88b2383939a3d19" title="Write arbitrary data as list content to EEprom. ">setList()</a> to write to the complete list rather than individual registers.</dd></dl>
 <p>In a simple example, the channel slice address definition for List0 is: </p>
@@ -377,7 +422,7 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
 <div class="line">    0x27, 0x05   <span class="comment">// pwmStableDelta = 2.5% = 0x05</span></div>
 <div class="line">};</div>
 <div class="line">hm.<a class="code" href="classAS.html#a9b75b6a425ac3f72ad5fc840fef70c62">ee</a>.<a class="code" href="classEE.html#a3eedd13d4960199f023deb4676b5aee6">setListArray</a>(0,0,0,<span class="keyword">sizeof</span>(list0defaults),list0defaults);</div>
-</div><!-- fragment --><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000004">Todo:</a></b></dt><dd>Add references to related methods </dd></dl>
+</div><!-- fragment --><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>Add references to related methods </dd></dl>
 
 </div>
 </div>
@@ -388,7 +433,7 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>CB</b></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Jul 4 2015 17:03:20 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jul 7 2015 21:39:16 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

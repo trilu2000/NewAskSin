@@ -94,29 +94,46 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">EE::s_devDef Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Device Definition.  
+ <a href="structEE_1_1s__devDef.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="EEprom_8h_source.html">EEprom.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a92800ab04d880b9525a20db1e7e4cfa7"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a92800ab04d880b9525a20db1e7e4cfa7"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>cnlNbr</b></td></tr>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__devDef.html#a92800ab04d880b9525a20db1e7e4cfa7">cnlNbr</a></td></tr>
+<tr class="memdesc:a92800ab04d880b9525a20db1e7e4cfa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of channels. <br/></td></tr>
 <tr class="separator:a92800ab04d880b9525a20db1e7e4cfa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1cd75b73a0780ed128f3cd2a0fea1dc0"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1cd75b73a0780ed128f3cd2a0fea1dc0"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>lstNbr</b></td></tr>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__devDef.html#a1cd75b73a0780ed128f3cd2a0fea1dc0">lstNbr</a></td></tr>
+<tr class="memdesc:a1cd75b73a0780ed128f3cd2a0fea1dc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of lists. <br/></td></tr>
 <tr class="separator:a1cd75b73a0780ed128f3cd2a0fea1dc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c6c027b6a7b97be21c5656df74b55d1"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5c6c027b6a7b97be21c5656df74b55d1"></a>
-const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><b>devIdnt</b></td></tr>
+const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__devDef.html#a5c6c027b6a7b97be21c5656df74b55d1">devIdnt</a></td></tr>
+<tr class="memdesc:a5c6c027b6a7b97be21c5656df74b55d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer to device identifier. <br/></td></tr>
 <tr class="separator:a5c6c027b6a7b97be21c5656df74b55d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ccac2bcb212d9faa16e0d1db75ef5e2"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5ccac2bcb212d9faa16e0d1db75ef5e2"></a>
-const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><b>cnlAddr</b></td></tr>
+const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__devDef.html#a5ccac2bcb212d9faa16e0d1db75ef5e2">cnlAddr</a></td></tr>
+<tr class="memdesc:a5ccac2bcb212d9faa16e0d1db75ef5e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer to the channel slice address definition. <br/></td></tr>
 <tr class="separator:a5ccac2bcb212d9faa16e0d1db75ef5e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Device Definition. </p>
+<p>This structure is used to define basic device properties:</p>
+<ul>
+<li>The channel/list combinations are specified in the channel table <a class="el" href="structEE_1_1s__cnlTbl.html" title="Channel Table Entry. ">EE::s_cnlTbl</a> cnlTbl</li>
+<li>The device identity is specified in a separate byte array (see example)</li>
+<li>The channel slice address information is specified in a separate byte array</li>
+</ul>
+<div class="fragment"></div><!-- fragment --> </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="EEprom_8h_source.html">EEprom.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Jul 4 2015 17:03:20 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jul 7 2015 21:39:16 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

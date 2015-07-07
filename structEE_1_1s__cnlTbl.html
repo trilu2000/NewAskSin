@@ -95,7 +95,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div><!--header-->
 <div class="contents">
 
-<p>Channel Table Entry This structure is used in the channels definition, where all existing channels are assigned with channel slice address information and EEprom addresses.  
+<p>Channel Table Entry.  
  <a href="structEE_1_1s__cnlTbl.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="EEprom_8h_source.html">EEprom.h</a>&gt;</code></p>
@@ -124,7 +124,9 @@ const uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" 
 <tr class="separator:a815f9f2cb9885118b09233e6497b8e2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Channel Table Entry This structure is used in the channels definition, where all existing channels are assigned with channel slice address information and EEprom addresses. </p>
+<div class="textblock"><p>Channel Table Entry. </p>
+<p>This structure is used in the channels definition, where all existing channels are assigned with channel slice address information and EEprom addresses, where actual register data is to be stored.</p>
+<p>For each channel</p>
 <div class="fragment"><div class="line"><span class="keyword">const</span> uint8_t cnlAddr[] PROGMEM = {</div>
 <div class="line">    0x02, 0x05, 0x0a, 0x0b, 0x0c, 0x14, 0x24, 0x25, 0x26, 0x27, <span class="comment">// sIdx 0x00, 10 bytes for Channel0/List0</span></div>
 <div class="line">    0x01,                                                       <span class="comment">// sIdx 0x0a,  1 byte  for Channel1/List4</span></div>
@@ -135,13 +137,15 @@ const uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" 
 <div class="line">    {  0,  0, 0x00, 10,  0x000f }, <span class="comment">// Channel0/List0, 10 bytes at sIdx 0x00, Addr 0x000f</span></div>
 <div class="line">    {  1,  4, 0x0a,  1,  0x0019 }, <span class="comment">// Channel1/List4,  1 byte  at sIdx 0x0a, Addr 0x0019</span></div>
 <div class="line">};</div>
-</div><!-- fragment --> </div><hr/>The documentation for this struct was generated from the following file:<ul>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>The number of entries in the list <code><a class="el" href="structEE_1_1s__cnlTbl.html" title="Channel Table Entry. ">EE::s_cnlTbl</a></code> <code>cnlTbl</code> must match the number of channels specified in <code><a class="el" href="structEE_1_1s__devDef.html" title="Device Definition. ">EE::s_devDef</a></code> <code>devDef</code>.</dd></dl>
+<p>For other configuration data stored in EEprom memory, see <a class="el" href="structEE_1_1s__peerTbl.html" title="Peer Device Table Entry. ">s_peerTbl</a>. </p>
+</div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="EEprom_8h_source.html">EEprom.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Jul 4 2015 17:03:20 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jul 7 2015 21:39:16 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>

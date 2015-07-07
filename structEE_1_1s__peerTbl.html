@@ -94,26 +94,44 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">EE::s_peerTbl Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>Peer Device Table Entry.  
+ <a href="structEE_1_1s__peerTbl.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="EEprom_8h_source.html">EEprom.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a1d2e123dbb2bf6539dfbe5beec3b38d1"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1d2e123dbb2bf6539dfbe5beec3b38d1"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>cnl</b></td></tr>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__peerTbl.html#a1d2e123dbb2bf6539dfbe5beec3b38d1">cnl</a></td></tr>
+<tr class="memdesc:a1d2e123dbb2bf6539dfbe5beec3b38d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Channel. <br/></td></tr>
 <tr class="separator:a1d2e123dbb2bf6539dfbe5beec3b38d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5990dab6edc92ccd2966d0cdbf5a7db7"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a5990dab6edc92ccd2966d0cdbf5a7db7"></a>
-const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>pMax</b></td></tr>
+const uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__peerTbl.html#a5990dab6edc92ccd2966d0cdbf5a7db7">pMax</a></td></tr>
+<tr class="memdesc:a5990dab6edc92ccd2966d0cdbf5a7db7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum number of peer devices. <br/></td></tr>
 <tr class="separator:a5990dab6edc92ccd2966d0cdbf5a7db7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a3947e85b3c7a817a6b5f2101de599d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9a3947e85b3c7a817a6b5f2101de599d"></a>
-const uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>pAddr</b></td></tr>
+const uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structEE_1_1s__peerTbl.html#a9a3947e85b3c7a817a6b5f2101de599d">pAddr</a></td></tr>
+<tr class="memdesc:a9a3947e85b3c7a817a6b5f2101de599d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Address of configuration data in EEprom memory. <br/></td></tr>
 <tr class="separator:a9a3947e85b3c7a817a6b5f2101de599d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Peer Device Table Entry. </p>
+<p>This structure is used to specify the number of possible peers per channel and assign corresponding EEprom memory sections where peer information is to be stored.</p>
+<p>For each channel and peered device, 4 bytes are written to EEprom memory denoting the peer device HMID (3 bytes) and peer device channel (1 byte). Consequently, the following definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory, starting at address 0x0098:</p>
+<div class="fragment"><div class="line"><a class="code" href="structEE_1_1s__peerTbl.html">EE::s_peerTbl</a> <a class="code" href="EEprom_8h.html#afbbe3d70d718bfedd8421defa5c0e748">peerTbl</a>[] = {</div>
+<div class="line">    <span class="comment">// cnl, pMax, pAddr;</span></div>
+<div class="line">    {   1,   6,  0x0098 },</div>
+<div class="line">};</div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>The number of entries in the list <code><a class="el" href="structEE_1_1s__peerTbl.html" title="Peer Device Table Entry. ">EE::s_peerTbl</a></code> <code>peerTbl</code> must match the number of lists specified in <code><a class="el" href="structEE_1_1s__devDef.html" title="Device Definition. ">EE::s_devDef</a></code> <code>devDef</code>.</dd></dl>
+<p>For other configuration data stored in EEprom memory, see <a class="el" href="structEE_1_1s__cnlTbl.html" title="Channel Table Entry. ">s_cnlTbl</a>. </p>
+</div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="EEprom_8h_source.html">EEprom.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Jul 4 2015 17:03:20 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jul 7 2015 21:39:16 for NewAskSin by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.6
 </small></address>
