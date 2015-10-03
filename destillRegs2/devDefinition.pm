@@ -19,7 +19,8 @@ my %confType = (
     serial      => 'XMS1234567',                           # 0 to get it automatically generated - otherwise 10 byte ASCII format
     hmID        => '0',                                    # 0 to get it automatically generated - otherwise 6 HEX digits
 	
-    modelID     => 0x0f43,                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
+    modelID     => 0x006c,                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
+##    modelID     => 0x0f43,                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
     firmwareVer => 0x10,                                   # firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
 
@@ -29,14 +30,14 @@ my %confType = (
     name        => 'Test127',                              # name of the device, ascii [A-Z, a-z, 0-9, '-'], no blanks
     description => 'das ist ein test',                     # short description of the device
 
-    subtypeID   => 0x70,                                   # depending on type of device
-    deviceInfo  => 0x030100,                               # not complete clear yes, but 3 bytes HEX needed
+    subtypeID   => 0x00,                                   # depending on type of device
+    deviceInfo  => 0x410100,                               # not complete clear yes, but 3 bytes HEX needed
 	
     burstRx     => 1,                                      # device needs a burst signal to wakeup
     localResDis => 1,                                      # local reset disable 
     intKeysVis  => 1,                                      # internal keys visible
 
-    confKeyMode => 1,                                      # config key mode; 
+    confKeyMode => 2,                                      # config key mode; 
 	                                                       # 0 = no config key; 
 	                                                       # 1 = pair on short press, reset device on double long key press
                                                            # 2 = short press to toogle channel one, long press to pair, and double long to reset device
@@ -68,9 +69,9 @@ my %confType = (
 #$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
 
 $regList{1}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
-$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => {3,4} };
-$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 2     };
-$regList{4}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 2     };
+#$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => {3,4} };
+#$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 2     };
+#$regList{4}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 2     };
 	
 
 

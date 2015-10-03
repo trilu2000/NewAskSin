@@ -7,18 +7,18 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 //#define RL_DBG																			// debug message flag
-#include "Relay.h"
+#include "xmlSwitch.h"
 
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
-void Relay::config(void Init(), void Switch(uint8_t)) { //, uint8_t minDelay) {
+void xmlSwitch::config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t)) { //, uint8_t minDelay) {
 
 	fInit = Init;
-	fSwitch = Switch;
+	fSwitch = xSwitch;
 
 	// set output pins
-	fInit();
+	fInit(regCnl);
 
 	// some basic settings for start
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
@@ -36,7 +36,7 @@ void Relay::config(void Init(), void Switch(uint8_t)) { //, uint8_t minDelay) {
 	l3->actionType = 0;																		// and secure that no action will happened in polling function
 
 }
-void Relay::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
+void xmlSwitch::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
 
 	// some sanity
 	delayTmr.set(0);																		// also delay timer is not needed any more
@@ -62,7 +62,7 @@ void Relay::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
 	if (duraTme) tr11 = 1;																	// indicate we are coming from trigger11
 	//dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
-void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
+void xmlSwitch::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
 	// some sanity
 	delayTmr.set(0);																		// also delay timer is not needed any more
@@ -98,7 +98,7 @@ void Relay::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 	}
 	//dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << _HEXB(l3->onDly) << ", onTime: " << _HEXB(l3->onTime) << ", offDly: " << _HEXB(l3->offDly) << ", offTime: " << _HEXB(l3->offTime) << '\n';
 }
-void Relay::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
+void xmlSwitch::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 
 	uint8_t isLng = (msgBLL & 0x40)?1:0;													// is it a long message?
 	uint8_t ctTbl;
@@ -130,7 +130,7 @@ void Relay::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 	else if (ctTbl == 5) if ((msgVal < l3->ctValLo) && (msgVal > l3->ctValHi)) trigger40(isLng, msgCnt);
 
 }
-void Relay::adjRly(void) {
+void xmlSwitch::adjRly(void) {
 
 	// something to do?
 	if (setStat == modStat) return;															// nothing to do
@@ -139,11 +139,11 @@ void Relay::adjRly(void) {
 	// calculate next step, SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
 	curStat = modStat?3:6;
 	setStat = modStat;																		// follow action
-	fSwitch(setStat);																		// set accordingly
+	fSwitch(regCnl, setStat);																// set accordingly
 	
 	msgTmr.set(0);
 }
-void Relay::sendStatus(void) {
+void xmlSwitch::sendStatus(void) {
 
 	if (!sendStat) return;																	// nothing to do
 	if (!msgTmr.done()) return;																// not the right time
@@ -166,7 +166,7 @@ void Relay::sendStatus(void) {
 	//sendStat = 0;
 }
 
-void Relay::rlyPoll(void) {
+void xmlSwitch::rlyPoll(void) {
 
 	adjRly();																				// check if something is to be set on the Relay channel
 	sendStatus();																			// check if there is some status to send
@@ -261,7 +261,7 @@ void Relay::rlyPoll(void) {
 //-------------------------------------------------------------------------------------------------------------------------
 //- mandatory functions for every new module to communicate within HM protocol stack -
 //-------------------------------------------------------------------------------------------------------------------------
-void Relay::setToggle(void) {
+void xmlSwitch::setToggle(void) {
 	// setToggle will be addressed by config button in mode 2 by a short key press
 	// here we can toggle the status of the actor
 	#ifdef RL_DBG
@@ -272,14 +272,14 @@ void Relay::setToggle(void) {
 	sendStat = 2;																			// send next time a info status message
 	
 }
-void Relay::configCngEvent(void) {
+void xmlSwitch::configCngEvent(void) {
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
 	#ifdef RL_DBG
 	dbg << F("CCE, lst1: ") << _HEX(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
 
 }
-void Relay::pairSetEvent(uint8_t *data, uint8_t len) {
+void xmlSwitch::pairSetEvent(uint8_t *data, uint8_t len) {
 	// we received a message from master to set a new value, typical you will find three bytes in data
 	// 1st byte = value; 2nd and 3rd byte = ramp time; 4th and 5th byte = duration time;
 	// after setting the new value we have to send an enhanced ACK (<- 0E E7 80 02 1F B7 4A 63 19 63 01 01 C8 00 54)
@@ -296,7 +296,7 @@ void Relay::pairSetEvent(uint8_t *data, uint8_t len) {
 	msgTmr.set(10);																			// give some time
 
 }
-void Relay::pairStatusReq(void) {
+void xmlSwitch::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	#ifdef RL_DBG
 	dbg << F("PSR\n");
@@ -306,7 +306,7 @@ void Relay::pairStatusReq(void) {
 	msgTmr.set(10);																			// wait a short time to set status
 
 }
-void Relay::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
+void xmlSwitch::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
 	// appropriate answer is an ACK
 	#ifdef RL_DBG
@@ -327,7 +327,7 @@ void Relay::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	}
 }
 
-void Relay::poll(void) {
+void xmlSwitch::poll(void) {
 	rlyPoll();
 }
 
@@ -335,12 +335,12 @@ void Relay::poll(void) {
 //-------------------------------------------------------------------------------------------------------------------------
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
-void Relay::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
+void xmlSwitch::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	hm = instPtr;																			// set pointer to the HM module
-	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&Relay::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
+	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&xmlSwitch::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
 }
-void Relay::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
+void xmlSwitch::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
 	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
@@ -351,7 +351,7 @@ void Relay::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, u
 	else if  (by3 >= 0x3E)                    peerMsgEvent(by3, data, len);
 	else return;
 }
-void Relay::peerAddEvent(uint8_t *data, uint8_t len) {
+void xmlSwitch::peerAddEvent(uint8_t *data, uint8_t len) {
 	// we received an peer add event, which means, there was a peer added in this respective channel
 	// 1st byte and 2nd byte shows the peer channel, 3rd and 4th byte gives the peer index
 	// no need for sending an answer, but we could set default data to the respective list3/4

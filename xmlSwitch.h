@@ -6,8 +6,8 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#ifndef _RELAY_H
-#define _RELAY_H
+#ifndef _XMLSWITCH_H
+#define _XMLSWITCH_H
 
 #include "AS.h"
 #include "HAL.h"
@@ -33,7 +33,7 @@ const uint8_t peerSingle[] = {
 };
 
 
-class Relay {
+class xmlSwitch {
   //- user code here ------------------------------------------------------------------------------------------------------
   public://----------------------------------------------------------------------------------------------------------------
   protected://-------------------------------------------------------------------------------------------------------------
@@ -112,8 +112,8 @@ class Relay {
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
 	
-	void (*fInit)(void);																	// pointer to init function in main sketch
-	void (*fSwitch)(uint8_t);																// pointer to switch function in main sketch
+	void (*fInit)(uint8_t);																	// pointer to init function in main sketch
+	void (*fSwitch)(uint8_t,uint8_t);														// pointer to switch function in main sketch
 
 	waitTimer delayTmr;																		// delay timer for relay
 
@@ -130,7 +130,7 @@ class Relay {
 
 	uint8_t   setStat;																		// status to set on the Relay channel
 
-	void      config(void Init(), void Switch(uint8_t));									// handover for jump addresses
+	void      config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t));					// handover for jump addresses
 
 	void      trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);				// what happens while a trigger11 message arrive
 	void      trigger40(uint8_t msgLng, uint8_t msgCnt);									// same for peer messages

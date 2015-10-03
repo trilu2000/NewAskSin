@@ -290,10 +290,13 @@ foreach my $test (sort keys %cnlType) {
 
 	my $oldRLKey=""; my $oldModIdx;
 	foreach my $rLKey (sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} } keys %rL) {	
-		$rL{$rLKey}{'libName'} = substr($rL{$rLKey}{'type'},3) .".h";
+		$rL{$rLKey}{'libName'} = $rL{$rLKey}{'type'} .".h";
+##		$rL{$rLKey}{'libName'} = substr($rL{$rLKey}{'type'},3) .".h";
 
-		$rL{$rLKey}{'modName'} = substr($rL{$rLKey}{'type'},3);
-		$rL{$rLKey}{'modClass'} = lc substr($rL{$rLKey}{'type'},3);
+		$rL{$rLKey}{'modName'} = $rL{$rLKey}{'type'};
+		$rL{$rLKey}{'modClass'} = $rL{$rLKey}{'type'};
+##		$rL{$rLKey}{'modName'} = substr($rL{$rLKey}{'type'},3);
+##		$rL{$rLKey}{'modClass'} = lc substr($rL{$rLKey}{'type'},3);
 
 		if ( $rL{$rLKey}{'type'} eq  $oldRLKey) {
 			$oldModIdx += 1; 

@@ -118,6 +118,7 @@ class EE {
 		const uint8_t sIdx;    ///< Index of first entry in channel slice address definition
 		const uint8_t sLen;    ///< Number of registers
 		const uint16_t pAddr;  ///< Address of first byte in EEprom memory
+		const uint8_t vis;     ///< Visibility of channel
 	};
 
     /**

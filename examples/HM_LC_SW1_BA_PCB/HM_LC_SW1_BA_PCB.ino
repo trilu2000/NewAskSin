@@ -2,20 +2,7 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <AS.h>																				// ask sin framework
-#include <Relay.h>																			// relay class module
-
-#include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
-
-// some forward declarations
-void initRly();
-void switchRly(uint8_t status);
-
-
-//- load modules ----------------------------------------------------------------------------------------------------------
-AS hm;																						// stage the asksin framework
-Relay relay;																				// stage a dummy module
-//waitTimer wt;
 
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
@@ -46,22 +33,7 @@ void setup() {
 
 	
 	// - AskSin related ---------------------------------------
-	// init the homematic framework and register user modules
-
 	hm.init();																				// init the asksin framework
-
-	hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit
-	
-	hm.ld.init(2, &hm);																		// set the led
-	hm.ld.set(welcome);																		// show something
-	
-	hm.pw.setMode(0);																		// set power management mode
-
-	hm.bt.set(27, 1800000);		// 1800000 = 0,5h											// set battery check
-
-	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
-	relay.config(&initRly, &switchRly);														// hand over the relay functions of main sketch
-	
 	sei();																					// enable interrupts
 
 
@@ -79,14 +51,20 @@ void loop() {
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
-void initRly() {
+void initRly(uint8_t channel) {
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
-
+	#ifdef SER_DBG
+	dbg << F("initRly: ") << channel << "\n";
+	#endif
+	
 	pinOutput(DDRD,3);																		// init the relay pins
 	setPinLow(PORTD,3);																		// set relay pin to ground
 }
-void switchRly(uint8_t status) {
+void switchRly(uint8_t channel, uint8_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
+	#ifdef SER_DBG
+	dbg << F("switchRly: ") << channel << ", " << status << "\n";
+	#endif
 
 	if (status) setPinHigh(PORTD,3);														// check status and set relay pin accordingly
 	else setPinLow(PORTD,3);
