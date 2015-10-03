@@ -93,6 +93,15 @@
 <?ignore ---------------------------------------------------------------------------- ?>
 
 <xmlDimmer>
+	<stage_modul>
+		<function name="extern void initDim(uint8_t channel)" />
+		<function name="extern void switchDim(uint8_t channel, uint8_t status)" />
+	</stage_modul>
+
+	<config_modul>
+		<function name="config(&amp;initDim, &amp;switchDim)" />
+	</config_modul>
+
 	<channel index="1" type="DIMMER" count="1">
 		<link_roles>
 			<target name="SWITCH"/>
@@ -1318,6 +1327,15 @@
 <?ignore ---------------------------------------------------------------------------- ?>
 
 <xmlSwitch>
+	<stage_modul>
+		<function name="extern void initRly(uint8_t channel)" />
+		<function name="extern void switchRly(uint8_t channel, uint8_t status)" />
+	</stage_modul>
+
+	<config_modul>
+		<function name="config(&amp;initRly, &amp;switchRly)" />
+	</config_modul>
+	
 	<channel index="1" type="SWITCH" count_from_sysinfo="23.0:0.4">
 		<link_roles>
 			<target name="SWITCH"/>

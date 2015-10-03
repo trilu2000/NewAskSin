@@ -69,7 +69,9 @@ my %confType = (
 #$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
 
 $regList{1}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
-#$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => {3,4} };
+$regList{2}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0     };
+$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => {3,4} };
+$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
 #$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 2     };
 #$regList{4}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 2     };
 	

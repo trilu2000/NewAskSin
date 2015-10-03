@@ -223,9 +223,9 @@ foreach my $test (sort keys %cnlType) {
 	$phyAddr += $peers * $slcLen;
 	$slcIdx  += $slcLen;
 	
-	print "$test: @{ $cnlType{$test}{'regSet'} }\n";											# some debug
-	print "cnl, lst, sIdx, sLen, pAddr\n";
-	print sprintf("%.1d, %.1d, 0x%.2x, %.1d, 0x%.4x,", $cnlType{$test}{'cnl'}, $cnlType{$test}{'lst'}, $cnlType{$test}{'slcIdx'}, $cnlType{$test}{'slcLen'}, $cnlType{$test}{'phyAddr'} ) ."\n";
+	#print "$test: @{ $cnlType{$test}{'regSet'} }\n";											# some debug
+	#print "cnl, lst, sIdx, sLen, pAddr\n";
+	#print sprintf("%.1d, %.1d, 0x%.2x, %.1d, 0x%.4x,", $cnlType{$test}{'cnl'}, $cnlType{$test}{'lst'}, $cnlType{$test}{'slcIdx'}, $cnlType{$test}{'slcLen'}, $cnlType{$test}{'phyAddr'} ) ."\n";
 }
 # prefil cnlType with list1's
 foreach my $rLKey (sort keys %rL) {	
@@ -241,14 +241,14 @@ foreach my $rLKey (sort keys %rL) {
 		
 		#my @x=();
 		#$cnlType{$test}{'regSet'} = @x;
-		print "nicht vorhanden\n";
+		#print "nicht vorhanden\n";
 
 	}
 
 	
 
 		
-	print "x:  $rL{$rLKey}{'type'}     $rLKey    $test\n";
+	#print "x:  $rL{$rLKey}{'type'}     $rLKey    $test\n";
 	
 	#$peers = $rL{$cnlType{$test}{'cnl'}}{'peers'}    if( ( $cnlType{$test}{'cnl'} > 0 ) && ( $cnlType{$test}{'lst'} >= 3 ) && ( $cnlType{$test}{'lst'} <= 4 ) );
 	
@@ -291,12 +291,9 @@ foreach my $test (sort keys %cnlType) {
 	my $oldRLKey=""; my $oldModIdx;
 	foreach my $rLKey (sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} } keys %rL) {	
 		$rL{$rLKey}{'libName'} = $rL{$rLKey}{'type'} .".h";
-##		$rL{$rLKey}{'libName'} = substr($rL{$rLKey}{'type'},3) .".h";
 
 		$rL{$rLKey}{'modName'} = $rL{$rLKey}{'type'};
 		$rL{$rLKey}{'modClass'} = $rL{$rLKey}{'type'};
-##		$rL{$rLKey}{'modName'} = substr($rL{$rLKey}{'type'},3);
-##		$rL{$rLKey}{'modClass'} = lc substr($rL{$rLKey}{'type'},3);
 
 		if ( $rL{$rLKey}{'type'} eq  $oldRLKey) {
 			$oldModIdx += 1; 
@@ -310,6 +307,10 @@ foreach my $test (sort keys %cnlType) {
 	}
 	
 	# correct the max index size, sort for lib name and sort for max idx size, remember the biggest value and write it to the remaining ones
+	my $xmlParser = XML::LibXML->new();																# create the xml object
+	my $xmlDoc    = $xmlParser->parse_file("linkset.xml");											# open the file
+	my $xO        = XML::LibXML::XPathContext->new( $xmlDoc->documentElement() );					# create parser object
+
 	my @sortRlKey = sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} || $rL{$b}{'maxIdxSize'} cmp $rL{$a}{'maxIdxSize'} } keys(%rL);
 	$oldRLKey=""; my $oldMaxIdx=0;
 	foreach my $rLKey ( @sortRlKey ) {	
@@ -319,7 +320,29 @@ foreach my $test (sort keys %cnlType) {
 		$oldRLKey = $rL{$rLKey}{'type'};
 		$oldMaxIdx = $rL{$rLKey}{'maxIdxSize'};
 		#print $rL{$rLKey}{'modName'} ." " .$rL{$rLKey}{'modIdx'} ." " .$rL{$rLKey}{'maxIdxSize'} ."\n";
-	}	
+
+		# -- load the stage and config part from linkset.xml
+			#print "x:  $rL{$rLKey}{'type'}\n";														# some debug
+
+			# step through the function name list
+			foreach my $xPrms ($xO->findnodes('/xmlSet/'.$rL{$rLKey}{'type'}.'/stage_modul/function')) {	
+				my $secName = $xPrms->getAttribute('name');
+				push @{$rL{$rLKey}{'stage_modul'}}, $secName;
+				#print "$rLKey:   $secName\n";														# some debug
+			}
+
+			# step through the config module list
+			foreach my $xPrms ($xO->findnodes('/xmlSet/'.$rL{$rLKey}{'type'}.'/config_modul/function')) {	
+				my $secName = $xPrms->getAttribute('name');
+				push @{$rL{$rLKey}{'config_modul'}}, $secName;
+				#print "$rLKey: $rL{$rLKey}{'type'}  $secName\n";									# some debug
+			}
+		}	
+			
+		#	# step through the single items
+		#	my @xa = $xO->findnodes('/xmlSet/'.$rL{$rLKey}{'type'}.'/paramset[@id="'.$secName.'"]/parameter/@id');
+		#	#print "  @xa\n";																		# some debug
+	
 
 ## ----------------------------------------------------------------------------------------------------------
 ## ---------- print register.h ------------------------------------------------------------------------------
@@ -384,7 +407,14 @@ sub printLoadLibs {
 	$oldRLKey = "";	
 	foreach my $rLKey (sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} } keys %rL) {	
 		if ($rL{$rLKey}{'type'} eq $oldRLKey) {next;};
-		print "$rL{$rLKey}{'modName'} $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'maxIdxSize'}]; \n";
+
+		print "\n";
+		my $xLine = "$rL{$rLKey}{'modName'} $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'maxIdxSize'}];";
+		print $xLine ." "x(72-length($xLine)) ."// create instances of channel module\n";
+		foreach (@{$rL{$rLKey}{'stage_modul'}}) {
+			my $sLine = $_;
+			print $sLine ." "x(72-length($sLine)) ."// declare function to jump in\n";
+		}
 		$oldRLKey = $rL{$rLKey}{'type'};
 	}
 
@@ -415,18 +445,26 @@ sub printStartFunctions {
 	
 	print "\n    // register user modules\n";
 	
-	foreach my $rLKey (sort  keys %rL) {	
+	foreach my $rLKey (sort keys %rL) {	
 		# get the respective list 3 or 4 for the channel
 		my ($xl) = (grep { ($cnlType{$_}{'cnl'} == $rLKey) && ($cnlType{$_}{'lst'} > 1) && ($cnlType{$_}{'lst'} < 5) } keys %cnlType);
-		print "    $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm); \n";
+		my $xLine = "    $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
+		print $xLine ." "x(72-length($xLine)) ."// register usermodule\n";
+
+		foreach (@{$rL{$rLKey}{'config_modul'}}) {
+			my $sLine = "    $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'modIdx'}].$_;";
+			print $sLine ." "x(72-length($sLine)) ."// configure usermodule\n";
+		}
+		print "\n";
 	}
-	print "    // don't forget to set somewhere the .config of the respective user class!\n";	
+	
+	#print "    // don't forget to set somewhere the .config of the respective user class!\n";	
 	
 	#thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
 	#thsens.timing(0, 0, 0);																// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 	
 	
-	print "\n}\n\n";
+	print "}\n\n";
 
 	print "void firstTimeStart(void) {\n";
 	print "    // place here everything which should be done on the first start or after a complete reset of the sketch\n";	
