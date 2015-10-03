@@ -6,10 +6,10 @@
 
 //- stage modules --------------------------------------------------------------------------------------------------------
 AS hm;                                                                  // asksin framework
-xmlSwitch xmlSwitch[1];
-extern void initRly(uint8_t channel);
-extern void switchRly(uint8_t channel, uint8_t status);
 
+xmlSwitch xmlSwitch[1];                                                 // create instances of channel module
+extern void initRly(uint8_t channel);                                   // declare function to jump in
+extern void switchRly(uint8_t channel, uint8_t status);                 // declare function to jump in
 
 //- ----------------------------------------------------------------------------------------------------------------------
 //- eeprom defaults table ------------------------------------------------------------------------------------------------
@@ -73,9 +73,9 @@ void everyTimeStart(void) {
 	hm.bt.set(30, 3600000);                                             // set battery check, internal, 2.7 reference, measurement each hour
 	hm.pw.setMode(0);                                                   // set power management mode
 
-	// register user modules
-	xmlSwitch[0].regInHM(1, 3, &hm);
-	xmlSwitch[0].config(&initRly, &switchRly);                          // hand over the relay functions of main sketch
+    // register user modules
+    xmlSwitch[0].regInHM(1, 3, &hm);                                    // register user module
+    xmlSwitch[0].config(&initRly, &switchRly);                          // configure user module
 
 }
 

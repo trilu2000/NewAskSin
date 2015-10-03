@@ -412,7 +412,7 @@ sub printLoadLibs {
 		my $xLine = "$rL{$rLKey}{'modName'} $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'maxIdxSize'}];";
 		print $xLine ." "x(72-length($xLine)) ."// create instances of channel module\n";
 		foreach (@{$rL{$rLKey}{'stage_modul'}}) {
-			my $sLine = $_;
+			my $sLine = $_ .";";
 			print $sLine ." "x(72-length($sLine)) ."// declare function to jump in\n";
 		}
 		$oldRLKey = $rL{$rLKey}{'type'};
@@ -449,11 +449,11 @@ sub printStartFunctions {
 		# get the respective list 3 or 4 for the channel
 		my ($xl) = (grep { ($cnlType{$_}{'cnl'} == $rLKey) && ($cnlType{$_}{'lst'} > 1) && ($cnlType{$_}{'lst'} < 5) } keys %cnlType);
 		my $xLine = "    $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
-		print $xLine ." "x(72-length($xLine)) ."// register usermodule\n";
+		print $xLine ." "x(72-length($xLine)) ."// register user module\n";
 
 		foreach (@{$rL{$rLKey}{'config_modul'}}) {
 			my $sLine = "    $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'modIdx'}].$_;";
-			print $sLine ." "x(72-length($sLine)) ."// configure usermodule\n";
+			print $sLine ." "x(72-length($sLine)) ."// configure user module\n";
 		}
 		print "\n";
 	}
