@@ -440,7 +440,7 @@ sub printStartFunctions {
 	}
 
 	#if ($cType{'powerMode'} > 0 ) {
-		print "    hm.pw.setMode(1);"  ." "x51  ."// set power management mode\n";
+		print "    hm.pw.setMode($cType{'powerMode'});"  ." "x51  ."// set power management mode\n";
 	#}
 	
 	print "\n    // register user modules\n";

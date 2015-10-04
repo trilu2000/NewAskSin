@@ -95,7 +95,7 @@
 <xmlDimmer>
 	<stage_modul>
 		<function name="extern void initDim(uint8_t channel)" />
-		<function name="extern void switchDim(uint8_t channel, uint8_t status)" />
+		<function name="extern void switchDim(uint8_t channel, uint8_t status, uint8_t characteristic)" />
 	</stage_modul>
 
 	<config_modul>

@@ -24,7 +24,7 @@ void setup() {
 
 	// enable only what is really needed
 
-	#ifdef SER_DBG
+	#ifdef SER_DBG																			// some debug
 		dbgStart();																			// serial setup
 		dbg << F("HM_LC_SW1_BA_PCB\n");	
 		dbg << F(LIB_VERSION_STRING);
@@ -38,7 +38,9 @@ void setup() {
 
 
 	// - user related -----------------------------------------
-	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
+	#ifdef SER_DBG
+		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");	// some debug
+	#endif
 }
 
 void loop() {
@@ -54,7 +56,7 @@ void loop() {
 void initRly(uint8_t channel) {
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
 	#ifdef SER_DBG
-	dbg << F("initRly: ") << channel << "\n";
+		dbg << F("initRly: ") << channel << "\n";
 	#endif
 	
 	pinOutput(DDRD,3);																		// init the relay pins
@@ -63,7 +65,7 @@ void initRly(uint8_t channel) {
 void switchRly(uint8_t channel, uint8_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
 	#ifdef SER_DBG
-	dbg << F("switchRly: ") << channel << ", " << status << "\n";
+		dbg << F("switchRly: ") << channel << ", " << status << "\n";
 	#endif
 
 	if (status) setPinHigh(PORTD,3);														// check status and set relay pin accordingly
