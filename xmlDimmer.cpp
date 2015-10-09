@@ -7,20 +7,20 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 //#define DI_DBG																			// debug message flag
-#include "Dimmer.h"
+#include "xmlDimmer.h"
 
 
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
-void Dimmer::config(void Init(), void Switch(uint8_t, uint8_t), uint8_t temperature) {
+void xmlDimmer::config(void Init(uint8_t), void xSwitch(uint8_t, uint8_t,uint8_t), uint8_t *temperature) {
 
 	fInit = Init;
-	fSwitch = Switch;
-	if (temperature) pTemp = &temperature;
+	fSwitch = xSwitch;
+	if (temperature) pTemp = temperature;
 	
 	// set output pins
-	fInit();
+	fInit(regCnl);
 
 	// some basic settings for start
 	curStat = nxtStat = 6;																	// set relay status to off
@@ -31,7 +31,7 @@ void Dimmer::config(void Init(), void Switch(uint8_t, uint8_t), uint8_t temperat
 	msgTmr.set(msgDelay);
 }
 
-void Dimmer::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
+void xmlDimmer::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
 	
 	// some sanity
 	activeOffDlyBlink = 0;																	// got a new key press, off delay blink is not needed
@@ -63,7 +63,7 @@ void Dimmer::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
 	}
 	//dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
 }
-void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
+void xmlDimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
 	// some sanity
 	activeOffDlyBlink = 0;																	// got a new key press, off delay blink is not needed
@@ -182,7 +182,7 @@ void Dimmer::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 	//showStruct();																			// some debug messages
 	//dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << '\n';	// some debug again
 }
-void Dimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
+void xmlDimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 
 	uint8_t isLng = (msgBLL & 0x40)?1:0;													// is it a long message?
 	uint8_t ctTbl;
@@ -217,14 +217,14 @@ void Dimmer::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 
 }
 
-void Dimmer::toggleDim(void) {
+void xmlDimmer::toggleDim(void) {
 	if (modStat == 0)   directionDim = 1;													// remember the direction , down or up
 	if (modStat == 200) directionDim = 0;
 	
 	if (directionDim) upDim();																// jump into the right function based on the direction
 	else downDim();
 }
-void Dimmer::upDim(void) {
+void xmlDimmer::upDim(void) {
 
 	// calculate the value
 	if (modStat >= 200) return;																// reached or above max value, nothing to do
@@ -235,7 +235,7 @@ void Dimmer::upDim(void) {
 	// new value will be set by polling function, time for increase has to be set manually
 	adjDlyPWM = 1;																			// do the adjustment in 1ms steps
 }
-void Dimmer::downDim(void) {
+void xmlDimmer::downDim(void) {
 
 	// calculate the value
 	if (modStat == 0) return;																// dimmer already off
@@ -249,7 +249,7 @@ void Dimmer::downDim(void) {
 	adjDlyPWM = 1;																			// do the adjustment in 1ms steps
 }
 
-void Dimmer::adjPWM(void) {
+void xmlDimmer::adjPWM(void) {
 
 	// something to do?
 	if (setStat == modStat) return;															// nothing to do
@@ -266,15 +266,15 @@ void Dimmer::adjPWM(void) {
 		characteristicStat = setStat * setStat;												// recalculate the value
 		characteristicStat /= 200;															// divide it by 200
 		if ((setStat) && (!characteristicStat)) characteristicStat = 1;						// till 15 it is below 1
-		fSwitch(characteristicStat, lstCnl.characteristic);									// set accordingly
+		fSwitch(regCnl, characteristicStat, lstCnl.characteristic);									// set accordingly
 
 	} else {
-		fSwitch(setStat, lstCnl.characteristic);											// set accordingly
+		fSwitch(regCnl, setStat, lstCnl.characteristic);									// set accordingly
 
 	}
 	adjTmr.set(adjDlyPWM);																	// set timer for next action
 }
-void Dimmer::blinkOffDly(void) {
+void xmlDimmer::blinkOffDly(void) {
 
 	// some sanity
 	if (!activeOffDlyBlink) return;															// blink off flag not set, jump out
@@ -286,16 +286,16 @@ void Dimmer::blinkOffDly(void) {
 	if (statusOffDlyBlink) {
 		statusOffDlyBlink = 0;																// switch led on next time
 		adjTmr.set(10);																		// off for 30 ms
-		fSwitch(1, lstCnl.characteristic);													// set led to minimum
+		fSwitch(regCnl, 1, lstCnl.characteristic);											// set led to minimum
 		
 	} else {
 		statusOffDlyBlink = 1;																// switch led off next time
 		adjTmr.set(500);																	// on for 500 ms
-		if (lstCnl.characteristic) fSwitch(characteristicStat, lstCnl.characteristic);		// take the quadratic value
-		else fSwitch(modStat,lstCnl.characteristic);										// restore origin value
+		if (lstCnl.characteristic) fSwitch(regCnl, characteristicStat, lstCnl.characteristic);	// take the quadratic value
+		else fSwitch(regCnl, modStat,lstCnl.characteristic);								// restore origin value
 	}
 }
-void Dimmer::sendStatus(void) {
+void xmlDimmer::sendStatus(void) {
 
 	if (!sendStat) return;																	// nothing to do
 	if (!msgTmr.done()) return;																// not the right time
@@ -321,7 +321,7 @@ void Dimmer::sendStatus(void) {
 
 	} else sendStat = 0;																	// no need for next time
 }
-void Dimmer::dimPoll(void) {
+void xmlDimmer::dimPoll(void) {
 	
 	adjPWM();																				// check if something is to be set on the PWM channel
 	blinkOffDly();																			// check if off delay blinking is needed
@@ -458,7 +458,7 @@ void Dimmer::dimPoll(void) {
 }
 
   //- helpers defined functions -------------------------------------------------------------------------------------------
-void Dimmer::showStruct(void) {
+void xmlDimmer::showStruct(void) {
 
 	dbg << "\nctRampOn " << l3->ctRampOn << ", ctRampOff " << l3->ctRampOff << ", ctDlyOn " << l3->ctDlyOn << \
 	        ", ctDlyOff " << l3->ctDlyOff << ", ctOn " << l3->ctOn << ", ctOff " << l3->ctOff << \
@@ -486,7 +486,7 @@ void Dimmer::showStruct(void) {
 //-------------------------------------------------------------------------------------------------------------------------
 //- mandatory functions for every new module to communicate within HM protocol stack -
 //-------------------------------------------------------------------------------------------------------------------------
-void Dimmer::setToggle(void) {
+void xmlDimmer::setToggle(void) {
 	// setToggle will be addressed by config button in mode 2 by a short key press
 	// here we can toggle the status of the actor
 	#ifdef DI_DBG
@@ -498,7 +498,7 @@ void Dimmer::setToggle(void) {
 	else nxtStat = 1;																		// currently off, next status should be on
 	//onDly   = 0; onTime  = 255; offDly  = 0; offTime = 255;								// set timers
 }
-void Dimmer::configCngEvent(void) {
+void xmlDimmer::configCngEvent(void) {
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
 	#ifdef DI_DBG
 	dbg << F("CCE, lst1: ") << pHex(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
@@ -513,7 +513,7 @@ void Dimmer::configCngEvent(void) {
 	if (!msgDelay) msgDelay = 2000;
 	//dbg << "md" << msgDelay << '\n';
 }
-void Dimmer::pairSetEvent(uint8_t *data, uint8_t len) {
+void xmlDimmer::pairSetEvent(uint8_t *data, uint8_t len) {
 	// we received a message from master to set a new value, typical you will find three bytes in data
 	// 1st byte = value; 2nd and 3rd byte = ramp time; 4th and 5th byte = duration time;
 	// after setting the new value we have to send an enhanced ACK (<- 0E E7 80 02 1F B7 4A 63 19 63 01 01 C8 00 54)
@@ -531,7 +531,7 @@ void Dimmer::pairSetEvent(uint8_t *data, uint8_t len) {
 	sendStat = 1;																			// ACK should be send
 	msgTmr.set(100);																		// give some time
 }
-void Dimmer::pairStatusReq(void) {
+void xmlDimmer::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	#ifdef DI_DBG
 	dbg << F("PSR\n");
@@ -542,7 +542,7 @@ void Dimmer::pairStatusReq(void) {
 	sendStat = 2;																			// ACK should be send
 	msgTmr.set(0);																			// immediately
 }
-void Dimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
+void xmlDimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
 	// appropriate answer is an ACK
 	#ifdef DI_DBG
@@ -564,19 +564,19 @@ void Dimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	}
 }
 
-void Dimmer::poll(void) {
+void xmlDimmer::poll(void) {
 	dimPoll();
 }
 
 //-------------------------------------------------------------------------------------------------------------------------
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
-void Dimmer::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
+void xmlDimmer::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	hm = instPtr;																			// set pointer to the HM module
-	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&Dimmer::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
+	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&xmlDimmer::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
 }
-void Dimmer::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
+void xmlDimmer::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
 	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
@@ -588,7 +588,7 @@ void Dimmer::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, 
 	else if  (by3 >= 0x3E)                    peerMsgEvent(by3, data, len);
 	else return;
 }
-void Dimmer::peerAddEvent(uint8_t *data, uint8_t len) {
+void xmlDimmer::peerAddEvent(uint8_t *data, uint8_t len) {
 	// we received an peer add event, which means, there was a peer added in this respective channel
 	// 1st byte and 2nd byte shows the peer channel, 3rd and 4th byte gives the peer index
 	// no need for sending an answer, but we could set default data to the respective list3/4
@@ -609,7 +609,7 @@ void Dimmer::peerAddEvent(uint8_t *data, uint8_t len) {
 		if (data[1]) hm->ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
 }
-void Dimmer::firstStart(void) {
+void xmlDimmer::firstStart(void) {
 	//#ifdef DI_DBG
 	dbg << F("firstStart\n");
 	//#endif

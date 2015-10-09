@@ -6,8 +6,8 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#ifndef _DIMMER_H
-#define _DIMMER_H
+#ifndef _XMLDIMMER_H
+#define _XMLDIMMER_H
 
 #include "AS.h"
 #include "HAL.h"
@@ -64,7 +64,7 @@ const uint8_t peerSingle[] = {
 };
 
 
-class Dimmer {
+class xmlDimmer {
   //- user code here ------------------------------------------------------------------------------------------------------
   public://----------------------------------------------------------------------------------------------------------------
   protected://-------------------------------------------------------------------------------------------------------------
@@ -241,8 +241,8 @@ class Dimmer {
 		uint8_t  elsJtRampOff        :4;     // 0x29,0xa9, s:4, e:8
 	} *l3;
 	
-	void (*fInit)(void);																	// pointer to init function in main sketch
-	void (*fSwitch)(uint8_t,uint8_t);														// pointer to switch function (PWM) in main sketch, first value is PWM level, second the characteristics
+	void (*fInit)(uint8_t);																	// pointer to init function in main sketch
+	void (*fSwitch)(uint8_t,uint8_t,uint8_t);												// pointer to switch function (PWM) in main sketch, first value is PWM level, second the characteristics
 
 	uint8_t  *pTemp;																		// pointer to temperature byte in main sketch
 	
@@ -269,7 +269,7 @@ class Dimmer {
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
 
-	void     config(void Init(), void Switch(uint8_t,uint8_t), uint8_t temperature);		// configures the module, jump addresses, etc
+	void     config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t,uint8_t), uint8_t *temperature);// configures the module, jump addresses, etc
 
 	void     trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime);				// messages coming from master
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);										// messages coming from switch

@@ -4,12 +4,6 @@
 #include <AS.h>																				// the asksin framework
 #include "register.h"																		// configuration sheet
 
-// some forward declarations
-void initPWM();
-void switchPWM(uint8_t status, uint8_t characteristic);
-
-
-
 //waitTimer xTmr;
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
@@ -25,10 +19,6 @@ void setup() {
 	
 	//DDRB = DDRC = DDRD = 0x00;															// everything as input
 	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
-
-	// todo: led and config key should initialized internally
-	initLeds();																				// initialize the leds
-	initConfKey();																			// initialize the port for getting config key interrupts
 
 	// todo: timer0 and SPI should enable internally
 	power_timer0_enable();
@@ -46,33 +36,34 @@ void setup() {
 	
 	
 	// - AskSin related ---------------------------------------
-	// init the homematic framework and register user modules
 	hm.init();																				// init the asksin framework
 
-	hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit
+	//hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit
 	
-	hm.ld.init(2, &hm);																		// set the led
-	hm.ld.set(welcome);																		// show something
+	//hm.ld.init(2, &hm);																		// set the led
+	//hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(0);																		// set power management mode
-	hm.bt.set(27, 3600000);		// 3600000 = 1h												// set battery check
+	//hm.pw.setMode(0);																		// set power management mode
+	//hm.bt.set(27, 3600000);		// 3600000 = 1h												// set battery check
 
-	dimmer.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
-	dimmer.config(&initPWM, &switchPWM, NULL);
+	//dimmer.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
+	//dimmer.config(&initPWM, &switchPWM, NULL);
 
 	sei();																					// enable interrupts
 
 	
 	// - user related -----------------------------------------
-	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
+	#ifdef SER_DBG
+		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
+	#endif
 	
 	//uint8_t xT[] = {0x15, 0xff, 0x16, 0xff};
 	//hm.ee.setListArray(0, 0, 0, 4, xT);	
 
-	uint8_t pT[] = {0x01,0x02,0x04,0x01,0x00};
-	hm.ee.addPeer(1, pT);
-	hm.ee.addPeer(2, pT);
-	hm.ee.addPeer(3, pT);
+	//uint8_t pT[] = {0x01,0x02,0x04,0x01,0x00};
+	//hm.ee.addPeer(1, pT);
+	//hm.ee.addPeer(2, pT);
+	//hm.ee.addPeer(3, pT);
 }
 
 void loop() {
@@ -86,7 +77,7 @@ void loop() {
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
-void initPWM() {
+void initDim(uint8_t channel) {
 	dbg << "init pwm\n";
 	
 	power_timer2_enable();																	// enable the timer2 in power management
@@ -99,7 +90,7 @@ void initPWM() {
 	TCCR2A |= 1<<COM2B1;
 
 }
-void switchPWM(uint8_t status, uint8_t characteristic) {
+void switchDim(uint8_t channel, uint8_t status, uint8_t characteristic) {
 	uint16_t x = status*255;
 	//dbg << x << " ";
 	x /= 200;																				// status = 0 to 200, but PWM needs 255 as maximum
