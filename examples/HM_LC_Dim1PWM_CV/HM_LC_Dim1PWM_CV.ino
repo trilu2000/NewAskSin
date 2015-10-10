@@ -38,16 +38,6 @@ void setup() {
 	// - AskSin related ---------------------------------------
 	hm.init();																				// init the asksin framework
 
-	//hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);								// configure the config button, mode, pci byte and pci bit
-	
-	//hm.ld.init(2, &hm);																		// set the led
-	//hm.ld.set(welcome);																		// show something
-	
-	//hm.pw.setMode(0);																		// set power management mode
-	//hm.bt.set(27, 3600000);		// 3600000 = 1h												// set battery check
-
-	//dimmer.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
-	//dimmer.config(&initPWM, &switchPWM, NULL);
 
 	sei();																					// enable interrupts
 
@@ -57,13 +47,6 @@ void setup() {
 		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
 	#endif
 	
-	//uint8_t xT[] = {0x15, 0xff, 0x16, 0xff};
-	//hm.ee.setListArray(0, 0, 0, 4, xT);	
-
-	//uint8_t pT[] = {0x01,0x02,0x04,0x01,0x00};
-	//hm.ee.addPeer(1, pT);
-	//hm.ee.addPeer(2, pT);
-	//hm.ee.addPeer(3, pT);
 }
 
 void loop() {
@@ -78,8 +61,10 @@ void loop() {
 
 //- user functions --------------------------------------------------------------------------------------------------------
 void initDim(uint8_t channel) {
-	dbg << "init pwm\n";
-	
+	#ifdef SER_DBG
+		dbg << F("initDim: ") << channel << "\n";
+	#endif
+		
 	power_timer2_enable();																	// enable the timer2 in power management
 	
 	pinOutput(DDRD,3);																		// init the relay pins
@@ -91,13 +76,15 @@ void initDim(uint8_t channel) {
 
 }
 void switchDim(uint8_t channel, uint8_t status, uint8_t characteristic) {
+	#ifdef SER_DBG
+		dbg << F("switchDim: ") << channel << ", " << status << ", " << characteristic << "\n";
+	#endif
+
 	uint16_t x = status*255;
-	//dbg << x << " ";
 	x /= 200;																				// status = 0 to 200, but PWM needs 255 as maximum
-	//dbg << x << '\n';
 	OCR2B = x;																				// set the PWM value to the pin
 
-	//if (status) setPinHigh(PORTD,3);
+	//if (status) setPinHigh(PORTD,3);														// here you could switch on an additional power supply
 	//else setPinLow(PORTD,3);
 }
 

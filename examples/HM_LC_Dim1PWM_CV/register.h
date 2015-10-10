@@ -98,4 +98,12 @@ void firstTimeStart(void) {
 	// place here everything which should be done on the first start or after a complete reset of the sketch
 	// typical use case are default values which should be written into the register or peer database
 
+	//uint8_t xT[] = {0x15, 0xff, 0x16, 0xff};
+	//hm.ee.setListArray(0, 0, 0, 4, xT);
+
+	//uint8_t pT[] = {0x01,0x02,0x04,0x01,0x00};
+	//hm.ee.addPeer(1, pT);
+	//hm.ee.addPeer(2, pT);
+	//hm.ee.addPeer(3, pT);
+
 }
