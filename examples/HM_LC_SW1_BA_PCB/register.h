@@ -2,12 +2,12 @@
 //- load libraries -------------------------------------------------------------------------------------------------------
 #include <AS.h>                                                         // the asksin framework
 #include "hardware.h"                                                   // hardware definition
-#include <xmlSwitch.h>
+#include <cmSwitch.h>
 
 //- stage modules --------------------------------------------------------------------------------------------------------
 AS hm;                                                                  // asksin framework
 
-xmlSwitch xmlSwitch[1];                                                 // create instances of channel module
+cmSwitch cmSwitch[1];                                                 // create instances of channel module
 extern void initRly(uint8_t channel);                                   // declare function to jump in
 extern void switchRly(uint8_t channel, uint8_t status);                 // declare function to jump in
 
@@ -16,10 +16,12 @@ extern void switchRly(uint8_t channel, uint8_t status);                 // decla
 uint16_t EEMEM eMagicByte;
 uint8_t  EEMEM eHMID[3]  = {0x58,0x23,0xff,};
 uint8_t  EEMEM eHMSR[10] = {'X','M','S','1','2','3','4','5','6','7',};
+uint8_t  EEMEM eHMKEY[16] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,};
 
 // if HMID and Serial are not set, then eeprom ones will be used
 uint8_t HMID[3] = {0x58,0x23,0xff,};
 uint8_t HMSR[10] = {'X','M','S','1','2','3','4','5','6','7',};          // XMS1234567
+uint8_t HMKEY[16] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,};
 
 //- ----------------------------------------------------------------------------------------------------------------------
 //- settings of HM device for AS class -----------------------------------------------------------------------------------
@@ -74,8 +76,8 @@ void everyTimeStart(void) {
 	hm.pw.setMode(0);                                                   // set power management mode
 
     // register user modules
-    xmlSwitch[0].regInHM(1, 3, &hm);                                    // register user module
-    xmlSwitch[0].config(&initRly, &switchRly);                          // configure user module
+    cmSwitch[0].regInHM(1, 3, &hm);                                    // register user module
+    cmSwitch[0].config(&initRly, &switchRly);                          // configure user module
 
 }
 

@@ -3,12 +3,12 @@
 //- load libraries -------------------------------------------------------------------------------------------------------
 #include <AS.h>																				// the asksin framework
 #include "hardware.h"																		// hardware definition
-#include <xmlDimmer.h>
+#include <cmDimmer.h>
 
 //- stage modules --------------------------------------------------------------------------------------------------------
 AS hm;                                                                  // asksin framework
 
-xmlDimmer xmlDimmer[3];                                                 // create instances of channel module
+cmDimmer cmDimmer[3];												    // create instances of channel module
 extern void initDim(uint8_t channel);                                   // declare function to jump in
 extern void switchDim(uint8_t channel, uint8_t status, uint8_t characteristic);// declare function to jump in
 uint8_t bTemperature;
@@ -18,10 +18,12 @@ uint8_t bTemperature;
 uint16_t EEMEM eMagicByte;
 uint8_t  EEMEM eHMID[3]  = {0xac,0xaf,0xff,};
 uint8_t  EEMEM eHMSR[10] = {'X','M','S','2','3','4','5','6','7','8',};
+uint8_t  EEMEM eHMKEY[16] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,};
 
 // if HMID and Serial are not set, then eeprom ones will be used
 uint8_t HMID[3] = {0xac,0xaf,0xff,};
 uint8_t HMSR[10] = {'X','M','S','2','3','4','5','6','7','8',};          // XMS2345678
+uint8_t HMKEY[16] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,}; 
 
 //- ----------------------------------------------------------------------------------------------------------------------
 //- settings of HM device for AS class -----------------------------------------------------------------------------------
@@ -83,14 +85,14 @@ void everyTimeStart(void) {
 	hm.pw.setMode(0);                                                   // set power management mode
 
 	// register user modules
-	xmlDimmer[1].regInHM(1, 3, &hm);                                    // register user module
-	xmlDimmer[1].config(&initDim, &switchDim, &bTemperature);            // configure user module
+	cmDimmer[1].regInHM(1, 3, &hm);                                     // register user module
+	cmDimmer[1].config(&initDim, &switchDim, &bTemperature);            // configure user module
 
-	xmlDimmer[0].regInHM(2, 3, &hm);                                    // register user module
-	xmlDimmer[0].config(&initDim, &switchDim, &bTemperature);            // configure user module
+	cmDimmer[0].regInHM(2, 3, &hm);                                     // register user module
+	cmDimmer[0].config(&initDim, &switchDim, &bTemperature);            // configure user module
 
-	xmlDimmer[2].regInHM(3, 3, &hm);                                    // register user module
-	xmlDimmer[2].config(&initDim, &switchDim, &bTemperature);            // configure user module
+	cmDimmer[2].regInHM(3, 3, &hm);                                     // register user module
+	cmDimmer[2].config(&initDim, &switchDim, &bTemperature);            // configure user module
 
 }
 

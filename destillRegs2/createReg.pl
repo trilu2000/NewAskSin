@@ -23,14 +23,15 @@ if ($ret != 0) {
 }
 
 ## ---------- hm id check ------------------------
-if ($cType{'hmID'} == 0) {
+if (length($cType{'hmID'}) == 0) {
 	print "generating new hm ID...\n";
-	$cType{'hmID'} = int(rand(0xFFFFFF));
+	
+	$cType{'hmID'} = sprintf("%04x%02x", rand(0xFFFF), rand(0xFF) );
 }
 
 ## ---------- model id check ---------------------
 # model id is mandatory, if 0 then exit
-if ($cType{'modelID'} == 0) {
+if (length($cType{'modelID'}) == 0) {
 	print "model ID empty, exit...\n";
 	exit;
 }
@@ -203,7 +204,7 @@ foreach my $test (sort keys %cnlTypeA) {														# some debug
 
 
 # -- cleanup the array and remember start address and length
-my $slcIdx = 0; my $slcLen = 0; my $phyAddr = 15;
+my $slcIdx = 0; my $slcLen = 0; my $phyAddr = 31;
 foreach my $test (sort keys %cnlType) {
 	$slcLen = scalar(@{ $cnlType{$test}{'regSet'} });
 
@@ -290,10 +291,13 @@ foreach my $test (sort keys %cnlType) {
 
 	my $oldRLKey=""; my $oldModIdx;
 	foreach my $rLKey (sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} } keys %rL) {	
-		$rL{$rLKey}{'libName'} = $rL{$rLKey}{'type'} .".h";
+		my $cmName = "cm" .substr($rL{$rLKey}{'type'},3);
+		$rL{$rLKey}{'libName'} = $cmName .".h";
+		#$rL{$rLKey}{'libName'} = $rL{$rLKey}{'type'} .".h";
 
-		$rL{$rLKey}{'modName'} = $rL{$rLKey}{'type'};
-		$rL{$rLKey}{'modClass'} = $rL{$rLKey}{'type'};
+		$rL{$rLKey}{'modName'} = $cmName;
+		#$rL{$rLKey}{'modName'} = $rL{$rLKey}{'type'};
+		#$rL{$rLKey}{'modClass'} = $rL{$rLKey}{'type'};
 
 		if ( $rL{$rLKey}{'type'} eq  $oldRLKey) {
 			$oldModIdx += 1; 
@@ -374,9 +378,9 @@ printStartFunctions();
 sub prnHexStr {
 	my $in = shift;
 	my $len = shift;
-	#$len = "%." .$len 
+	$in = $in ."0"x(($len*2) - length($in));
 		
-	$in = sprintf("%.".$len."x", $in);
+	#$in = sprintf("%.".$len."x", $in);
 	$in =~ s/(..)/0x$&,/g;
 	return $in;
 }
@@ -409,7 +413,7 @@ sub printLoadLibs {
 		if ($rL{$rLKey}{'type'} eq $oldRLKey) {next;};
 
 		print "\n";
-		my $xLine = "$rL{$rLKey}{'modName'} $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'maxIdxSize'}];";
+		my $xLine = "$rL{$rLKey}{'modName'} $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'maxIdxSize'}];";
 		print $xLine ." "x(72-length($xLine)) ."// create instances of channel module\n";
 		foreach (@{$rL{$rLKey}{'stage_modul'}}) {
 			my $sLine = $_ .";";
@@ -448,11 +452,11 @@ sub printStartFunctions {
 	foreach my $rLKey (sort keys %rL) {	
 		# get the respective list 3 or 4 for the channel
 		my ($xl) = (grep { ($cnlType{$_}{'cnl'} == $rLKey) && ($cnlType{$_}{'lst'} > 1) && ($cnlType{$_}{'lst'} < 5) } keys %cnlType);
-		my $xLine = "    $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
+		my $xLine = "    $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
 		print $xLine ." "x(72-length($xLine)) ."// register user module\n";
 
 		foreach (@{$rL{$rLKey}{'config_modul'}}) {
-			my $sLine = "    $rL{$rLKey}{'modClass'}\[$rL{$rLKey}{'modIdx'}].$_;";
+			my $sLine = "    $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].$_;";
 			print $sLine ." "x(72-length($sLine)) ."// configure user module\n";
 		}
 		print "\n";
@@ -479,20 +483,23 @@ sub printDefaltTable {
 	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 	print "//- eeprom defaults table ------------------------------------------------------------------------------------------------\n";
 	print "uint16_t EEMEM eMagicByte;\n";
-	print "uint8_t  EEMEM eHMID[3]  = {" .prnHexStr($dT{'hmID'},6) ."};\n";
+	print "uint8_t  EEMEM eHMID[3]  = {" .prnHexStr($dT{'hmID'},3) ."};\n";
 	print "uint8_t  EEMEM eHMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."};\n";
+	print "uint8_t  EEMEM eHMKEY[16] = {" .prnHexStr($dT{'hmKEY'},16) ."};\n";
+
 	print "\n";
 	print "// if HMID and Serial are not set, then eeprom ones will be used\n";
-	print "uint8_t HMID[3] = {" .prnHexStr($dT{'hmID'},6) ."};\n";
+	print "uint8_t HMID[3] = {" .prnHexStr($dT{'hmID'},3) ."};\n";
 	print "uint8_t HMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."};          // $dT{'serial'}\n";
+	print "uint8_t HMKEY[16] = {" .prnHexStr($dT{'hmKEY'},16) ."};\n";
 	print "\n";
 	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
 	print "//- settings of HM device for AS class -----------------------------------------------------------------------------------\n";
 	print "const uint8_t devIdnt[] PROGMEM = {\n";
-	print "    /* Firmware version  1 byte */  " .prnHexStr($dT{'firmwareVer'},2) ." "x31 ."// don't know for what it is good for\n";
-	print "    /* Model ID          2 byte */  " .prnHexStr($dT{'modelID'},4) ." "x26 ."// model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
-	print "    /* Sub Type ID       1 byte */  " .prnHexStr($dT{'subtypeID'},2) ." "x31 ."// not needed for FHEM, it's something like a group ID\n";
-	print "    /* Device Info       3 byte */  " .prnHexStr($dT{'deviceInfo'},6) ." "x21 ."// describes device, not completely clear yet. includes amount of channels\n";
+	print "    /* Firmware version  1 byte */  " .prnHexStr($dT{'firmwareVer'},1) ." "x31 ."// don't know for what it is good for\n";
+	print "    /* Model ID          2 byte */  " .prnHexStr($dT{'modelID'},2) ." "x26 ."// model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
+	print "    /* Sub Type ID       1 byte */  " .prnHexStr($dT{'subtypeID'},1) ." "x31 ."// not needed for FHEM, it's something like a group ID\n";
+	print "    /* Device Info       3 byte */  " .prnHexStr($dT{'deviceInfo'},3) ." "x21 ."// describes device, not completely clear yet. includes amount of channels\n";
 	print "};  // 7 byte\n\n";
 }
 

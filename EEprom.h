@@ -273,6 +273,12 @@ extern uint8_t HMID[];
  */
 extern uint8_t HMSR[];
 
+/**
+ * @brief Global definition of device AES key. Must be declared in user space.
+ *
+ */
+extern uint8_t HMKEY[];
+
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a);												// crc function

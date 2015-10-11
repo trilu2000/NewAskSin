@@ -17,10 +17,11 @@ my %confType = (
     ## on modelID you could choose between an already existing configuration or you can create a new device
 	
     serial      => 'XMS2345678',                           # 0 to get it automatically generated - otherwise 10 byte ASCII format
-    hmID        => '0',                                    # 0 to get it automatically generated - otherwise 6 HEX digits
+    hmID        => '',                                     # empty to get it automatically generated - otherwise 6 HEX digits (3 byte)
+    hmKEY       => '0102030405060708090a0b0c0d0e0f10',     # 32 HEX digits (16 byte) HM AES Key 
 	
-    modelID     => 0x0067,                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
-    firmwareVer => 0x25,                                   # firmware version, 2 HEX digits - important if you took a model id where more then one device exists
+    modelID     => '0f67',                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
+    firmwareVer => '25',                                   # firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
 
     ## no input needed if model id is valid and device already exists in HM config software,
@@ -29,8 +30,8 @@ my %confType = (
     name        => 'Test128',                              # name of the device, ascii [A-Z, a-z, 0-9, '-'], no blanks
     description => 'das ist ein test',                     # short description of the device
 
-    subtypeID   => 0x00,                                   # depending on type of device
-    deviceInfo  => 0x410100,                               # not complete clear yes, but 3 bytes HEX needed
+    subtypeID   => '00',                                   # depending on type of device
+    deviceInfo  => '410100',                               # not complete clear yes, but 3 bytes HEX needed
 	
     burstRx     => 0,                                      # device needs a burst signal to wakeup
     localResDis => 1,                                      # local reset disable 
