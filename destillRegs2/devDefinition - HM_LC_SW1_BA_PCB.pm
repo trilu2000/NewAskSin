@@ -16,24 +16,23 @@ my %confType = (
     ## some basic information to create a new device, serial number and hm id has to be unique in your network
     ## on modelID you could choose between an already existing configuration or you can create a new device
 	
-    serial      => 'XMS2345678',                           # 0 to get it automatically generated - otherwise 10 byte ASCII format
-    hmID        => '',                                     # empty to get it automatically generated - otherwise 6 HEX digits (3 byte)
-    hmKEY       => '0102030405060708090a0b0c0d0e0f10',     # 32 HEX digits (16 byte) HM AES Key 
+    serial      => 'XMS1234567',                           # 0 to get it automatically generated - otherwise 10 byte ASCII format
+    hmID        => '0',                                    # 0 to get it automatically generated - otherwise 6 HEX digits
 	
-    modelID     => '0f06',                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
-    firmwareVer => '11',                                   # firmware version, 2 HEX digits - important if you took a model id where more then one device exists
+    modelID     => 0x006c,                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
+    firmwareVer => 0x10,                                   # firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
 
     ## no input needed if model id is valid and device already exists in HM config software,
     ## otherwise fill accordingly to create a proper register.h and xml config file 
 
-    name        => 'Test128',                              # name of the device, ascii [A-Z, a-z, 0-9, '-'], no blanks
+    name        => 'Test127',                              # name of the device, ascii [A-Z, a-z, 0-9, '-'], no blanks
     description => 'das ist ein test',                     # short description of the device
 
-    subtypeID   => '30',                                   # depending on type of device / see above
-    deviceInfo  => '010100',                               # not complete clear yes, but 3 bytes HEX needed - referer to count_from_sysinfo="23.0:1.0"
+    subtypeID   => 0x00,                                   # depending on type of device
+    deviceInfo  => 0x410100,                               # not complete clear yes, but 3 bytes HEX needed
 	
-    burstRx     => 0,                                      # device needs a burst signal to wakeup
+    burstRx     => 1,                                      # device needs a burst signal to wakeup
     localResDis => 1,                                      # local reset disable 
     intKeysVis  => 1,                                      # internal keys visible
 
@@ -48,7 +47,7 @@ my %confType = (
     battVisib   => 0,                                      # battery flag visible in registers of channel 0
     battChkDura => 3600000,	                               # the time between two measurements, value in milli seconds
 
-	powerMode   => 0,                                      # there are 5 power modes available, which could be choosed to get the best ratio between power consumption and availablity
+	powerMode   => 1,                                      # there are 5 power modes available, which could be choosed to get the best ratio between power consumption and availablity
                                                            # 0, now power saving - 19.9ma
                                                            # 1, wake up every 250ms, check for wakeup signal on air and stay awake accordingly, timer gets updated every 256ms
                                                            # 2, deep sleep, wakeup every 250ms, not able to receive anything while sleeping, timer gets updated every 256ms
@@ -63,12 +62,12 @@ my %confType = (
 ## with linked you can link channels together, e.g. key to dimmer
 ## todo: linked
 
-$regList{1}     = {type => "xmlBlind", peers => 6, hidden => 0, linked => 0     };
-#$regList{2}     = {type => "xmlDimmer", peers => 1, hidden => 0, linked => 0     };
-#$regList{3}     = {type => "xmlDimmer", peers => 1, hidden => 0, linked => 0     };
+#$regList{1}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0     };
+#$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 1, linked => {3,4} };
+#$regList{3}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
 #$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
 
-#$regList{1}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
+$regList{1}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
 #$regList{2}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0     };
 #$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => {3,4} };
 #$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };

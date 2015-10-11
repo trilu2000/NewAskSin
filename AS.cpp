@@ -592,6 +592,7 @@ void AS::recvMessage(void) {
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
 		// do something with the information ----------------------------------
+		dbg << "CONFIG_PARAM_REQ \n";
 		
 		if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {									// only list 3 and list 4 needs an peer id and idx
 			stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);						// get peer index
