@@ -85,7 +85,6 @@ class CB {
 	void poll(void);
 	
 	void outSignal(uint8_t mode);
-
 };
 
 #endif 

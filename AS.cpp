@@ -23,6 +23,9 @@ void AS::init(void) {
 		dbg << F("AS.\n");																	// ...and some information
 	#endif
 	
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
+
 	ee.init();																				// eeprom init
 	cc.init();																				// init the rf module
 
@@ -38,6 +41,8 @@ void AS::init(void) {
 	this->initRandomSeed();
 	// DEBUG
 	makeSigningRequest();
+//	sendSigningResponse();
+
 	// everything is setuped, enable RF functionality
 	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
 }
@@ -557,7 +562,7 @@ void AS::recvMessage(void) {
 		else if (rv.ackRq) sendNACK();
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x02)) {			// CONFIG_PEER_REMOVE
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x02)) {							// CONFIG_PEER_REMOVE
 		// description --------------------------------------------------------
 		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   02  1F A6 5C  06         05
@@ -567,7 +572,7 @@ void AS::recvMessage(void) {
 		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x03)) {			// CONFIG_PEER_LIST_REQ
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x03)) {							// CONFIG_PEER_LIST_REQ
 		// description --------------------------------------------------------
 		//                                  Cnl
 		// l> 0B 05 A0 01 63 19 63 01 02 04 01  03
@@ -582,13 +587,13 @@ void AS::recvMessage(void) {
 		// answer will send from sendsList(void)
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x04)) {			// CONFIG_PARAM_REQ
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x04)) {							// CONFIG_PARAM_REQ
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
 		// do something with the information ----------------------------------
-
-		if ((rv.buf[16] == 3) || (rv.buf[16] == 4)) {										// only list 3 and list 4 needs an peer id and idx	
+		
+		if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {									// only list 3 and list 4 needs an peer id and idx
 			stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);						// get peer index
 		} else stcSlice.idx = 0;															// otherwise peer index is 0
  
@@ -601,13 +606,14 @@ void AS::recvMessage(void) {
 		
 		#ifdef AS_DBG
 			dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
+			dbg << "totSlc: " << stcSlice.totSlc << '\n';
 		#endif
 
-		if ((stcSlice.idx != 0xff) && (stcSlice.totSlc > 0)) stcSlice.active = 1;			// only send register content if something is to send															// start the send function
+		if ((stcSlice.idx != 0xFF) && (stcSlice.totSlc > 0)) stcSlice.active = 1;			// only send register content if something is to send															// start the send function
 		else memset((void*)&stcSlice, 0, 10);												// otherwise empty variable
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x05)) {			// CONFIG_START
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x05)) {							// CONFIG_START
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 01 A0 01 63 19 63 01 02 04 00  05 00 00 00  00       00
@@ -628,7 +634,7 @@ void AS::recvMessage(void) {
 		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x06)) {			// CONFIG_END
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x06)) {							// CONFIG_END
 		// description --------------------------------------------------------
 		//                                  Cnl
 		// l> 0B 01 A0 01 63 19 63 01 02 04 00  06
@@ -647,7 +653,7 @@ void AS::recvMessage(void) {
 		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x08)) {			// CONFIG_WRITE_INDEX
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x08)) {							// CONFIG_WRITE_INDEX
 		// description --------------------------------------------------------
 		//                                  Cnl    Data
 		// l> 13 02 A0 01 63 19 63 01 02 04 00  08 02 01 0A 63 0B 19 0C 63
@@ -676,7 +682,7 @@ void AS::recvMessage(void) {
 		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x09)) {			// CONFIG_SERIAL_REQ
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x09)) {							// CONFIG_SERIAL_REQ
 		// description --------------------------------------------------------
 		//
 		// l> 0B 77 A0 01 63 19 63 01 02 04 00 09
@@ -684,7 +690,7 @@ void AS::recvMessage(void) {
 		sendINFO_SERIAL();																	// jump to create the answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) {			// PAIR_SERIAL
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) {							// PAIR_SERIAL
 		// description --------------------------------------------------------
 		//                                         serial
 		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A  4B 45 51 30 32 33 37 33 39 36
@@ -692,7 +698,7 @@ void AS::recvMessage(void) {
 		if (compArray(rv.buf+12,HMSR,10)) sendDEVICE_INFO();								// compare serial and send device info
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0E)) {			// CONFIG_STATUS_REQUEST
+	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0E)) {							// CONFIG_STATUS_REQUEST
 		// description --------------------------------------------------------
 		//                 reID      toID      cnl 
 		// l> 0B 40 B0 01  63 19 63  1F B7 4A  01  0E (148552)
@@ -708,7 +714,7 @@ void AS::recvMessage(void) {
 		}
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x00)) {			// ACK
+	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x00)) {							// ACK
 		// description --------------------------------------------------------
 		//
 		// l> 0A 05 80 02 63 19 63 01 02 04 00
@@ -718,7 +724,7 @@ void AS::recvMessage(void) {
 		//dbg << "act:" << sn.active << " rC:" << rv.mBdy.mLen << " sC:" << sn.lastMsgCnt << " cntr:" << sn.retrCnt << '\n';
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x01)) {			// ACK_STATUS
+	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x01)) {							// ACK_STATUS
 		// description --------------------------------------------------------
 		// <- 0B 08 B4 40 23 70 D8 1F B7 4A 02 08
 		//                                      cnl stat DUL RSSI
@@ -729,7 +735,7 @@ void AS::recvMessage(void) {
 		if ((sn.active) && (rv.mBdy.mLen == sn.lastMsgCnt)) sn.retrCnt = 0xff;				// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x02)) {			// ACK2
+	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x02)) {							// ACK2
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -737,7 +743,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x04)) {			// ACK_PROC
+	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x04)) {							// ACK_PROC
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -749,7 +755,7 @@ void AS::recvMessage(void) {
 		//Para3          => "10,4",
 		//Para4          => "14,2",}}, # remote?
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x80)) {			// NACK
+	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x80)) {							// NACK
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -763,7 +769,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x84)) {			// NACK_TARGET_INVALID
+	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x84)) {							// NACK_TARGET_INVALID
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -772,7 +778,12 @@ void AS::recvMessage(void) {
 		// --------------------------------------------------------------------
 
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x02)) {			// SET
+	} else if ((rv.mBdy.mTyp == 0x04)) {													// AES Key Exchange
+		dbg << F("AES Key parts \n");
+//		aesKeypartCount++;
+//		sendACK();
+
+	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x02)) {							// SET
 		// description --------------------------------------------------------
 		//                                      cnl  stat  ramp   dura
 		// l> 0E 5E B0 11 63 19 63 1F B7 4A 02  01   C8    00 00  00 00
@@ -784,7 +795,7 @@ void AS::recvMessage(void) {
 		}
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x03)) {			// STOP_CHANGE
+	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x03)) {							// STOP_CHANGE
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -811,7 +822,7 @@ void AS::recvMessage(void) {
 		}
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x80)) {			// LED
+	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x80)) {								// LED
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -827,7 +838,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x81)) {			// LEVEL
+	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x81)) {								// LEVEL
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -835,7 +846,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x82)) {			// SLEEPMODE
+	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x82)) {								// SLEEPMODE
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -844,7 +855,7 @@ void AS::recvMessage(void) {
 		// --------------------------------------------------------------------
 
 
-	} else if  (rv.mBdy.mTyp == 0x12) {										// HAVE_DATA
+	} else if  (rv.mBdy.mTyp == 0x12) {															// HAVE_DATA
 		// description --------------------------------------------------------
 		//
 		// b> 
@@ -1086,7 +1097,7 @@ void AS::encode(uint8_t *buf) {
 			dbg << F("AES_REPLY; data: ") << _HEX((buf+10),buf[0]-9);
 
 		} else if ((buf[3] == 0x04) && (buf[10] == 0x01)) {
-			dbg << F("TOpHMLAN:SEND_AES_CODE; cnl: ") << _HEXB(buf[11]);
+			dbg << F("TO_HMLAN:SEND_AES_CODE; cnl: ") << _HEXB(buf[11]);
 
 		} else if ((buf[3] == 0x04)) {
 			dbg << F("TO_ACTOR:SEND_AES_CODE; code: ") << _HEXB(buf[11]);
@@ -1173,10 +1184,10 @@ void AS::makeSigningRequest(void) {
 }
 
 void AS::makeTmpKey(uint8_t *challenge) {
-	memcpy(this->tempHmKey, HMKEY, 16);
+	memcpy(this->tempHmKey, eHMKEY, 16);
 
 	for (uint8_t i = 0; i < 6; i++) {
-		this->tempHmKey[i] = HMKEY[i] ^ challenge[i];
+		this->tempHmKey[i] = eHMKEY[i] ^ challenge[i];
 	}
 	aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
 }
@@ -1306,7 +1317,7 @@ void     waitTimer::set(uint32_t ms) {
  */
 uint32_t waitTimer::remain(void) {
 	if (!armed) return 0;
-	return checkTime - (getMillis() - startTime);
+	return (checkTime - (getMillis() - startTime));
 }
 
 uint32_t byteTimeCvt(uint8_t tTime) {

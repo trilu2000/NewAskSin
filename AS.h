@@ -149,7 +149,7 @@ class AS {
 	void sendSetTeamTemp(void);
 	void sendWeatherEvent(void);
 	void send_generic_event(uint8_t cnl, uint8_t burst, uint8_t mTyp, uint8_t len, uint8_t *pL);
-
+	
   private:		//---------------------------------------------------------------------------------------------------------
 
 	// - poll functions --------------------------------
