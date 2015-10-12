@@ -111,7 +111,6 @@ void AS::poll(void) {
 	pw.poll();																				// poll the power management
 	
 	// some sanity poll routines
-	
 }
 
 // - send functions --------------------------------
@@ -122,7 +121,7 @@ void AS::sendDEVICE_INFO(void) {
 	// do something with the information ----------------------------------
 
 	uint8_t xCnt;
-	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) {
+	if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0A)) {
 		xCnt = rv.mBdy.mLen;																// send counter - is it an answer or a initial message
 	} else {
 		xCnt = sn.msgCnt++;
@@ -133,7 +132,7 @@ void AS::sendDEVICE_INFO(void) {
 	sn.mBdy.mFlg.CFG = 0;
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 
-	sn.mBdy.mTyp = 0x00;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_DEVINFO;
 	memcpy(sn.mBdy.reID,HMID,3);
 	memcpy(sn.mBdy.toID,MAID,3);
 
@@ -157,13 +156,13 @@ void AS::sendResponse(uint8_t responseType) {
 
 	sn.mBdy.mLen = 0x0A;
 
-	if (responseType == AS_RESPONSETYPE_NACK || responseType == AS_RESPONSETYPE_NACK_TARGET_INVALID) {
+	if (responseType == AS_RESPONSE_TYPE_NACK || responseType == AS_RESPONSE_TYPE_NACK_TARGET_INVALID) {
 		sn.mBdy.mCnt = rv.mBdy.mLen;
 	} else {
 		sn.mBdy.mCnt = rv.mBdy.mCnt;
 	}
 
-	sn.mBdy.mTyp = 0x02;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
 
@@ -180,7 +179,7 @@ void AS::sendAck() {
 
 	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
-	sendResponse(AS_RESPONSETYPE_ACK);
+	sendResponse(AS_RESPONSE_TYPE_ACK);
 }
 
 void AS::sendAckAES(uint8_t *data) {
@@ -192,11 +191,11 @@ void AS::sendAckAES(uint8_t *data) {
 
 	sn.mBdy.mLen = 0x0E;
 	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.mTyp = 0x02;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
 
-	sn.mBdy.by10 = AS_RESPONSETYPE_ACK;
+	sn.mBdy.by10 = AS_RESPONSE_TYPE_ACK;
 	sn.mBdy.by11 = data[0];
 	memcpy(sn.mBdy.pyLd, data+1, 3);
 
@@ -211,7 +210,7 @@ void AS::sendNACK(void) {
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
 	// do something with the information ----------------------------------
 
-	sendResponse(AS_RESPONSETYPE_NACK);
+	sendResponse(AS_RESPONSE_TYPE_NACK);
 }
 
 void AS::sendNACK_TARGET_INVALID(void) {
@@ -220,7 +219,7 @@ void AS::sendNACK_TARGET_INVALID(void) {
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  84
 	// do something with the information ----------------------------------
 
-	sendResponse(AS_RESPONSETYPE_NACK_TARGET_INVALID);
+	sendResponse(AS_RESPONSE_TYPE_NACK_TARGET_INVALID);
 }
 
 void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
@@ -239,7 +238,7 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	sn.mBdy.mLen = 0x0e;
 	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.mFlg.BIDI = 0;
-	sn.mBdy.mTyp = 0x02;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
 	sn.mBdy.by10 = 0x01;
@@ -260,14 +259,14 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	// do something with the information ----------------------------------
 
 	sn.mBdy.mLen = 0x0e;
-	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0e)) {
+	if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0e)) {
 		sn.mBdy.mCnt = rv.mBdy.mCnt;
 	} else {
 		sn.mBdy.mCnt = sn.msgCnt++;
 	}
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
 	
-	sn.mBdy.mTyp = 0x10;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, MAID, 3);
 	
@@ -325,7 +324,7 @@ void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	stcPeer.cnl = cnl;
 	stcPeer.burst = burst;
 	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
-	stcPeer.mTyp = 0x40;
+	stcPeer.mTyp = AS_MESSAGE_TYPE_REMOTE_EVENT;
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
@@ -345,7 +344,7 @@ void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	stcPeer.burst = burst;
 	//stcPeer.bidi = 1; // depends on BLL, long didn't need ack
 	stcPeer.bidi = (isEmpty(MAID,3))?0:1;
-	stcPeer.mTyp = 0x41;
+	stcPeer.mTyp = AS_MESSAGE_TYPE_SENSOR_EVENT;
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
@@ -568,7 +567,7 @@ void AS::recvMessage(void) {
 	uint8_t cnl1 = cFlag.cnl-1;
 
 	// check which type of message was received
-	if         (rv.mBdy.mTyp == 0x00) {										// DEVICE_INFO
+	if         (rv.mBdy.mTyp == AS_MESSAGE_TYPE_DEVINFO) {									// DEVICE_INFO
 		// description --------------------------------------------------------
 		//
 		//
@@ -576,7 +575,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x01)) {			// CONFIG_PEER_ADD
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x01)) {		// CONFIG_PEER_ADD
 		// description --------------------------------------------------------
 		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   01  1F A6 5C  06         05
@@ -594,7 +593,7 @@ void AS::recvMessage(void) {
 		else if (rv.ackRq) sendNACK();
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x02)) {							// CONFIG_PEER_REMOVE
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x02)) {		// CONFIG_PEER_REMOVE
 		// description --------------------------------------------------------
 		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
 		// l> 10 55 A0 01 63 19 63 01 02 04 01   02  1F A6 5C  06         05
@@ -604,7 +603,7 @@ void AS::recvMessage(void) {
 		if (rv.ackRq) sendAck();															// send appropriate answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x03)) {							// CONFIG_PEER_LIST_REQ
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x03)) {		// CONFIG_PEER_LIST_REQ
 		// description --------------------------------------------------------
 		//                                  Cnl
 		// l> 0B 05 A0 01 63 19 63 01 02 04 01  03
@@ -619,7 +618,7 @@ void AS::recvMessage(void) {
 		// answer will send from sendsList(void)
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x04)) {							// CONFIG_PARAM_REQ
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x04)) {		// CONFIG_PARAM_REQ
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
@@ -646,7 +645,7 @@ void AS::recvMessage(void) {
 		else memset((void*)&stcSlice, 0, 10);												// otherwise empty variable
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x05)) {							// CONFIG_START
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x05)) {		// CONFIG_START
 		// description --------------------------------------------------------
 		//                                  Cnl    PeerID    PeerCnl  ParmLst
 		// l> 10 01 A0 01 63 19 63 01 02 04 00  05 00 00 00  00       00
@@ -667,7 +666,7 @@ void AS::recvMessage(void) {
 		if (rv.ackRq) sendAck();															// send appropriate answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x06)) {							// CONFIG_END
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x06)) {		// CONFIG_END
 		// description --------------------------------------------------------
 		//                                  Cnl
 		// l> 0B 01 A0 01 63 19 63 01 02 04 00  06
@@ -686,7 +685,7 @@ void AS::recvMessage(void) {
 		if (rv.ackRq) sendAck();															// send appropriate answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x08)) {							// CONFIG_WRITE_INDEX
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x08)) {		// CONFIG_WRITE_INDEX
 		// description --------------------------------------------------------
 		//                                  Cnl    Data
 		// l> 13 02 A0 01 63 19 63 01 02 04 00  08 02 01 0A 63 0B 19 0C 63
@@ -715,7 +714,7 @@ void AS::recvMessage(void) {
 		if (rv.ackRq) sendAck();															// send appropriate answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x09)) {							// CONFIG_SERIAL_REQ
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x09)) {		// CONFIG_SERIAL_REQ
 		// description --------------------------------------------------------
 		//
 		// l> 0B 77 A0 01 63 19 63 01 02 04 00 09
@@ -723,7 +722,7 @@ void AS::recvMessage(void) {
 		sendINFO_SERIAL();																	// jump to create the answer
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) {							// PAIR_SERIAL
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0A)) {		// PAIR_SERIAL
 		// description --------------------------------------------------------
 		//                                         serial
 		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A  4B 45 51 30 32 33 37 33 39 36
@@ -731,7 +730,7 @@ void AS::recvMessage(void) {
 		if (compArray(rv.buf+12,HMSR,10)) sendDEVICE_INFO();								// compare serial and send device info
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0E)) {							// CONFIG_STATUS_REQUEST
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0E)) {		// CONFIG_STATUS_REQUEST
 		// description --------------------------------------------------------
 		//                 reID      toID      cnl 
 		// l> 0B 40 B0 01  63 19 63  1F B7 4A  01  0E (148552)
@@ -747,7 +746,7 @@ void AS::recvMessage(void) {
 		}
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x00)) {							// ACK
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == 0x00)) {		// ACK
 		// description --------------------------------------------------------
 		//
 		// l> 0A 05 80 02 63 19 63 01 02 04 00
@@ -757,7 +756,7 @@ void AS::recvMessage(void) {
 		//dbg << "act:" << sn.active << " rC:" << rv.mBdy.mLen << " sC:" << sn.lastMsgCnt << " cntr:" << sn.retrCnt << '\n';
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x01)) {							// ACK_STATUS
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == 0x01)) {		// ACK_STATUS
 		// description --------------------------------------------------------
 		// <- 0B 08 B4 40 23 70 D8 1F B7 4A 02 08
 		//                                      cnl stat DUL RSSI
@@ -768,7 +767,7 @@ void AS::recvMessage(void) {
 		if ((sn.active) && (rv.mBdy.mLen == sn.lastMsgCnt)) sn.retrCnt = 0xff;				// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x02)) {							// ACK2
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == 0x02)) {		// ACK2
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -776,7 +775,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x04)) {							// ACK_PROC AES-Challenge
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == 0x04)) {		// ACK_PROC AES-Challenge
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -788,7 +787,7 @@ void AS::recvMessage(void) {
 		//Para3          => "10,4",
 		//Para4          => "14,2",}}, # remote?
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x80)) {							// NACK
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == 0x80)) {		// NACK
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -802,7 +801,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x84)) {							// NACK_TARGET_INVALID
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == 0x84)) {		// NACK_TARGET_INVALID
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -810,19 +809,26 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x03)) {													// AES Response
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE_AES)) {							// AES Response
 		uint8_t pBuf[16];
 
 		pBuf[0] = rv.mBdy.by10;
 		pBuf[1] = rv.mBdy.by11;
 		memcpy(pBuf+2, rv.mBdy.pyLd, 14);
 
-//		dbg << F("pB ") << _HEX(rv.prevBuf, 26) << "\n";
-		this->checkPayloadDecrypt(pBuf, rv.prevBuf);
-//		dbg << F("PL decrypted: ") << _HEX(pBuf, 16) << "\n";
+		if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {
+			if (hmKeyPart > 1) {
+				hmKeyPart = 0;
 
+				// todo: here we must save the new key (newHmKey)
+				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
+			} else {
 
-	} else if ((rv.mBdy.mTyp == 0x04)) {													// AES Key Exchange
+				// todo: here we must trigger action was requestes AES sign
+			}
+		}
+
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_KEY_EXCHANGE)) {							// AES Key Exchange
 		uint8_t pBuf[16];
 
 		pBuf[0] = rv.mBdy.by10;
@@ -832,8 +838,6 @@ void AS::recvMessage(void) {
 		aes128_init(HMKEY, &ctx);															// load HMKEY
 		aes128_dec(pBuf, &ctx);																// decrypt payload width tmpKey first time
 
-//		dbg << F("decrypded PL: ") << _HEX(pBuf, 16) << "\n";
-
 		if (pBuf[0] == 0x01) {
 			if (pBuf[1] == (hmKeyPart + 2)) {
 				memcpy(newHmKey+(hmKeyPart*8), pBuf+2, 8);
@@ -841,14 +845,11 @@ void AS::recvMessage(void) {
 
 				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);									// remember this message
 
-				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
-
 				sendSigningRequest();
-				//todo: send Challange
 			}
 		}
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x02)) {							// SET
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x02)) {			// SET
 		// description --------------------------------------------------------
 		//                                      cnl  stat  ramp   dura
 		// l> 0E 5E B0 11 63 19 63 1F B7 4A 02  01   C8    00 00  00 00
@@ -860,7 +861,7 @@ void AS::recvMessage(void) {
 		}
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x03)) {							// STOP_CHANGE
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x03)) {			// STOP_CHANGE
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -868,7 +869,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x04) && (rv.mBdy.by11 == 0x00)) {	// RESET
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x04) && (rv.mBdy.by11 == 0x00)) {	// RESET
 		// description --------------------------------------------------------
 		//
 		// l> 0B 1C B0 11 63 19 63 1F B7 4A 04 00 (234116)
@@ -887,7 +888,7 @@ void AS::recvMessage(void) {
 		}
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x80)) {								// LED
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x80)) {				// LED
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -895,7 +896,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x81) && (rv.mBdy.by11 == 0x00)) {	// LEDALL
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x81) && (rv.mBdy.by11 == 0x00)) {	// LEDALL
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -903,7 +904,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x81)) {								// LEVEL
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x81)) {				// LEVEL
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -911,7 +912,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x82)) {								// SLEEPMODE
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x82)) {				// SLEEPMODE
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -920,7 +921,7 @@ void AS::recvMessage(void) {
 		// --------------------------------------------------------------------
 
 
-	} else if  (rv.mBdy.mTyp == 0x12) {															// HAVE_DATA
+	} else if  (rv.mBdy.mTyp == AS_MESSAGE_TYPE_HAVE_DATA) {									// HAVE_DATA
 		// description --------------------------------------------------------
 		//
 		// b> 
@@ -928,7 +929,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if  (rv.mBdy.mTyp >= 0x3E) {										// 3E SWITCH, 3F TIMESTAMP, 40 REMOTE, 41 SENSOR_EVENT, 53 SENSOR_DATA, 58 CLIMATE_EVENT, 70 WEATHER_EVENT
+	} else if  (rv.mBdy.mTyp >= 0x3E) {															// 3E SWITCH, 3F TIMESTAMP, 40 REMOTE, 41 SENSOR_EVENT, 53 SENSOR_DATA, 58 CLIMATE_EVENT, 70 WEATHER_EVENT
 		// description --------------------------------------------------------
 		//                 from      to        cnl  cnt
 		// p> 0B 2D B4 40  23 70 D8  01 02 05  06   05 - Remote
@@ -945,7 +946,7 @@ void AS::recvMessage(void) {
 		uint8_t cnl = 0, pIdx, tmp;
 		
 		// check if we have the peer in the database to get the channel
-		if ((rv.mBdy.mTyp == 0x3E) && (rv.mBdy.mLen == 0x0f)) {
+		if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SWITCH_EVENT) && (rv.mBdy.mLen == 0x0f)) {
 			tmp = rv.buf[13];																// save byte13, because we will replace it
 			rv.buf[13] = rv.buf[14];														// copy the channel byte to the peer
 			cnl = ee.isPeerValid(rv.buf+10);												// check with the right part of the string
@@ -989,7 +990,7 @@ void AS::sendINFO_SERIAL(void) {
 
 	sn.mBdy.mLen = 0x14;
 	sn.mBdy.mCnt = rv.mBdy.mLen;
-	sn.mBdy.mTyp = 0x10;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
 	memcpy(sn.mBdy.reID,HMID,3);
 	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
 	sn.mBdy.by10 = 0x00;
@@ -1019,7 +1020,7 @@ void AS::sendINFO_PEER_LIST(uint8_t len) {
 	sn.mBdy.mLen = len + 10;
 	sn.mBdy.mCnt = stcSlice.mCnt++;
 	sn.mBdy.mFlg.BIDI = 1;
-	sn.mBdy.mTyp = 0x10;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
 	sn.mBdy.by10 = 0x01; //stcSlice.cnl;
@@ -1041,7 +1042,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	sn.mBdy.mLen = 10+len;
 	sn.mBdy.mCnt = stcSlice.mCnt++;
 	sn.mBdy.mFlg.BIDI = 1;
-	sn.mBdy.mTyp = 0x10;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
 	sn.mBdy.by10 = (len < 3)?0x03:0x02;														// on end of the message we send a 0x03 message for homegear only
@@ -1250,7 +1251,7 @@ void AS::sendSigningRequest(void) {
 
 	sn.mBdy.mLen = 0x11;
 	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.mTyp = 0x02;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
 	sn.mBdy.by10 = 0x04;
@@ -1277,6 +1278,11 @@ void AS::makeTmpKey(uint8_t *challenge) {
 }
 
 void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
+	uint8_t iv[16] = {															// initial vector
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
 	uint32_t mill = millis();
 	encPayload[0] = 0;
 	encPayload[1] = 0;
@@ -1286,41 +1292,33 @@ void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
 	encPayload[5] = (mill & 0x000000FF);
 
 	memcpy(encPayload+6, msgToEnc+1, ((msgToEnc[0] < 10) ? 9 : 10) );			// build payload to encrypt
-
-	uint8_t iv[16] = {															// initial vector
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
-
 	memcpy(iv, msgToEnc+11, msgToEnc[0]-10);									// build initial vector
 
 	aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey first time
-
 	for (uint8_t i = 0; i < 16; i++)	encPayload[i] ^= iv[i];					// xor encrypted payload with iv
-
 	aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey again
 }
 
 uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
+	uint8_t authAck[4];
 	uint8_t iv[16] = {															// initial vector
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 
 	memcpy(iv, msgOriginal+11, msgOriginal[0]-10);								// build initial vector
-//	dbg << F(">>> kex  : ") << _HEX(HMKEY, 16) << F(" <<<") << "\n";
-//	dbg << F(">>> kexTm: ") << _HEX(this->tempHmKey, 16) << F(" <<<") << "\n";
-//	dbg << F(">>> iv   : ") << _HEX(iv, 16) << F(" <<<") << "\n";
+//	dbg << F(">>> key   : ") << _HEX(HMKEY, 16) << F(" <<<") << "\n";
+//	dbg << F(">>> keyTmp: ") << _HEX(tempHmKey, 16) << F(" <<<") << "\n";
+//	dbg << F(">>> iv    : ") << _HEX(iv, 16) << F(" <<<") << "\n";
 
 	aes128_dec(data, &ctx);														// decrypt payload width tmpKey first time
-//	dbg << F(">>> plD  : ") << _HEX(data, 16) << F(" <<<") << "\n";
+//	dbg << F(">>> plDec : ") << _HEX(data, 16) << F(" <<<") << "\n";
 
 	for (uint8_t i = 0; i < 16; i++) data[i] ^= iv[i];							// xor encrypted payload with iv
-//	dbg << F(">>> plD^ : ") << _HEX(data, 16) << F(" <<<") << "\n";
+//	dbg << F(">>> plDec^: ") << _HEX(data, 16) << F(" <<<") << "\n";
 
-	uint8_t authAck[4];
 	memcpy(authAck, data, 4);													// build auth ACK
-//	dbg << F(">>> ack  : ") << _HEX(authAck, 4) << F(" <<<") << "\n";
+//	dbg << F(">>> ack   : ") << _HEX(authAck, 4) << F(" <<<") << "\n";
 
 	aes128_dec(data, &ctx);														// decrypt payload width tmpKey again
 
@@ -1328,7 +1326,7 @@ uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
 
 	// memcmp returns 0 if compare true
 	 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
-		 sendAckAES(authAck);													// send AES-Ack (0x00 0xXX 0xXX 0xXX 0xXX)
+		 sendAckAES(authAck);													// send AES-Ack
 		 return 1;
 
 	 } else {
@@ -1339,7 +1337,7 @@ uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
 void AS::sendSigningResponse(void) {
 	sn.mBdy.mLen = 0x19;
 	sn.mBdy.mCnt = rv.mBdy.mLen;
-	sn.mBdy.mTyp = 0x03;
+	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE_AES;
 	memcpy(sn.mBdy.reID,HMID,3);
 	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
 

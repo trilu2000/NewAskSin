@@ -300,7 +300,7 @@ void cmDimmer::sendStatus(void) {
 	if (!sendStat) return;																	// nothing to do
 	if (!msgTmr.done()) return;																// not the right time
 		
-	// prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT ‘0x80’
+	// prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80
 	if      (modStat == setStat) modDUL  = 0;
 	else if (modStat <  setStat) modDUL  = 0x10;
 	else if (modStat >  setStat) modDUL  = 0x20;
@@ -559,7 +559,7 @@ void cmDimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 		msgTmr.set(100);																	// immediately
 
 	} else {
-		hm->sendACK();
+		hm->sendAck();
 
 	}
 }

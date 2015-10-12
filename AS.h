@@ -23,12 +23,28 @@
 
 #include "aes.h"
 
-#define AS_RESPONSETYPE_ACK                  0x00
-#define AS_RESPONSETYPE_ACK_STATUS           0x01
-#define AS_RESPONSETYPE_ACK_AES              0x04
-#define AS_RESPONSETYPE_ACK2                 0x02
-#define AS_RESPONSETYPE_NACK                 0x80
-#define AS_RESPONSETYPE_NACK_TARGET_INVALID  0x84
+#define AS_MESSAGE_TYPE_DEVINFO               0x00
+#define AS_MESSAGE_TYPE_CONFIG                0x01
+#define AS_MESSAGE_TYPE_RESPONSE              0x02
+#define AS_MESSAGE_TYPE_RESPONSE_AES          0x03
+#define AS_MESSAGE_TYPE_KEY_EXCHANGE          0x04
+#define AS_MESSAGE_TYPE_INFO                  0x10
+#define AS_MESSAGE_TYPE_SET                   0x11
+#define AS_MESSAGE_TYPE_HAVE_DATA             0x12
+#define AS_MESSAGE_TYPE_SWITCH_EVENT          0x3E
+#define AS_MESSAGE_TYPE_TIMESTAMP             0x3F
+#define AS_MESSAGE_TYPE_REMOTE_EVENT          0x40
+#define AS_MESSAGE_TYPE_SENSOR_EVENT          0x41
+#define AS_MESSAGE_TYPE_SENSOR_DATA           0x53
+#define AS_MESSAGE_TYPE_CLIMATE_EVENT         0x58
+#define AS_MESSAGE_TYPE_WEATHER_EVENT         0x70
+
+#define AS_RESPONSE_TYPE_ACK                  0x00
+#define AS_RESPONSE_TYPE_ACK_STATUS           0x01
+#define AS_RESPONSE_TYPE_ACK_AES              0x04
+#define AS_RESPONSE_TYPE_ACK2                 0x02
+#define AS_RESPONSE_TYPE_NACK                 0x80
+#define AS_RESPONSE_TYPE_NACK_TARGET_INVALID  0x84
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.

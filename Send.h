@@ -41,7 +41,6 @@ class SN {
 		uint8_t       pyLd[MaxDataLen-12];	// payload
 	};
 
-
 	uint8_t retrCnt;						// variable to count how often a message was already send
 	uint8_t maxRetr;						// how often a message has to be send until ACK
 	uint8_t lastMsgCnt;						// store of message counter, needed to identify ACK
