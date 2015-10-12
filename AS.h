@@ -107,6 +107,10 @@ class AS {
 	uint8_t signingRequestData[6];
 
 	uint8_t tempHmKey[16];
+	uint8_t newHmKey[16];
+
+	uint8_t hmKeyIndex = 1;
+	uint8_t hmKeyPart = 0;
 
 	uint16_t randomSeed = 0;
 
@@ -169,10 +173,12 @@ class AS {
 
 	// - AES Signing related methods -------------------
 	void makeTmpKey(uint8_t *challenge);
-	void makeSigningRequest(void);
 	void payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc);
-	void payloadDecrypt (uint8_t *data, uint8_t *msgOriginal);
+	uint8_t checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal);
+
+	void sendSigningRequest(void);
 	void sendSigningResponse(void);
+	void sendACK_AES(uint8_t *ackData);
 
 	void getRandomBytes(uint8_t *buffer, uint8_t length);
 	void initRandomSeed();

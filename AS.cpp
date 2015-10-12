@@ -39,9 +39,6 @@ void AS::init(void) {
 	initMillis();																			// start the millis counter
 
 	this->initRandomSeed();
-	// DEBUG
-	makeSigningRequest();
-//	sendSigningResponse();
 
 	// everything is setuped, enable RF functionality
 	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
@@ -53,6 +50,7 @@ void AS::poll(void) {
 		cc.rcvData(rv.buf);																	// copy the data into the receiver module
 		if (rv.hasData) decode(rv.buf);														// decode the string
 
+/*
 		// TEST Begin
 		if (rv.hasData) {
 			if (rv.nextIsEncrypted == 0) {
@@ -79,6 +77,7 @@ void AS::poll(void) {
 			}
 		}
 		// TEST End
+ */
 	}
 
 	// handle send and receive buffer
@@ -162,6 +161,29 @@ void AS::sendACK(void) {
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
+void AS::sendACK_AES(uint8_t *ackData) {
+	// description --------------------------------------------------------
+	//                reID      toID      ACK ACK_DATA
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  00  XX XX XX XX
+	// do something with the information ----------------------------------
+
+	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
+
+	sn.mBdy.mLen = 0x0E;
+	sn.mBdy.mCnt = rv.mBdy.mCnt;
+	sn.mBdy.mTyp = 0x02;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	sn.mBdy.by10 = 0x00;
+
+	sn.mBdy.by11 = ackData[0];
+	memcpy(sn.mBdy.pyLd, ackData+1, 3);
+
+//	dbg << F(">>> send AES_ACK : ") << _HEXB(sn.mBdy.by11) << " " <<  _HEX(sn.mBdy.pyLd, 3) << F(" <<<") << "\n";
+	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
+}
+
 void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	// description --------------------------------------------------------
 	// l> 0B 12 A4 40 23 70 EC 1E 7A AD 01 02
@@ -744,7 +766,7 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x04)) {							// ACK_PROC
+	} else if ((rv.mBdy.mTyp == 0x02) && (rv.mBdy.by10 == 0x04)) {							// ACK_PROC AES-Challenge
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -778,11 +800,43 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
+	} else if ((rv.mBdy.mTyp == 0x03)) {													// AES Response
+		uint8_t pBuf[16];
+
+		pBuf[0] = rv.mBdy.by10;
+		pBuf[1] = rv.mBdy.by11;
+		memcpy(pBuf+2, rv.mBdy.pyLd, 14);
+
+//		dbg << F("pB ") << _HEX(rv.prevBuf, 26) << "\n";
+		this->checkPayloadDecrypt(pBuf, rv.prevBuf);
+//		dbg << F("PL decrypted: ") << _HEX(pBuf, 16) << "\n";
+
 
 	} else if ((rv.mBdy.mTyp == 0x04)) {													// AES Key Exchange
-		dbg << F("AES Key parts \n");
-//		aesKeypartCount++;
-//		sendACK();
+		uint8_t pBuf[16];
+
+		pBuf[0] = rv.mBdy.by10;
+		pBuf[1] = rv.mBdy.by11;
+		memcpy(pBuf+2, rv.mBdy.pyLd, 14);
+
+		aes128_init(HMKEY, &ctx);															// load HMKEY
+		aes128_dec(pBuf, &ctx);																// decrypt payload width tmpKey first time
+
+//		dbg << F("decrypded PL: ") << _HEX(pBuf, 16) << "\n";
+
+		if (pBuf[0] == 0x01) {
+			if (pBuf[1] == (hmKeyPart + 2)) {
+				memcpy(newHmKey+(hmKeyPart*8), pBuf+2, 8);
+				hmKeyPart++;																// we waiting for key part 2
+
+				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);									// remember this message
+
+				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
+
+				sendSigningRequest();
+				//todo: send Challange
+			}
+		}
 
 	} else if ((rv.mBdy.mTyp == 0x11) && (rv.mBdy.by10 == 0x02)) {							// SET
 		// description --------------------------------------------------------
@@ -1178,17 +1232,36 @@ void AS::encode(uint8_t *buf) {
 #endif
 
 // - AES Signing related methods -------------------
-void AS::makeSigningRequest(void) {
-	getRandomBytes(signingRequestData, 6);
 
-	dbg << F(">>> signingRequestData  : ") << _HEX(signingRequestData, 6) << F(" <<<") << "\n";
+void AS::sendSigningRequest(void) {
+	// description --------------------------------------------------------
+	//                reID      toID      SigningRequest Challange
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  04             00 00 00 00 00 00 0
+
+	sn.mBdy.mLen = 0x11;
+	sn.mBdy.mCnt = rv.mBdy.mCnt;
+	sn.mBdy.mTyp = 0x02;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	sn.mBdy.by10 = 0x04;
+
+	uint8_t pBuf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	getRandomBytes(pBuf, 6);
+	sn.mBdy.by11 = pBuf[0];
+	memcpy(sn.mBdy.pyLd, pBuf+1, 6);
+//	sn.mBdy.pyLd[5] = pBuf[0];
+
+	makeTmpKey(pBuf);															// here we make the temporarly key with the challange and the old known hm key
+
+//	dbg << F(">>> signingRequestData  : ") << _HEXB(sn.mBdy.by11) << " " <<  _HEX(sn.mBdy.pyLd, 5) << F(" <<<") << "\n";
+	sn.active = 1;																			// fire the message
 }
 
 void AS::makeTmpKey(uint8_t *challenge) {
-	memcpy(this->tempHmKey, eHMKEY, 16);
+	memcpy(this->tempHmKey, HMKEY, 16);
 
 	for (uint8_t i = 0; i < 6; i++) {
-		this->tempHmKey[i] = eHMKEY[i] ^ challenge[i];
+		this->tempHmKey[i] = HMKEY[i] ^ challenge[i];
 	}
 	aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
 }
@@ -1218,7 +1291,7 @@ void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
 	aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey again
 }
 
-void AS::payloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
+uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
 	uint8_t iv[16] = {															// initial vector
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -1237,11 +1310,21 @@ void AS::payloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
 
 	uint8_t authAck[4];
 	memcpy(authAck, data, 4);													// build auth ACK
-	dbg << F(">>> ack  : ") << _HEX(authAck, 4) << F(" <<<") << "\n";
+//	dbg << F(">>> ack  : ") << _HEX(authAck, 4) << F(" <<<") << "\n";
 
 	aes128_dec(data, &ctx);														// decrypt payload width tmpKey again
 
-	dbg << F(">>> plD^D: ") << _HEX(data, 6) << " | "<< _HEX(data+6, 10) << F(" <<<") << "\n";
+//	dbg << F(">>> plD^D: ") << _HEX(data, 6) << " | "<< _HEX(data+6, 10) << F(" <<<") << "\n";
+
+	// memcmp returns 0 if compare true
+	 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
+		 // todo: send AES-Ack
+		 sendACK_AES(authAck);
+		 return 1;
+
+	 } else {
+		 return 0;
+	 }
 }
 
 void AS::sendSigningResponse(void) {
@@ -1267,8 +1350,9 @@ void AS::sendSigningResponse(void) {
  * get number of random bytes
  */
 void AS::getRandomBytes(uint8_t *buffer, uint8_t length) {
+	uint8_t i = 0;
 	srand(this->randomSeed ^ uint16_t (millis() & 0xFFFF));
-	for (uint8_t i =0; i < length; i++) {
+	for (i =0; i < length; i++) {
 		buffer[i] = rand() % 0xFF;
 	}
 }

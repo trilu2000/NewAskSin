@@ -14,7 +14,7 @@
 
 /**
  * @file EEprom.h
- * Ínclude file with EE class definiton and forward declaration of
+ * Include file with EE class definiton and forward declaration of
  * external helper functions
  */
 
