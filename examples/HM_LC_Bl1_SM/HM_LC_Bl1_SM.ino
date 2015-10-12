@@ -62,7 +62,7 @@ void loop() {
 //- user functions --------------------------------------------------------------------------------------------------------
 void initBlind(uint8_t channel) {
 	#ifdef SER_DBG
-		dbg << F("initDim: ") << channel << "\n";
+		dbg << F("initBlind: ") << channel << "\n";
 	#endif
 		
 	power_timer2_enable();																	// enable the timer2 in power management
@@ -75,9 +75,9 @@ void initBlind(uint8_t channel) {
 	TCCR2A |= 1<<COM2B1;
 
 }
-void switchBlind(uint8_t channel, uint8_t status, uint8_t characteristic) {
+void switchBlind(uint8_t channel, uint8_t status) {
 	#ifdef SER_DBG
-		dbg << F("switchDim: ") << channel << ", " << status << ", " << characteristic << "\n";
+		dbg << F("switchBlind: ") << channel << ", " << status << "\n";
 	#endif
 
 	uint16_t x = status*255;
