@@ -17,6 +17,7 @@ waitTimer pairTmr;																			// pair timer functionality
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
 }
+
 void AS::init(void) {
 	#ifdef AS_DBG																			// only if cc debug is set
 		dbgStart();																			// serial setup
@@ -38,11 +39,14 @@ void AS::init(void) {
 	
 	initMillis();																			// start the millis counter
 
-	this->initRandomSeed();
+	#ifdef SUPPORT_AES
+		initRandomSeed();
+	#endif
 
 	// everything is setuped, enable RF functionality
 	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
 }
+
 void AS::poll(void) {
 
 	// check if something received
@@ -182,27 +186,28 @@ void AS::sendAck() {
 	sendResponse(AS_RESPONSE_TYPE_ACK);
 }
 
-void AS::sendAckAES(uint8_t *data) {
-	// description --------------------------------------------------------
-	//                reID      toID      data
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  XX XX XX XX ...
-	// do something with the information ----------------------------------
+#ifdef SUPPORT_AES
+	void AS::sendAckAES(uint8_t *data) {
+		// description --------------------------------------------------------
+		//                reID      toID      data
+		// l> 0A 24 80 02 1F B7 4A  63 19 63  XX XX XX XX ...
+		// do something with the information ----------------------------------
 
 
-	sn.mBdy.mLen = 0x0E;
-	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+		sn.mBdy.mLen = 0x0E;
+		sn.mBdy.mCnt = rv.mBdy.mCnt;
+		sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
+		memcpy(sn.mBdy.reID, HMID, 3);
+		memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
 
-	sn.mBdy.by10 = AS_RESPONSE_TYPE_ACK;
-	sn.mBdy.by11 = data[0];
-	memcpy(sn.mBdy.pyLd, data+1, 3);
+		sn.mBdy.by10 = AS_RESPONSE_TYPE_ACK;
+		sn.mBdy.by11 = data[0];
+		memcpy(sn.mBdy.pyLd, data+1, 3);
 
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
-
+		sn.active = 1;																			// fire the message
+		// --------------------------------------------------------------------
+	}
+#endif
 
 void AS::sendNACK(void) {
 	// description --------------------------------------------------------
@@ -278,6 +283,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
+
 void AS::sendINFO_TEMP(void) {
 	//"10;p01=0A"   => { txt => "INFO_TEMP", params => {
 	//SET     => '2,4,$val=(hex($val)>>10)&0x3F',
@@ -287,10 +293,12 @@ void AS::sendINFO_TEMP(void) {
 	//MODE    => "6,2" } },
 	// --------------------------------------------------------------------
 }
+
 void AS::sendHAVE_DATA(void) {
 	//"12"          => { txt => "HAVE_DATA"},
 	// --------------------------------------------------------------------
 }
+
 void AS::sendSWITCH(void) {
 	//"3E"          => { txt => "SWITCH"      , params => {
 	//DST      => "00,6",
@@ -299,12 +307,14 @@ void AS::sendSWITCH(void) {
 	//COUNTER  => "10,2", } },
 	// --------------------------------------------------------------------
 }
+
 void AS::sendTimeStamp(void) {
 	//"3F"          => { txt => "TimeStamp"   , params => {
 	//UNKNOWN  => "00,4",
 	//TIME     => "04,2", } },
 	// --------------------------------------------------------------------
 }
+
 void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	// description --------------------------------------------------------
 	//                 reID      toID      BLL Cnt
@@ -328,6 +338,7 @@ void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
+
 void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	// description --------------------------------------------------------
 	//                 reID      toID      BLL  Cnt  Val
@@ -348,6 +359,7 @@ void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
+
 /**
  * @brief Send an event with arbitrary payload
  *
@@ -385,6 +397,7 @@ void AS::send_generic_event(uint8_t cnl, uint8_t burst, uint8_t mTyp, uint8_t le
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
+
 void AS::sendSensorData(void) {
 	//"53"          => { txt => "SensorData"  , params => {
 	//CMD => "00,2",
@@ -398,12 +411,14 @@ void AS::sendSensorData(void) {
 	//Val4=> '24,4,$val=(hex($val))'} },
 	// --------------------------------------------------------------------
 }
+
 void AS::sendClimateEvent(void) {
 	//"58"          => { txt => "ClimateEvent", params => {
 	//CMD      => "00,2",
 	//ValvePos => '02,2,$val=(hex($val))', } },
 	// --------------------------------------------------------------------
 }
+
 void AS::sendSetTeamTemp(void) {
 	//"59"          => { txt => "setTeamTemp" , params => {
 	//CMD      => "00,2",
@@ -411,6 +426,7 @@ void AS::sendSetTeamTemp(void) {
 	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
 	// --------------------------------------------------------------------
 }
+
 void AS::sendWeatherEvent(void) {
 	//"70"          => { txt => "WeatherEvent", params => {
 	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
@@ -447,6 +463,7 @@ void AS::sendSliceList(void) {
 		//dbg << "end: " << stcSlice.active << stcSlice.peer << stcSlice.reg2 << stcSlice.reg3 << '\n';
 	}
 }
+
 void AS::sendPeerMsg(void) {
 	uint8_t maxRetries;
 
@@ -528,6 +545,7 @@ void AS::sendPeerMsg(void) {
 
 	stcPeer.curIdx++;																		// increase counter for next time
 }
+
 void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 
 	// description --------------------------------------------------------
@@ -809,45 +827,47 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE_AES)) {							// AES Response
-		uint8_t pBuf[16];
+	#ifdef SUPPORT_AES
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE_AES)) {							// AES Response
+			uint8_t pBuf[16];
 
-		pBuf[0] = rv.mBdy.by10;
-		pBuf[1] = rv.mBdy.by11;
-		memcpy(pBuf+2, rv.mBdy.pyLd, 14);
+			pBuf[0] = rv.mBdy.by10;
+			pBuf[1] = rv.mBdy.by11;
+			memcpy(pBuf+2, rv.mBdy.pyLd, 14);
 
-		if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {
-			if (hmKeyPart > 1) {
-				hmKeyPart = 0;
+			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {
+				if (hmKeyPart > 1) {
+					hmKeyPart = 0;
 
-				// todo: here we must save the new key (newHmKey)
-				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
-			} else {
+					// todo: here we must save the new key (newHmKey)
+					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
+				} else {
 
-				// todo: here we must trigger action was requestes AES sign
+					// todo: here we must trigger action was requestes AES sign
+				}
 			}
-		}
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_KEY_EXCHANGE)) {							// AES Key Exchange
-		uint8_t pBuf[16];
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_KEY_EXCHANGE)) {							// AES Key Exchange
+			uint8_t pBuf[16];
 
-		pBuf[0] = rv.mBdy.by10;
-		pBuf[1] = rv.mBdy.by11;
-		memcpy(pBuf+2, rv.mBdy.pyLd, 14);
+			pBuf[0] = rv.mBdy.by10;
+			pBuf[1] = rv.mBdy.by11;
+			memcpy(pBuf+2, rv.mBdy.pyLd, 14);
 
-		aes128_init(HMKEY, &ctx);															// load HMKEY
-		aes128_dec(pBuf, &ctx);																// decrypt payload width tmpKey first time
+			aes128_init(HMKEY, &ctx);															// load HMKEY
+			aes128_dec(pBuf, &ctx);																// decrypt payload width tmpKey first time
 
-		if (pBuf[0] == 0x01) {
-			if (pBuf[1] == (hmKeyPart + 2)) {
-				memcpy(newHmKey+(hmKeyPart*8), pBuf+2, 8);
-				hmKeyPart++;																// we waiting for key part 2
+			if (pBuf[0] == 0x01) {
+				if (pBuf[1] == (hmKeyPart + 2)) {
+					memcpy(newHmKey+(hmKeyPart*8), pBuf+2, 8);
+					hmKeyPart++;																// we waiting for key part 2
 
-				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);									// remember this message
+					memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);									// remember this message
 
-				sendSigningRequest();
+					sendSigningRequest();
+				}
 			}
-		}
+	#endif
 
 	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x02)) {			// SET
 		// description --------------------------------------------------------
@@ -998,6 +1018,7 @@ void AS::sendINFO_SERIAL(void) {
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
+
 void AS::sendINFO_PEER_LIST(uint8_t len) {
 	// description --------------------------------------------------------
 	// l> 0B 44 A0 01 63 19 63 1F B7 4A 01 03
@@ -1028,6 +1049,7 @@ void AS::sendINFO_PEER_LIST(uint8_t len) {
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
+
 void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	// description --------------------------------------------------------
 	// l> 10 79 B0 01 63 19 63 01 02 04 00 04 00 00 00 00 00
@@ -1049,6 +1071,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
+
 void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
 	// description --------------------------------------------------------
 	// l> 10 90 A0 01 63 19 63 01 02 04 01 04 24 88 2D 03 03
@@ -1064,6 +1087,7 @@ void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
 
 	// --------------------------------------------------------------------
 }
+
 void AS::sendINFO_PARAMETER_CHANGE(void) {
 	//"10;p01=04"   => { txt => "INFO_PARAMETER_CHANGE", params => {
 	//CHANNEL => "2,2",
@@ -1087,6 +1111,7 @@ void AS::decode(uint8_t *buf) {
 
 	buf[i] ^= buf[2];
 }
+
 void AS::encode(uint8_t *buf) {
 
 	buf[1] = (~buf[1]) ^ 0x89;
@@ -1101,6 +1126,7 @@ void AS::encode(uint8_t *buf) {
 
 	buf[i] ^= buf2;
 }
+
 #ifdef RV_DBG_EX																		// only if extended AS debug is set
 	void AS::explainMessage(uint8_t *buf) {
 		dbg << F("   ");																		// save some byte and send 3 blanks once, instead of having it in every if
@@ -1244,133 +1270,135 @@ void AS::encode(uint8_t *buf) {
 
 // - AES Signing related methods -------------------
 
-void AS::sendSigningRequest(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      SigningRequest Challange
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  04             00 00 00 00 00 00 0
+#ifdef SUPPORT_AES
+	void AS::sendSigningRequest(void) {
+		// description --------------------------------------------------------
+		//                reID      toID      SigningRequest Challange
+		// l> 0A 24 80 02 1F B7 4A  63 19 63  04             00 00 00 00 00 00 0
 
-	sn.mBdy.mLen = 0x11;
-	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-	sn.mBdy.by10 = 0x04;
+		sn.mBdy.mLen = 0x11;
+		sn.mBdy.mCnt = rv.mBdy.mCnt;
+		sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
+		memcpy(sn.mBdy.reID, HMID, 3);
+		memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+		sn.mBdy.by10 = 0x04;
 
-	uint8_t pBuf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	getRandomBytes(pBuf, 6);
-	sn.mBdy.by11 = pBuf[0];
-	memcpy(sn.mBdy.pyLd, pBuf+1, 6);
-//	sn.mBdy.pyLd[5] = pBuf[0];
+		uint8_t pBuf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+		getRandomBytes(pBuf, 6);
+		sn.mBdy.by11 = pBuf[0];
+		memcpy(sn.mBdy.pyLd, pBuf+1, 6);
+	//	sn.mBdy.pyLd[5] = pBuf[0];
 
-	makeTmpKey(pBuf);															// here we make the temporarly key with the challange and the old known hm key
+		makeTmpKey(pBuf);															// here we make the temporarly key with the challange and the old known hm key
 
-//	dbg << F(">>> signingRequestData  : ") << _HEXB(sn.mBdy.by11) << " " <<  _HEX(sn.mBdy.pyLd, 5) << F(" <<<") << "\n";
-	sn.active = 1;																			// fire the message
-}
-
-void AS::makeTmpKey(uint8_t *challenge) {
-	memcpy(this->tempHmKey, HMKEY, 16);
-
-	for (uint8_t i = 0; i < 6; i++) {
-		this->tempHmKey[i] = HMKEY[i] ^ challenge[i];
+	//	dbg << F(">>> signingRequestData  : ") << _HEXB(sn.mBdy.by11) << " " <<  _HEX(sn.mBdy.pyLd, 5) << F(" <<<") << "\n";
+		sn.active = 1;																			// fire the message
 	}
-	aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
-}
 
-void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
-	uint8_t iv[16] = {															// initial vector
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
+	void AS::makeTmpKey(uint8_t *challenge) {
+		memcpy(this->tempHmKey, HMKEY, 16);
 
-	uint32_t mill = millis();
-	encPayload[0] = 0;
-	encPayload[1] = 0;
-	encPayload[2] = (mill & 0xFF000000) >> 24;									// first 6 bytes of payload probably is a counter
-	encPayload[3] = (mill & 0x00FF0000) >> 16;									// we store current millis in bytes 2-5 of payload
-	encPayload[4] = (mill & 0x0000FF00) >> 8;
-	encPayload[5] = (mill & 0x000000FF);
-
-	memcpy(encPayload+6, msgToEnc+1, ((msgToEnc[0] < 10) ? 9 : 10) );			// build payload to encrypt
-	memcpy(iv, msgToEnc+11, msgToEnc[0]-10);									// build initial vector
-
-	aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey first time
-	for (uint8_t i = 0; i < 16; i++)	encPayload[i] ^= iv[i];					// xor encrypted payload with iv
-	aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey again
-}
-
-uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
-	uint8_t authAck[4];
-	uint8_t iv[16] = {															// initial vector
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
-
-	memcpy(iv, msgOriginal+11, msgOriginal[0]-10);								// build initial vector
-//	dbg << F(">>> key   : ") << _HEX(HMKEY, 16) << F(" <<<") << "\n";
-//	dbg << F(">>> keyTmp: ") << _HEX(tempHmKey, 16) << F(" <<<") << "\n";
-//	dbg << F(">>> iv    : ") << _HEX(iv, 16) << F(" <<<") << "\n";
-
-	aes128_dec(data, &ctx);														// decrypt payload width tmpKey first time
-//	dbg << F(">>> plDec : ") << _HEX(data, 16) << F(" <<<") << "\n";
-
-	for (uint8_t i = 0; i < 16; i++) data[i] ^= iv[i];							// xor encrypted payload with iv
-//	dbg << F(">>> plDec^: ") << _HEX(data, 16) << F(" <<<") << "\n";
-
-	memcpy(authAck, data, 4);													// build auth ACK
-//	dbg << F(">>> ack   : ") << _HEX(authAck, 4) << F(" <<<") << "\n";
-
-	aes128_dec(data, &ctx);														// decrypt payload width tmpKey again
-
-//	dbg << F(">>> plD^D: ") << _HEX(data, 6) << " | "<< _HEX(data+6, 10) << F(" <<<") << "\n";
-
-	// memcmp returns 0 if compare true
-	 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
-		 sendAckAES(authAck);													// send AES-Ack
-		 return 1;
-
-	 } else {
-		 return 0;
-	 }
-}
-
-void AS::sendSigningResponse(void) {
-	sn.mBdy.mLen = 0x19;
-	sn.mBdy.mCnt = rv.mBdy.mLen;
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE_AES;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-
-	uint8_t challenge[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};				// challenge
-	memcpy(challenge, rv.mBdy.pyLd, 6);										// get challenge
-	this->makeTmpKey(challenge);
-
-	uint8_t payload[16];
-//	this->payloadEncrypt(payload, sn.msgPartToSign);
-
-	sn.mBdy.by10 = payload[0];
-	memcpy(sn.buf+10, payload, 16);
-	sn.active = 1;																// fire the message
-}
-
-/**
- * get number of random bytes
- */
-void AS::getRandomBytes(uint8_t *buffer, uint8_t length) {
-	uint8_t i = 0;
-	srand(this->randomSeed ^ uint16_t (millis() & 0xFFFF));
-	for (i =0; i < length; i++) {
-		buffer[i] = rand() % 0xFF;
+		for (uint8_t i = 0; i < 6; i++) {
+			this->tempHmKey[i] = HMKEY[i] ^ challenge[i];
+		}
+		aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
 	}
-}
 
-void AS::initRandomSeed() {
-	uint16_t *p = (uint16_t*) (RAMEND+1);
-	extern uint16_t __heap_start;
-	while (p >= &__heap_start + 1) {
-		this->randomSeed ^= * (--p);
+	void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
+		uint8_t iv[16] = {															// initial vector
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		};
+
+		uint32_t mill = millis();
+		encPayload[0] = 0;
+		encPayload[1] = 0;
+		encPayload[2] = (mill & 0xFF000000) >> 24;									// first 6 bytes of payload probably is a counter
+		encPayload[3] = (mill & 0x00FF0000) >> 16;									// we store current millis in bytes 2-5 of payload
+		encPayload[4] = (mill & 0x0000FF00) >> 8;
+		encPayload[5] = (mill & 0x000000FF);
+
+		memcpy(encPayload+6, msgToEnc+1, ((msgToEnc[0] < 10) ? 9 : 10) );			// build payload to encrypt
+		memcpy(iv, msgToEnc+11, msgToEnc[0]-10);									// build initial vector
+
+		aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey first time
+		for (uint8_t i = 0; i < 16; i++)	encPayload[i] ^= iv[i];					// xor encrypted payload with iv
+		aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey again
 	}
-}
+
+	uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
+		uint8_t authAck[4];
+		uint8_t iv[16] = {															// initial vector
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		};
+
+		memcpy(iv, msgOriginal+11, msgOriginal[0]-10);								// build initial vector
+	//	dbg << F(">>> key   : ") << _HEX(HMKEY, 16) << F(" <<<") << "\n";
+	//	dbg << F(">>> keyTmp: ") << _HEX(tempHmKey, 16) << F(" <<<") << "\n";
+	//	dbg << F(">>> iv    : ") << _HEX(iv, 16) << F(" <<<") << "\n";
+
+		aes128_dec(data, &ctx);														// decrypt payload width tmpKey first time
+	//	dbg << F(">>> plDec : ") << _HEX(data, 16) << F(" <<<") << "\n";
+
+		for (uint8_t i = 0; i < 16; i++) data[i] ^= iv[i];							// xor encrypted payload with iv
+	//	dbg << F(">>> plDec^: ") << _HEX(data, 16) << F(" <<<") << "\n";
+
+		memcpy(authAck, data, 4);													// build auth ACK
+	//	dbg << F(">>> ack   : ") << _HEX(authAck, 4) << F(" <<<") << "\n";
+
+		aes128_dec(data, &ctx);														// decrypt payload width tmpKey again
+
+	//	dbg << F(">>> plD^D: ") << _HEX(data, 6) << " | "<< _HEX(data+6, 10) << F(" <<<") << "\n";
+
+		// memcmp returns 0 if compare true
+		 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
+			 sendAckAES(authAck);													// send AES-Ack
+			 return 1;
+
+		 } else {
+			 return 0;
+		 }
+	}
+
+	void AS::sendSigningResponse(void) {
+		sn.mBdy.mLen = 0x19;
+		sn.mBdy.mCnt = rv.mBdy.mLen;
+		sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE_AES;
+		memcpy(sn.mBdy.reID,HMID,3);
+		memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+
+		uint8_t challenge[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};				// challenge
+		memcpy(challenge, rv.mBdy.pyLd, 6);										// get challenge
+		this->makeTmpKey(challenge);
+
+		uint8_t payload[16];
+	//	this->payloadEncrypt(payload, sn.msgPartToSign);
+
+		sn.mBdy.by10 = payload[0];
+		memcpy(sn.buf+10, payload, 16);
+		sn.active = 1;																// fire the message
+	}
+
+	/**
+	 * get number of random bytes
+	 */
+	void AS::getRandomBytes(uint8_t *buffer, uint8_t length) {
+		uint8_t i = 0;
+		srand(this->randomSeed ^ uint16_t (millis() & 0xFFFF));
+		for (i =0; i < length; i++) {
+			buffer[i] = rand() % 0xFF;
+		}
+	}
+
+	void AS::initRandomSeed() {
+		uint16_t *p = (uint16_t*) (RAMEND+1);
+		extern uint16_t __heap_start;
+		while (p >= &__heap_start + 1) {
+			this->randomSeed ^= * (--p);
+		}
+	}
+#endif
 
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------
@@ -1416,6 +1444,7 @@ uint32_t byteTimeCvt(uint8_t tTime) {
 	const uint16_t c[8] = {1,10,50,100,600,3000,6000,36000};
 	return (uint32_t)(tTime & 0x1f)*c[tTime >> 5]*100;
 }
+
 uint32_t intTimeCvt(uint16_t iTime) {
 	if (iTime == 0) return 0;
 

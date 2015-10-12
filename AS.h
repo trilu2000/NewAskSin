@@ -21,7 +21,11 @@
 #include "Battery.h"
 #include "Version.h"
 
-#include "aes.h"
+#define SUPPORT_AES                           1
+
+#ifdef SUPPORT_AES
+	#include "aes.h"
+#endif
 
 #define AS_MESSAGE_TYPE_DEVINFO               0x00
 #define AS_MESSAGE_TYPE_CONFIG                0x01
@@ -137,7 +141,9 @@ class AS {
 
 	uint16_t randomSeed = 0;
 
-	aes128_ctx_t ctx; 						// the context where the round keys are stored
+	#ifdef SUPPORT_AES
+		aes128_ctx_t ctx; 					// the context where the round keys are stored
+	#endif
 
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
