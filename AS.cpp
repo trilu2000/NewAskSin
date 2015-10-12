@@ -122,13 +122,16 @@ void AS::sendDEVICE_INFO(void) {
 	// do something with the information ----------------------------------
 
 	uint8_t xCnt;
-	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) xCnt = rv.mBdy.mLen;														// send counter - is it an answer or a initial message
-	else xCnt = sn.msgCnt++;
+	if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x0A)) {
+		xCnt = rv.mBdy.mLen;																// send counter - is it an answer or a initial message
+	} else {
+		xCnt = sn.msgCnt++;
+	}
 	
 	sn.mBdy.mLen = 0x1a;
 	sn.mBdy.mCnt = xCnt;
 	sn.mBdy.mFlg.CFG = 0;
-	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
+	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 
 	sn.mBdy.mTyp = 0x00;
 	memcpy(sn.mBdy.reID,HMID,3);
@@ -144,7 +147,32 @@ void AS::sendDEVICE_INFO(void) {
 	ld.set(pairing);																		// and visualize the status
 	// --------------------------------------------------------------------
 }
-void AS::sendACK(void) {
+
+void AS::sendResponse(uint8_t responseType) {
+	// description --------------------------------------------------------
+	//                reID      toID      data
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  XX XX XX XX ...
+	// do something with the information ----------------------------------
+
+
+	sn.mBdy.mLen = 0x0A;
+
+	if (responseType == AS_RESPONSETYPE_NACK || responseType == AS_RESPONSETYPE_NACK_TARGET_INVALID) {
+		sn.mBdy.mCnt = rv.mBdy.mLen;
+	} else {
+		sn.mBdy.mCnt = rv.mBdy.mCnt;
+	}
+
+	sn.mBdy.mTyp = 0x02;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+
+	sn.mBdy.by10 = responseType;
+
+	sn.active = 1;																			// fire the message
+}
+
+void AS::sendAck() {
 	// description --------------------------------------------------------
 	//                reID      toID      ACK
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  00
@@ -152,36 +180,47 @@ void AS::sendACK(void) {
 
 	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
-	sn.mBdy.mLen = 0x0a;
-	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.mTyp = 0x02;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-	sn.mBdy.by10 = 0x00;
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
+	sendResponse(AS_RESPONSETYPE_ACK);
 }
-void AS::sendACK_AES(uint8_t *ackData) {
+
+void AS::sendAckAES(uint8_t *data) {
 	// description --------------------------------------------------------
-	//                reID      toID      ACK ACK_DATA
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  00  XX XX XX XX
+	//                reID      toID      data
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  XX XX XX XX ...
 	// do something with the information ----------------------------------
 
-	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
 	sn.mBdy.mLen = 0x0E;
 	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.mTyp = 0x02;
 	memcpy(sn.mBdy.reID, HMID, 3);
 	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-	sn.mBdy.by10 = 0x00;
 
-	sn.mBdy.by11 = ackData[0];
-	memcpy(sn.mBdy.pyLd, ackData+1, 3);
+	sn.mBdy.by10 = AS_RESPONSETYPE_ACK;
+	sn.mBdy.by11 = data[0];
+	memcpy(sn.mBdy.pyLd, data+1, 3);
 
-//	dbg << F(">>> send AES_ACK : ") << _HEXB(sn.mBdy.by11) << " " <<  _HEX(sn.mBdy.pyLd, 3) << F(" <<<") << "\n";
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
+}
+
+
+void AS::sendNACK(void) {
+	// description --------------------------------------------------------
+	//                reID      toID      NACK
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
+	// do something with the information ----------------------------------
+
+	sendResponse(AS_RESPONSETYPE_NACK);
+}
+
+void AS::sendNACK_TARGET_INVALID(void) {
+	// description --------------------------------------------------------
+	//                reID      toID      ACK
+	// l> 0A 24 80 02 1F B7 4A  63 19 63  84
+	// do something with the information ----------------------------------
+
+	sendResponse(AS_RESPONSETYPE_NACK_TARGET_INVALID);
 }
 
 void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
@@ -211,36 +250,7 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
-void AS::sendNACK(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      NACK
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
-	// do something with the information ----------------------------------
 
-	sn.mBdy.mLen = 0x0a;
-	sn.mBdy.mCnt = rv.mBdy.mLen;
-	sn.mBdy.mTyp = 0x02;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-	sn.mBdy.by10 = 0x80;
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
-void AS::sendNACK_TARGET_INVALID(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      ACK
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  84
-	// do something with the information ----------------------------------
-
-	sn.mBdy.mLen = 0x0a;
-	sn.mBdy.mCnt = rv.mBdy.mLen;
-	sn.mBdy.mTyp = 0x02;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-	sn.mBdy.by10 = 0x84;
-	sn.active = 1;																			// fire the message
-	// --------------------------------------------------------------------
-}
 void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	// description --------------------------------------------------------
 	// l> 0B 40 B0 01 63 19 63 1F B7 4A 01 0E (148552)
@@ -580,7 +590,7 @@ void AS::recvMessage(void) {
 			modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
 		}
 
-		if ((ret) && (rv.ackRq)) sendACK();													// send appropriate answer
+		if ((ret) && (rv.ackRq)) sendAck();													// send appropriate answer
 		else if (rv.ackRq) sendNACK();
 		// --------------------------------------------------------------------
 
@@ -591,7 +601,7 @@ void AS::recvMessage(void) {
 		// do something with the information ----------------------------------
 	
 		uint8_t ret = ee.remPeer(rv.mBdy.by10,rv.buf+12);									// call the remPeer function
-		if (rv.ackRq) sendACK();															// send appropriate answer
+		if (rv.ackRq) sendAck();															// send appropriate answer
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x03)) {							// CONFIG_PEER_LIST_REQ
@@ -654,7 +664,7 @@ void AS::recvMessage(void) {
 			
 		}
 	
-		if (rv.ackRq) sendACK();															// send appropriate answer
+		if (rv.ackRq) sendAck();															// send appropriate answer
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x06)) {							// CONFIG_END
@@ -670,10 +680,10 @@ void AS::recvMessage(void) {
 		if ((cFlag.cnl > 0) && (modTbl[cnl1].cnl)) {
 			// check if a new list1 was written and reload, no need for reload list3/4 because they will be loaded on an peer event
 			if (cFlag.lst == 1) ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cnl1].lstCnl); // load list1 in the respective buffer
-			modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);								// inform the module of the change
+			modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);										// inform the module of the change
 		}
 		
-		if (rv.ackRq) sendACK();															// send appropriate answer
+		if (rv.ackRq) sendAck();															// send appropriate answer
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x08)) {							// CONFIG_WRITE_INDEX
@@ -702,7 +712,7 @@ void AS::recvMessage(void) {
 				
 			}
 		}
-		if (rv.ackRq) sendACK();															// send appropriate answer
+		if (rv.ackRq) sendAck();															// send appropriate answer
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == 0x01) && (rv.mBdy.by11 == 0x09)) {							// CONFIG_SERIAL_REQ
@@ -872,7 +882,7 @@ void AS::recvMessage(void) {
 
 		uint8_t xI = ee.getRegListIdx(1,3);
 		if (rv.ackRq) {
-			if (xI == 0xff) sendACK();
+			if (xI == 0xff) sendAck();
 			else sendACK_STATUS(0, 0, 0);
 		}
 		// --------------------------------------------------------------------
@@ -960,7 +970,7 @@ void AS::recvMessage(void) {
 			modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
 
 		} else {
-			sendACK();
+			sendAck();
 
 		}
 		// --------------------------------------------------------------------
@@ -1318,8 +1328,7 @@ uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
 
 	// memcmp returns 0 if compare true
 	 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
-		 // todo: send AES-Ack
-		 sendACK_AES(authAck);
+		 sendAckAES(authAck);													// send AES-Ack (0x00 0xXX 0xXX 0xXX 0xXX)
 		 return 1;
 
 	 } else {

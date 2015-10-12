@@ -23,6 +23,13 @@
 
 #include "aes.h"
 
+#define AS_RESPONSETYPE_ACK                  0x00
+#define AS_RESPONSETYPE_ACK_STATUS           0x01
+#define AS_RESPONSETYPE_ACK_AES              0x04
+#define AS_RESPONSETYPE_ACK2                 0x02
+#define AS_RESPONSETYPE_NACK                 0x80
+#define AS_RESPONSETYPE_NACK_TARGET_INVALID  0x84
+
 /**
  * @short Main class for implementation of the AskSin protocol stack.
  * Every device needs exactly one instance of this class.
@@ -137,7 +144,10 @@ class AS {
 
 	// - send functions --------------------------------
 	void sendDEVICE_INFO(void);
-	void sendACK(void);
+	void sendAck(void);
+	void sendPayload(uint8_t payloadType, uint8_t *data, uint8_t dataLen);
+	void sendAckAES(uint8_t *data);
+	void sendResponse(uint8_t responseType);
 	void sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul);
 	void sendNACK(void);
 	void sendNACK_TARGET_INVALID(void);
@@ -178,7 +188,6 @@ class AS {
 
 	void sendSigningRequest(void);
 	void sendSigningResponse(void);
-	void sendACK_AES(uint8_t *ackData);
 
 	void getRandomBytes(uint8_t *buffer, uint8_t length);
 	void initRandomSeed();
