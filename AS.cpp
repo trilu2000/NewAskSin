@@ -131,48 +131,27 @@ void AS::sendDEVICE_INFO(void) {
 		xCnt = sn.msgCnt++;
 	}
 	
+
 	sn.mBdy.mLen = 0x1a;
 	sn.mBdy.mCnt = xCnt;
 	sn.mBdy.mFlg.CFG = 0;
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_DEVINFO;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,MAID,3);
+//	sn.mBdy.mTyp = AS_MESSAGE_TYPE_DEVINFO;
+//	memcpy(sn.mBdy.reID,HMID,3);
+//	memcpy(sn.mBdy.toID,MAID,3);
 
-	memcpy_P(sn.buf+10,devDef.devIdnt,3);
-	memcpy(sn.buf+13,HMSR,10);
-	memcpy_P(sn.buf+23,devDef.devIdnt+3,4);
-	sn.active = 1;																			// fire the message
+	memcpy_P(sn.buf+10, devDef.devIdnt, 3);
+	memcpy(sn.buf+13, HMSR, 10);
+	memcpy_P(sn.buf+23, devDef.devIdnt+3, 4);
+	setFrameAndAdressData(AS_MESSAGE_TYPE_DEVINFO, MAID);
+
+//	sn.active = 1;																			// fire the message
 
 	pairActive = 1;																			// set pairing flag
 	pairTmr.set(20000);
 	ld.set(pairing);																		// and visualize the status
 	// --------------------------------------------------------------------
-}
-
-void AS::sendResponse(uint8_t responseType) {
-	// description --------------------------------------------------------
-	//                reID      toID      data
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  XX XX XX XX ...
-	// do something with the information ----------------------------------
-
-
-	sn.mBdy.mLen = 0x0A;
-
-	if (responseType == AS_RESPONSE_TYPE_NACK || responseType == AS_RESPONSE_TYPE_NACK_TARGET_INVALID) {
-		sn.mBdy.mCnt = rv.mBdy.mLen;
-	} else {
-		sn.mBdy.mCnt = rv.mBdy.mCnt;
-	}
-
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-
-	sn.mBdy.by10 = responseType;
-
-	sn.active = 1;																			// fire the message
 }
 
 void AS::sendAck() {
@@ -183,7 +162,15 @@ void AS::sendAck() {
 
 	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
-	sendResponse(AS_RESPONSE_TYPE_ACK);
+	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mCnt = rv.mBdy.mCnt;
+//	sn.mBdy.mTyp = 0x02;
+//	memcpy(sn.mBdy.reID, HMID, 3);
+//	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+	sn.mBdy.by10 = 0x00;
+	setFrameAndAdressData(AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+//	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 
 #ifdef SUPPORT_AES
@@ -196,15 +183,16 @@ void AS::sendAck() {
 
 		sn.mBdy.mLen = 0x0E;
 		sn.mBdy.mCnt = rv.mBdy.mCnt;
-		sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
-		memcpy(sn.mBdy.reID, HMID, 3);
-		memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+//		sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
+//		memcpy(sn.mBdy.reID, HMID, 3);
+//		memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
 
 		sn.mBdy.by10 = AS_RESPONSE_TYPE_ACK;
 		sn.mBdy.by11 = data[0];
 		memcpy(sn.mBdy.pyLd, data+1, 3);
 
-		sn.active = 1;																			// fire the message
+		setFrameAndAdressData(AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+//		sn.active = 1;																			// fire the message
 		// --------------------------------------------------------------------
 	}
 #endif
@@ -215,7 +203,15 @@ void AS::sendNACK(void) {
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
 	// do something with the information ----------------------------------
 
-	sendResponse(AS_RESPONSE_TYPE_NACK);
+	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mCnt = rv.mBdy.mLen;
+//	sn.mBdy.mTyp = 0x02;
+//	memcpy(sn.mBdy.reID,HMID,3);
+//	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+	sn.mBdy.by10 = 0x80;
+	setFrameAndAdressData(AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+//	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 
 void AS::sendNACK_TARGET_INVALID(void) {
@@ -224,7 +220,15 @@ void AS::sendNACK_TARGET_INVALID(void) {
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  84
 	// do something with the information ----------------------------------
 
-	sendResponse(AS_RESPONSE_TYPE_NACK_TARGET_INVALID);
+	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mCnt = rv.mBdy.mLen;
+//	sn.mBdy.mTyp = 0x02;
+//	memcpy(sn.mBdy.reID,HMID,3);
+//	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+	sn.mBdy.by10 = 0x84;
+	setFrameAndAdressData(AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+//	sn.active = 1;																			// fire the message
+	// --------------------------------------------------------------------
 }
 
 void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
@@ -243,15 +247,16 @@ void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
 	sn.mBdy.mLen = 0x0e;
 	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.mFlg.BIDI = 0;
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
+//	sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
+//	memcpy(sn.mBdy.reID, HMID, 3);
+//	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
 	sn.mBdy.by10 = 0x01;
 	sn.mBdy.by11 = cnl;
 	sn.mBdy.pyLd[0] = stat;
 	sn.mBdy.pyLd[1] = dul | (bt.getStatus() << 7);
 	sn.mBdy.pyLd[2] = cc.rssi;
-	sn.active = 1;																			// fire the message
+	setFrameAndAdressData(AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+//	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
 
@@ -271,16 +276,18 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
 	}
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
 	
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, MAID, 3);
+//	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
+//	memcpy(sn.mBdy.reID, HMID, 3);
+//	memcpy(sn.mBdy.toID, MAID, 3);
 	
 	sn.mBdy.by10 = 0x06;
 	sn.mBdy.by11 = cnl;
 	sn.mBdy.pyLd[0] = stat;
 	sn.mBdy.pyLd[1] = cng; // | (bt.getStatus() << 7);
 	sn.mBdy.pyLd[2] = cc.rssi;
-	sn.active = 1;																			// fire the message
+
+	setFrameAndAdressData(AS_MESSAGE_TYPE_INFO, MAID);
+//	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
 
@@ -566,17 +573,19 @@ void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 	sn.mBdy.mFlg.CFG = 1; sn.mBdy.mFlg.BIDI = stcPeer.bidi;									// message flag
 	sn.mBdy.mFlg.BURST = l4_0x01.peerNeedsBurst;
 	
-	sn.mBdy.mTyp = stcPeer.mTyp;															// message type
+//	sn.mBdy.mTyp = stcPeer.mTyp;															// message type
 	//uint8_t t1[] = {0x23,0x70,0xD8};
 	//memcpy(sn.mBdy.reID, t1, 3);															// sender id
-	memcpy(sn.mBdy.reID, HMID, 3);															// sender id
-	memcpy(sn.mBdy.toID, xPeer, 3);															// receiver id
+//	memcpy(sn.mBdy.reID, HMID, 3);															// sender id
+//	memcpy(sn.mBdy.toID, xPeer, 3);															// receiver id
 	sn.mBdy.by10 = stcPeer.cnl;
 	sn.mBdy.by10 |= (bt.getStatus() << 7);													// battery bit
 	memcpy(sn.buf+11, stcPeer.pL, stcPeer.lenPL);											// payload
 	
 	sn.maxRetr = retr;																		// send only one time
-	sn.active = 1;																			// make send active
+
+	setFrameAndAdressData(stcPeer.mTyp, xPeer);
+//	sn.active = 1;																			// make send active
 }
 
 // - receive functions -----------------------------
@@ -1010,12 +1019,16 @@ void AS::sendINFO_SERIAL(void) {
 
 	sn.mBdy.mLen = 0x14;
 	sn.mBdy.mCnt = rv.mBdy.mLen;
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
-	memcpy(sn.mBdy.reID,HMID,3);
-	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+	memcpy(sn.buf+11, HMSR, 10);
 	sn.mBdy.by10 = 0x00;
-	memcpy(sn.buf+11,HMSR,10);
-	sn.active = 1;																			// fire the message
+	setFrameAndAdressData(AS_MESSAGE_TYPE_INFO, rv.mBdy.reID);
+
+	//sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
+	//memcpy(sn.mBdy.reID,HMID,3);
+	//memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
+	//sn.mBdy.by10 = 0x00;
+	//memcpy(sn.buf+11,HMSR,10);
+	//sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
 
@@ -1041,12 +1054,15 @@ void AS::sendINFO_PEER_LIST(uint8_t len) {
 	sn.mBdy.mLen = len + 10;
 	sn.mBdy.mCnt = stcSlice.mCnt++;
 	sn.mBdy.mFlg.BIDI = 1;
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
-	sn.mBdy.by10 = 0x01; //stcSlice.cnl;
+	sn.mBdy.by10 = 0x01;
+	setFrameAndAdressData(AS_MESSAGE_TYPE_INFO, stcSlice.toID);
+
+//	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
+//	memcpy(sn.mBdy.reID, HMID, 3);
+//	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
+//	sn.mBdy.by10 = 0x01; //stcSlice.cnl;
 	//dbg << "x: " << _HEX(sn.buf, sn.mBdy.mLen+1) << '\n';
-	sn.active = 1;																			// fire the message
+//	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
 }
 
@@ -1064,12 +1080,22 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
 	sn.mBdy.mLen = 10+len;
 	sn.mBdy.mCnt = stcSlice.mCnt++;
 	sn.mBdy.mFlg.BIDI = 1;
-	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
-	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
-	sn.mBdy.by10 = (len < 3)?0x03:0x02;														// on end of the message we send a 0x03 message for homegear only
-	sn.active = 1;																			// fire the message
+	sn.mBdy.by10 = (len < 3) ? 0x03 : 0x02;
+	setFrameAndAdressData(AS_MESSAGE_TYPE_INFO, stcSlice.toID);
+
+//	sn.mBdy.mTyp = AS_MESSAGE_TYPE_INFO;
+//	memcpy(sn.mBdy.reID, HMID, 3);
+//	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
+//	sn.mBdy.by10 = (len < 3)?0x03:0x02;														// on end of the message we send a 0x03 message for homegear only
+//	sn.active = 1;																			// fire the message
 	// --------------------------------------------------------------------
+}
+
+void AS::setFrameAndAdressData(uint8_t mTyp, uint8_t *addrTo) {
+	sn.mBdy.mTyp = mTyp;
+	memcpy(sn.mBdy.reID, HMID, 3);
+	memcpy(sn.mBdy.toID, addrTo, 3);
+	sn.active = 1;																			// remember to fire the message
 }
 
 void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
@@ -1113,7 +1139,6 @@ void AS::decode(uint8_t *buf) {
 }
 
 void AS::encode(uint8_t *buf) {
-
 	buf[1] = (~buf[1]) ^ 0x89;
 	uint8_t buf2 = buf[2];
 	uint8_t prev = buf[1];
@@ -1127,7 +1152,7 @@ void AS::encode(uint8_t *buf) {
 	buf[i] ^= buf2;
 }
 
-#ifdef RV_DBG_EX																		// only if extended AS debug is set
+#ifdef RV_DBG_EX																			// only if extended AS debug is set
 	void AS::explainMessage(uint8_t *buf) {
 		dbg << F("   ");																		// save some byte and send 3 blanks once, instead of having it in every if
 
@@ -1410,10 +1435,10 @@ void AS::encode(uint8_t *buf) {
  *         If the timer was never set(), return value is 1
  */
 uint8_t  waitTimer::done(void) {
-	if (!armed) return 1;							// not armed, so nothing to do
-	if ( (getMillis() - startTime) < checkTime ) return 0;			// not ready yet
+	if (!armed) return 1;																	// not armed, so nothing to do
+	if ( (getMillis() - startTime) < checkTime ) return 0;									// not ready yet
 
-	checkTime = armed = 0;							// if we are here, timeout was happened, next loop status 1 will indicated
+	checkTime = armed = 0;																	// if we are here, timeout was happened, next loop status 1 will indicated
 	return 1;
 }
 
@@ -1423,7 +1448,7 @@ uint8_t  waitTimer::done(void) {
  * @param ms Time until timer is done() (unit: ms)
  */
 void     waitTimer::set(uint32_t ms) {
-	armed = ms?1:0;
+	armed = ms ? 1 : 0;
 	if (armed) {
 		startTime = getMillis();
 		checkTime = ms;
@@ -1442,7 +1467,7 @@ uint32_t waitTimer::remain(void) {
 
 uint32_t byteTimeCvt(uint8_t tTime) {
 	const uint16_t c[8] = {1,10,50,100,600,3000,6000,36000};
-	return (uint32_t)(tTime & 0x1f)*c[tTime >> 5]*100;
+	return (uint32_t)(tTime & 0x1f) * c[tTime >> 5]*100;
 }
 
 uint32_t intTimeCvt(uint16_t iTime) {

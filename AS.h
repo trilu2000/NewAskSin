@@ -169,7 +169,6 @@ class AS {
 	void sendAck(void);
 	void sendPayload(uint8_t payloadType, uint8_t *data, uint8_t dataLen);
 	void sendAckAES(uint8_t *data);
-	void sendResponse(uint8_t responseType);
 	void sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul);
 	void sendNACK(void);
 	void sendNACK_TARGET_INVALID(void);
@@ -202,6 +201,8 @@ class AS {
 	void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
 	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
 	void sendINFO_PARAMETER_CHANGE(void);
+
+	void prepareToSend(uint8_t mTyp, uint8_t *addrTo);
 
 	// - AES Signing related methods -------------------
 	void makeTmpKey(uint8_t *challenge);
