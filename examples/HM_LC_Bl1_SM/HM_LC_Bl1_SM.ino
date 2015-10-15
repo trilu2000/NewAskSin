@@ -62,7 +62,7 @@ void loop() {
 //- user functions --------------------------------------------------------------------------------------------------------
 void initBlind(uint8_t channel) {
 	#ifdef SER_DBG
-		dbg << F("initBlind: ") << channel << "\n";
+		dbg << F("initDim: ") << channel << "\n";
 	#endif
 		
 	power_timer2_enable();																	// enable the timer2 in power management
@@ -77,7 +77,7 @@ void initBlind(uint8_t channel) {
 }
 void switchBlind(uint8_t channel, uint8_t status) {
 	#ifdef SER_DBG
-		dbg << F("switchBlind: ") << channel << ", " << status << "\n";
+		dbg << F("switchDim: ") << channel << ", " << status << ", " << characteristic << "\n";
 	#endif
 
 	uint16_t x = status*255;

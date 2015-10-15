@@ -17,7 +17,6 @@ void CB::config(uint8_t mode, uint8_t pcIntByte, uint8_t pcIntBit) {
 	scn = mode;
 	pciByte = pcIntByte;
 	pciBit = pcIntBit;
-
 }
 
 // private:		//---------------------------------------------------------------------------------------------------------
@@ -41,7 +40,7 @@ void CB::poll(void) {
 	// 0 for button is pressed, 1 for released, 2 for falling and 3 for rising edge
 	btn = chkPCINT(pciByte, pciBit);														// check input pin
 
-	if (btn == 2) {									// button was just pressed
+	if (btn == 2) {																			// button was just pressed
 		//dbg << "armed \n";
 		btnTmr.set(detectLong);																// set timer to detect a long
 		pHM->pw.stayAwake(detectLong+500);													// stay awake to check button status
@@ -112,13 +111,13 @@ void CB::outSignal(uint8_t mode) {
 	pHM->ld.blinkRed();																		// show via led that we have some action in place
 	
 	#ifdef CB_DBG																			// only if ee debug is set
-	if (mode == 1) dbg << F("keyShortSingle\n");											// ...and some information
-	if (mode == 2) dbg << F("keyShortDouble\n");
-	if (mode == 3) dbg << F("keyLongSingle\n");	
-	if (mode == 4) dbg << F("keyLongRepeat\n");	
-	if (mode == 5) dbg << F("keyLongRelease\n");
-	if (mode == 6) dbg << F("keyLongDouble\n");
-	if (mode == 7) dbg << F("keyLongTimeout\n");
+		if (mode == 1) dbg << F("keyShortSingle\n");										// ...and some information
+		if (mode == 2) dbg << F("keyShortDouble\n");
+		if (mode == 3) dbg << F("keyLongSingle\n");
+		if (mode == 4) dbg << F("keyLongRepeat\n");
+		if (mode == 5) dbg << F("keyLongRelease\n");
+		if (mode == 6) dbg << F("keyLongDouble\n");
+		if (mode == 7) dbg << F("keyLongTimeout\n");
 	#endif
 
 	if (mode == 1) {						// keyShortSingle

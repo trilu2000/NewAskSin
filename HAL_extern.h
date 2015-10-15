@@ -87,7 +87,7 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin) {
 	uint8_t prev = pcInt[port].prev & _BV(pin);
 
 	if ((cur == prev) || ( (getMillis() - pcInt[port].time) < DEBOUNCE )) {		// old and new bit is similar, or DEBOUNCE time is running
-		return (pcInt[port].cur & _BV(pin))?1:0;
+		return (pcInt[port].cur & _BV(pin)) ? 1 : 0;
 	}
 
 	//if ( (getMillis() - pcInt[port].time) < DEBOUNCE ) {
