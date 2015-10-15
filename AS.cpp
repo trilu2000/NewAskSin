@@ -8,6 +8,7 @@
 
 //#define AS_DBG
 //#define RV_DBG_EX
+
 #define SUPPORT_AES
 
 #include "AS.h"
@@ -124,13 +125,14 @@ void AS::poll(void) {
 	// some sanity poll routines
 }
 
-// - send functions --------------------------------
+/**
+ * @brief Send device info
+ *
+ * Message description:
+ *             Sender__ Receiver fwVer type   Serial number                     class  pCnlA  pCnlB  unknown
+ * 1A 94 84 00 1F B7 4A 01 02 04 15    00 6C  4B 45 51 30 32 33 37 33 39 36  10 41     01     00
+ */
 void AS::sendDEVICE_INFO(void) {
-	// description --------------------------------------------------------
-	//                 reID      toID      fw  type   serial                         class  pCnlA  pCnlB  unknown
-	// l> 1A 94 84 00  1F B7 4A  01 02 04  15  00 6C  4B 45 51 30 32 33 37 33 39 36  10     41     01     00
-	// do something with the information ----------------------------------
-
 	uint8_t xCnt;
 	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {
 		xCnt = rv.mBdy.mLen;																// send counter - is it an answer or a initial message
@@ -150,16 +152,18 @@ void AS::sendDEVICE_INFO(void) {
 	prepareToSend(xCnt, AS_MESSAGE_DEVINFO, MAID);
 
 	pairActive = 1;																			// set pairing flag
-	pairTmr.set(20000);
+	pairTmr.set(20000);																		// set pairing time
 	ld.set(pairing);																		// and visualize the status
 }
 
+/**
+ * @brief Send ACK message
+ *
+ * Message description:
+ *             Sender__ Receiver ACK
+ * 0A 24 80 02 1F B7 4A 63 19 63 00
+ */
 void AS::sendACK(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      ACK
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  00
-	// do something with the information ----------------------------------
-
 	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
 	sn.mBdy.mLen = 0x0A;
@@ -168,6 +172,9 @@ void AS::sendACK(void) {
 	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 }
 
+/**
+ * @brief Check if ACK required and send ACK or NACK
+ */
 void AS::checkSendACK(uint8_t ackOk) {
 	if (rv.ackRq) {
 		if (ackOk) {
