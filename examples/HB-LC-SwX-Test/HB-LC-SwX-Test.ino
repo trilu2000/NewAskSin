@@ -7,14 +7,30 @@
 #include "hardware.h"																		// hardware definition
 #include "register.h"																		// configuration sheet
 
+#define MOTOR_STOP   0
+#define MOTOR_LEFT   1
+#define MOTOR_RIGHT  2
+
+uint8_t  motorState = 0;
+uint8_t  motorStateLast = 0;
+uint32_t nextMotorEvent = 0;
+
+int32_t travelCount = 0;
+
+
+
 // some forward declarations
+void setupExtInterrupts();
+
 void initRly();
-void switchRly(uint8_t status);
+void switchRly1(uint8_t status);
+void switchRly2(uint8_t status);
+void switchRly(uint8_t status, uint8_t ch);
 
 
 //- load modules ----------------------------------------------------------------------------------------------------------
 AS hm;																						// stage the asksin framework
-Relay relay;																				// stage a dummy module
+Relay relay[2];																				// stage a dummy module
 //waitTimer wt;
 
 
@@ -63,11 +79,15 @@ void setup() {
 
 	hm.bt.set(27, 1800000);		// 1800000 = 0,5h											// set battery check
 
-	relay.regInHM(1, 3, &hm);																// register relay module on channel 1, with a list3 and introduce asksin instance
-	relay.config(&initRly, &switchRly);														// hand over the relay functions of main sketch
-	
-	sei();																					// enable interrupts
+	relay[0].regInHM(1, 3, &hm);															// register relay module on channel 1, with a list3 and introduce asksin instance
+	relay[0].config(&initRly, &switchRly1);													// hand over the relay functions of main sketch
 
+	relay[1].regInHM(2, 3, &hm);															// register relay module on channel 2, with a list3 and introduce asksin instance
+	relay[1].config(&initRly, &switchRly2);													// hand over the relay functions of main sketch
+
+	setupExtInterrupts();
+
+	sei();																					// enable interrupts
 
 	// - user related -----------------------------------------
 	dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
@@ -79,48 +99,105 @@ void loop() {
 	hm.poll();																				// poll the homematic main loop
 	
 	// - user related -----------------------------------------
-	
+	pollExtInterrupts();
+	pollStatus();
 }
 
-
 //- user functions --------------------------------------------------------------------------------------------------------
-void initRly() {
+
+void setupExtInterrupts() {
+	pinInput(DDRC, PORTC2);
+	pinInput(DDRC, PORTC3);
+	setPinHigh(PORTC,PORTC2);
+	setPinHigh(PORTC,PORTC3);
+
+	regPCIE(PCIE1);
+	regPCINT(PCMSK1, PCINT10);
+	regPCINT(PCMSK1, PCINT11);
+}
+
+void pollExtInterrupts() {
+	if (chkPCINT(PCIE1, PCINT10) == 2) {
+		motorState = MOTOR_STOP;
+		travelCount = 0;
+		dbg << F("c: ") << travelCount << "\n";
+	}
+
+	if (chkPCINT(PCIE1, PCINT11) == 2) {
+		travelCount = (motorState == MOTOR_LEFT) ? (travelCount - 1) : (travelCount + 1);
+		dbg << F("c: ") << travelCount << "\n";
+	}
+
+	if (travelCount >10 && motorState == MOTOR_RIGHT) {
+		motorState = MOTOR_STOP;
+	}
+}
+
+void pollStatus() {
+	if (motorState != motorStateLast && nextMotorEvent == 0) {
+		// Motor Stop
+		setPinLow (PORTC, 0);
+		setPinLow (PORTC, 1);
+		nextMotorEvent = getMillis();
+	}
+
+	if ( (motorState != motorStateLast) &&  (getMillis() - nextMotorEvent) > 100 ) {		// Delay before motor change direction
+		if (motorState == MOTOR_STOP) {
+			relay[0].modStat = 0;
+			relay[0].setStat = 0;
+			relay[0].sendStat = 2;
+			relay[1].modStat = 0;
+			relay[1].setStat = 0;
+			relay[1].sendStat = 2;
+
+		} else if (motorState == MOTOR_LEFT) {
+			setPinHigh(PORTC, 0);
+
+			relay[1].modStat = 0;
+			relay[1].setStat = 0;
+			relay[1].sendStat = 2;
+
+		} else if (motorState == MOTOR_RIGHT) {
+			setPinHigh(PORTC, 1);
+
+			relay[0].modStat = 0;
+			relay[0].setStat = 0;
+			relay[0].sendStat = 2;
+		}
+
+		motorStateLast = motorState;
+		nextMotorEvent = 0;
+	}
+}
+
+ void initRly() {
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
 
 	pinOutput(DDRC,0);																		// init the relay pins
 	setPinLow(PORTC,0);																		// set relay pin to ground
+
+	pinOutput(DDRC,1);																		// init the relay pins
+	setPinLow(PORTC,1);																		// set relay pin to ground
 }
-void switchRly(uint8_t status) {
-// switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
+
+void switchRly1(uint8_t status) {
+	switchRly(status, 0);
+}
+
+void switchRly2(uint8_t status) {
+	switchRly(status, 1);
+}
+
+void switchRly(uint8_t status, uint8_t ch) {
+	dbg << F("switchRly: ") << ch << " - " << status << "\n";
+
 	if (status > 0) {
-		setPinHigh(PORTC,0);														// check status and set relay pin accordingly
-	} else {
-		setPinLow(PORTC,0);
-	}
-}
-
-
-//- predefined functions --------------------------------------------------------------------------------------------------
-void serialEvent() {
-	#ifdef SER_DBG
-	
-	static uint8_t i = 0;																	// it is a high byte next time
-	while (Serial.available()) {
-		uint8_t inChar = (uint8_t)Serial.read();											// read a byte
-		if (inChar == '\n') {																// send to receive routine
-			i = 0;
-			hm.sn.active = 1;
+		if (ch == 0) {
+			motorState = MOTOR_LEFT;
+		} else if (ch == 1)  {
+			motorState = MOTOR_RIGHT;
 		}
-		
-		if      ((inChar>96) && (inChar<103)) inChar-=87;									// a - f
-		else if ((inChar>64) && (inChar<71))  inChar-=55;									// A - F
-		else if ((inChar>47) && (inChar<58))  inChar-=48;									// 0 - 9
-		else continue;
-		
-		if (i % 2 == 0) hm.sn.buf[i/2] = inChar << 4;										// high byte
-		else hm.sn.buf[i/2] |= inChar;														// low byte
-		
-		i++;
+	} else {
+		motorState = MOTOR_STOP;
 	}
-	#endif
 }

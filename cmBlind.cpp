@@ -13,13 +13,13 @@
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
-void cmBlind::config(void Init(), void Switch(uint8_t, uint8_t)) {
+void cmBlind::config(void Init(uint8_t), void Switch(uint8_t, uint8_t)) {
 
 	fInit = Init;
 	fSwitch = Switch;
 	
 	// set output pins
-	fInit();
+	fInit(regCnl);
 
 	// some basic settings for start
 	curStat = nxtStat = 6;																	// set module status to off

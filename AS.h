@@ -45,8 +45,8 @@
 
 #define AS_RESPONSE_TYPE_ACK                  0x00
 #define AS_RESPONSE_TYPE_ACK_STATUS           0x01
-#define AS_RESPONSE_TYPE_ACK_AES              0x04
 #define AS_RESPONSE_TYPE_ACK2                 0x02
+#define AS_RESPONSE_TYPE_AES_CHALLANGE        0x04
 #define AS_RESPONSE_TYPE_NACK                 0x80
 #define AS_RESPONSE_TYPE_NACK_TARGET_INVALID  0x84
 
@@ -131,17 +131,14 @@ class AS {
 
 	uint8_t pairActive    :1;
 
-	uint8_t signingRequestData[6];
-
-	uint8_t tempHmKey[16];
-	uint8_t newHmKey[16];
-
-	uint8_t hmKeyIndex = 1;
-	uint8_t hmKeyPart = 0;
-
-	uint16_t randomSeed = 0;
-
 	#ifdef SUPPORT_AES
+		uint8_t signingRequestData[6];
+		uint8_t tempHmKey[16];
+		uint8_t newHmKey[16];
+		uint8_t hmKeyIndex = 0;
+		uint8_t hmKeyPart = 0;
+		uint16_t randomSeed = 0;
+
 		aes128_ctx_t ctx; 					// the context where the round keys are stored
 	#endif
 
@@ -202,15 +199,15 @@ class AS {
 	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
 	void sendINFO_PARAMETER_CHANGE(void);
 
-	void prepareToSend(uint8_t mTyp, uint8_t *addrTo);
+	void prepareToSend(uint8_t mCnt, uint8_t mTyp, uint8_t *addrTo);
 
 	// - AES Signing related methods -------------------
 	void makeTmpKey(uint8_t *challenge);
 	void payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc);
 	uint8_t checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal);
 
-	void sendSigningRequest(void);
-	void sendSigningResponse(void);
+	void sendSignRequest(void);
+	void sendSignResponse(void);
 
 	void getRandomBytes(uint8_t *buffer, uint8_t length);
 	void initRandomSeed();
