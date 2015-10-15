@@ -1084,7 +1084,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
  *        and set sn.active, so the message should send next time
  *
  * @param mCounter the message counter
- * @param mType    the message tyüe
+ * @param mType    the message type
  * @param addrTo   pointer to receiver address
  */
 void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
