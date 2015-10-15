@@ -138,7 +138,7 @@ void AS::sendDEVICE_INFO(void) {
 		xCnt = sn.msgCnt++;
 	}
 
-	sn.mBdy.mLen = 0x1a;
+	sn.mBdy.mLen = 0x1A;
 //	sn.mBdy.mCnt = xCnt;
 	sn.mBdy.mFlg.CFG = 0;
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
@@ -219,7 +219,7 @@ void AS::checkSendACK(uint8_t ackOk) {
 void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
 	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 	
-	sn.mBdy.mLen      = 0x0e;
+	sn.mBdy.mLen      = 0x0E;
 //	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.mFlg.BIDI = 0;
 //	sn.mBdy.mTyp = 0x02;
@@ -242,7 +242,7 @@ void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
  * 0A 24 80 02 1F B7 4A 63 19 63 80
  */
 void AS::sendNACK(void) {
-	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mLen = 0x0A;
 //	sn.mBdy.mCnt = rv.mBdy.mLen;
 //	sn.mBdy.mTyp = 0x02;
 //	memcpy(sn.mBdy.reID,HMID,3);
@@ -260,7 +260,7 @@ void AS::sendNACK(void) {
  * 0A 24 80 02 1F B7 4A 63 19 63 84
  */
 void AS::sendNACK_TARGET_INVALID(void) {
-	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mLen = 0x0A;
 //	sn.mBdy.mCnt = rv.mBdy.mLen;
 //	sn.mBdy.mTyp = 0x02;
 //	memcpy(sn.mBdy.reID,HMID,3);
@@ -281,7 +281,7 @@ void AS::sendNACK_TARGET_INVALID(void) {
  * @param flag: TODO: to be specified
  */
 void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) {
-	sn.mBdy.mLen = 0x0e;
+	sn.mBdy.mLen = 0x0E;
 	uint8_t cnt;
 
 	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) {
@@ -717,7 +717,7 @@ void AS::recvMessage(void) {
 			cFlag.idx = 0;
 		}
 		
-		if (cFlag.idx != 0xff) {
+		if (cFlag.idx != 0xFF) {
 			cFlag.active = 1;																			// set active if there is no error on index
 			cnfTmr.set(20000);																			// set timeout time, will be checked in poll function
 			// TODO: set message id flag to config in send module
@@ -765,7 +765,7 @@ void AS::recvMessage(void) {
 			if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {													// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 				uint8_t maIdFlag = 0;				
 				for (uint8_t i = 0; i < (rv.buf[0]+1-11); i+=2) {
-					if (rv.buf[12+i] == 0x0a) maIdFlag = 1;
+					if (rv.buf[12+i] == 0x0A) maIdFlag = 1;
 					#ifdef AS_DBG
 						dbg << "x" << i << " :" << _HEXB(rv.buf[12+i]) << '\n';
 					#endif
@@ -1132,7 +1132,7 @@ void AS::decode(uint8_t *buf) {
 	uint8_t i, t;
 	for (i=2; i<buf[0]; i++) {
 		t = buf[i];
-		buf[i] = (prev + 0xdc) ^ buf[i];
+		buf[i] = (prev + 0xDC) ^ buf[i];
 		prev = t;
 	}
 
@@ -1152,7 +1152,7 @@ void AS::encode(uint8_t *buf) {
 
 	uint8_t i;
 	for (i=2; i<buf[0]; i++) {
-		prev = (prev + 0xdc) ^ buf[i];
+		prev = (prev + 0xDC) ^ buf[i];
 		buf[i] = prev;
 	}
 
@@ -1500,7 +1500,7 @@ uint32_t waitTimer::remain(void) {
 
 uint32_t byteTimeCvt(uint8_t tTime) {
 	const uint16_t c[8] = {1,10,50,100,600,3000,6000,36000};
-	return (uint32_t)(tTime & 0x1f) * c[tTime >> 5]*100;
+	return (uint32_t)(tTime & 0x1F) * c[tTime >> 5]*100;
 }
 
 
