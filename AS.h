@@ -43,12 +43,27 @@
 #define AS_MESSAGE_TYPE_CLIMATE_EVENT         0x58
 #define AS_MESSAGE_TYPE_WEATHER_EVENT         0x70
 
+#define AS_CONFIG_PEER_ADD                    0x01
+#define AS_CONFIG_PEER_REMOVE                 0x02
+#define AS_CONFIG_PEER_LIST_REQ               0x03
+#define AS_CONFIG_PARAM_REQ                   0x04
+#define AS_CONFIG_START                       0x05
+#define AS_CONFIG_END                         0x06
+#define AS_CONFIG_WRITE_INDEX                 0x08
+#define AS_CONFIG_SERIAL_REQ                  0x09
+#define AS_CONFIG_PAIR_SERIAL                 0x0A
+#define AS_CONFIG_STATUS_REQUEST              0x0E
+
 #define AS_RESPONSE_TYPE_ACK                  0x00
 #define AS_RESPONSE_TYPE_ACK_STATUS           0x01
 #define AS_RESPONSE_TYPE_ACK2                 0x02
 #define AS_RESPONSE_TYPE_AES_CHALLANGE        0x04
 #define AS_RESPONSE_TYPE_NACK                 0x80
 #define AS_RESPONSE_TYPE_NACK_TARGET_INVALID  0x84
+
+#define AS_BUTTON_BYTE_KEY_BITS               0b00111111
+#define AS_BUTTON_BYTE_LONGPRESS_BIT          0b01000000
+#define AS_BUTTON_BYTE_LOWBAT_BIT             0b10000000
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.
@@ -132,11 +147,10 @@ class AS {
 	uint8_t pairActive    :1;
 
 	#ifdef SUPPORT_AES
-		uint8_t signingRequestData[6];
-		uint8_t tempHmKey[16];
-		uint8_t newHmKey[16];
-		uint8_t hmKeyIndex = 0;
-		uint8_t hmKeyPart = 0;
+		uint8_t  signingRequestData[6];
+		uint8_t  tempHmKey[16];
+		uint8_t  newHmKey[16];
+		uint8_t  hmKeyIndex = 0;
 		uint16_t randomSeed = 0;
 
 		aes128_ctx_t ctx; 					// the context where the round keys are stored
@@ -164,23 +178,24 @@ class AS {
 	// - send functions --------------------------------
 	void sendDEVICE_INFO(void);
 	void sendACK(void);
+	void checkSendACK(uint8_t ackOk);
 	void sendPayload(uint8_t payloadType, uint8_t *data, uint8_t dataLen);
 	void sendAckAES(uint8_t *data);
-	void sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul);
+	void sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action);
 	void sendNACK(void);
 	void sendNACK_TARGET_INVALID(void);
-	void sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng);
+	void sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag);
 	void sendINFO_TEMP(void);
 	void sendHAVE_DATA(void);
 	void sendSWITCH(void);
 	void sendTimeStamp(void);
-	void sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL);
-	void sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL);
+	void sendREMOTE(uint8_t channel, uint8_t burst, uint8_t *payload);
+	void sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload);
 	void sendSensorData(void);
 	void sendClimateEvent(void);
 	void sendSetTeamTemp(void);
 	void sendWeatherEvent(void);
-	void send_generic_event(uint8_t cnl, uint8_t burst, uint8_t mTyp, uint8_t len, uint8_t *pL);
+	void sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *payload, uint8_t pLen);
 
   private:		//---------------------------------------------------------------------------------------------------------
 

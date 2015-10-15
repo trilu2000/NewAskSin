@@ -155,19 +155,33 @@ void AS::sendACK(void) {
 
 	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
-	sn.mBdy.mLen = 0x0a;
+	sn.mBdy.mLen = 0x0A;
 //	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.by10 = 0x00;
 	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
 }
 
-#ifdef SUPPORT_AES
-	void AS::sendAckAES(uint8_t *data) {
-		// description --------------------------------------------------------
-		//                reID      toID      data
-		// l> 0A 24 80 02 1F B7 4A  63 19 63  XX XX XX XX ...
-		// do something with the information ----------------------------------
+void AS::checkSendACK(uint8_t ackOk) {
+	if (rv.ackRq) {
+		if (ackOk) {
+			sendACK();
+		} else {
+			sendNACK();
+		}
+	}
+}
 
+#ifdef SUPPORT_AES
+	/**
+	 * @brief Send an ACK of previous AES handshake
+	 *
+	 * Message description:
+	 *             Sender__ Receiver 04 bytes AES-Ack Data
+	 * 0A 24 80 02 1F B7 4A 63 19 63 XX XX XX XX
+	 *
+	 * @param data pointer to aes ack data
+	 */
+	void AS::sendAckAES(uint8_t *data) {
 		if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
 		sn.mBdy.mLen = 0x0E;
@@ -181,40 +195,46 @@ void AS::sendACK(void) {
 	}
 #endif
 
-void AS::sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul) {
-	// description --------------------------------------------------------
-	// l> 0B 12 A4 40 23 70 EC 1E 7A AD 01 02
-	//                 reID      toID      ACK  Cnl  Stat  DUL  RSSI
-	// l> 0F 12 80 02  1E 7A AD  23 70 EC  01   01   BE    20   27    CC - dimmer
-	// l> 0E 5C 80 02  1F B7 4A  63 19 63  01   01   C8    00   42       - pcb relay
-	//
-	// b> 0F 13 84 10 1E 7A AD 00 00 00 06 01 00 00 80 00
-	// - DUL = Down 0x20, UP 0x10, LowBat 0x80
-	// do something with the information ----------------------------------
-
+/**
+ * @brief Send an ACK with status data
+ *
+ * Message description:
+ *             Sender__ Receiver ACK Cnl Stat Action RSSI
+ * 0F 12 80 02 1E 7A AD 23 70 EC 01  01  BE   20     27    CC - dimmer
+ * 0E 5C 80 02 1F B7 4A 63 19 63 01  01  C8   00     42       - pcb relay
+ *
+ * Action: Down=0x20, UP=0x10, LowBat=&0x80
+ *
+ * @param channel
+ * @param state
+ * @param action
+ */
+void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
 	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 	
-	sn.mBdy.mLen = 0x0e;
+	sn.mBdy.mLen      = 0x0e;
 //	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.mFlg.BIDI = 0;
 //	sn.mBdy.mTyp = 0x02;
 //	memcpy(sn.mBdy.reID, HMID, 3);
 //	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-	sn.mBdy.by10 = 0x01;
-	sn.mBdy.by11 = cnl;
-	sn.mBdy.pyLd[0] = stat;
-	sn.mBdy.pyLd[1] = dul | (bt.getStatus() << 7);
-	sn.mBdy.pyLd[2] = cc.rssi;
+	sn.mBdy.by10      = 0x01;
+	sn.mBdy.by11      = channel;
+	sn.mBdy.pyLd[0]   = state;
+	sn.mBdy.pyLd[1]   = action | (bt.getStatus() << 7);
+	sn.mBdy.pyLd[2]   = cc.rssi;
 
 	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
 }
 
+/**
+ * @brief Send a NACK (not ACK)
+ *
+ * Message description:
+ *             Sender__ Receiver NACK
+ * 0A 24 80 02 1F B7 4A 63 19 63 80
+ */
 void AS::sendNACK(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      NACK
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  80
-	// do something with the information ----------------------------------
-
 	sn.mBdy.mLen = 0x0a;
 //	sn.mBdy.mCnt = rv.mBdy.mLen;
 //	sn.mBdy.mTyp = 0x02;
@@ -225,12 +245,14 @@ void AS::sendNACK(void) {
 	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
 }
 
+/**
+ * @brief Send a NACK (not ACK and target invalid)
+ *
+ * Message description:
+ *             Sender__ Receiver NACK_TAGRET_INVALID
+ * 0A 24 80 02 1F B7 4A 63 19 63 84
+ */
 void AS::sendNACK_TARGET_INVALID(void) {
-	// description --------------------------------------------------------
-	//                reID      toID      ACK
-	// l> 0A 24 80 02 1F B7 4A  63 19 63  84
-	// do something with the information ----------------------------------
-
 	sn.mBdy.mLen = 0x0a;
 //	sn.mBdy.mCnt = rv.mBdy.mLen;
 //	sn.mBdy.mTyp = 0x02;
@@ -240,37 +262,43 @@ void AS::sendNACK_TARGET_INVALID(void) {
 	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
 }
 
-void AS::sendINFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t cng) {
-	// description --------------------------------------------------------
-	// l> 0B 40 B0 01 63 19 63 1F B7 4A 01 0E (148552)
-	//                 reID      toID          cnl  stat cng  RSSI
-	// l> 0E 40 A4 10  1F B7 4A  63 19 63  06  01   00   00   48 (148679)
-	// l> 0A 40 80 02 63 19 63 1F B7 4A 00 (148804)
-	// do something with the information ----------------------------------
-
+/**
+ * @brief Send info about an actor status
+ *
+ * Message description:
+               Sender__ Receiver    Cnl Stat flag RSSI
+ * 0E 40 A4 10 1F B7 4A 63 19 63 06 01   00  00   48 (148679)
+ *
+ * @param channel
+ * @param state
+ * @param flag: TODO: to be specified
+ */
+void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) {
 	sn.mBdy.mLen = 0x0e;
 	uint8_t cnt;
+
 	if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0e)) {
 		cnt = rv.mBdy.mCnt;
 	} else {
 		cnt = sn.msgCnt++;
 	}
+
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
-	
 //	sn.mBdy.mTyp = 0x10;
 //	memcpy(sn.mBdy.reID, HMID, 3);
 //	memcpy(sn.mBdy.toID, MAID, 3);
-
-	sn.mBdy.by10 = 0x06;
-	sn.mBdy.by11 = cnl;
-	sn.mBdy.pyLd[0] = stat;
-	sn.mBdy.pyLd[1] = cng; // | (bt.getStatus() << 7);
-	sn.mBdy.pyLd[2] = cc.rssi;
+	sn.mBdy.by10      = 0x06;
+	sn.mBdy.by11      = channel;
+	sn.mBdy.pyLd[0]   = state;
+	sn.mBdy.pyLd[1]   = flag; // | (bt.getStatus() << 7);
+	sn.mBdy.pyLd[2]   = cc.rssi;
 
 	prepareToSend(cnt, AS_MESSAGE_TYPE_INFO, MAID);
 }
 
 void AS::sendINFO_TEMP(void) {
+	//TODO: make ready#
+
 	//"10;p01=0A"   => { txt => "INFO_TEMP", params => {
 	//SET     => '2,4,$val=(hex($val)>>10)&0x3F',
 	//ACT     => '2,4,$val=hex($val)&0x3FF',
@@ -281,11 +309,15 @@ void AS::sendINFO_TEMP(void) {
 }
 
 void AS::sendHAVE_DATA(void) {
+	//TODO: make ready#
+
 	//"12"          => { txt => "HAVE_DATA"},
 	// --------------------------------------------------------------------
 }
 
 void AS::sendSWITCH(void) {
+	//TODO: make ready#
+
 	//"3E"          => { txt => "SWITCH"      , params => {
 	//DST      => "00,6",
 	//UNKNOWN  => "06,2",
@@ -295,96 +327,103 @@ void AS::sendSWITCH(void) {
 }
 
 void AS::sendTimeStamp(void) {
+	//TODO: make ready#
+
 	//"3F"          => { txt => "TimeStamp"   , params => {
 	//UNKNOWN  => "00,4",
 	//TIME     => "04,2", } },
 	// --------------------------------------------------------------------
 }
 
-void AS::sendREMOTE(uint8_t cnl, uint8_t burst, uint8_t *pL) {
-	// description --------------------------------------------------------
-	//                 reID      toID      BLL Cnt
-	// l> 0B 0A A4 40  23 70 EC  1E 7A AD  02  01
-	// l> 0F 0A 80 02 1E 7A AD 23 70 EC 01 01 14 10 32 A4
-	// l> 0B 0B B0 40 23 70 EC 1F B7 4A 02 01
-	// l> 0E 0B 80 02 1F B7 4A 23 70 EC 01 01 C8 80 21
-	// l> 0F 0B A4 10 1E 7A AD 63 19 63 06 01 C8 00 80 C8
-	// l> 0A 0B 80 02 63 19 63 1E 7A AD 00
-	// do something with the information ----------------------------------
-	// BUTTON = bit 0 - 5
-	// LONG   = bit 6
-	// LOWBAT = bit 7
-
-	stcPeer.pL = pL;
-	stcPeer.lenPL = 2;
-	stcPeer.cnl = cnl;
-	stcPeer.burst = burst;
-	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
-	stcPeer.mTyp = AS_MESSAGE_TYPE_REMOTE_EVENT;
-	stcPeer.active = 1;
-	// --------------------------------------------------------------------
+/**
+ * @brief Send a remote Event
+ *
+ * TODO: need to be rework
+ *
+ * Message description:
+               Sender__ Receiver buttonByte counter
+ * 0B 0A A4 40 23 70 EC 1E 7A AD 02         01
+ *
+ * btnByte: bits 0-5=Button Number (0-31), bit6=long press, bit7=low battery
+ * counter: the counter increased at every button release.
+ *
+ * @param channel
+ * @param burst
+ * @param payload: pointer to payload
+ */
+void AS::sendREMOTE(uint8_t channel, uint8_t burst, uint8_t *payload) {
+	sendEvent(channel, burst, AS_MESSAGE_TYPE_REMOTE_EVENT, payload, 2);
 }
 
-void AS::sendSensor_event(uint8_t cnl, uint8_t burst, uint8_t *pL) {
-	// description --------------------------------------------------------
-	//                 reID      toID      BLL  Cnt  Val
-	// l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200
-	// do something with the information ----------------------------------
-	//"41"          => { txt => "Sensor_event", params => {
-	// BUTTON = bit 0 - 5
-	// LONG   = bit 6
-	// LOWBAT = bit 7
-
-	stcPeer.pL = pL;
-	stcPeer.lenPL = 3;
-	stcPeer.cnl = cnl;
-	stcPeer.burst = burst;
-	//stcPeer.bidi = 1; // depends on BLL, long didn't need ack
-	stcPeer.bidi = (isEmpty(MAID,3))?0:1;
-	stcPeer.mTyp = AS_MESSAGE_TYPE_SENSOR_EVENT;
-	stcPeer.active = 1;
-	// --------------------------------------------------------------------
+/**
+ * @brief Send a sensor Event
+ *
+ * TODO: need to be rework
+ *
+ * Message description:
+ *             Sender__ Receiver buttonByte counter value
+ * 0C 0A A4 41 23 70 EC 1E 7A AD 02         01      200
+ *
+ * btnByte: bits 0-5=Button Number (0-31), bit6=long press, bit7=low battery
+ * counter: the counter increased at every button release.
+ * value:   the sensor value
+ *
+ * @param channel
+ * @param burst
+ * @param payload: pointer to payload
+ */
+void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
+	sendEvent(channel, burst, AS_MESSAGE_TYPE_SENSOR_EVENT, payload, 3);
 }
 
 /**
  * @brief Send an event with arbitrary payload
+
+ * TODO: need to be rework
  *
+ * Message description:
+ *             Sender__ Receiver buttonByte counter value
+ * 0C 0A A4 41 23 70 EC 1E 7A AD 02         01      200
+ *
+ * btnByte: bits 0-5=Button Number (0-31), bit6=long press, bit7=low battery
+ * counter: the counter increased at every button release.
+ * value:   the sensor value
+
  * Take care when sending generic events, since there are no consistency
  * checks if the specified event type and payload make any sense. Rather use
  * predefined special send methods.
  *
- * @param cnl The channel
- * @param burst Set to 1 for burst mode, or 0
- * @param mTyp Event frame type
- * @param len Length of payload in bytes, not more than 16
- * @param pL pointer to first byte of payload
+ * @param channel The channel
+ * @param burst   Set to 1 for burst mode, or 0
+ * @param mType   Message type
+ * @param pLen    Length of payload in bytes, not more than 16
+ * @param payload pointer to payload
  *
  * @attention The payload length may not exceed 16 bytes. If a greater value
  * for len is given, it is limited to 16 to prevent HM-CFG-LAN (v0.961) to crash.
  */
-void AS::send_generic_event(uint8_t cnl, uint8_t burst, uint8_t mTyp, uint8_t len, uint8_t *pL) {
-        // description --------------------------------------------------------
-        //                 reID      toID      BLL  Cnt  Val
-        // l> 0C 0A A4 41  23 70 EC  1E 7A AD  02   01   200
-        // do something with the information ----------------------------------
-        if (len>16) {
-        	#ifdef AS_DBG
-		dbg << "AS::send_generic_event("<<cnl<<","<<burst<<",0x"<<_HEX(&mTyp,1)<<","<<len<<",...): payload exceeds maximum length of 16\n";
+void AS::sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *payload, uint8_t pLen) {
+	if (pLen>16) {
+		#ifdef AS_DBG
+			dbg << "AS::send_generic_event("<<cnl<<","<<burst<<",0x"<<_HEX(&mTyp,1)<<","<<len<<",...): payload exceeds maximum length of 16\n";
 		#endif
-		len= 16;
-        }
-	stcPeer.pL = pL;
-	stcPeer.lenPL = len+1;
-	stcPeer.cnl = cnl;
-	stcPeer.burst = burst;
-	stcPeer.bidi = 1; // depends on BLL, long didn't need ack
-	stcPeer.bidi = (isEmpty(MAID,3))?0:1;
-	stcPeer.mTyp = mTyp;
+		pLen = 16;
+	}
+
+	stcPeer.pL     = payload;
+	stcPeer.lenPL  = pLen + 1;
+	stcPeer.cnl    = channel;
+	stcPeer.burst  = burst;
+	stcPeer.bidi   = (~payload[0] & AS_BUTTON_BYTE_LONGPRESS_BIT) ? 0 : 1;		// depends on long-key-press-bit (long didn't need ACK)	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
+	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
+	stcPeer.mTyp   = mType;
 	stcPeer.active = 1;
 	// --------------------------------------------------------------------
 }
 
 void AS::sendSensorData(void) {
+	//TODO: make ready#
+
 	//"53"          => { txt => "SensorData"  , params => {
 	//CMD => "00,2",
 	//Fld1=> "02,2",
@@ -399,6 +438,8 @@ void AS::sendSensorData(void) {
 }
 
 void AS::sendClimateEvent(void) {
+	//TODO: make ready#
+
 	//"58"          => { txt => "ClimateEvent", params => {
 	//CMD      => "00,2",
 	//ValvePos => '02,2,$val=(hex($val))', } },
@@ -406,6 +447,8 @@ void AS::sendClimateEvent(void) {
 }
 
 void AS::sendSetTeamTemp(void) {
+	//TODO: make ready#
+
 	//"59"          => { txt => "setTeamTemp" , params => {
 	//CMD      => "00,2",
 	//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
@@ -414,6 +457,8 @@ void AS::sendSetTeamTemp(void) {
 }
 
 void AS::sendWeatherEvent(void) {
+	//TODO: make ready#
+
 	//"70"          => { txt => "WeatherEvent", params => {
 	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 	//HUM      => '04,2,$val=(hex($val))', } },
@@ -567,140 +612,150 @@ void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 	prepareToSend(sn.msgCnt, stcPeer.mTyp, xPeer);
 }
 
-// - receive functions -----------------------------
+/**
+ * @brief Receive handler: Process received messages
+ */
 void AS::recvMessage(void) {
-	uint8_t by10 = rv.mBdy.by10 -1;
-	uint8_t cnl1 = cFlag.cnl-1;
+	uint8_t by10 = rv.mBdy.by10 - 1;
+	uint8_t cnl1 = cFlag.cnl - 1;
 
 	// check which type of message was received
-	if         (rv.mBdy.mTyp == AS_MESSAGE_TYPE_DEVINFO) {									// DEVICE_INFO
-		// description --------------------------------------------------------
-		//
-		//
-		// do something with the information ----------------------------------
+	if         (rv.mBdy.mTyp == AS_MESSAGE_TYPE_DEVINFO) {												// Device info
+		//TODO: do something with the information
 
-		// --------------------------------------------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_ADD)) {		// CONFIG_PEER_ADD
+		/* Message description:
+		 *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
+		 * 0C 0A A4 01 23 70 EC 1E 7A AD 01 01      1F A6 5C 06            05
+		 */
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x01)) {		// CONFIG_PEER_ADD
-		// description --------------------------------------------------------
-		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
-		// l> 10 55 A0 01 63 19 63 01 02 04 01   01  1F A6 5C  06         05
-		// do something with the information ----------------------------------
-
-		ee.remPeer(rv.mBdy.by10, rv.buf+12);												// first call remPeer to avoid doubles
-		uint8_t ret = ee.addPeer(rv.mBdy.by10, rv.buf+12);									// send to addPeer function
+		ee.remPeer(rv.mBdy.by10, rv.buf+12);															// first call remPeer to avoid doubles
+		uint8_t ret = ee.addPeer(rv.mBdy.by10, rv.buf+12);												// send to addPeer function
 
 		// let module registrations know of the change
 		if ((ret) && (modTbl[by10].cnl)) {
 			modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
 		}
 
-		if ((ret) && (rv.ackRq)) sendACK();													// send appropriate answer
-		else if (rv.ackRq) sendNACK();
-		// --------------------------------------------------------------------
+		checkSendACK(ret);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x02)) {		// CONFIG_PEER_REMOVE
-		// description --------------------------------------------------------
-		//                                  Cnl      PeerID    PeerCnl_A  PeerCnl_B
-		// l> 10 55 A0 01 63 19 63 01 02 04 01   02  1F A6 5C  06         05
-		// do something with the information ----------------------------------
-	
-		uint8_t ret = ee.remPeer(rv.mBdy.by10,rv.buf+12);									// call the remPeer function
-		if (rv.ackRq) sendACK();															// send appropriate answer
-		// --------------------------------------------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE)) {	// CONFIG_PEER_REMOVE
+		/* Message description:
+		 *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
+		 * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
+		 */
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x03)) {		// CONFIG_PEER_LIST_REQ
-		// description --------------------------------------------------------
-		//                                  Cnl
-		// l> 0B 05 A0 01 63 19 63 01 02 04 01  03
-		// do something with the information ----------------------------------
-	
-		stcSlice.totSlc = ee.countPeerSlc(rv.mBdy.by10);									// how many slices are need
-		stcSlice.mCnt = rv.mBdy.mCnt;														// remember the message count
+		uint8_t ret = ee.remPeer(rv.mBdy.by10,rv.buf+12);												// call the remPeer function
+
+		checkSendACK(ret);																				// send appropriate answer
+
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_LIST_REQ)) {	// CONFIG_PEER_LIST_REQ
+		/* Message description:
+		 *             Sender__ Receiver    Channel
+		 * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
+		 */
+
+		stcSlice.totSlc = ee.countPeerSlc(rv.mBdy.by10);												// how many slices are need
+		stcSlice.mCnt = rv.mBdy.mCnt;																	// remember the message count
 		memcpy(stcSlice.toID, rv.mBdy.reID, 3);
-		stcSlice.cnl = rv.mBdy.by10;														// send input to the send peer function
-		stcSlice.peer = 1;																	// set the type of answer
-		stcSlice.active = 1;																// start the send function
+		stcSlice.cnl = rv.mBdy.by10;																	// send input to the send peer function
+		stcSlice.peer = 1;																				// set the type of answer
+		stcSlice.active = 1;																			// start the send function
 		// answer will send from sendsList(void)
-		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x04)) {		// CONFIG_PARAM_REQ
-		// description --------------------------------------------------------
-		//                                  Cnl    PeerID    PeerCnl  ParmLst
-		// l> 10 04 A0 01 63 19 63 01 02 04 01  04 00 00 00  00       01
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PARAM_REQ)) {		// CONFIG_PARAM_REQ
+		/* Message description:
+		 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
+		 * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
+		 */
+
 		dbg << "CONFIG_PARAM_REQ \n";
 		
-		if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {									// only list 3 and list 4 needs an peer id and idx
-			stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);						// get peer index
-		} else stcSlice.idx = 0;															// otherwise peer index is 0
+		if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {												// only list 3 and list 4 needs an peer id and idx
+			stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);									// get peer index
+		} else {
+			stcSlice.idx = 0;																			// otherwise peer index is 0
+		}
  
-		stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);						// how many slices are need
-		stcSlice.mCnt = rv.mBdy.mCnt;														// remember the message count
+		stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);									// how many slices are need
+		stcSlice.mCnt = rv.mBdy.mCnt;																	// remember the message count
 		memcpy(stcSlice.toID, rv.mBdy.reID, 3);
-		stcSlice.cnl = rv.mBdy.by10;														// send input to the send peer function
-		stcSlice.lst = rv.buf[16];															// send input to the send peer function
-		stcSlice.reg2 = 1;																	// set the type of answer
+		stcSlice.cnl = rv.mBdy.by10;																	// send input to the send peer function
+		stcSlice.lst = rv.buf[16];																		// send input to the send peer function
+		stcSlice.reg2 = 1;																				// set the type of answer
 		
 		#ifdef AS_DBG
 			dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
 			dbg << "totSlc: " << stcSlice.totSlc << '\n';
 		#endif
 
-		if ((stcSlice.idx != 0xFF) && (stcSlice.totSlc > 0)) stcSlice.active = 1;			// only send register content if something is to send															// start the send function
-		else memset((void*)&stcSlice, 0, 10);												// otherwise empty variable
+		if ((stcSlice.idx != 0xFF) && (stcSlice.totSlc > 0)) {
+			stcSlice.active = 1;																		// only send register content if something is to send															// start the send function
+		} else {
+			memset((void*)&stcSlice, 0, 10);															// otherwise empty variable
+		}
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x05)) {		// CONFIG_START
-		// description --------------------------------------------------------
-		//                                  Cnl    PeerID    PeerCnl  ParmLst
-		// l> 10 01 A0 01 63 19 63 01 02 04 00  05 00 00 00  00       00
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_START)) {			// CONFIG_START
+		/* Message description:
+		 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
+		 * 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
+		 */
 
-		cFlag.cnl = rv.mBdy.by10;															// fill structure to remember where to write
+		cFlag.cnl = rv.mBdy.by10;																		// fill structure to remember where to write
 		cFlag.lst = rv.buf[16];
-		if ((cFlag.lst == 3) || (cFlag.lst == 4)) cFlag.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);
-		else cFlag.idx = 0;
+		if ((cFlag.lst == 3) || (cFlag.lst == 4)) {
+			cFlag.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);
+		} else {
+			cFlag.idx = 0;
+		}
 		
 		if (cFlag.idx != 0xff) {
-			cFlag.active = 1;																// set active if there is no error on index
-			cnfTmr.set(20000);																// set timeout time, will be checked in poll function
-			// todo: set message id flag to config in send module
+			cFlag.active = 1;																			// set active if there is no error on index
+			cnfTmr.set(20000);																			// set timeout time, will be checked in poll function
+			// TODO: set message id flag to config in send module
 			
 		}
 	
-		if (rv.ackRq) sendACK();															// send appropriate answer
-		// --------------------------------------------------------------------
+		checkSendACK(1);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x06)) {		// CONFIG_END
-		// description --------------------------------------------------------
-		//                                  Cnl
-		// l> 0B 01 A0 01 63 19 63 01 02 04 00  06
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_END)) {			// CONFIG_END
+		/*
+		 * Message description:
+		 *             Sender__ Receiver    Channel
+		 * 10 04 A0 01 63 19 63 01 02 04 01 06
+		 */
 
-		cFlag.active = 0;																	// set inactive
-		if ((cFlag.cnl == 0) && (cFlag.idx == 0)) ee.getMasterID();
+		cFlag.active = 0;																				// set inactive
+		if ((cFlag.cnl == 0) && (cFlag.idx == 0)) {
+			ee.getMasterID();
+		}
 		// remove message id flag to config in send module
 
 		if ((cFlag.cnl > 0) && (modTbl[cnl1].cnl)) {
-			// check if a new list1 was written and reload, no need for reload list3/4 because they will be loaded on an peer event
-			if (cFlag.lst == 1) ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cnl1].lstCnl); // load list1 in the respective buffer
-			modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);										// inform the module of the change
+			/*
+			 * Check if a new list1 was written and reload.
+			 * No need for reload list3/4 because they will be loaded on an peer event.
+			 */
+			if (cFlag.lst == 1) {
+				ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cnl1].lstCnl); 								// load list1 in the respective buffer
+			}
+			modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);													// inform the module of the change
 		}
 		
-		if (rv.ackRq) sendACK();															// send appropriate answer
-		// --------------------------------------------------------------------
+		checkSendACK(1);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x08)) {		// CONFIG_WRITE_INDEX
-		// description --------------------------------------------------------
-		//                                  Cnl    Data
-		// l> 13 02 A0 01 63 19 63 01 02 04 00  08 02 01 0A 63 0B 19 0C 63
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX)) {	// CONFIG_WRITE_INDEX
+		/*
+		 * Message description:
+		 *             Sender__ Receiver        Channel ConfigData: Register:BytePairs
+		 * 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
+		 */
 
-		if ((cFlag.active) && (cFlag.cnl == rv.mBdy.by10)) {								// check if we are in config mode and if the channel fit
-			ee.setListArray(cFlag.cnl, cFlag.lst, cFlag.idx, rv.buf[0]+1-11, rv.buf+12);	// write the string to eeprom
+		if ((cFlag.active) && (cFlag.cnl == rv.mBdy.by10)) {											// check if we are in config mode and if the channel fit
+			ee.setListArray(cFlag.cnl, cFlag.lst, cFlag.idx, rv.buf[0]+1-11, rv.buf+12);				// write the string to EEprom
 			
-			if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
+			if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {													// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 				uint8_t maIdFlag = 0;				
 				for (uint8_t i = 0; i < (rv.buf[0]+1-11); i+=2) {
 					if (rv.buf[12+i] == 0x0a) maIdFlag = 1;
@@ -714,35 +769,37 @@ void AS::recvMessage(void) {
 						dbg << "new masterid\n" << '\n';
 					#endif
 				}
-				
 			}
 		}
-		if (rv.ackRq) sendACK();															// send appropriate answer
-		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x09)) {		// CONFIG_SERIAL_REQ
-		// description --------------------------------------------------------
-		//
-		// l> 0B 77 A0 01 63 19 63 01 02 04 00 09
-		// do something with the information ----------------------------------
-		sendINFO_SERIAL();																	// jump to create the answer
-		// --------------------------------------------------------------------
+		checkSendACK(1);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0A)) {		// PAIR_SERIAL
-		// description --------------------------------------------------------
-		//                                         serial
-		// b> 15 93 B4 01 63 19 63 00 00 00 01 0A  4B 45 51 30 32 33 37 33 39 36
-		// do something with the information ----------------------------------
-		if (compArray(rv.buf+12,HMSR,10)) sendDEVICE_INFO();								// compare serial and send device info
-		// --------------------------------------------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_SERIAL_REQ)) {	// CONFIG_SERIAL_REQ
+		/*
+		 * Message description:
+		 *             Sender__ Receiver
+		 * 0B 77 A0 01 63 19 63 01 02 04 00 09
+		 */
+		sendINFO_SERIAL();																				// jump to create the answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0E)) {		// CONFIG_STATUS_REQUEST
-		// description --------------------------------------------------------
-		//                 reID      toID      cnl 
-		// l> 0B 40 B0 01  63 19 63  1F B7 4A  01  0E (148552)
-		// l> 0E 40 A4 10 1F B7 4A 63 19 63 06 01 00 00 48 (148679)
-		// l> 0A 40 80 02 63 19 63 1F B7 4A 00 (148804)
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {	// PAIR_SERIAL
+		/*
+		 * Message description:
+		 *             Sender__ Receiver       SerialNumber
+		 * 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
+		 */
+
+		// compare serial and send device info
+		if (compArray(rv.buf+12,HMSR,10)) {
+			sendDEVICE_INFO();
+		}
+
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) { // CONFIG_STATUS_REQUEST
+		/*
+		 * Message description:
+		 *             Sender__ Receiver Channel
+		 * 15 93 B4 01 63 19 63 00 00 00 01      0E
+		 */
 
 		// check if a module is registered and send the information, otherwise report an empty status
 		if (modTbl[by10].cnl) {
@@ -750,34 +807,34 @@ void AS::recvMessage(void) {
 		} else {
 			sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);	
 		}
-		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK)) {		// ACK
-		// description --------------------------------------------------------
-		//
-		// l> 0A 05 80 02 63 19 63 01 02 04 00
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK)) {			// ACK
+		/*
+		 * Message description:
+		 *             Sender__ Receiver ACK
+		 * 0A 05 80 02 63 19 63 01 02 04 00
+		 */
 	
 		if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt)) {
-			sn.retrCnt = 0xFF;																// was an ACK to an active message, message counter is similar - set retrCnt to 255
+			sn.retrCnt = 0xFF;																					// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		}
 		//dbg << "act:" << sn.active << " rC:" << rv.mBdy.mLen << " sC:" << sn.lastMsgCnt << " cntr:" << sn.retrCnt << '\n';
-		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK_STATUS)) {		// ACK_STATUS
-		// description --------------------------------------------------------
-		// <- 0B 08 B4 40 23 70 D8 1F B7 4A 02 08
-		//                                      cnl stat DUL RSSI
-		// l> 0E 08 80 02 1F B7 4A 23 70 D8 01  01  C8   80  27
-		// do something with the information ----------------------------------
-		// DUL = UP 10, DOWN 20, LOWBAT 80
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK_STATUS)) {	// ACK_STATUS
+		/*
+		 * Message description:
+		 *             Sender__ Receiver ACK Channel State Action RSSI
+		 * 0E 08 80 02 1F B7 4A 23 70 D8 01  01      C8    80     27
+		 *
+		 * Action: Down=0x20, UP=0x10, LowBat=&0x80
+		 */
 	
 		if ((sn.active) && (rv.mBdy.mLen == sn.lastMsgCnt)) {
-			sn.retrCnt = 0xFF;																// was an ACK to an active message, message counter is similar - set retrCnt to 255
+			sn.retrCnt = 0xFF;																					// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		}
-		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK2)) {		// ACK2
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK2)) {			// ACK2
+		// TODO: Make ready
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -785,7 +842,9 @@ void AS::recvMessage(void) {
 
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_AES_CHALLANGE)) {		// ACK_PROC AES-Challenge
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_AES_CHALLANGE)) {// ACK_PROC AES-Challenge
+		// TODO: Make ready
+
 		// description --------------------------------------------------------
 		//
 		// b>
@@ -797,30 +856,36 @@ void AS::recvMessage(void) {
 		//Para3          => "10,4",
 		//Para4          => "14,2",}}, # remote?
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_NACK)) {		// NACK
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_NACK)) {			// NACK
+		// TODO: Make ready
+
 		// description --------------------------------------------------------
 		//
 		// b>
 		// do something with the information ----------------------------------
 
 		// for test
-		static uint8_t x2[2];
-		x2[0] = 0x02;
-		x2[1] += 1;
-		sendREMOTE(1,1,x2);
+		//static uint8_t x2[2];
+		//x2[0] = 0x02;
+		//x2[1] += 1;
+		//sendREMOTE(1, 1, x2);
 
-		// --------------------------------------------------------------------
-
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_NACK_TARGET_INVALID)) {		// NACK_TARGET_INVALID
-		// todo
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_NACK_TARGET_INVALID)) {	// NACK_TARGET_INVALID
+		// TODO: Make ready
 
 	#ifdef SUPPORT_AES
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE_AES)) {							// AES Response
-			uint8_t pBuf[16];
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE_AES)) {											// AES Response
+			/*
+			 * Message description:
+			 *             Sender__ Receiver AES-Response-Data
+			 * 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
+			 */
+			uint8_t pBuf[16];																					// We need a 16 bytes buffer
 			memcpy(pBuf, rv.buf+10, 16);
 
-			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {
-				if (hmKeyPart > 0) {
+			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {														// check the decrypted result of previous received message
+				if (hmKeyIndex > 2) {																			// hmKeyIndex > 2: we have the two key parts
+					hmKeyIndex = 0;
 					// todo: here we must save the new key (newHmKey)
 					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
 				} else {
@@ -829,28 +894,36 @@ void AS::recvMessage(void) {
 				}
 			}
 
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_KEY_EXCHANGE)) {							// AES Key Exchange
-			uint8_t pBuf[16];
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_KEY_EXCHANGE)) {											// AES Key Exchange
+			/*
+			 * Message description:
+			 *             Sender__ Receiver Decrypted Payload with one keypart
+			 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
+			 */
+
+			uint8_t pBuf[16];																					// We need a 16 bytes buffer
 			memcpy(pBuf, rv.buf+10, 16);
 
-			aes128_init(HMKEY, &ctx);															// load HMKEY
-			aes128_dec(pBuf, &ctx);																// decrypt payload width tmpKey first time
+			aes128_init(HMKEY, &ctx);																			// load HMKEY
+			aes128_dec(pBuf, &ctx);																				// decrypt payload width HMKEY first time
 
 			dbg << F("dec Buffer: ") << _HEX(pBuf, 16) << "\n";
 
-			if (pBuf[0] == 0x01) {
+			if (pBuf[0] == 0x01) {																				// the decrypted data must start with 0x01
 				hmKeyIndex = pBuf[1];
-				hmKeyPart = hmKeyIndex - 2;
-				dbg << F("hmKeyPart: ") << _HEXB(hmKeyPart) << "\n";
+				dbg << F("hmKeyIndex: ") << _HEXB(hmKeyIndex) << "\n";
 
-				memcpy(newHmKey+(hmKeyPart*8), pBuf+2, 8);
+				uint8_t index = (hmKeyIndex > 2) ? 8 : 0;
+				memcpy(newHmKey+index, pBuf+2, 8);
+//				memcpy(newHmKey+((hmKeyIndex - 2)*8), pBuf+2, 8);
 
 				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
 
-				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);									// remember this message
+				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);													// remember this message
 				sendSignRequest();
+
 			} else {
-				hmKeyPart = 0;
+				hmKeyIndex = 0;
 			}
 	#endif
 
@@ -888,8 +961,11 @@ void AS::recvMessage(void) {
 
 		uint8_t xI = ee.getRegListIdx(1,3);
 		if (rv.ackRq) {
-			if (xI == 0xff) sendACK();
-			else sendACK_STATUS(0, 0, 0);
+			if (xI == 0xFF) {
+				sendACK();
+			} else {
+				sendACK_STATUS(0, 0, 0);
+			}
 		}
 		// --------------------------------------------------------------------
 

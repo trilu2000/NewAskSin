@@ -46,7 +46,7 @@ void THSensor::sensPoll(void) {
 			else sensTmr.set(mSendDelay - measureDelay);
 
 			msgCnt++;																			// increase the message counter
-			hm->sendSensor_event(regCnl,1,sensVal);												// prepare the message and send	
+			hm->sendSensor_event(regCnl,1,sensVal);												// prepare the message and send
 
 		}
 	} else if (mMode == 1) {
