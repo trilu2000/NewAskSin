@@ -8,8 +8,15 @@
 
 //#define AS_DBG
 //#define RV_DBG_EX
+#define SUPPORT_AES
 
 #include "AS.h"
+
+#ifdef SUPPORT_AES
+	#include "aes.h"
+
+	aes128_ctx_t ctx; 																		// the context where the round keys are stored
+#endif
 
 waitTimer cnfTmr;																			// config timer functionality
 waitTimer pairTmr;																			// pair timer functionality
@@ -125,7 +132,7 @@ void AS::sendDEVICE_INFO(void) {
 	// do something with the information ----------------------------------
 
 	uint8_t xCnt;
-	if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0A)) {
+	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {
 		xCnt = rv.mBdy.mLen;																// send counter - is it an answer or a initial message
 	} else {
 		xCnt = sn.msgCnt++;
@@ -140,7 +147,7 @@ void AS::sendDEVICE_INFO(void) {
 	memcpy(sn.buf+13, HMSR, 10);
 	memcpy_P(sn.buf+23, devDef.devIdnt+3, 4);
 
-	prepareToSend(xCnt, AS_MESSAGE_TYPE_DEVINFO, MAID);
+	prepareToSend(xCnt, AS_MESSAGE_DEVINFO, MAID);
 
 	pairActive = 1;																			// set pairing flag
 	pairTmr.set(20000);
@@ -158,7 +165,7 @@ void AS::sendACK(void) {
 	sn.mBdy.mLen = 0x0A;
 //	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.by10 = 0x00;
-	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 }
 
 void AS::checkSendACK(uint8_t ackOk) {
@@ -187,11 +194,11 @@ void AS::checkSendACK(uint8_t ackOk) {
 		sn.mBdy.mLen = 0x0E;
 //		sn.mBdy.mFlg.BIDI = 0;
 //		sn.mBdy.mCnt = rv.mBdy.mCnt;
-		sn.mBdy.by10 = AS_RESPONSE_TYPE_ACK;
+		sn.mBdy.by10 = AS_RESPONSE_ACK;
 		sn.mBdy.by11 = data[0];
 		memcpy(sn.mBdy.pyLd, data+1, 3);
 
-		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 	}
 #endif
 
@@ -224,7 +231,7 @@ void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
 	sn.mBdy.pyLd[1]   = action | (bt.getStatus() << 7);
 	sn.mBdy.pyLd[2]   = cc.rssi;
 
-	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 }
 
 /**
@@ -240,9 +247,9 @@ void AS::sendNACK(void) {
 //	sn.mBdy.mTyp = 0x02;
 //	memcpy(sn.mBdy.reID,HMID,3);
 //	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-	sn.mBdy.by10 = AS_RESPONSE_TYPE_NACK;
+	sn.mBdy.by10 = AS_RESPONSE_NACK;
 
-	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 }
 
 /**
@@ -258,8 +265,8 @@ void AS::sendNACK_TARGET_INVALID(void) {
 //	sn.mBdy.mTyp = 0x02;
 //	memcpy(sn.mBdy.reID,HMID,3);
 //	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-	sn.mBdy.by10 = AS_RESPONSE_TYPE_NACK_TARGET_INVALID;
-	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_TYPE_RESPONSE, rv.mBdy.reID);
+	sn.mBdy.by10 = AS_RESPONSE_NACK_TARGET_INVALID;
+	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 }
 
 /**
@@ -277,7 +284,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) 
 	sn.mBdy.mLen = 0x0e;
 	uint8_t cnt;
 
-	if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x0e)) {
+	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) {
 		cnt = rv.mBdy.mCnt;
 	} else {
 		cnt = sn.msgCnt++;
@@ -293,11 +300,11 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) 
 	sn.mBdy.pyLd[1]   = flag; // | (bt.getStatus() << 7);
 	sn.mBdy.pyLd[2]   = cc.rssi;
 
-	prepareToSend(cnt, AS_MESSAGE_TYPE_INFO, MAID);
+	prepareToSend(cnt, AS_MESSAGE_INFO, MAID);
 }
 
 void AS::sendINFO_TEMP(void) {
-	//TODO: make ready#
+	//TODO: make ready
 
 	//"10;p01=0A"   => { txt => "INFO_TEMP", params => {
 	//SET     => '2,4,$val=(hex($val)>>10)&0x3F',
@@ -352,7 +359,7 @@ void AS::sendTimeStamp(void) {
  * @param payload: pointer to payload
  */
 void AS::sendREMOTE(uint8_t channel, uint8_t burst, uint8_t *payload) {
-	sendEvent(channel, burst, AS_MESSAGE_TYPE_REMOTE_EVENT, payload, 2);
+	sendEvent(channel, burst, AS_MESSAGE_REMOTE_EVENT, payload, 2);
 }
 
 /**
@@ -373,7 +380,7 @@ void AS::sendREMOTE(uint8_t channel, uint8_t burst, uint8_t *payload) {
  * @param payload: pointer to payload
  */
 void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
-	sendEvent(channel, burst, AS_MESSAGE_TYPE_SENSOR_EVENT, payload, 3);
+	sendEvent(channel, burst, AS_MESSAGE_SENSOR_EVENT, payload, 3);
 }
 
 /**
@@ -620,10 +627,10 @@ void AS::recvMessage(void) {
 	uint8_t cnl1 = cFlag.cnl - 1;
 
 	// check which type of message was received
-	if         (rv.mBdy.mTyp == AS_MESSAGE_TYPE_DEVINFO) {												// Device info
+	if         (rv.mBdy.mTyp == AS_MESSAGE_DEVINFO) {												// Device info
 		//TODO: do something with the information
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_ADD)) {		// CONFIG_PEER_ADD
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_ADD)) {		// CONFIG_PEER_ADD
 		/* Message description:
 		 *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
 		 * 0C 0A A4 01 23 70 EC 1E 7A AD 01 01      1F A6 5C 06            05
@@ -639,7 +646,7 @@ void AS::recvMessage(void) {
 
 		checkSendACK(ret);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE)) {	// CONFIG_PEER_REMOVE
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE)) {	// CONFIG_PEER_REMOVE
 		/* Message description:
 		 *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
 		 * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
@@ -649,7 +656,7 @@ void AS::recvMessage(void) {
 
 		checkSendACK(ret);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_LIST_REQ)) {	// CONFIG_PEER_LIST_REQ
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_LIST_REQ)) {	// CONFIG_PEER_LIST_REQ
 		/* Message description:
 		 *             Sender__ Receiver    Channel
 		 * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
@@ -663,7 +670,7 @@ void AS::recvMessage(void) {
 		stcSlice.active = 1;																			// start the send function
 		// answer will send from sendsList(void)
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PARAM_REQ)) {		// CONFIG_PARAM_REQ
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PARAM_REQ)) {		// CONFIG_PARAM_REQ
 		/* Message description:
 		 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
 		 * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
@@ -696,7 +703,7 @@ void AS::recvMessage(void) {
 		}
 		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_START)) {			// CONFIG_START
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_START)) {			// CONFIG_START
 		/* Message description:
 		 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
 		 * 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
@@ -719,7 +726,7 @@ void AS::recvMessage(void) {
 	
 		checkSendACK(1);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_END)) {			// CONFIG_END
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_END)) {			// CONFIG_END
 		/*
 		 * Message description:
 		 *             Sender__ Receiver    Channel
@@ -745,7 +752,7 @@ void AS::recvMessage(void) {
 		
 		checkSendACK(1);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX)) {	// CONFIG_WRITE_INDEX
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX)) {	// CONFIG_WRITE_INDEX
 		/*
 		 * Message description:
 		 *             Sender__ Receiver        Channel ConfigData: Register:BytePairs
@@ -774,7 +781,7 @@ void AS::recvMessage(void) {
 
 		checkSendACK(1);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_SERIAL_REQ)) {	// CONFIG_SERIAL_REQ
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_SERIAL_REQ)) {	// CONFIG_SERIAL_REQ
 		/*
 		 * Message description:
 		 *             Sender__ Receiver
@@ -782,7 +789,7 @@ void AS::recvMessage(void) {
 		 */
 		sendINFO_SERIAL();																				// jump to create the answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {	// PAIR_SERIAL
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {	// PAIR_SERIAL
 		/*
 		 * Message description:
 		 *             Sender__ Receiver       SerialNumber
@@ -794,7 +801,7 @@ void AS::recvMessage(void) {
 			sendDEVICE_INFO();
 		}
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) { // CONFIG_STATUS_REQUEST
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) { 		// CONFIG_STATUS_REQUEST
 		/*
 		 * Message description:
 		 *             Sender__ Receiver Channel
@@ -808,7 +815,7 @@ void AS::recvMessage(void) {
 			sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);	
 		}
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK)) {			// ACK
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_ACK)) {				// ACK
 		/*
 		 * Message description:
 		 *             Sender__ Receiver ACK
@@ -816,11 +823,11 @@ void AS::recvMessage(void) {
 		 */
 	
 		if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt)) {
-			sn.retrCnt = 0xFF;																					// was an ACK to an active message, message counter is similar - set retrCnt to 255
+			sn.retrCnt = 0xFF;																						// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		}
 		//dbg << "act:" << sn.active << " rC:" << rv.mBdy.mLen << " sC:" << sn.lastMsgCnt << " cntr:" << sn.retrCnt << '\n';
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK_STATUS)) {	// ACK_STATUS
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_ACK_STATUS)) {			// ACK_STATUS
 		/*
 		 * Message description:
 		 *             Sender__ Receiver ACK Channel State Action RSSI
@@ -830,39 +837,22 @@ void AS::recvMessage(void) {
 		 */
 	
 		if ((sn.active) && (rv.mBdy.mLen == sn.lastMsgCnt)) {
-			sn.retrCnt = 0xFF;																					// was an ACK to an active message, message counter is similar - set retrCnt to 255
+			sn.retrCnt = 0xFF;																						// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		}
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_ACK2)) {			// ACK2
-		// TODO: Make ready
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_AES_CHALLANGE)) {// ACK_PROC AES-Challenge
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_ACK2)) {					// ACK2
 		// TODO: Make ready
 
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE)) {			// ACK_PROC AES-Challenge
+		// TODO: Make ready
 
-		// --------------------------------------------------------------------
 		//Para1          => "02,4",
 		//Para2          => "06,4",
 		//Para3          => "10,4",
 		//Para4          => "14,2",}}, # remote?
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_NACK)) {			// NACK
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_NACK)) {					// NACK
 		// TODO: Make ready
-
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
 
 		// for test
 		//static uint8_t x2[2];
@@ -870,21 +860,21 @@ void AS::recvMessage(void) {
 		//x2[1] += 1;
 		//sendREMOTE(1, 1, x2);
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_TYPE_NACK_TARGET_INVALID)) {	// NACK_TARGET_INVALID
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_NACK_TARGET_INVALID)) {	// NACK_TARGET_INVALID
 		// TODO: Make ready
 
 	#ifdef SUPPORT_AES
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_RESPONSE_AES)) {											// AES Response
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE_AES)) {														// AES Response
 			/*
 			 * Message description:
 			 *             Sender__ Receiver AES-Response-Data
 			 * 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
 			 */
-			uint8_t pBuf[16];																					// We need a 16 bytes buffer
+			uint8_t pBuf[16];																						// We need a 16 bytes buffer
 			memcpy(pBuf, rv.buf+10, 16);
 
-			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {														// check the decrypted result of previous received message
-				if (hmKeyIndex > 2) {																			// hmKeyIndex > 2: we have the two key parts
+			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {															// check the decrypted result of previous received message
+				if (hmKeyIndex > 2) {																				// hmKeyIndex > 2: we have the two key parts
 					hmKeyIndex = 0;
 					// todo: here we must save the new key (newHmKey)
 					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
@@ -894,22 +884,22 @@ void AS::recvMessage(void) {
 				}
 			}
 
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_KEY_EXCHANGE)) {											// AES Key Exchange
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {														// AES Key Exchange
 			/*
 			 * Message description:
 			 *             Sender__ Receiver Decrypted Payload with one keypart
 			 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
 			 */
 
-			uint8_t pBuf[16];																					// We need a 16 bytes buffer
+			uint8_t pBuf[16];																						// We need a 16 bytes buffer
 			memcpy(pBuf, rv.buf+10, 16);
 
-			aes128_init(HMKEY, &ctx);																			// load HMKEY
-			aes128_dec(pBuf, &ctx);																				// decrypt payload width HMKEY first time
+			aes128_init(HMKEY, &ctx);																				// load HMKEY
+			aes128_dec(pBuf, &ctx);																					// decrypt payload width HMKEY first time
 
 			dbg << F("dec Buffer: ") << _HEX(pBuf, 16) << "\n";
 
-			if (pBuf[0] == 0x01) {																				// the decrypted data must start with 0x01
+			if (pBuf[0] == 0x01) {																					// the decrypted data must start with 0x01
 				hmKeyIndex = pBuf[1];
 				dbg << F("hmKeyIndex: ") << _HEXB(hmKeyIndex) << "\n";
 
@@ -919,7 +909,7 @@ void AS::recvMessage(void) {
 
 				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
 
-				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);													// remember this message
+				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);															// remember this message
 				sendSignRequest();
 
 			} else {
@@ -927,111 +917,84 @@ void AS::recvMessage(void) {
 			}
 	#endif
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x02)) {			// SET
-		// description --------------------------------------------------------
-		//                                      cnl  stat  ramp   dura
-		// l> 0E 5E B0 11 63 19 63 1F B7 4A 02  01   C8    00 00  00 00
-		// l> 0E 5E 80 02 1F B7 4A 63 19 63 01 01 C8 80 41 
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_ACTION) && (rv.mBdy.by10 == AS_ACTION_SET)) {							// SET
+		/*
+		 * Message description:
+		 *             Sender__ Receiver     channel state  ramp  duration
+		 * 0E 5E B0 11 63 19 63 1F B7 4A 02  01      C8     00 00 00 00
+		 */
 
 		if (modTbl[rv.mBdy.by11-1].cnl) {
 			modTbl[rv.mBdy.by11-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
 		}
-		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x03)) {			// STOP_CHANGE
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_ACTION) && (rv.mBdy.by10 == AS_ACTION_STOP_CHANGE)) {						// STOP_CHANGE
+		// TODO: Make ready
 
-		// --------------------------------------------------------------------
-
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x04) && (rv.mBdy.by11 == 0x00)) {	// RESET
-		// description --------------------------------------------------------
-		//
-		// l> 0B 1C B0 11 63 19 63 1F B7 4A 04 00 (234116)
-		// l> 0E 1C 80 02 1F B7 4A 63 19 63 01 01 00 80 14 (234243)
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_ACTION) && (rv.mBdy.by10 == AS_ACTION_RESET) && (rv.mBdy.by11 == 0x00)) {	// RESET
+		/*
+		 * Message description:
+		 *             Sender__ Receiver
+		 * 0B 1C B0 11 63 19 63 1F B7 4A 04 00
+		 */
 
 		ee.clearPeers();
 		ee.clearRegs();
 		ee.getMasterID();
 		ld.set(defect);
 
-		uint8_t xI = ee.getRegListIdx(1,3);
 		if (rv.ackRq) {
-			if (xI == 0xFF) {
+			if (ee.getRegListIdx(1,3) == 0xFF) {
 				sendACK();
 			} else {
 				sendACK_STATUS(0, 0, 0);
 			}
 		}
-		// --------------------------------------------------------------------
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x80)) {				// LED
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_ACTION) && (rv.mBdy.by10 == AS_ACTION_LED)) {								// LED
+		// TODO: Make ready
 
-		// --------------------------------------------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_ACTION) && (rv.mBdy.by10 == AS_ACTION_LEDALL) && (rv.mBdy.by11 == 0x00)) {	// LEDALL
+		// TODO: Make ready
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x81) && (rv.mBdy.by11 == 0x00)) {	// LEDALL
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_ACTION) && (rv.mBdy.by10 == AS_ACTION_LEVEL)) {								// LEVEL
+		// TODO: Make ready
 
-		// --------------------------------------------------------------------
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_ACTION) && (rv.mBdy.by10 == AS_ACTION_SLEEPMODE)) {							// SLEEPMODE
+		// TODO: Make ready
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x81)) {				// LEVEL
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
+	} else if  (rv.mBdy.mTyp == AS_MESSAGE_HAVE_DATA) {																	// HAVE_DATA
+		// TODO: Make ready
 
-		// --------------------------------------------------------------------
-
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SET) && (rv.mBdy.by10 == 0x82)) {				// SLEEPMODE
-		// description --------------------------------------------------------
-		//
-		// b>
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-
-
-	} else if  (rv.mBdy.mTyp == AS_MESSAGE_TYPE_HAVE_DATA) {									// HAVE_DATA
-		// description --------------------------------------------------------
-		//
-		// b> 
-		// do something with the information ----------------------------------
-
-		// --------------------------------------------------------------------
-
-	} else if  (rv.mBdy.mTyp >= 0x3E) {															// 3E SWITCH, 3F TIMESTAMP, 40 REMOTE, 41 SENSOR_EVENT, 53 SENSOR_DATA, 58 CLIMATE_EVENT, 70 WEATHER_EVENT
-		// description --------------------------------------------------------
-		//                 from      to        cnl  cnt
-		// p> 0B 2D B4 40  23 70 D8  01 02 05  06   05 - Remote
-		// do something with the information ----------------------------------
-
-		//                 from      to        dst       na  cnl  cnt
-		// m> 0F 18 B0 3E  FD 24 BE  01 02 05  23 70 D8  40  06   00 - Switch
-		//"3E"          => { txt => "SWITCH"      , params => {
-		//				DST      => "00,6",
-		//				UNKNOWN  => "06,2",
-		//				CHANNEL  => "08,2",
-		//				COUNTER  => "10,2", } },
+	} else if  (rv.mBdy.mTyp >= AS_MESSAGE_SWITCH_EVENT) {
+		/*
+		 * used by message type 3E (SWITCH), 3F (TIMESTAMP), 40 (REMOTE), 41 (SENSOR_EVENT),
+		 *                      53 (SENSOR_DATA), 58 (CLIMATE_EVENT), 70 (WEATHER_EVENT)
+		 *
+		 * Message description:
+		 *                             Sender__ Receiver channel counter
+		 * Remote example: 0B 2D B4 40 23 70 D8 01 02 05 06      05
+		 *
+		 *                             Sender__ Receiver Destination na  channel counter
+		 * Switch example: 0F 18 B0 3E FD 24 BE 01 02 05 23 70 D8    40  06      00
+		 *
+		 * "3E"          => { txt => "SWITCH"      , params => {
+		 * 				DST      => "00,6",
+		 * 				UNKNOWN  => "06,2",
+		 * 				CHANNEL  => "08,2",
+		 * 				COUNTER  => "10,2", } },
+		 */
 
 		uint8_t cnl = 0, pIdx, tmp;
 		
 		// check if we have the peer in the database to get the channel
-		if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_SWITCH_EVENT) && (rv.mBdy.mLen == 0x0f)) {
+		if ((rv.mBdy.mTyp == AS_MESSAGE_SWITCH_EVENT) && (rv.mBdy.mLen == 0x0F)) {
 			tmp = rv.buf[13];																// save byte13, because we will replace it
 			rv.buf[13] = rv.buf[14];														// copy the channel byte to the peer
 			cnl = ee.isPeerValid(rv.buf+10);												// check with the right part of the string
-			if (cnl) pIdx = ee.getIdxByPeer(cnl, rv.buf+10);								// get the index of the respective peer in the channel store
+			if (cnl) {
+				pIdx = ee.getIdxByPeer(cnl, rv.buf+10);										// get the index of the respective peer in the channel store
+			}
 			rv.buf[13] = tmp;																// get it back
 
 		} else {
@@ -1039,6 +1002,7 @@ void AS::recvMessage(void) {
 			if (cnl) pIdx = ee.getIdxByPeer(cnl, rv.peerId);								// get the index of the respective peer in the channel store
 			
 		}
+
 		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rv.mBdy.mTyp) << " by10: " << _HEXB(rv.mBdy.by10)  << " by11: " << _HEXB(rv.mBdy.by11) << " data: " << _HEX((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
 		if (cnl == 0) return;
 		
@@ -1055,109 +1019,96 @@ void AS::recvMessage(void) {
 			sendACK();
 
 		}
-		// --------------------------------------------------------------------
 
 	}
 
 }
 
-// - send functions --------------------------------
+/**
+ * @brief Send the serial number of the device.
+ *
+ * Message description:
+ *             Sender__ Receiver    Serial number
+ * 14 77 80 10 1E 7A AD 63 19 63 00 4A 45 51 30 37 33 31 39 30 35
+ */
 void AS::sendINFO_SERIAL(void) {
-	// description --------------------------------------------------------
-	// l> 0B 77 A0 01 63 19 63 1E 7A AD 00 09
-	//                reID      toID     by10  serial
-	// l> 14 77 80 10 1E 7A AD  63 19 63 00    4A 45 51 30 37 33 31 39 30 35
-	// do something with the information ----------------------------------
-
 	sn.mBdy.mLen = 0x14;
-//	sn.mBdy.mCnt = rv.mBdy.mLen;
-//	sn.mBdy.mTyp = 0x10;
-//	memcpy(sn.mBdy.reID,HMID,3);
-//	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
 	sn.mBdy.by10 = 0x00;
 	memcpy(sn.buf+11, HMSR, 10);
-	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_TYPE_INFO, rv.mBdy.reID);
+	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_INFO, rv.mBdy.reID);
 }
 
-void AS::sendINFO_PEER_LIST(uint8_t len) {
-	// description --------------------------------------------------------
-	// l> 0B 44 A0 01 63 19 63 1F B7 4A 01 03
-	//                reID      toID     by10  peer1        peer2
-	// l> 1A 44 A0 10 1F B7 4A 63 19 63  01    22 66 08 02  22 66 08 01  22 66 08 04  22 66 08 03
-	//
-	// l> 0A 44 80 02 63 19 63 1F B7 4A 00
-	// l> 1A 45 A0 10 1F B7 4A 63 19 63 01 24 88 2D 01 24 88 2D 02 24 88 2D 03 24 88 2D 04
-	// l> 0A 45 80 02 63 19 63 1F B7 4A 00
-	// l> 1A 46 A0 10 1F B7 4A 63 19 63 01 23 70 D8 02 23 70 D8 01 23 70 D8 04 23 70 D8 03
-	// l> 0A 46 80 02 63 19 63 1F B7 4A 00
-	// l> 1A 47 A0 10 1F B7 4A 63 19 63 01 23 70 D8 06 23 70 D8 05 22 6C 12 02 22 6C 12 01
-	// l> 0A 47 80 02 63 19 63 1F B7 4A 00
-	// l> 1A 48 A0 10 1F B7 4A 63 19 63 01 23 70 EC 02 23 70 EC 01 23 70 EC 04 23 70 EC 03
-	// l> 0A 48 80 02 63 19 63 1F B7 4A 00
-	// l> 16 49 A0 10 1F B7 4A 63 19 63 01 23 70 EC 06 23 70 EC 05 00 00 00 00
-	// l> 0A 49 80 02 63 19 63 1F B7 4A 00
-	// do something with the information ----------------------------------
 
-	sn.mBdy.mLen = len + 10;
+/**
+ * @brief Send the peer list
+ *
+ * Message description:
+ *             Sender__ Receiver    peer1        peer2
+ * 1A 44 A0 10 1F B7 4A 63 19 63 01 22 66 08 02  22 66 08 01  22 66 08 04  22 66 08 03
+ *
+ * @param length
+ */
+void AS::sendINFO_PEER_LIST(uint8_t length) {
+	sn.mBdy.mLen = length + 10;
 //	sn.mBdy.mCnt = stcSlice.mCnt++;
 	sn.mBdy.mFlg.BIDI = 1;
 //	sn.mBdy.mTyp = 0x10;
 //	memcpy(sn.mBdy.reID, HMID, 3);
 //	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
 	sn.mBdy.by10 = 0x01;																	//stcSlice.cnl;
-	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_TYPE_INFO, stcSlice.toID);
+	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
 
-void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len) {
-	// description --------------------------------------------------------
-	// l> 10 79 B0 01 63 19 63 01 02 04 00 04 00 00 00 00 00
-	//                reID      toID      by10  reg  data  reg  data
-	// l> 16 79 A0 10 01 02 04  63 19 63  02    02   01    05   40 0A 63 0B 19 0C 63 12 69
-	//
-	// l> 0A 79 80 02 63 19 63 01 02 04 00
-	// l> 0C 7A A0 10 01 02 04 63 19 63 02 00 00
-	// l> 0A 7A 80 02 63 19 63 01 02 04 00
-	// do something with the information ----------------------------------
-
-	sn.mBdy.mLen = 10+len;
+/**
+ * @brief Send the peer list
+ *
+ * Message description:
+ *             Sender__ Receiver byte10 reg data reg data
+ * 16 79 A0 10 01 02 04 63 19 63 02     02  01   05  40 0A 63 0B 19 0C 63 12 69
+ *
+ * @param length
+ */
+void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
+	sn.mBdy.mLen = length + 10;
 //	sn.mBdy.mCnt = stcSlice.mCnt++;
 	sn.mBdy.mFlg.BIDI = 1;
 //	sn.mBdy.mTyp = 0x10;
 //	memcpy(sn.mBdy.reID, HMID, 3);
 //	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
-	sn.mBdy.by10 = (len < 3) ? 0x03 : 0x02;
-	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_TYPE_INFO, stcSlice.toID);
+	sn.mBdy.by10 = (length < 3) ? 0x03 : 0x02;
+	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
 
 /**
- * Set message type, sender and receiver address
- * and set sn.active, so the message should send next time
+ * @brief Set message type, sender and receiver address
+ *        and set sn.active, so the message should send next time
+ *
+ * @param mCounter the message counter
+ * @param mType    the message tyüe
+ * @param addrTo   pointer to receiver address
  */
-void AS::prepareToSend(uint8_t mCnt, uint8_t mTyp, uint8_t *addrTo) {
-	sn.mBdy.mCnt = mCnt;
-	sn.mBdy.mTyp = mTyp;
+void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
+	sn.mBdy.mCnt = mCounter;
+	sn.mBdy.mTyp = mType;
 	memcpy(sn.mBdy.reID, HMID, 3);
-	memcpy(sn.mBdy.toID, addrTo, 3);
+	memcpy(sn.mBdy.toID, receiverAddr, 3);
 	sn.active = 1;																			// remember to fire the message
 }
 
-void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
-	// description --------------------------------------------------------
-	// l> 10 90 A0 01 63 19 63 01 02 04 01 04 24 88 2D 03 03
-	//                reID      toID      by10  Offset  Data
-	// l> 16 90 A0 10 01 02 04  63 19 63  03    02      00 00 32 64 00 FF 00 FF 01 13 33
-	//
-	// l> 0A 90 80 02 63 19 63 01 02 04 00
-	// l> 16 91 A0 10 01 02 04 63 19 63 03 82 00 00 32 64 00 FF 00 FF 21 13 33
-	// l> 0A 91 80 02 63 19 63 01 02 04 00
-	// l> 0C 92 A0 10 01 02 04 63 19 63 03 00 00
-	// l> 0A 92 80 02 63 19 63 01 02 04 00
-	// do something with the information ----------------------------------
 
-	// --------------------------------------------------------------------
+void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
+	/*
+	 * TODO: make ready
+	 *
+	 * Message description:
+	 *             Sender__ Receiver byte10 Offset  Data
+	 * 16 90 A0 10 01 02 04 63 19 63 03     02      00 00 32 64 00 FF 00 FF 01 13 33
+	 */
 }
 
 void AS::sendINFO_PARAMETER_CHANGE(void) {
+	// TODO: make ready
+
 	//"10;p01=04"   => { txt => "INFO_PARAMETER_CHANGE", params => {
 	//CHANNEL => "2,2",
 	//PEER    => '4,8,$val=CUL_HM_id2Name($val)',
@@ -1167,6 +1118,13 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 }
 
 // - homematic specific functions ------------------
+
+/**
+ * @brief Decode the incoming messages
+ *        Note: this is no encryption!
+ *
+ * @param buf   pointer to buffer
+ */
 void AS::decode(uint8_t *buf) {
 	uint8_t prev = buf[1];
 	buf[1] = (~buf[1]) ^ 0x89;
@@ -1181,6 +1139,12 @@ void AS::decode(uint8_t *buf) {
 	buf[i] ^= buf[2];
 }
 
+/**
+ * @brief Encode the outgoing messages
+ *        Note: this is no encryption!
+ *
+ * @param buf   pointer to buffer
+ */
 void AS::encode(uint8_t *buf) {
 	buf[1] = (~buf[1]) ^ 0x89;
 	uint8_t buf2 = buf[2];
@@ -1196,137 +1160,143 @@ void AS::encode(uint8_t *buf) {
 }
 
 #ifdef RV_DBG_EX																			// only if extended AS debug is set
+	/**
+	 * @brief Debuging: Explain the Messages
+	 *
+	 * @param buf   pointer to buffer
+	 */
 	void AS::explainMessage(uint8_t *buf) {
 		dbg << F("   ");																	// save some byte and send 3 blanks once, instead of having it in every if
 
-		if        ((buf[3] == 0x00)) {
+		if        ((buf[3] == AS_MESSAGE_DEVINFO)) {
 			dbg << F("DEVICE_INFO; fw: ") << _HEX((buf+10),1) << F(", type: ") << _HEX((buf+11),2) << F(", serial: ") << _HEX((buf+13),10) << '\n';
 			dbg << F("              , class: ") << _HEXB(buf[23]) << F(", pCnlA: ") << _HEXB(buf[24]) << F(", pCnlB: ") << _HEXB(buf[25]) << F(", na: ") << _HEXB(buf[26]);
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x01)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PEER_ADD)) {
 			dbg << F("CONFIG_PEER_ADD; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x02)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PEER_REMOVE)) {
 			dbg << F("CONFIG_PEER_REMOVE; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x03)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PEER_LIST_REQ)) {
 			dbg << F("CONFIG_PEER_LIST_REQ; cnl: ") << _HEXB(buf[10]);
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x04)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PARAM_REQ)) {
 			dbg << F("CONFIG_PARAM_REQ; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x05)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_START)) {
 			dbg << F("CONFIG_START; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x06)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_END)) {
 			dbg << F("CONFIG_END; cnl: ") << _HEXB(buf[10]);
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x08)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_WRITE_INDEX)) {
 			dbg << F("CONFIG_WRITE_INDEX; cnl: ") << _HEXB(buf[10]) << F(", data: ") << _HEX((buf+12),(buf[0]-11));
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x09)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_SERIAL_REQ)) {
 			dbg << F("CONFIG_SERIAL_REQ");
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x0A)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PAIR_SERIAL)) {
 			dbg << F("PAIR_SERIAL, serial: ") << _HEX((buf+12),10);
 
-		} else if ((buf[3] == 0x01) && (buf[11] == 0x0E)) {
+		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_STATUS_REQUEST)) {
 			dbg << F("CONFIG_STATUS_REQUEST, cnl: ") << _HEXB(buf[10]);
 
-		} else if ((buf[3] == 0x02) && (buf[10] == 0x00)) {
+		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_ACK)) {
 			if (buf[0] == 0x0A) dbg << F("ACK");
 			else dbg << F("ACK; data: ") << _HEX((buf+11),buf[0]-10);
 
-		} else if ((buf[3] == 0x02) && (buf[10] == 0x01)) {
+		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_ACK_STATUS)) {
 			dbg << F("ACK_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", down/up/loBat: ") << _HEXB(buf[13]);
 			if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
 
-		} else if ((buf[3] == 0x02) && (buf[10] == 0x02)) {
+		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_ACK2)) {
 			dbg << F("ACK2");
 
-		} else if ((buf[3] == 0x02) && (buf[10] == 0x04)) {
-			dbg << F("ACK_PROC; para1: ") << _HEX((buf+11),2) << F(", para2: ") << _HEX((buf+13),2) << F(", para3: ") << _HEX((buf+15),2) << F(", para4: ") << _HEXB(buf[17]);
+		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_AES_CHALLANGE)) {
+			dbg << F("REQUEST_AES_RESPONSE, challange: ") << _HEX((buf+11),6);
 
-		} else if ((buf[3] == 0x02) && (buf[10] == 0x80)) {
+		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_NACK)) {
 			dbg << F("NACK");
 
-		} else if ((buf[3] == 0x02) && (buf[10] == 0x84)) {
+		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_NACK_TARGET_INVALID)) {
 			dbg << F("NACK_TARGET_INVALID");
 
-		} else if ((buf[3] == 0x03)) {
-			dbg << F("AES_REPLY; data: ") << _HEX((buf+10),buf[0]-9);
+		} else if ((buf[3] == AS_MESSAGE_RESPONSE_AES)) {
+			dbg << F("RESPONSE_AES; data: ") << _HEX((buf+10),buf[0]-9);
 
-		} else if ((buf[3] == 0x04) && (buf[10] == 0x01)) {
+		} else if ((buf[3] == AS_MESSAGE_KEY_EXCHANGE) && (buf[10] == 0x01)) {
+			// TODO: check if byte 10 must be 0x01; the doc says byte 10 must 0x00
 			dbg << F("TO_HMLAN:SEND_AES_CODE; cnl: ") << _HEXB(buf[11]);
 
-		} else if ((buf[3] == 0x04)) {
-			dbg << F("TO_ACTOR:SEND_AES_CODE; code: ") << _HEXB(buf[11]);
+		} else if ((buf[3] == AS_MESSAGE_KEY_EXCHANGE)) {
+			dbg << F("TO_ACTOR:KEY_EXCHANGE; encrypted data: ") << _HEX((buf+10), 16);
 
-		} else if ((buf[3] == 0x10) && (buf[10] == 0x00)) {
+		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_SERIAL)) {
 			dbg << F("INFO_SERIAL; serial: ") << _HEX((buf+11),10);
 
-		} else if ((buf[3] == 0x10) && (buf[10] == 0x01)) {
+		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_PEER_LIST)) {
 			dbg << F("INFO_PEER_LIST; peer1: ") << _HEX((buf+11),4);
 			if (buf[0] >= 19) dbg << F(", peer2: ") << _HEX((buf+15),4);
 			if (buf[0] >= 23) dbg << F(", peer3: ") << _HEX((buf+19),4);
 			if (buf[0] >= 27) dbg << F(", peer4: ") << _HEX((buf+23),4);
 
-		} else if ((buf[3] == 0x10) && (buf[10] == 0x02)) {
+		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_PARAM_RESPONSE_PAIRS)) {
 			dbg << F("INFO_PARAM_RESPONSE_PAIRS; data: ") << _HEX((buf+11),buf[0]-10);
 
-		} else if ((buf[3] == 0x10) && (buf[10] == 0x03)) {
+		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_PARAM_RESPONSE_SEQ)) {
 			dbg << F("INFO_PARAM_RESPONSE_SEQ; offset: ") << _HEXB(buf[11]) << F(", data: ") << _HEX((buf+12),buf[0]-11);
 
-		} else if ((buf[3] == 0x10) && (buf[10] == 0x04)) {
+		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_PARAMETER_CHANGE)) {
 			dbg << F("INFO_PARAMETER_CHANGE; cnl: ") << _HEXB(buf[11]) << F(", peer: ") << _HEX((buf+12),4) << F(", pLst: ") << _HEXB(buf[16]) << F(", data: ") << _HEX((buf+17),buf[0]-16);
 
-		} else if ((buf[3] == 0x10) && (buf[10] == 0x06)) {
+		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_ACTUATOR_STATUS)) {
 			dbg << F("INFO_ACTUATOR_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", na: ") << _HEXB(buf[13]);
 			if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
 
-		} else if ((buf[3] == 0x11) && (buf[10] == 0x02)) {
+		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_SET)) {
 			dbg << F("SET; cnl: ") << _HEXB(buf[11]) << F(", value: ") << _HEXB(buf[12]) << F(", rampTime: ") << _HEX((buf+13),2) << F(", duration: ") << _HEX((buf+15),2);
 
-		} else if ((buf[3] == 0x11) && (buf[10] == 0x03)) {
+		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_STOP_CHANGE)) {
 			dbg << F("STOP_CHANGE; cnl: ") << _HEXB(buf[11]);
 
-		} else if ((buf[3] == 0x11) && (buf[10] == 0x04) && (buf[11] == 0x00)) {
+		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_RESET) && (buf[11] == 0x00)) {
 			dbg << F("RESET");
 
-		} else if ((buf[3] == 0x11) && (buf[10] == 0x80)) {
+		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_LED)) {
 			dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", color: ") << _HEXB(buf[12]);
 
-		} else if ((buf[3] == 0x11) && (buf[10] == 0x81) && (buf[11] == 0x00)) {
+		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_LEDALL) && (buf[11] == 0x00)) {
 			dbg << F("LED_ALL; Led1To16: ") << _HEX((buf+12),4);
 
-		} else if ((buf[3] == 0x11) && (buf[10] == 0x81)) {
+		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_LEVEL)) {
 			dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", time: ") << _HEXB(buf[12]) << F(", speed: ") << _HEXB(buf[13]);
 
-		} else if ((buf[3] == 0x11) && (buf[10] == 0x82)) {
+		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_SLEEPMODE)) {
 			dbg << F("SLEEPMODE; cnl: ") << _HEXB(buf[11]) << F(", mode: ") << _HEXB(buf[12]);
 
-		} else if ((buf[3] == 0x12)) {
+		} else if ((buf[3] == AS_MESSAGE_HAVE_DATA)) {
 			dbg << F("HAVE_DATA");
 
-		} else if ((buf[3] == 0x3E)) {
+		} else if ((buf[3] == AS_MESSAGE_SWITCH_EVENT)) {
 			dbg << F("SWITCH; dst: ") << _HEX((buf+10),3) << F(", na: ") << _HEXB(buf[13]) << F(", cnl: ") << _HEXB(buf[14]) << F(", counter: ") << _HEXB(buf[15]);
 
-		} else if ((buf[3] == 0x3F)) {
+		} else if ((buf[3] == AS_MESSAGE_TIMESTAMP)) {
 			dbg << F("TIMESTAMP; na: ") << _HEX((buf+10),2) << F(", time: ") << _HEX((buf+12),2);
 
-		} else if ((buf[3] == 0x40)) {
+		} else if ((buf[3] == AS_MESSAGE_REMOTE_EVENT)) {
 			dbg << F("REMOTE; button: ") << _HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", counter: ") << _HEXB(buf[11]);
 
-		} else if ((buf[3] == 0x41)) {
+		} else if ((buf[3] == AS_MESSAGE_SENSOR_EVENT)) {
 			dbg << F("SENSOR_EVENT; button: ") <<_HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", value: ") << _HEXB(buf[11]) << F(", next: ") << _HEXB(buf[12]);
 
-		} else if ((buf[3] == 0x53)) {
+		} else if ((buf[3] == AS_MESSAGE_SENSOR_DATA)) {
 			dbg << F("SENSOR_DATA; cmd: ") << _HEXB(buf[10]) << F(", fld1: ") << _HEXB(buf[11]) << F(", val1: ") << _HEX((buf+12),2) << F(", fld2: ") << _HEXB(buf[14]) << F(", val2: ") << _HEX((buf+15),2) << F(", fld3: ") << _HEXB(buf[17]) << F(", val3: ") << _HEX((buf+18),2) << F(", fld4: ") << _HEXB(buf[20]) << F(", val4: ") << _HEX((buf+21),2);
 
-		} else if ((buf[3] == 0x58)) {
+		} else if ((buf[3] == AS_MESSAGE_CLIMATE_EVENT)) {
 			dbg << F("CLIMATE_EVENT; cmd: ") << _HEXB(buf[10]) << F(", valvePos: ") << _HEXB(buf[11]);
 
-		} else if ((buf[3] == 0x70)) {
+		} else if ((buf[3] == AS_MESSAGE_WEATHER_EVENT)) {
 			dbg << F("WEATHER_EVENT; temp: ") << _HEX((buf+10),2) << F(", hum: ") << _HEXB(buf[12]);
 
 		} else {
@@ -1339,29 +1309,38 @@ void AS::encode(uint8_t *buf) {
 // - AES Signing related methods -------------------
 
 #ifdef SUPPORT_AES
+	/**
+	 * @brief Send sign request to receiver
+	 *
+	 * Message description:
+	 *             Sender__ Receiver SigningRequest Challenge
+	 * 11 24 80 02 1F B7 4A 63 19 63 04             XX XX XX XX XX XX 00
+	 */
 	void AS::sendSignRequest(void) {
-		// description --------------------------------------------------------
-		//                reID      toID      SigningRequest Challange
-		// l> 11 24 80 02 1F B7 4A  63 19 63  04             XX XX XX XX XX XX 00
-
 		sn.mBdy.mLen = 0x11;
 		sn.mBdy.mCnt = rv.mBdy.mCnt;
 		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
-		sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE;
+		sn.mBdy.mTyp = AS_MESSAGE_RESPONSE;
 		memcpy(sn.mBdy.reID, HMID, 3);
 		memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-		sn.mBdy.by10 = AS_RESPONSE_TYPE_AES_CHALLANGE;								// AES Challenge
+		sn.mBdy.by10 = AS_RESPONSE_AES_CHALLANGE;											// AES Challenge
 
-		uint8_t pBuf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};				// we need 7 bytes
-		getRandomBytes(pBuf, 6);													// but only 6 bytes becomes random data
-		memcpy(sn.buf+11, pBuf, 7);													// the 7th byte must be 0x00
+		uint8_t pBuf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};						// we need 7 bytes
+		getRandomBytes(pBuf, 6);															// but only 6 bytes becomes random data
+		memcpy(sn.buf+11, pBuf, 7);															// the 7th byte must be 0x00
 
-		makeTmpKey(pBuf);															// here we make the temporarly key with the challange and the old known hm key
+		makeTmpKey(pBuf);																	// here we make the temporarly key with the challange and the old known hm key
 
 		dbg << F(">>> signingRequestData  : ") << _HEX(sn.buf+10, 7) << F(" <<<") << "\n";
-		sn.active = 1;																			// fire the message
+		sn.active = 1;																		// fire the message
 	}
 
+	/**
+	 * @brief Make a temporarily key for encrypting the sign response.
+	 *        The temporarily key was built by XORing the key with the challenge
+	 *
+	 * @param challenge   pointer to the challenge
+	 */
 	void AS::makeTmpKey(uint8_t *challenge) {
 		memcpy(this->tempHmKey, HMKEY, 16);
 
@@ -1371,6 +1350,13 @@ void AS::encode(uint8_t *buf) {
 		aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
 	}
 
+	/**
+	 * @brief Encrypt the payload
+	 *        The temporarily key was built by XORing the key with the challenge
+	 *
+	 * @param encPayload   pointer to the buffer stored the final encrypted payload
+	 * @param msgToEnc     pointer to the message should encrypted
+	 */
 	void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
 		uint8_t iv[16] = {															// initial vector
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1388,11 +1374,17 @@ void AS::encode(uint8_t *buf) {
 		memcpy(encPayload+6, msgToEnc+1, ((msgToEnc[0] < 10) ? 9 : 10) );			// build payload to encrypt
 		memcpy(iv, msgToEnc+11, msgToEnc[0]-10);									// build initial vector
 
-		aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey first time
+		aes128_enc(encPayload, &ctx);												// encrypt payload width the temporarily key first time
 		for (uint8_t i = 0; i < 16; i++)	encPayload[i] ^= iv[i];					// xor encrypted payload with iv
-		aes128_enc(encPayload, &ctx);												// encrypt payload width tmpKey again
+		aes128_enc(encPayload, &ctx);												// encrypt payload width the temporarily key again
 	}
 
+	/**
+	 * @brief Decrypt payload and compare the result to the previous original message
+	 *
+	 * @param data         pointer encrypted data
+	 * @param msgOriginal  pointer to the saved previous original message
+	 */
 	uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
 		uint8_t authAck[4];
 		uint8_t iv[16] = {															// initial vector
@@ -1401,25 +1393,13 @@ void AS::encode(uint8_t *buf) {
 		};
 
 		memcpy(iv, msgOriginal+11, msgOriginal[0]-10);								// build initial vector
-	//	dbg << F(">>> key   : ") << _HEX(HMKEY, 16) << F(" <<<") << "\n";
-	//	dbg << F(">>> keyTmp: ") << _HEX(tempHmKey, 16) << F(" <<<") << "\n";
-	//	dbg << F(">>> iv    : ") << _HEX(iv, 16) << F(" <<<") << "\n";
-
-		aes128_dec(data, &ctx);														// decrypt payload width tmpKey first time
-//		dbg << F(">>> plDec : ") << _HEX(data, 16) << F(" <<<") << "\n";
+		aes128_dec(data, &ctx);														// decrypt payload the temporarily key first time
 
 		for (uint8_t i = 0; i < 16; i++) data[i] ^= iv[i];							// xor encrypted payload with iv
-//		dbg << F(">>> plDec^: ") << _HEX(data, 16) << F(" <<<") << "\n";
 
 		memcpy(authAck, data, 4);													// build auth ACK
-//		dbg << F(">>> ack   : ") << _HEX(authAck, 4) << F(" <<<") << "\n";
-
-		aes128_dec(data, &ctx);														// decrypt payload width tmpKey again
-
-//		dbg << F(">>> plD^D: ") << _HEX(data, 6) << " | "<< _HEX(data+6, 10) << F(" <<<") << "\n";
-
-//		dbg << F("Check AES Response ...\n");
-		dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
+		aes128_dec(data, &ctx);														// decrypt payload the temporarily key first time
+//		dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
 
 		// memcmp returns 0 if compare true
 		 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
@@ -1431,27 +1411,29 @@ void AS::encode(uint8_t *buf) {
 		 }
 	}
 
+	/**
+	 * @brief Send sign response to the receiver
+	 */
 	void AS::sendSignResponse(void) {
-		sn.mBdy.mLen = 0x19;
-		sn.mBdy.mCnt = rv.mBdy.mLen;
-		sn.mBdy.mTyp = AS_MESSAGE_TYPE_RESPONSE_AES;
-		memcpy(sn.mBdy.reID,HMID,3);
-		memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-
+		uint8_t payload[16];
 		uint8_t challenge[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};				// challenge
+
 		memcpy(challenge, rv.mBdy.pyLd, 6);											// get challenge
 		this->makeTmpKey(challenge);
+		this->payloadEncrypt(payload, sn.msgPartToSign);
 
-		uint8_t payload[16];
-	//	this->payloadEncrypt(payload, sn.msgPartToSign);
-
+		sn.mBdy.mLen = 0x19;
 		sn.mBdy.by10 = payload[0];
 		memcpy(sn.buf+10, payload, 16);
-		sn.active = 1;																// fire the message
+
+		prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE_AES, rv.mBdy.reID);
 	}
 
 	/**
-	 * get number of random bytes
+	 * @brief Get number of random bytes
+	 *
+	 * @param buffer    pointer to buffer which filled with random data
+	 * @param length    how many random bytes should be generate
 	 */
 	void AS::getRandomBytes(uint8_t *buffer, uint8_t length) {
 		uint8_t i = 0;
@@ -1461,13 +1443,18 @@ void AS::encode(uint8_t *buf) {
 		}
 	}
 
+	/**
+	 * @brief Initialize the pseudo random number generator
+	 *        Take all bytes from uninitialized RAM and xor together
+	 */
 	void AS::initRandomSeed() {
-		uint16_t *p = (uint16_t*) (RAMEND+1);
+		uint16_t *p = (uint16_t*) (RAMEND + 1);
 		extern uint16_t __heap_start;
 		while (p >= &__heap_start + 1) {
 			this->randomSeed ^= * (--p);
 		}
 	}
+
 #endif
 
 // - some helpers ----------------------------------
@@ -1510,10 +1497,12 @@ uint32_t waitTimer::remain(void) {
 	return (checkTime - (getMillis() - startTime));
 }
 
+
 uint32_t byteTimeCvt(uint8_t tTime) {
 	const uint16_t c[8] = {1,10,50,100,600,3000,6000,36000};
 	return (uint32_t)(tTime & 0x1f) * c[tTime >> 5]*100;
 }
+
 
 uint32_t intTimeCvt(uint16_t iTime) {
 	if (iTime == 0) return 0;
