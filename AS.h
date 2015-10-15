@@ -163,7 +163,7 @@ class AS {
 
 	// - send functions --------------------------------
 	void sendDEVICE_INFO(void);
-	void sendAck(void);
+	void sendACK(void);
 	void sendPayload(uint8_t payloadType, uint8_t *data, uint8_t dataLen);
 	void sendAckAES(uint8_t *data);
 	void sendACK_STATUS(uint8_t cnl, uint8_t stat, uint8_t dul);

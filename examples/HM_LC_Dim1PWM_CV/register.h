@@ -1,8 +1,8 @@
 
 //- ----------------------------------------------------------------------------------------------------------------------
 //- load libraries -------------------------------------------------------------------------------------------------------
-#include <AS.h>																				// the asksin framework
-#include "hardware.h"																		// hardware definition
+#include <AS.h>                                                         // the asksin framework
+#include "hardware.h"                                                   // hardware definition
 #include <cmDimmer.h>
 
 //- stage modules --------------------------------------------------------------------------------------------------------

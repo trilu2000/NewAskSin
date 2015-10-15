@@ -147,7 +147,7 @@ void AS::sendDEVICE_INFO(void) {
 	ld.set(pairing);																		// and visualize the status
 }
 
-void AS::sendAck(void) {
+void AS::sendACK(void) {
 	// description --------------------------------------------------------
 	//                reID      toID      ACK
 	// l> 0A 24 80 02 1F B7 4A  63 19 63  00
@@ -595,7 +595,7 @@ void AS::recvMessage(void) {
 			modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
 		}
 
-		if ((ret) && (rv.ackRq)) sendAck();													// send appropriate answer
+		if ((ret) && (rv.ackRq)) sendACK();													// send appropriate answer
 		else if (rv.ackRq) sendNACK();
 		// --------------------------------------------------------------------
 
@@ -606,7 +606,7 @@ void AS::recvMessage(void) {
 		// do something with the information ----------------------------------
 	
 		uint8_t ret = ee.remPeer(rv.mBdy.by10,rv.buf+12);									// call the remPeer function
-		if (rv.ackRq) sendAck();															// send appropriate answer
+		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x03)) {		// CONFIG_PEER_LIST_REQ
@@ -669,7 +669,7 @@ void AS::recvMessage(void) {
 			
 		}
 	
-		if (rv.ackRq) sendAck();															// send appropriate answer
+		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x06)) {		// CONFIG_END
@@ -688,7 +688,7 @@ void AS::recvMessage(void) {
 			modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);										// inform the module of the change
 		}
 		
-		if (rv.ackRq) sendAck();															// send appropriate answer
+		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x08)) {		// CONFIG_WRITE_INDEX
@@ -717,7 +717,7 @@ void AS::recvMessage(void) {
 				
 			}
 		}
-		if (rv.ackRq) sendAck();															// send appropriate answer
+		if (rv.ackRq) sendACK();															// send appropriate answer
 		// --------------------------------------------------------------------
 
 	} else if ((rv.mBdy.mTyp == AS_MESSAGE_TYPE_CONFIG) && (rv.mBdy.by11 == 0x09)) {		// CONFIG_SERIAL_REQ
@@ -888,7 +888,7 @@ void AS::recvMessage(void) {
 
 		uint8_t xI = ee.getRegListIdx(1,3);
 		if (rv.ackRq) {
-			if (xI == 0xff) sendAck();
+			if (xI == 0xff) sendACK();
 			else sendACK_STATUS(0, 0, 0);
 		}
 		// --------------------------------------------------------------------
@@ -976,7 +976,7 @@ void AS::recvMessage(void) {
 			modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
 
 		} else {
-			sendAck();
+			sendACK();
 
 		}
 		// --------------------------------------------------------------------

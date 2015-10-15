@@ -322,7 +322,7 @@ void cmSwitch::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 		msgTmr.set(10);																			// wait a short time to set status
 
 	} else {
-		hm->sendAck();
+		hm->sendACK();
 
 	}
 }

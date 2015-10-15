@@ -61,7 +61,7 @@ void Dummy::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
 		hm->sendACK_STATUS(regCnl, modStat, modDUL);
 	} else {
-		hm->sendAck();
+		hm->sendACK();
 	}
 }
 
