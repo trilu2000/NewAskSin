@@ -20,8 +20,8 @@ SN::SN() {
 } 
 void SN::init(AS *ptrMain) {
 	#ifdef SN_DBG																			// only if ee debug is set
-		dbgStart();																			// serial setup
-		dbg << F("SN.\n");																	// ...and some information
+	dbgStart();																				// serial setup
+	dbg << F("SN.\n");																		// ...and some information
 	#endif
 
 	pHM = ptrMain;
@@ -55,7 +55,7 @@ void SN::poll(void) {
 			this->retrCnt = 0xff;															// ACK not required, because internal
 						
 			#ifdef SN_DBG																	// only if AS debug is set
-				dbg << F("<i ");
+			dbg << F("<i ");
 			#endif
 
 		} else {																			// send it external
@@ -72,7 +72,7 @@ void SN::poll(void) {
 			if (reqACK) sndTmr.set(maxTime);												// set the time out for the message
 			
 			#ifdef SN_DBG																	// only if AS debug is set
-				dbg << F("<- ");
+			dbg << F("<- ");
 			#endif
 
 		}
@@ -80,7 +80,7 @@ void SN::poll(void) {
 		if (!pHM->ld.active) pHM->ld.set(send);												// fire the status led
 		
 		#ifdef SN_DBG																		// only if AS debug is set
-			dbg << _HEX(this->buf,sndLen) << ' ' << _TIME << '\n';
+		dbg << _HEX(this->buf,sndLen) << ' ' << _TIME << '\n';
 		#endif
 
 	} else if ((this->retrCnt >= this->maxRetr) && (sndTmr.done() )) {						// max retries achieved, but seems to have no answer
@@ -94,7 +94,7 @@ void SN::poll(void) {
 		pHM->ld.set(noack);
 		
 		#ifdef SN_DBG																		// only if AS debug is set
-			dbg << F("  timed out") << ' ' << _TIME << '\n';
+		dbg << F("  timed out") << ' ' << _TIME << '\n';
 		#endif
 	}
 
