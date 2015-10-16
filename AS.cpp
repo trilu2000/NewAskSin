@@ -36,7 +36,10 @@ void AS::init(void) {
 		dbgStart();																			// serial setup
 		dbg << F("AS.\n");																	// ...and some information
 	#endif
-	
+
+	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
+	memcpy_P(HMSR, HMSerialData+4, 10);														// set HMSerial from pgmspace
+
 	initLeds();																				// initialize the leds
 	initConfKey();																			// initialize the port for getting config key interrupts
 
