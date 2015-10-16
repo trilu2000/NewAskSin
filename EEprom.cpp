@@ -126,7 +126,8 @@ void     EE::init(void) {
 	initEEProm();																		// init function if a i2c eeprom is used
 
 	// check for first time run by checking magic byte, if yes then prepare eeprom and set magic byte
-	uint16_t eepromCRC = 0, flashCRC = 0;												// define variable for storing crc
+	uint16_t eepromCRC = 0;																// eMagicByte in EEprom
+	uint16_t flashCRC = 0;																// define variable for storing crc
 	uint8_t  *p = (uint8_t*)cnlTbl;														// cast devDef to char
 
 	for (uint8_t i = 0; i < (devDef.lstNbr*6); i++) {									// step through all bytes of the channel table, one line has 6 byte
@@ -135,10 +136,10 @@ void     EE::init(void) {
 	getEEPromBlock(0,2,(void*)&eepromCRC);												// get magic byte from eeprom
 
 	#ifdef EE_DBG																		// only if ee debug is set
-	dbg << F("crc, flash: ") << flashCRC << F(", eeprom: ") << eepromCRC << '\n';		// ...and some information
+		dbg << F("crc, flash: ") << flashCRC << F(", eeprom: ") << eepromCRC << '\n';	// ...and some information
 	#endif
 
-	if(flashCRC!=eepromCRC) {															// first time detected, format eeprom, load defaults and write magic byte
+	if(flashCRC != eepromCRC) {															// first time detected, format eeprom, load defaults and write magicByte
 		// formating eeprom
 		clearPeers();
 		clearRegs();
@@ -147,14 +148,10 @@ void     EE::init(void) {
 		#ifdef EE_DBG																	// only if ee debug is set
 		dbg << F("writing magic byte\n");												// ...and some information
 		#endif
-		setEEPromBlock(0,2,(void*)&flashCRC);											// write magic byte to eeprom
+		setEEPromBlock(0, 2, (void*)&flashCRC);											// write eMagicByte to eeprom
 
 		firstTimeStart();																// function to be placed in register.h, to setup default values on first time start
 	}
-
-	// load HMID and serial from eeprom
-	if (*(uint16_t*)&HMID == NULL) getEEPromBlock(2, 3, HMID);							// check if HMID variable is set and valid, otherwise load from eeprom
-	if (*(uint16_t*)&HMSR == NULL) getEEPromBlock(5, 10, HMSR);
 	if (*(uint16_t*)&HMKEY == NULL) getEEPromBlock(15, 16, HMKEY);
 
 	// load the master id

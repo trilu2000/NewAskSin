@@ -52,9 +52,7 @@ void AS::init(void) {
 	
 	initMillis();																			// start the millis counter
 
-	#ifdef SUPPORT_AES
-		initRandomSeed();
-	#endif
+	initRandomSeed();
 
 	// everything is setuped, enable RF functionality
 	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
@@ -1460,23 +1458,23 @@ void AS::encode(uint8_t *buf) {
 			buffer[i] = rand() % 0xFF;
 		}
 	}
-
-	/**
-	 * @brief Initialize the pseudo random number generator
-	 *        Take all bytes from uninitialized RAM and xor together
-	 */
-	void AS::initRandomSeed() {
-		uint16_t *p = (uint16_t*) (RAMEND + 1);
-		extern uint16_t __heap_start;
-		while (p >= &__heap_start + 1) {
-			this->randomSeed ^= * (--p);
-		}
-	}
-
 #endif
+
 
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------
+
+/**
+ * @brief Initialize the pseudo random number generator
+ *        Take all bytes from uninitialized RAM and xor together
+ */
+void AS::initRandomSeed() {
+	uint16_t *p = (uint16_t*) (RAMEND + 1);
+	extern uint16_t __heap_start;
+	while (p >= &__heap_start + 1) {
+		this->randomSeed ^= * (--p);
+	}
+}
 
 /**
  * @brief Query if the timer has expired

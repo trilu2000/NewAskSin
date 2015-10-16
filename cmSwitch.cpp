@@ -25,7 +25,6 @@ void cmSwitch::config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t)) { //, u
 	curStat = nxtStat = 6;																	// set relay status to off
 	modStat = setStat = 0;
 	
-	srand((uint16_t)hm->ee.getHMID());
 	msgDelay = (rand()%2000)+1000;															// set message delay
 
 	// send the initial status info
