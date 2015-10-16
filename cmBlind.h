@@ -242,7 +242,11 @@ class cmBlind {
 	} *l3;
 	
 	void (*fInit)(uint8_t);																	// pointer to init function in main sketch
+<<<<<<< HEAD
 	void (*fSwitch)(uint8_t,uint8_t);														// pointer to switch function (PWM) in main sketch, first value is PWM level, second the characteristics
+=======
+	void (*fSwitch)(uint8_t, uint8_t);														// pointer to switch function (PWM) in main sketch, first value is PWM level, second the characteristics
+>>>>>>> origin/master
 	
 	uint8_t   sendStat :2;																	// is there a status to be send, 1 indicates an ACK, 2 a status message 
 	uint16_t  msgDelay;
@@ -267,7 +271,11 @@ class cmBlind {
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
 
+<<<<<<< HEAD
 	void     config(void Init(uint8_t), void Switch(uint8_t,uint8_t));						// configures the module, jump addresses, etc
+=======
+	void     config(void Init(uint8_t), void Switch(uint8_t, uint8_t));							// configures the module, jump addresses, etc
+>>>>>>> origin/master
 
 	void     trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime);				// messages coming from master
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);										// messages coming from switch
