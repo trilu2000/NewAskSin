@@ -43,6 +43,9 @@ void AS::init(void) {
 	initLeds();																				// initialize the leds
 	initConfKey();																			// initialize the port for getting config key interrupts
 
+	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
+	memcpy_P(HMSR, HMSerialData+3, 10);														// set HMSerial from pgmspace
+
 	ee.init();																				// eeprom init
 	cc.init();																				// init the rf module
 
@@ -59,6 +62,8 @@ void AS::init(void) {
 
 	// everything is setuped, enable RF functionality
 	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
+
+	dbg << "Init: HMKEY: " << _HEX(HMKEY, 16) << "\n";
 }
 
 void AS::poll(void) {
@@ -890,7 +895,8 @@ void AS::recvMessage(void) {
 			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {													// check the decrypted result of previous received message
 				if (hmKeyIndex > 2) {																		// hmKeyIndex > 2: we have the two key parts
 					hmKeyIndex = 0;
-					// todo: here we must save the new key (newHmKey)
+
+					EE:setEEPromBlock(15, 16, newHmKey);													// store new HMKEY to EEprom
 					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
 				} else {
 
@@ -1340,7 +1346,7 @@ void AS::encode(uint8_t *buf) {
 		uint8_t pBuf[]    = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};						// we need 7 bytes
 
 		sn.mBdy.mLen      = 0x11;
-		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
+//		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;										// AES Challenge
 
 		getRandomBytes(pBuf, 6);															// but only 6 bytes becomes random data

@@ -155,7 +155,11 @@ void     EE::init(void) {
 		firstTimeStart();																// function to be placed in register.h, to setup default values on first time start
 	}
 	
-	if (*(uint16_t*)&HMKEY == NULL) getEEPromBlock(15, 16, HMKEY);
+	getEEPromBlock(15, 16, HMKEY);														// get HMKEY from EEprom
+	if (HMKEY[0] == 0x00) {																// if HMKEY in EEPROM invalid
+		memcpy_P(HMKEY, HMSerialData+13, 16);											// get default HMKEY
+		EE:setEEPromBlock(15, 16, HMKEY);												// store default HMKEY to EEprom
+	}
 
 	// load the master id
 	getMasterID();
