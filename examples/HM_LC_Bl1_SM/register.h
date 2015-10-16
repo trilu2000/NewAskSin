@@ -15,19 +15,19 @@ extern void switchBlind(uint8_t channel, uint8_t status);               // decla
 //- eeprom defaults table ------------------------------------------------------------------------------------------------
 uint16_t EEMEM eMagicByte;
 uint8_t  EEMEM eHMID[3]  = {0xa5,0x29,0xb9,};
-uint8_t  EEMEM eHMSR[10] = {'X','M','S','2','3','4','5','6','7','8',};
+uint8_t  EEMEM eHMSR[10] = {'X','M','S','2','3','4','5','6','7','9',};
 uint8_t  EEMEM eHMKEY[16] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,};
 
 // if HMID and Serial are not set, then eeprom ones will be used
 uint8_t HMID[3] = {0xa5,0x29,0xb9,};
-uint8_t HMSR[10] = {'X','M','S','2','3','4','5','6','7','8',};          // XMS2345678
+uint8_t HMSR[10] = {'X','M','S','2','3','4','5','6','7','9',};          // XMS2345679
 uint8_t HMKEY[16] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,};
 
 //- ----------------------------------------------------------------------------------------------------------------------
 //- settings of HM device for AS class -----------------------------------------------------------------------------------
 const uint8_t devIdnt[] PROGMEM = {
-    /* Firmware version  1 byte */  0x11,                               // don't know for what it is good for
-    /* Model ID          2 byte */  0x0f,0x06,                          // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0
+    /* Firmware version  1 byte */  0x25,                               // don't know for what it is good for
+    /* Model ID          2 byte */  0x00,0x05,                          // model ID, describes HM hardware. Own devices should use high values due to HM starts from 0
     /* Sub Type ID       1 byte */  0x30,                               // not needed for FHEM, it's something like a group ID
     /* Device Info       3 byte */  0x01,0x01,0x00,                     // describes device, not completely clear yet. includes amount of channels
 };  // 7 byte

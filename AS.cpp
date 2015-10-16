@@ -6,8 +6,8 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define AS_DBG
-//#define RV_DBG_EX
+#define AS_DBG
+#define RV_DBG_EX
 
 #include "AS.h"
 

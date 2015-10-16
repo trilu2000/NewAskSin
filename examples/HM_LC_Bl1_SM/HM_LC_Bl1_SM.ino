@@ -75,9 +75,9 @@ void initBlind(uint8_t channel) {
 	TCCR2A |= 1<<COM2B1;
 
 }
-void switchBlind(uint8_t channel, uint8_t status, uint8_t characteristic) {
+void switchBlind(uint8_t channel, uint8_t status) {
 	#ifdef SER_DBG
-		dbg << F("switchDim: ") << channel << ", " << status << ", " << characteristic << "\n";
+		dbg << F("switchDim: ") << channel << ", " << status << "\n";
 	#endif
 
 	uint16_t x = status*255;
