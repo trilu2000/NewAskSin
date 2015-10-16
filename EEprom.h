@@ -253,6 +253,15 @@ extern EE::s_devDef devDef;																// initial register.h
 extern uint8_t MAID[];
 
 /**
+ * @brief Global definition of device HMSerialData. Must be declared in user space.
+ *
+ * The HMSerialData holds the default HMID, HMSerial and HMKEY.
+ * At every start, values of HMID and HMSerial was copied to related variables.
+ * The HKEY was only copied at initial sketch start in the EEprom
+ */
+extern const uint8_t HMSerialData[] PROGMEM;
+
+/**
  * @brief Global definition of device HM-ID. Must be declared in user space.
  *
  * The HM-ID is a network-wide unique ID that is preassigned to each individual device along with
@@ -274,7 +283,7 @@ extern uint8_t HMID[];
 extern uint8_t HMSR[];
 
 /**
- * @brief Global definition of device AES key. Must be declared in user space.
+ * @brief Global definition of device AES key.
  *
  */
 extern uint8_t HMKEY[];

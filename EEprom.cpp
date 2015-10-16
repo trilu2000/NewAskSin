@@ -10,7 +10,9 @@
 #include "EEprom.h"
 
 uint8_t MAID[3];
-
+uint8_t HMID[3];
+uint8_t HMSR[10];
+uint8_t HMKEY[16];
 
 // public:		//---------------------------------------------------------------------------------------------------------
 uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
@@ -152,7 +154,12 @@ void     EE::init(void) {
 
 		firstTimeStart();																// function to be placed in register.h, to setup default values on first time start
 	}
-	if (*(uint16_t*)&HMKEY == NULL) getEEPromBlock(15, 16, HMKEY);
+
+	getEEPromBlock(15, 16, HMKEY);														// get HMKEY from EEprom
+	if (HMKEY[0] == 0x00) {																// if HMKEY in EEPROM invalid
+		memcpy_P(HMKEY, HMSerialData+13, 16);											// get default HMKEY
+		EE:setEEPromBlock(15, 16, HMKEY);												// store default HMKEY to EEprom
+	}
 
 	// load the master id
 	getMasterID();

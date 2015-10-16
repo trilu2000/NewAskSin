@@ -39,3 +39,4 @@ __vm/
 *.sln
 *.vcxproj
 *.filters
+~$*.docx
