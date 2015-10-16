@@ -9,6 +9,8 @@
 //#define AS_DBG
 //#define RV_DBG_EX
 
+#define AES_DBG
+
 #define SUPPORT_AES
 
 #include "AS.h"
@@ -26,6 +28,9 @@ waitTimer pairTmr;																			// pair timer functionality
 AS::AS() {
 }
 
+/**
+ * @brief Initialize the AskSin Module
+ */
 void AS::init(void) {
 	#ifdef AS_DBG																			// only if cc debug is set
 		dbgStart();																			// serial setup
@@ -683,7 +688,7 @@ void AS::recvMessage(void) {
 		 * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
 		 */
 
-		dbg << "CONFIG_PARAM_REQ \n";
+//		dbg << "CONFIG_PARAM_REQ \n";
 		
 		if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {												// only list 3 and list 4 needs an peer id and idx
 			stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);									// get peer index
@@ -786,7 +791,7 @@ void AS::recvMessage(void) {
 			}
 		}
 
-		checkSendACK(1);																				// send appropriate answer
+		checkSendACK(1);																					// send appropriate answer
 
 	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_SERIAL_REQ)) {	// CONFIG_SERIAL_REQ
 		/*
@@ -794,9 +799,9 @@ void AS::recvMessage(void) {
 		 *             Sender__ Receiver
 		 * 0B 77 A0 01 63 19 63 01 02 04 00 09
 		 */
-		sendINFO_SERIAL();																				// jump to create the answer
+		sendINFO_SERIAL();																					// jump to create the answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {	// PAIR_SERIAL
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {			// PAIR_SERIAL
 		/*
 		 * Message description:
 		 *             Sender__ Receiver       SerialNumber
@@ -830,7 +835,7 @@ void AS::recvMessage(void) {
 		 */
 	
 		if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt)) {
-			sn.retrCnt = 0xFF;																						// was an ACK to an active message, message counter is similar - set retrCnt to 255
+			sn.retrCnt = 0xFF;																				// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		}
 		//dbg << "act:" << sn.active << " rC:" << rv.mBdy.mLen << " sC:" << sn.lastMsgCnt << " cntr:" << sn.retrCnt << '\n';
 
@@ -844,13 +849,13 @@ void AS::recvMessage(void) {
 		 */
 	
 		if ((sn.active) && (rv.mBdy.mLen == sn.lastMsgCnt)) {
-			sn.retrCnt = 0xFF;																						// was an ACK to an active message, message counter is similar - set retrCnt to 255
+			sn.retrCnt = 0xFF;																				// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		}
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_ACK2)) {					// ACK2
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_ACK2)) {				// ACK2
 		// TODO: Make ready
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE)) {			// ACK_PROC AES-Challenge
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE)) {		// ACK_PROC AES-Challenge
 		// TODO: Make ready
 
 		//Para1          => "02,4",
@@ -858,7 +863,7 @@ void AS::recvMessage(void) {
 		//Para3          => "10,4",
 		//Para4          => "14,2",}}, # remote?
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_NACK)) {					// NACK
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_NACK)) {				// NACK
 		// TODO: Make ready
 
 		// for test
@@ -867,21 +872,22 @@ void AS::recvMessage(void) {
 		//x2[1] += 1;
 		//sendREMOTE(1, 1, x2);
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_NACK_TARGET_INVALID)) {	// NACK_TARGET_INVALID
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) && (rv.mBdy.by10 == AS_RESPONSE_NACK_TARGET_INVALID)) {// NACK_TARGET_INVALID
 		// TODO: Make ready
 
 	#ifdef SUPPORT_AES
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE_AES)) {														// AES Response
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE_AES)) {												// AES Response
 			/*
 			 * Message description:
 			 *             Sender__ Receiver AES-Response-Data
 			 * 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
 			 */
-			uint8_t pBuf[16];																						// We need a 16 bytes buffer
+
+			uint8_t pBuf[16];																				// We need a 16 bytes buffer
 			memcpy(pBuf, rv.buf+10, 16);
 
-			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {															// check the decrypted result of previous received message
-				if (hmKeyIndex > 2) {																				// hmKeyIndex > 2: we have the two key parts
+			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {													// check the decrypted result of previous received message
+				if (hmKeyIndex > 2) {																		// hmKeyIndex > 2: we have the two key parts
 					hmKeyIndex = 0;
 					// todo: here we must save the new key (newHmKey)
 					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
@@ -904,17 +910,23 @@ void AS::recvMessage(void) {
 			aes128_init(HMKEY, &ctx);																				// load HMKEY
 			aes128_dec(pBuf, &ctx);																					// decrypt payload width HMKEY first time
 
-			dbg << F("dec Buffer: ") << _HEX(pBuf, 16) << "\n";
+			#ifdef AES_DBG
+				dbg << F("dec Buffer: ") << _HEX(pBuf, 16) << "\n";
+			#endif
 
 			if (pBuf[0] == 0x01) {																					// the decrypted data must start with 0x01
 				hmKeyIndex = pBuf[1];
-				dbg << F("hmKeyIndex: ") << _HEXB(hmKeyIndex) << "\n";
+
+				#ifdef AES_DBG
+					dbg << F("hmKeyIndex: ") << _HEXB(hmKeyIndex) << "\n";
+				#endif
 
 				uint8_t index = (hmKeyIndex > 2) ? 8 : 0;
 				memcpy(newHmKey+index, pBuf+2, 8);
-//				memcpy(newHmKey+((hmKeyIndex - 2)*8), pBuf+2, 8);
 
-				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
+				#ifdef AES_DBG
+					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
+				#endif
 
 				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);															// remember this message
 				sendSignRequest();
@@ -1324,22 +1336,21 @@ void AS::encode(uint8_t *buf) {
 	 * 11 24 80 02 1F B7 4A 63 19 63 04             XX XX XX XX XX XX 00
 	 */
 	void AS::sendSignRequest(void) {
-		sn.mBdy.mLen = 0x11;
-		sn.mBdy.mCnt = rv.mBdy.mCnt;
-		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
-		sn.mBdy.mTyp = AS_MESSAGE_RESPONSE;
-		memcpy(sn.mBdy.reID, HMID, 3);
-		memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-		sn.mBdy.by10 = AS_RESPONSE_AES_CHALLANGE;											// AES Challenge
+		uint8_t pBuf[]    = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};						// we need 7 bytes
 
-		uint8_t pBuf[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};						// we need 7 bytes
+		sn.mBdy.mLen      = 0x11;
+		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
+		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;										// AES Challenge
+
 		getRandomBytes(pBuf, 6);															// but only 6 bytes becomes random data
 		memcpy(sn.buf+11, pBuf, 7);															// the 7th byte must be 0x00
-
 		makeTmpKey(pBuf);																	// here we make the temporarly key with the challange and the old known hm key
 
-		dbg << F(">>> signingRequestData  : ") << _HEX(sn.buf+10, 7) << F(" <<<") << "\n";
-		sn.active = 1;																		// fire the message
+		#ifdef AES_DBG
+			dbg << F(">>> signingRequestData  : ") << _HEX(sn.buf+10, 7) << F(" <<<") << "\n";
+		#endif
+
+		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 	}
 
 	/**
