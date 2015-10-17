@@ -9,7 +9,7 @@
 //#define AS_DBG
 //#define RV_DBG_EX
 
-#define AES_DBG
+//#define AES_DBG
 
 #define SUPPORT_AES
 
@@ -44,9 +44,9 @@ void AS::init(void) {
 	cc.init();																				// init the rf module
 
 	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
-	memcpy_P(HMSR, HMSerialData+4, 10);														// set HMSerial from pgmspace
+	memcpy_P(HMSR, HMSerialData+3, 10);														// set HMSerial from pgmspace
 
-	dbg << F("HmKey: ") << _HEX(HMKEY, 16) << F(" index: ") << _HEX(hmKeyIndex, 1) << "\n";
+	dbg << F("HmKey: ") << _HEX(HMKEY, 16) << "\n" << F("index: ") << _HEX(hmKeyIndex, 1) << "\n";
 
 	sn.init(this);																			// send module
 	rv.init(this);																			// receive module
@@ -892,11 +892,11 @@ void AS::recvMessage(void) {
 			memcpy(pBuf, rv.buf+10, 16);
 
 			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {													// check the decrypted result of previous received message
-				if (hmKeyIndex[0] & 1) {																	// hmKeyIndex iis odd: we have the second key part
+				if (hmKeyIndex[0] & 1) {																	// hmKeyIndex is odd: we have the second key part
 
 					setEEPromBlock(15, 16, newHmKey);														// store HMKEY
 					setEEPromBlock(14, 1, hmKeyIndex);														// store used key index
-					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" index: ") << _HEX(hmKeyIndex, 1) << "\n";
+					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << "\n" << _HEX(hmKeyIndex, 1) << "\n";
 				} else {
 
 					// todo: here we must trigger action was requestes AES sign
@@ -938,7 +938,7 @@ void AS::recvMessage(void) {
 				sendSignRequest();
 
 			} else {
-				getEEPromBlock(14, 1, hmKeyIndex);																// restore keyindex from EEprom
+				getEEPromBlock(14, 1, hmKeyIndex);																	// restore keyindex from EEprom
 			}
 	#endif
 
@@ -1424,13 +1424,13 @@ void AS::encode(uint8_t *buf) {
 		};
 
 		memcpy(iv, msgOriginal+11, msgOriginal[0]-10);								// build initial vector
-		aes128_dec(data, &ctx);														// decrypt payload the temporarily key first time
+		aes128_dec(data, &ctx);														// decrypt payload with temporarily key first time
 
 		for (uint8_t i = 0; i < 16; i++) data[i] ^= iv[i];							// xor encrypted payload with iv
 
 		memcpy(authAck, data, 4);													// build auth ACK
-		aes128_dec(data, &ctx);														// decrypt payload the temporarily key first time
-		//dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
+		aes128_dec(data, &ctx);														// decrypt payload with temporarily again
+		dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
 
 		// memcmp returns 0 if compare true
 		 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
@@ -1450,8 +1450,8 @@ void AS::encode(uint8_t *buf) {
 		uint8_t challenge[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};				// challenge
 
 		memcpy(challenge, rv.mBdy.pyLd, 6);											// get challenge
-		this->makeTmpKey(challenge);
-		this->payloadEncrypt(payload, sn.msgPartToSign);
+		makeTmpKey(challenge);
+		payloadEncrypt(payload, sn.msgPartToSign);
 
 		sn.mBdy.mLen = 0x19;
 		sn.mBdy.by10 = payload[0];
