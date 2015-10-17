@@ -163,7 +163,7 @@ class AS {
 	uint8_t  signingRequestData[6];
 	uint8_t  tempHmKey[16];
 	uint8_t  newHmKey[16];
-	uint8_t  hmKeyIndex = 0;
+	uint8_t  hmKeyIndex[1];
 	uint16_t randomSeed = 0;
 
   public:		//---------------------------------------------------------------------------------------------------------
@@ -206,6 +206,7 @@ class AS {
 	void sendSetTeamTemp(void);
 	void sendWeatherEvent(void);
 	void sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *payload, uint8_t pLen);
+	void deviceReset(void);
 
   private:		//---------------------------------------------------------------------------------------------------------
 
@@ -236,7 +237,6 @@ class AS {
 
 	void getRandomBytes(uint8_t *buffer, uint8_t length);
 	void initRandomSeed();
-
 	
   protected:	//---------------------------------------------------------------------------------------------------------
 	// - homematic specific functions ------------------

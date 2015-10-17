@@ -37,14 +37,16 @@ void AS::init(void) {
 		dbg << F("AS.\n");																	// ...and some information
 	#endif
 
-	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
-	memcpy_P(HMSR, HMSerialData+4, 10);														// set HMSerial from pgmspace
-
 	initLeds();																				// initialize the leds
 	initConfKey();																			// initialize the port for getting config key interrupts
 
 	ee.init();																				// eeprom init
 	cc.init();																				// init the rf module
+
+	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
+	memcpy_P(HMSR, HMSerialData+4, 10);														// set HMSerial from pgmspace
+
+	dbg << F("HmKey: ") << _HEX(HMKEY, 16) << F(" index: ") << _HEX(hmKeyIndex, 1) << "\n";
 
 	sn.init(this);																			// send module
 	rv.init(this);																			// receive module
@@ -148,7 +150,7 @@ void AS::sendDEVICE_INFO(void) {
 
 	sn.mBdy.mLen = 0x1A;
 //	sn.mBdy.mCnt = xCnt;
-	sn.mBdy.mFlg.CFG = 0;
+	sn.mBdy.mFlg.CFG = 1;
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 
 	memcpy_P(sn.buf+10, devDef.devIdnt, 3);
@@ -173,6 +175,8 @@ void AS::sendACK(void) {
 	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
 	sn.mBdy.mLen = 0x0A;
+	sn.mBdy.mFlg.CFG = 0;
+	sn.mBdy.mFlg.BIDI = 0;
 //	sn.mBdy.mCnt = rv.mBdy.mCnt;
 	sn.mBdy.by10 = 0x00;
 	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
@@ -205,7 +209,7 @@ void AS::checkSendACK(uint8_t ackOk) {
 		if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
 
 		sn.mBdy.mLen = 0x0E;
-//		sn.mBdy.mFlg.BIDI = 0;
+		sn.mBdy.mFlg.BIDI = 0;
 //		sn.mBdy.mCnt = rv.mBdy.mCnt;
 		sn.mBdy.by10 = AS_RESPONSE_ACK;
 		sn.mBdy.by11 = data[0];
@@ -659,7 +663,7 @@ void AS::recvMessage(void) {
 
 		checkSendACK(ret);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE)) {	// CONFIG_PEER_REMOVE
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE)) {		// CONFIG_PEER_REMOVE
 		/* Message description:
 		 *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
 		 * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
@@ -669,7 +673,7 @@ void AS::recvMessage(void) {
 
 		checkSendACK(ret);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_LIST_REQ)) {	// CONFIG_PEER_LIST_REQ
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PEER_LIST_REQ)) {		// CONFIG_PEER_LIST_REQ
 		/* Message description:
 		 *             Sender__ Receiver    Channel
 		 * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
@@ -739,7 +743,7 @@ void AS::recvMessage(void) {
 	
 		checkSendACK(1);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_END)) {			// CONFIG_END
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_END)) {				// CONFIG_END
 		/*
 		 * Message description:
 		 *             Sender__ Receiver    Channel
@@ -765,7 +769,7 @@ void AS::recvMessage(void) {
 		
 		checkSendACK(1);																				// send appropriate answer
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX)) {	// CONFIG_WRITE_INDEX
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX)) {		// CONFIG_WRITE_INDEX
 		/*
 		 * Message description:
 		 *             Sender__ Receiver        Channel ConfigData: Register:BytePairs
@@ -888,24 +892,25 @@ void AS::recvMessage(void) {
 			memcpy(pBuf, rv.buf+10, 16);
 
 			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {													// check the decrypted result of previous received message
-				if (hmKeyIndex > 2) {																		// hmKeyIndex > 2: we have the two key parts
-					hmKeyIndex = 0;
-					// todo: here we must save the new key (newHmKey)
-					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << "\n";
+				if (hmKeyIndex[0] & 1) {																	// hmKeyIndex iis odd: we have the second key part
+
+					setEEPromBlock(15, 16, newHmKey);														// store HMKEY
+					setEEPromBlock(14, 1, hmKeyIndex);														// store used key index
+					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" index: ") << _HEX(hmKeyIndex, 1) << "\n";
 				} else {
 
 					// todo: here we must trigger action was requestes AES sign
 				}
 			}
 
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {														// AES Key Exchange
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {												// AES Key Exchange
 			/*
 			 * Message description:
 			 *             Sender__ Receiver Decrypted Payload with one keypart
 			 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
 			 */
 
-			uint8_t pBuf[16];																						// We need a 16 bytes buffer
+			uint8_t pBuf[16];																				// We need a 16 bytes buffer
 			memcpy(pBuf, rv.buf+10, 16);
 
 			aes128_init(HMKEY, &ctx);																				// load HMKEY
@@ -916,13 +921,13 @@ void AS::recvMessage(void) {
 			#endif
 
 			if (pBuf[0] == 0x01) {																					// the decrypted data must start with 0x01
-				hmKeyIndex = pBuf[1];
+				hmKeyIndex[0] = pBuf[1]-2;
 
 				#ifdef AES_DBG
-					dbg << F("hmKeyIndex: ") << _HEXB(hmKeyIndex) << "\n";
+					dbg << F("hmKeyIndex: ") << _HEXB(hmKeyIndex[0]) << "\n";
 				#endif
 
-				uint8_t index = (hmKeyIndex > 2) ? 8 : 0;
+				uint8_t index = (hmKeyIndex[0] & 1) ? 8 : 0;
 				memcpy(newHmKey+index, pBuf+2, 8);
 
 				#ifdef AES_DBG
@@ -933,7 +938,7 @@ void AS::recvMessage(void) {
 				sendSignRequest();
 
 			} else {
-				hmKeyIndex = 0;
+				getEEPromBlock(14, 1, hmKeyIndex);																// restore keyindex from EEprom
 			}
 	#endif
 
@@ -958,10 +963,7 @@ void AS::recvMessage(void) {
 		 * 0B 1C B0 11 63 19 63 1F B7 4A 04 00
 		 */
 
-		ee.clearPeers();
-		ee.clearRegs();
-		ee.getMasterID();
-		ld.set(defect);
+		deviceReset();
 
 		if (rv.ackRq) {
 			if (ee.getRegListIdx(1,3) == 0xFF) {
@@ -1042,6 +1044,15 @@ void AS::recvMessage(void) {
 
 	}
 
+}
+
+void AS::deviceReset(void) {
+	ee.clearPeers();
+	ee.clearRegs();
+	ee.getMasterID();
+	ee.initHMKEY();
+
+	ld.set(welcome);
 }
 
 /**
@@ -1333,18 +1344,19 @@ void AS::encode(uint8_t *buf) {
 	 * @brief Send sign request to receiver
 	 *
 	 * Message description:
-	 *             Sender__ Receiver SigningRequest Challenge
+	 *             Sender__ Receiver SigningRequest Challenge         KeyIndex
 	 * 11 24 80 02 1F B7 4A 63 19 63 04             XX XX XX XX XX XX 00
 	 */
 	void AS::sendSignRequest(void) {
-		uint8_t pBuf[]    = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};						// we need 7 bytes
+		uint8_t pBuf[]    = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};							// we need 6 bytes
 
 		sn.mBdy.mLen      = 0x11;
 		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;										// AES Challenge
 
 		getRandomBytes(pBuf, 6);															// but only 6 bytes becomes random data
-		memcpy(sn.buf+11, pBuf, 7);															// the 7th byte must be 0x00
+		memcpy(sn.buf+11, pBuf, 6);
+		sn.buf[17] = hmKeyIndex[0];															// the 7th byte is the key index
 		makeTmpKey(pBuf);																	// here we make the temporarly key with the challange and the old known hm key
 
 		#ifdef AES_DBG
@@ -1418,7 +1430,7 @@ void AS::encode(uint8_t *buf) {
 
 		memcpy(authAck, data, 4);													// build auth ACK
 		aes128_dec(data, &ctx);														// decrypt payload the temporarily key first time
-//		dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
+		//dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
 
 		// memcmp returns 0 if compare true
 		 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal

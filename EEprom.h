@@ -177,6 +177,7 @@ class EE {
   //private:	//---------------------------------------------------------------------------------------------------------
 	EE();																				// class constructor
 	void     init(void);
+	void     initHMKEY(void);
 	void     getMasterID(void);
 	void     testModul(void);															// prints register.h definition on console
 	uint8_t  isHMIDValid(uint8_t *toID);												// ok, check if a valid pair was given
@@ -288,6 +289,11 @@ extern uint8_t HMSR[];
  */
 extern uint8_t HMKEY[];
 
+/**
+ * @brief Index of AES key of master.
+ *
+ */
+extern uint8_t hmKeyIndex[];
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 uint16_t crc16(uint16_t crc, uint8_t a);												// crc function

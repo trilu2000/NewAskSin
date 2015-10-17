@@ -13,6 +13,7 @@ uint8_t MAID[3];
 uint8_t HMID[3];
 uint8_t HMSR[10];
 uint8_t HMKEY[16];
+uint8_t hmKeyIndex[1];
 
 // public:		//---------------------------------------------------------------------------------------------------------
 uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
@@ -156,9 +157,9 @@ void     EE::init(void) {
 	}
 
 	getEEPromBlock(15, 16, HMKEY);														// get HMKEY from EEprom
+	getEEPromBlock(14, 1, hmKeyIndex);													// get hmKeyIndex from EEprom
 	if (HMKEY[0] == 0x00) {																// if HMKEY in EEPROM invalid
-		memcpy_P(HMKEY, HMSerialData+13, 16);											// get default HMKEY
-		EE:setEEPromBlock(15, 16, HMKEY);												// store default HMKEY to EEprom
+		initHMKEY();
 	}
 
 	// load the master id
@@ -167,6 +168,14 @@ void     EE::init(void) {
 	everyTimeStart();																	// add this function in register.h to setup default values every start
 
 }
+
+void     EE::initHMKEY(void) {
+	memcpy_P(HMKEY, HMSerialData+13, 16);												// get default HMKEY
+	EE:setEEPromBlock(15, 16, HMKEY);													// store default HMKEY to EEprom
+	hmKeyIndex[0] = 0x00;
+	setEEPromBlock(14, 1, hmKeyIndex);													// get hmKeyIndex from EEprom
+}
+
 void     EE::getMasterID(void) {
 	MAID[0] = getRegAddr(0, 0, 0, 0x0a);
 	MAID[1] = getRegAddr(0, 0, 0, 0x0b);

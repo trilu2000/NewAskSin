@@ -142,16 +142,11 @@ void CB::outSignal(uint8_t mode) {
 	} else if (mode == 6) {					// keyLongDouble
 		pHM->ld.set(nothing);
 
-		// 0x18 localResDis available, take care of it
+		// TODO: 0x18 localResDis available, take care of it
 		uint8_t localResDis = pHM->ee.getRegAddr(0,0,0,0x18);								// get register address
 		//dbg << "x:" << localResDis <<'\n';
-		//if (localResDis) return;															// if local reset is disabled, reset
-
-		pHM->ee.clearPeers();
-		pHM->ee.clearRegs();
-		pHM->ee.getMasterID();
-
-		pHM->ld.set(welcome);
-
+		if (!localResDis) {																	// if local reset is not disabled, reset
+			pHM->deviceReset();
+		}
 	}
 }
