@@ -44,13 +44,13 @@ void SN::poll(void) {
 
 		// some sanity
 		this->mBdy.mFlg.RPTEN = 1;															// every message need this flag
-		//if (pHM->cFlag.active) this->mBdy.mFlg.CFG = pHM->cFlag.active;						// set the respective flag while we are in config mode
+		//if (pHM->cFlag.active) this->mBdy.mFlg.CFG = pHM->cFlag.active;					// set the respective flag while we are in config mode
 		this->timeOut = 0;																	// not timed out because just started
 		this->lastMsgCnt = this->mBdy.mCnt;													// copy the message count to identify the ACK
 		this->retrCnt++;																	// increase counter while send out
 
 		// check if we should send an internal message
-		if (compArray(this->mBdy.toID, HMID, 3)) {											// message is addressed to us
+		if (!memcmp(this->mBdy.toID, HMID, 3)) {
 			memcpy(pHM->rv.buf, this->buf, sndLen);											// copy send buffer to received buffer
 			this->retrCnt = 0xff;															// ACK not required, because internal
 						

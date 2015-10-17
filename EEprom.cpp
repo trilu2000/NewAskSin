@@ -281,10 +281,10 @@ void     EE::testModul(void) {															// prints register.h content on con
 }
 uint8_t  EE::isHMIDValid(uint8_t *toID) {
 	//dbg << "t: " << _HEX(toID, 3) << ", h: " << _HEX(HMID, 3) << '\n';
-	return compArray(toID, HMID, 3);
+	return (!memcmp(toID, HMID, 3));
 }
 uint8_t  EE::isPairValid (uint8_t *reID) {
-	return compArray(reID, MAID, 3);
+	return (!memcmp(reID, MAID, 3));
 }
 uint8_t  EE::isBroadCast(uint8_t *toID) {
 	//uint8_t zero[3] = {0,0,0};
@@ -342,7 +342,10 @@ uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 
 	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
 		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
-		if (compArray(lPeer, peer, 4)) return i;										// if result matches then return slot index
+
+		if (!memcmp(lPeer, peer, 4)) {
+			return i;																	// if result matches then return slot index
+		}
 		//dbg << i << ": " << _HEX(lPeer,4) << ", s: " << _HEX(peer, 4) << '\n';
 	}
 	return 0xff;
@@ -409,7 +412,7 @@ uint8_t  EE::remPeer(uint8_t cnl, uint8_t *peer) {
 	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
 		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 
-		if (compArray(lPeer, peer, 4) || compArray(lPeer ,tPeer, 4)) {					// check if something matches
+		if (!memcmp(lPeer, peer, 4) || !memcmp(lPeer, tPeer, 4)) {						// check if something matches
 			clearEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4);							// free the slot
 		}
 	}
@@ -625,14 +628,7 @@ uint16_t crc16(uint16_t crc, uint8_t a) {
 	}
 	return crc;
 }
-uint8_t  compArray(void *ptr1, void *ptr2, uint8_t len) {
-	//while (len > 0) {
-	//	len--;
-	//	if (*((uint8_t*)ptr1+len) != *((uint8_t*)ptr2+len)) return 0;
-	//}
-	//return 1;
-	return memcmp(ptr1, ptr2, len)?0:1;
-}
+
 uint8_t  isEmpty(void *ptr, uint8_t len) {
 	while (len > 0) {
 		len--;

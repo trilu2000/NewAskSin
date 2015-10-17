@@ -814,7 +814,7 @@ void AS::recvMessage(void) {
 		 */
 
 		// compare serial and send device info
-		if (compArray(rv.buf+12,HMSR,10)) {
+		if (!memcmp(rv.buf+12, HMSR, 10)) {
 			sendDEVICE_INFO();
 		}
 
