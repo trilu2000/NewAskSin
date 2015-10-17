@@ -311,7 +311,7 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) 
 //	sn.mBdy.mTyp = 0x10;
 //	memcpy(sn.mBdy.reID, HMID, 3);
 //	memcpy(sn.mBdy.toID, MAID, 3);
-	sn.mBdy.by10      = 0x06;
+	sn.mBdy.by10      = AS_INFO_ACTUATOR_STATUS;
 	sn.mBdy.by11      = channel;
 	sn.mBdy.pyLd[0]   = state;
 	sn.mBdy.pyLd[1]   = flag; // | (bt.getStatus() << 7);
@@ -687,7 +687,7 @@ void AS::recvMessage(void) {
 		stcSlice.active = 1;																			// start the send function
 		// answer will send from sendsList(void)
 
-	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PARAM_REQ)) {		// CONFIG_PARAM_REQ
+	} else if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PARAM_REQ)) {			// CONFIG_PARAM_REQ
 		/* Message description:
 		 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
 		 * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
@@ -1064,7 +1064,7 @@ void AS::deviceReset(void) {
  */
 void AS::sendINFO_SERIAL(void) {
 	sn.mBdy.mLen = 0x14;
-	sn.mBdy.by10 = 0x00;
+	sn.mBdy.by10 = AS_INFO_SERIAL;
 	memcpy(sn.buf+11, HMSR, 10);
 	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_INFO, rv.mBdy.reID);
 }
