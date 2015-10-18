@@ -6,11 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-<<<<<<< HEAD
-//#define BL_DBG																			// debug message flag
-=======
 //#define DI_DBG																			// debug message flag
->>>>>>> origin/master
 #include <cmBlind.h>
 
 
