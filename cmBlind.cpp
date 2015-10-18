@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define DI_DBG																			// debug message flag
+//#define BL_DBG																			// debug message flag
 #include <cmBlind.h>
 
 
@@ -337,11 +337,7 @@ void cmBlind::poll(void) {
 
 	// check the different status changes, {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
 	if        (nxtStat == 1) {		// dlyOn
-<<<<<<< HEAD
 		#ifdef BL_DBG
-=======
-		#ifdef DI_DBG
->>>>>>> origin/master
 		dbg << F("dlyOn\n");
 		#endif 
 		
@@ -354,11 +350,7 @@ void cmBlind::poll(void) {
 		
 
 	} else if (nxtStat == 2) {		// rampOn
-<<<<<<< HEAD
 		#ifdef BL_DBG
-=======
-		#ifdef DI_DBG
->>>>>>> origin/master
 		dbg << F("rampOn\n");
 		#endif
 		
@@ -378,11 +370,7 @@ void cmBlind::poll(void) {
 
 		
 	} else if (nxtStat == 3) {		// on
-<<<<<<< HEAD
 		#ifdef BL_DBG
-=======
-		#ifdef DI_DBG
->>>>>>> origin/master
 		dbg << F("on\n");
 		#endif
 		
@@ -399,11 +387,7 @@ void cmBlind::poll(void) {
 
 
 	} else if (nxtStat == 4) {		// dlyOff
-<<<<<<< HEAD
 		#ifdef BL_DBG
-=======
-		#ifdef DI_DBG
->>>>>>> origin/master
 		dbg << F("dlyOff\n");
 		#endif
 
@@ -417,11 +401,7 @@ void cmBlind::poll(void) {
 
 
 	} else if (nxtStat == 5) {		// rampOff
-<<<<<<< HEAD
 		#ifdef BL_DBG
-=======
-		#ifdef DI_DBG
->>>>>>> origin/master
 		dbg << F("rampOff\n");
 		#endif
 		
@@ -441,11 +421,7 @@ void cmBlind::poll(void) {
 
 
 	} else if (nxtStat == 6) {		// off
-<<<<<<< HEAD
 		#ifdef BL_DBG
-=======
-		#ifdef DI_DBG
->>>>>>> origin/master
 		dbg << F("off\n");
 		#endif
 
@@ -494,11 +470,7 @@ void cmBlind::showStruct(void) {
 void cmBlind::setToggle(void) {
 	// setToggle will be addressed by config button in mode 2 by a short key press
 	// here we can toggle the status of the actor
-<<<<<<< HEAD
 	#ifdef BL_DBG
-=======
-	#ifdef DI_DBG
->>>>>>> origin/master
 	dbg << F("RL\n");
 	#endif
 
@@ -510,11 +482,7 @@ void cmBlind::setToggle(void) {
 
 void cmBlind::configCngEvent(void) {
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
-<<<<<<< HEAD
 	#ifdef BL_DBG
-=======
-	#ifdef DI_DBG
->>>>>>> origin/master
 	dbg << F("CCE, lst1: ") << pHex(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
 
@@ -532,11 +500,7 @@ void cmBlind::pairSetEvent(uint8_t *data, uint8_t len) {
 	// we received a message from master to set a new value, typical you will find three bytes in data
 	// 1st byte = value; 2nd and 3rd byte = ramp time; 4th and 5th byte = duration time;
 	// after setting the new value we have to send an enhanced ACK (<- 0E E7 80 02 1F B7 4A 63 19 63 01 01 C8 00 54)
-<<<<<<< HEAD
 	#ifdef BL_DBG
-=======
-	#ifdef DI_DBG
->>>>>>> origin/master
 	dbg << F("PSE, value:") << pHexB(data[0]);
 	if (len > 1) { dbg << F(", rampTime: ") << pHex((data+1), 2); };
 	if (len > 3) { dbg << F(", duraTime: ") << pHex((data+3), 2); };
@@ -553,11 +517,7 @@ void cmBlind::pairSetEvent(uint8_t *data, uint8_t len) {
 
 void cmBlind::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
-<<<<<<< HEAD
 	#ifdef BL_DBG
-=======
-	#ifdef DI_DBG
->>>>>>> origin/master
 	dbg << F("PSR\n");
 	#endif
 	
@@ -570,11 +530,7 @@ void cmBlind::pairStatusReq(void) {
 void cmBlind::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
 	// appropriate answer is an ACK
-<<<<<<< HEAD
 	#ifdef BL_DBG
-=======
-	#ifdef DI_DBG
->>>>>>> origin/master
 	dbg << F("PME, type: ")  << pHexB(type) << F(", data: ")  << pHex(data, len) << '\n';
 	#endif
 	
@@ -617,11 +573,7 @@ void cmBlind::peerAddEvent(uint8_t *data, uint8_t len) {
 	// we received an peer add event, which means, there was a peer added in this respective channel
 	// 1st byte and 2nd byte shows the peer channel, 3rd and 4th byte gives the peer index
 	// no need for sending an answer, but we could set default data to the respective list3/4
-<<<<<<< HEAD
 	#ifdef BL_DBG
-=======
-	#ifdef DI_DBG
->>>>>>> origin/master
 	dbg << F("peerAddEvent: pCnl1: ") << pHexB(data[0]) << F(", pCnl2: ") << pHexB(data[1]) << F(", pIdx1: ") << pHexB(data[2]) << F(", pIdx2: ") << pHexB(data[3]) << '\n';
 	#endif
 	
@@ -639,11 +591,7 @@ void cmBlind::peerAddEvent(uint8_t *data, uint8_t len) {
 	}
 }
 void cmBlind::firstStart(void) {
-<<<<<<< HEAD
 	//#ifdef BL_DBG
-=======
-	//#ifdef DI_DBG
->>>>>>> origin/master
 	dbg << F("firstStart\n");
 	//#endif
 }
