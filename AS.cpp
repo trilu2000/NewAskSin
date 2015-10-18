@@ -727,8 +727,14 @@ void AS::recvMessage(void) {
 			}
 
 		} else {
+
 			// TODO: check for AES-Signing
-			processMessageConfig(by10, cnl1);
+		//	if (signingOn) {
+		//		memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);															// remember this message
+		//		sendSignRequest();
+		//	} else {
+				processMessageConfig(by10, cnl1);
+		//	}
 		}
 
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) {
@@ -799,7 +805,13 @@ void AS::recvMessage(void) {
 					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << "\n" << _HEX(hmKeyIndex, 1) << "\n";
 				} else {
 
-					// todo: here we must trigger action was requestes AES sign
+					// here we post process original message after sign authentication
+					memcpy(rv.buf, rv.prevBuf, rv.prevBuf[0]);												// copy original message to current receive buffer
+					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
+						processMessageConfig(rv.mBdy.by10, cFlag.cnl - 1);
+					} else if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
+						processMessageAction();
+					}
 				}
 			}
 
@@ -846,15 +858,21 @@ void AS::recvMessage(void) {
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {																// action message
 
 		// TODO: check for AES-Signing
-		processMessageAction();
 
-		if (rv.ackRq) {
-			if (ee.getRegListIdx(1,3) == 0xFF) {
-				sendACK();
-			} else {
-				sendACK_STATUS(0, 0, 0);
+	//	if (signingOn) {
+	//		memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);															// remember this message
+	//		sendSignRequest();
+	//	} else {
+			processMessageAction();
+
+			if (rv.ackRq) {
+				if (ee.getRegListIdx(1,3) == 0xFF) {
+					sendACK();
+				} else {
+					sendACK_STATUS(0, 0, 0);
+				}
 			}
-		}
+	//	}
 
 	} else if  (rv.mBdy.mTyp == AS_MESSAGE_HAVE_DATA) {																// HAVE_DATA
 		// TODO: Make ready
