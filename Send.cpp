@@ -16,25 +16,29 @@
 
 waitTimer sndTmr;																			// send timer functionality
 
-SN::SN() {
-} 
+SN::SN() {}
+
 void SN::init(AS *ptrMain) {
 	#ifdef SN_DBG																			// only if ee debug is set
-	dbgStart();																				// serial setup
-	dbg << F("SN.\n");																		// ...and some information
+		dbgStart();																			// serial setup
+		dbg << F("SN.\n");																	// ...and some information
 	#endif
 
 	pHM = ptrMain;
 	buf = (uint8_t*)&mBdy;
 }
+
 void SN::poll(void) {
 	#define maxRetries    3
 	#define maxTime       300
 	
 	// set right amount of retries
 	if (!this->maxRetr) {																	// first time run, check message type and set retries
-		if (reqACK) this->maxRetr = maxRetries;												// if BIDI is set, we have three retries
-		else this->maxRetr = 1;
+		if (reqACK) {
+			this->maxRetr = maxRetries;														// if BIDI is set, we have three retries
+		} else {
+			this->maxRetr = 1;
+		}
 	}
 	
 	//dbg << "x:" << this->retrCnt << " y:" << this->maxRetr << " t:" << sndTmr.done() << '\n';
@@ -52,10 +56,10 @@ void SN::poll(void) {
 		// check if we should send an internal message
 		if (!memcmp(this->mBdy.toID, HMID, 3)) {
 			memcpy(pHM->rv.buf, this->buf, sndLen);											// copy send buffer to received buffer
-			this->retrCnt = 0xff;															// ACK not required, because internal
+			this->retrCnt = 0xFF;															// ACK not required, because internal
 						
 			#ifdef SN_DBG																	// only if AS debug is set
-			dbg << F("<i ");
+				dbg << F("<i ");
 			#endif
 
 		} else {																			// send it external
@@ -64,30 +68,38 @@ void SN::poll(void) {
 			memcpy(this->msgPartToSign, this->buf, sndLen);									// copy the first 10 bytes without length of message for calculating AES signing response
 
 			pHM->encode(this->buf);															// encode the string
+
 			disableGDO0Int();
-			pHM->cc.sndData(this->buf,tBurst);												// send to communication module
+			pHM->cc.sndData(this->buf, tBurst);												// send to communication module
 			enableGDO0Int();
+
 			pHM->decode(this->buf);															// decode the string, so it is readable next time
 			
-			if (reqACK) sndTmr.set(maxTime);												// set the time out for the message
+			if (reqACK) {
+				sndTmr.set(maxTime);														// set the time out for the message
+			}
 			
 			#ifdef SN_DBG																	// only if AS debug is set
-			dbg << F("<- ");
+				dbg << F("<- ");
 			#endif
-
 		}
 		
-		if (!pHM->ld.active) pHM->ld.set(send);												// fire the status led
+		if (!pHM->ld.active) {
+			pHM->ld.set(send);																// fire the status led
+		}
 		
 		#ifdef SN_DBG																		// only if AS debug is set
-		dbg << _HEX(this->buf,sndLen) << ' ' << _TIME << '\n';
+			dbg << _HEX(this->buf,sndLen) << ' ' << _TIME << '\n';
 		#endif
 
 	} else if ((this->retrCnt >= this->maxRetr) && (sndTmr.done() )) {						// max retries achieved, but seems to have no answer
 		this->retrCnt = 0;
 		this->maxRetr = 0;
 		this->active = 0;
-		if (!reqACK) return;
+
+		if (!reqACK) {
+			return;
+		}
 		
 		this->timeOut = 1;																	// set the time out only while an ACK or answer was requested
 		pHM->pw.stayAwake(100);

@@ -206,6 +206,9 @@ class AS {
 	void sendSetTeamTemp(void);
 	void sendWeatherEvent(void);
 	void sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *payload, uint8_t pLen);
+
+	void processMessageConfig(uint8_t by10, uint8_t cnl1);
+	void processMessageAction();
 	void deviceReset(void);
 
   private:		//---------------------------------------------------------------------------------------------------------
