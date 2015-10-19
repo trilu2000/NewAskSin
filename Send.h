@@ -56,8 +56,7 @@ class SN {
 
 	uint8_t active   :1;					// is send module active, 1 indicates yes
 	uint8_t timeOut  :1;					// was last message a timeout
-	uint8_t msgPartToSign[26];				// store the last sent message for calculating AES signing response. we need only the first 27 bytes without byte 0
-	uint8_t msgPartToSignLen;
+	uint8_t msgPartToSign[26];				// store the last sent message for calculating AES signing response. Maximal we need the bytes 1 - 27 of the original message
 
   public:		//---------------------------------------------------------------------------------------------------------
   protected:	//---------------------------------------------------------------------------------------------------------

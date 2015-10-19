@@ -615,7 +615,7 @@ void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 	// LONG   = bit 6
 	// LOWBAT = bit 7
 
-	sn.mBdy.mLen = stcPeer.lenPL +9;														// set message length
+	sn.mBdy.mLen = stcPeer.lenPL + 9;														// set message length
 //	sn.mBdy.mCnt = sn.msgCnt;																// set message counter
 
 	sn.mBdy.mFlg.CFG = 1;
@@ -667,9 +667,6 @@ void AS::recvMessage(void) {
 			 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
 			 * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
 			 */
-
-			//dbg << "CONFIG_PARAM_REQ \n";
-
 			if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {										// only list 3 and list 4 needs an peer id and idx
 				stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);							// get peer index
 			} else {
@@ -764,13 +761,12 @@ void AS::recvMessage(void) {
 		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK2) {												// ACK2
 			// TODO: Make ready
 
-		} else if (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE) {										// ACK_PROC AES-Challenge
-			// TODO: Make ready
 
-			//Para1          => "02,4",
-			//Para2          => "06,4",
-			//Para3          => "10,4",
-			//Para4          => "14,2",}}, # remote?
+		#ifdef SUPPORT_AES
+			} else if (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE) {									// ACK_PROC AES-Challenge
+				// TODO: Make ready
+				sendSignResponse();
+		#endif
 
 		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK) {												// NACK
 			// TODO: Make ready
@@ -787,7 +783,7 @@ void AS::recvMessage(void) {
 		}
 
 	#ifdef SUPPORT_AES
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE_AES)) {												// AES Response
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE_AES)) {										// AES Response
 			/*
 			 * Message description:
 			 *             Sender__ Receiver AES-Response-Data
@@ -798,20 +794,32 @@ void AS::recvMessage(void) {
 			memcpy(pBuf, rv.buf+10, 16);
 
 			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {													// check the decrypted result of previous received message
-				if (hmKeyIndex[0] & 1) {																	// hmKeyIndex is odd: we have the second key part
 
-					setEEPromBlock(15, 16, newHmKey);														// store HMKEY
-					setEEPromBlock(14, 1, hmKeyIndex);														// store used key index
-					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << "\n" << _HEX(hmKeyIndex, 1) << "\n";
-				} else {
+				if (keyChangeStatus == AS_STATUS_KEYCHANGE_INACTIVE) {
+//					#ifdef AES_DBG
+						dbg << F("Signatur OK\n");
+//					#endif
+
+//					dbg << F("rv.prevBuf: ") << _HEX(rv.prevBuf, rv.prevBuf[0]+1) << "\n";
 
 					// here we post process original message after sign authentication
-					memcpy(rv.buf, rv.prevBuf, rv.prevBuf[0]);												// copy original message to current receive buffer
+					memcpy(rv.buf, rv.prevBuf, rv.prevBuf[0]+1);												// copy original message to current receive buffer
 					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
 						processMessageConfig(rv.mBdy.by10, cFlag.cnl - 1);
-					} else if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
+
+					} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
 						processMessageAction();
 					}
+
+				} else if (keyChangeStatus == AS_STATUS_KEYCHANGE_ACTIVE2) {
+					setEEPromBlock(15, 16, newHmKey);														// store HMKEY
+					getEEPromBlock(15, 16, HMKEY);
+					setEEPromBlock(14, 1, hmKeyIndex-1);													// store used key index
+					#ifdef AES_DBG
+						dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]-1) << "\n";
+					#endif
+
+					keyChangeStatus = AS_STATUS_KEYCHANGE_INACTIVE;
 				}
 			}
 
@@ -833,6 +841,7 @@ void AS::recvMessage(void) {
 			#endif
 
 			if (pBuf[0] == 0x01) {																					// the decrypted data must start with 0x01
+				keyChangeStatus++;;
 				hmKeyIndex[0] = pBuf[1]-2;
 
 				#ifdef AES_DBG
@@ -851,20 +860,23 @@ void AS::recvMessage(void) {
 				sendSignRequest();
 
 			} else {
+				keyChangeStatus = AS_STATUS_KEYCHANGE_INACTIVE;
 				getEEPromBlock(14, 1, hmKeyIndex);																	// restore keyindex from EEprom
 			}
 	#endif
 
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {																// action message
+		#ifdef SUPPORT_AES
+			uint8_t expectAES = ee.getRegAddr(rv.mBdy.by11, 1, 0, 0x08);		// expectAES is stored at address 0x08 in list 1
+//			dbg << F("expAES: ") << _HEXB(expectAES) << "\n";
 
-		// TODO: check for AES-Signing
+			if (expectAES == 1) {
+				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);															// remember this message
+				sendSignRequest();
+			} else {
+		#endif
 
-	//	if (signingOn) {
-	//		memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);															// remember this message
-	//		sendSignRequest();
-	//	} else {
 			processMessageAction();
-
 			if (rv.ackRq) {
 				if (ee.getRegListIdx(1,3) == 0xFF) {
 					sendACK();
@@ -872,7 +884,10 @@ void AS::recvMessage(void) {
 					sendACK_STATUS(0, 0, 0);
 				}
 			}
-	//	}
+
+		#ifdef SUPPORT_AES
+			}
+		#endif
 
 	} else if  (rv.mBdy.mTyp == AS_MESSAGE_HAVE_DATA) {																// HAVE_DATA
 		// TODO: Make ready
@@ -1005,6 +1020,7 @@ void AS::processMessageConfig(uint8_t by10, uint8_t cnl1) {
 		}
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX) {											// CONFIG_WRITE_INDEX
+
 		/*
 		 * Message description:
 		 *             Sender__ Receiver        Channel ConfigData: Register:BytePairs
@@ -1114,7 +1130,7 @@ void AS::sendINFO_PEER_LIST(uint8_t length) {
 //	sn.mBdy.mTyp = 0x10;
 //	memcpy(sn.mBdy.reID, HMID, 3);
 //	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
-	sn.mBdy.by10 = 0x01;																	//stcSlice.cnl;
+	sn.mBdy.by10 = AS_INFO_PEER_LIST;																	//stcSlice.cnl;
 	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
 
@@ -1134,7 +1150,7 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
 //	sn.mBdy.mTyp = 0x10;
 //	memcpy(sn.mBdy.reID, HMID, 3);
 //	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
-	sn.mBdy.by10 = (length < 3) ? 0x03 : 0x02;
+	sn.mBdy.by10 = (length < 3) ? AS_INFO_PARAM_RESPONSE_SEQ : AS_INFO_PARAM_RESPONSE_PAIRS;
 	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
 
@@ -1147,13 +1163,36 @@ void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
  * @param addrTo   pointer to receiver address
  */
 void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
+	uint8_t i;
+
 	sn.mBdy.mCnt = mCounter;
 	sn.mBdy.mTyp = mType;
-	memcpy(sn.mBdy.reID, HMID, 3);
+	sn.mBdy.reID[0] = HMID[0];
+	sn.mBdy.reID[1] = HMID[1];
+	sn.mBdy.reID[2] = HMID[2];
 	memcpy(sn.mBdy.toID, receiverAddr, 3);
+
+	#ifdef SUPPORT_AES
+		// todo maybe we must step true all channels
+		uint8_t expectAES = ee.getRegAddr(rv.mBdy.by11, 1, 0, 0x08);		// expectAES is stored at address 0x08 in list 1
+//		dbg << F("expAES: ") << _HEXB(expectAES) << "\n";
+
+		/*
+		 * TODO: check if AES signing required for following INFO_MESSAGES-Types:
+		 *       INFO_SERIAL, INFO_PEER_LIST, INFO_PARAM_RESPONSE_PAIRS
+		 *       INFO_PARAM_RESPONSE_SEQ or INFO_PARAMETER_CHANGE
+		 */
+		if ( (mType > AS_MESSAGE_INFO || (mType == AS_MESSAGE_INFO && sn.mBdy.by10 == AS_INFO_ACTUATOR_STATUS)) && expectAES ) {
+			/*
+			 * Copy the send message to msgPartToSign. We need them for later AES signing
+			 * We need only bytes 1 - 27 padded with 0x00
+			 */
+			memcpyPad0(sn.msgPartToSign, 27, sn.buf, sn.buf[0]);
+		}
+	#endif
+
 	sn.active = 1;																			// remember to fire the message
 }
-
 
 void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
 	/*
@@ -1189,7 +1228,7 @@ void AS::decode(uint8_t *buf) {
 	buf[1] = (~buf[1]) ^ 0x89;
 
 	uint8_t i, t;
-	for (i=2; i<buf[0]; i++) {
+	for (i = 2; i < buf[0]; i++) {
 		t = buf[i];
 		buf[i] = (prev + 0xDC) ^ buf[i];
 		prev = t;
@@ -1210,7 +1249,7 @@ void AS::encode(uint8_t *buf) {
 	uint8_t prev = buf[1];
 
 	uint8_t i;
-	for (i=2; i<buf[0]; i++) {
+	for (i = 2; i < buf[0]; i++) {
 		prev = (prev + 0xDC) ^ buf[i];
 		buf[i] = prev;
 	}
@@ -1376,16 +1415,23 @@ void AS::encode(uint8_t *buf) {
 	 * 11 24 80 02 1F B7 4A 63 19 63 04             XX XX XX XX XX XX 00
 	 */
 	void AS::sendSignRequest(void) {
-		uint8_t pBuf[]    = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};							// we need 6 bytes
+		uint8_t pBuf[6];
+		uint8_t i = 0;
 
 		sn.mBdy.mLen      = 0x11;
 		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;										// AES Challenge
 
-		getRandomBytes(pBuf, 6);															// but only 6 bytes becomes random data
+		initPrng();
+		for (i = 0; i < 6; i++) {
+			pBuf[i] = (uint8_t)rand();
+		}
+
 		memcpy(sn.buf+11, pBuf, 6);
-		sn.buf[17] = hmKeyIndex[0];															// the 7th byte is the key index
-		makeTmpKey(pBuf);																	// here we make the temporarly key with the challange and the old known hm key
+//		sn.buf[17] = hmKeyIndex[0];															// the 7th byte is the key index
+		// TODO: get propper key index
+		sn.buf[17] = 0x02;															// the 7th byte is the key index
+		makeTmpKey(pBuf);																	// here we make a temporarily key with the challenge and the old known HMKEY
 
 		#ifdef AES_DBG
 			dbg << F(">>> signingRequestData  : ") << _HEX(sn.buf+10, 7) << F(" <<<") << "\n";
@@ -1401,11 +1447,10 @@ void AS::encode(uint8_t *buf) {
 	 * @param challenge   pointer to the challenge
 	 */
 	void AS::makeTmpKey(uint8_t *challenge) {
-		memcpy(this->tempHmKey, HMKEY, 16);
-
-		for (uint8_t i = 0; i < 6; i++) {
-			this->tempHmKey[i] = HMKEY[i] ^ challenge[i];
+		for (uint8_t i = 0; i < 16; i++) {
+			this->tempHmKey[i] = (i<6) ? (HMKEY[i] ^ challenge[i]) : HMKEY[i];
 		}
+
 		aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
 	}
 
@@ -1413,29 +1458,37 @@ void AS::encode(uint8_t *buf) {
 	 * @brief Encrypt the payload
 	 *        The temporarily key was built by XORing the key with the challenge
 	 *
+	 *        The payload to encrypt:
+	 *        6 Random-Bytes___ The bytes 1-11 of the message to sign
+	 *        xx xx xx xx xx xx 0A A4 01 23 70 EC 1E 7A AD 02
+	 *
+	 *        The iv (initial vector) is 16 bytes long and contains the
+	 *        bytes 11 - n of the message to sign padded with 0x00
+	 *
 	 * @param encPayload   pointer to the buffer stored the final encrypted payload
 	 * @param msgToEnc     pointer to the message should encrypted
 	 */
 	void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
-		uint8_t iv[16] = {															// initial vector
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-		};
+		uint8_t iv[16];																// initial vector
 
 		uint32_t mill = millis();
 		encPayload[0] = 0;
 		encPayload[1] = 0;
-		encPayload[2] = (mill & 0xFF000000) >> 24;									// first 6 bytes of payload probably is a counter
-		encPayload[3] = (mill & 0x00FF0000) >> 16;									// we store current millis in bytes 2-5 of payload
-		encPayload[4] = (mill & 0x0000FF00) >> 8;
-		encPayload[5] = (mill & 0x000000FF);
+		encPayload[2] = (uint8_t)((mill & 0xFF000000) >> 24);						// first 6 bytes of payload probably is a counter
+		encPayload[3] = (uint8_t)((mill & 0x00FF0000) >> 16);						// we store current millis in bytes 2-5 of payload
+		encPayload[4] = (uint8_t)((mill & 0x0000FF00) >> 8);
+		encPayload[5] = (uint8_t)((mill & 0x000000FF));
 
-		memcpy(encPayload+6, msgToEnc+1, ((msgToEnc[0] < 10) ? 9 : 10) );			// build payload to encrypt
-		memcpy(iv, msgToEnc+11, msgToEnc[0]-10);									// build initial vector
+		memcpy(encPayload+6, msgToEnc+1, 10);										// build payload to encrypt
+		memcpy(iv, msgToEnc+11, 16);												// build initial vector
 
-		aes128_enc(encPayload, &ctx);												// encrypt payload width the temporarily key first time
-		for (uint8_t i = 0; i < 16; i++)	encPayload[i] ^= iv[i];					// xor encrypted payload with iv
-		aes128_enc(encPayload, &ctx);												// encrypt payload width the temporarily key again
+		aes128_enc(encPayload, &ctx);												// encrypt payload width previous generated temporarily key first time
+
+		for (uint8_t i = 0; i < 16; i++) {
+			encPayload[i] ^= iv[i];													// xor encrypted payload with iv
+		}
+
+		aes128_enc(encPayload, &ctx);												// encrypt payload width previous generated temporarily key again
 	}
 
 	/**
@@ -1446,19 +1499,21 @@ void AS::encode(uint8_t *buf) {
 	 */
 	uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
 		uint8_t authAck[4];
-		uint8_t iv[16] = {															// initial vector
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-		};
+		uint8_t iv[16];																// initial vector
 
-		memcpy(iv, msgOriginal+11, msgOriginal[0]-10);								// build initial vector
+		//dbg << F(">>> original: ") << _HEX(msgOriginal, msgOriginal[0])  << "\n";
+
+		memcpyPad0(iv, 16, msgOriginal+11, msgOriginal[0]-10);						// Copy the send msgOriginal to iv. If msgOriginal shorter then 16 bytes, padded with 0x00
 		aes128_dec(data, &ctx);														// decrypt payload with temporarily key first time
 
 		for (uint8_t i = 0; i < 16; i++) data[i] ^= iv[i];							// xor encrypted payload with iv
 
 		memcpy(authAck, data, 4);													// build auth ACK
 		aes128_dec(data, &ctx);														// decrypt payload with temporarily again
-//		dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
+
+		#ifdef AES_DBG
+			dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
+		#endif
 
 		// memcmp returns 0 if compare true
 		 if (!memcmp(data+6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
@@ -1468,6 +1523,13 @@ void AS::encode(uint8_t *buf) {
 		 } else {
 			 return 0;
 		 }
+	}
+
+	void AS:: memcpyPad0(uint8_t *target, uint8_t tLen, uint8_t *source, uint8_t sLen) {
+		uint8_t i;
+		for (i = 0; i < tLen; i++) {
+			target[i] = (i < sLen) ? source[i] : 0x00;
+		}
 	}
 
 	/**
@@ -1487,25 +1549,18 @@ void AS::encode(uint8_t *buf) {
 
 		prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE_AES, rv.mBdy.reID);
 	}
-
-	/**
-	 * @brief Get number of random bytes
-	 *
-	 * @param buffer    pointer to buffer which filled with random data
-	 * @param length    how many random bytes should be generate
-	 */
-	void AS::getRandomBytes(uint8_t *buffer, uint8_t length) {
-		uint8_t i = 0;
-		srand(this->randomSeed ^ uint16_t (millis() & 0xFFFF));
-		for (i =0; i < length; i++) {
-			buffer[i] = rand() % 0xFF;
-		}
-	}
 #endif
 
 
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------
+
+/**
+ * @brief Initialize the random number generator
+ */
+void AS::initPrng() {
+	srand(this->randomSeed ^ uint16_t (millis() & 0xFFFF));
+}
 
 /**
  * @brief Initialize the pseudo random number generator
@@ -1517,6 +1572,8 @@ void AS::initRandomSeed() {
 	while (p >= &__heap_start + 1) {
 		this->randomSeed ^= * (--p);
 	}
+
+	initPrng();
 }
 
 /**

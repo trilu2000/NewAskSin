@@ -79,6 +79,10 @@
 #define AS_BUTTON_BYTE_LONGPRESS_BIT     0b01000000
 #define AS_BUTTON_BYTE_LOWBAT_BIT        0b10000000
 
+#define AS_STATUS_KEYCHANGE_INACTIVE     0
+#define AS_STATUS_KEYCHANGE_ACTIVE1      1
+#define AS_STATUS_KEYCHANGE_ACTIVE2      2
+
 /**
  * @short Main class for implementation of the AskSin protocol stack.
  * Every device needs exactly one instance of this class.
@@ -118,17 +122,17 @@ class AS {
 
 	/** @brief Helper structure for keeping track of active config mode */
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
-		uint8_t  active   :1;				//< indicates status, 1 if config mode is active
+		uint8_t  active; //   :1;				//< indicates status, 1 if config mode is active
 		uint8_t  cnl;						//< channel
 		uint8_t  lst;						//< list
 		uint8_t  idx;						//< peer index
 	} cFlag;
 
 	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
-		uint8_t active   :1;				// indicates status of poll routine, 1 is active
-		uint8_t peer     :1;				// is it a peer list message
-		uint8_t reg2     :1;				// or a register send
-		uint8_t reg3     :1;				// not implemented at the moment
+		uint8_t active; //   :1;				// indicates status of poll routine, 1 is active
+		uint8_t peer; //     :1;				// is it a peer list message
+		uint8_t reg2; //     :1;				// or a register send
+		uint8_t reg3; //     :1;				// not implemented at the moment
 		uint8_t totSlc;						// amount of necessary slices to send content
 		uint8_t curSlc;						// counter for slices which are already send
 		uint8_t cnl;						// indicates channel
@@ -139,10 +143,10 @@ class AS {
 	} stcSlice;
 
 	struct s_stcPeer {
-		uint8_t active   :1;				// indicates status of poll routine, 1 is active
-		uint8_t rnd      :3;				// send retries
-		uint8_t burst    :1;				// burst flag for send function
-		uint8_t bidi     :1;				// ack required
+		uint8_t active; //   :1;				// indicates status of poll routine, 1 is active
+		uint8_t rnd; //      :3;				// send retries
+		uint8_t burst; //    :1;				// burst flag for send function
+		uint8_t bidi; //     :1;				// ack required
 		uint8_t mTyp;						// message type to build the right message
 		uint8_t *pL;						// pointer to payload
 		uint8_t lenPL;						// length of payload
@@ -153,17 +157,18 @@ class AS {
 	} stcPeer;
 
 	struct s_l4_0x01 {
-		uint8_t  peerNeedsBurst      :1;     // 0x01, s:0, e:1
-		uint8_t                      :6;     //
-		uint8_t  expectAES           :1;     // 0x01, s:7, e:8
+		uint8_t  peerNeedsBurst; //      :1;     // 0x01, s:0, e:1
+//		uint8_t                      :6;     //
+		uint8_t  expectAES; //           :1;     // 0x01, s:7, e:8
 	} l4_0x01;
 
-	uint8_t pairActive    :1;
+	uint8_t pairActive;
+
+	uint8_t keyChangeStatus = 0;
 
 	uint8_t  signingRequestData[6];
 	uint8_t  tempHmKey[16];
 	uint8_t  newHmKey[16];
-	uint8_t  hmKeyIndex[1];
 	uint16_t randomSeed = 0;
 
   public:		//---------------------------------------------------------------------------------------------------------
@@ -238,7 +243,8 @@ class AS {
 	void sendSignRequest(void);
 	void sendSignResponse(void);
 
-	void getRandomBytes(uint8_t *buffer, uint8_t length);
+	void memcpyPad0(uint8_t *target, uint8_t tLen, uint8_t *source, uint8_t sLen);
+	void initPrng();
 	void initRandomSeed();
 	
   protected:	//---------------------------------------------------------------------------------------------------------

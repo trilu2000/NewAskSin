@@ -594,11 +594,10 @@ uint8_t  EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, ui
 		for (uint8_t j = 0; j < cnlTbl[xI].sLen; j++) {									// search for the matching address in cnlAddr
 			if (_pgmB(devDef.cnlAddr[cnlTbl[xI].sIdx + j]) == buf[i]) {					// if byte found
 				setEEPromBlock(eIdx + j, 1, (void*)&buf[i+1]);							// add the eeprom content
-//				dbg << "eI:" << _HEXB(eIdx + j) << ", " << _HEXB(buf[i+1]) << '\n';
+				// dbg << "eI:" << _HEXB(eIdx + j) << ", " << _HEXB(buf[i+1]) << '\n';
 				break;																	// go to the next i
 			}
 		}
-
 	}
 }
 uint8_t  EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
