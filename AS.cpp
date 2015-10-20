@@ -805,26 +805,29 @@ void AS::recvMessage(void) {
 
 				sendAckAES(authAck);																// send AES-Ack
 
-				if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
-					processMessageConfig(rv.mBdy.by10, cFlag.cnl - 1);
-				} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
-					processMessageAction();
+				if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
+					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
+						processMessageConfig(rv.mBdy.by10, cFlag.cnl - 1);
+					} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
+						processMessageAction();
+					}
+
+				} else if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE2) {
+					setEEPromBlock(15, 16, newHmKey);													// store HMKEY
+					getEEPromBlock(15, 16, HMKEY);
+					setEEPromBlock(14, 1, newHmKeyIndex);												// store used key index
+					hmKeyIndex[0] = newHmKeyIndex[0];
+					#ifdef AES_DBG
+						dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << "\n";
+					#endif
+
+					keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 				}
 
 			 } else {
 				#ifdef AES_DBG
 					 dbg << F("Signatur NOT OK\n");
 				#endif
-
-				setEEPromBlock(15, 16, newHmKey);													// store HMKEY
-				getEEPromBlock(15, 16, HMKEY);
-				setEEPromBlock(14, 1, newHmKeyIndex);												// store used key index
-				hmKeyIndex[0] = newHmKeyIndex[0];
-				#ifdef AES_DBG
-					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << "\n";
-				#endif
-
-				keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 			}
 
 		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {										// AES Key Exchange
