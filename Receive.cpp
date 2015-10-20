@@ -44,14 +44,14 @@ void	RV::poll(void) {
 	#ifdef RV_DBG_EX																		// only if extended AS debug is set
 		pHM->explainMessage(this->buf);
 	#endif
-	
+
 	// filter out unknown or not for us
 	if ((bIntend == 'l') || (bIntend == 'u')) {												// not for us, or sender unknown
 		this->mBdy.mLen = 0;																// clear receive buffer
 		return;
 	}
 
-	// filter out repeated messages
+	// filter out messages comes from a repeater
 	if ((this->mBdy.mFlg.RPTED) && (last_rCnt == this->mBdy.mLen)) {						// check if message was already received
 		#ifdef RV_DBG																		// only if AS debug is set
 			dbg << F("  repeated message\n");

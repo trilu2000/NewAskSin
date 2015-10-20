@@ -79,9 +79,9 @@
 #define AS_BUTTON_BYTE_LONGPRESS_BIT     0b01000000
 #define AS_BUTTON_BYTE_LOWBAT_BIT        0b10000000
 
-#define AS_STATUS_KEYCHANGE_INACTIVE     0
-#define AS_STATUS_KEYCHANGE_ACTIVE1      1
-#define AS_STATUS_KEYCHANGE_ACTIVE2      2
+#define AS_STATUS_KEYCHANGE_INACTIVE     0xFF
+#define AS_STATUS_KEYCHANGE_ACTIVE1      0x00
+#define AS_STATUS_KEYCHANGE_ACTIVE2      0x08
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.
@@ -164,11 +164,12 @@ class AS {
 
 	uint8_t pairActive;
 
-	uint8_t keyChangeStatus = 0;
+	uint8_t keyPartIndex = 0xFF;
 
 	uint8_t  signingRequestData[6];
 	uint8_t  tempHmKey[16];
 	uint8_t  newHmKey[16];
+	uint8_t  newHmKeyIndex[];
 	uint16_t randomSeed = 0;
 
   public:		//---------------------------------------------------------------------------------------------------------
@@ -241,7 +242,6 @@ class AS {
 	uint8_t checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal);
 
 	void sendSignRequest(void);
-	void sendSignResponse(void);
 
 	void memcpyPad0(uint8_t *target, uint8_t tLen, uint8_t *source, uint8_t sLen);
 	void initPrng();

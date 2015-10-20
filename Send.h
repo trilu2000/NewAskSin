@@ -65,6 +65,7 @@ class SN {
 	SN();
 	void init(AS *ptrMain);
 	void poll(void);
+	void cleanUp(void);
 };
 
 #endif 

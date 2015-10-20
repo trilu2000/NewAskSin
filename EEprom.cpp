@@ -7,6 +7,7 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 //#define EE_DBG
+//#define EE_DBG_TEST
 #include "EEprom.h"
 
 uint8_t MAID[3];
@@ -88,23 +89,53 @@ uint8_t  EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	setEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
 }
+
+/**
+ * @brief Get register value from EEprom
+ *
+ * @param cnl Channel
+ * @param lst List
+ * @param idx Index of peer (0 if not applicable)
+ * @param addr address of the register (@see xml device file)
+ *
+ * TODO: maybe we return 0xFF if value not found?
+ * @return the value or 0 if not found
+ */
 uint8_t  EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
-
-	uint8_t xI = getRegListIdx(cnl, lst);
-	if (xI == 0xff) return 0;															// respective line not found
-
-	if (!checkIndex(cnl, lst, idx)) return 0;											// check if peer index is in range
-
-	uint16_t eIdx = cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx);
-
 	uint8_t retByte;
-	for (uint8_t j = 0; j < cnlTbl[xI].sLen; j++) {										// search for the right address in cnlAddr
-		if (_pgmB(devDef.cnlAddr[cnlTbl[xI].sIdx + j]) == addr) {						// if byte fits
-			getEEPromBlock(eIdx + j, 1, (void*)&retByte);								// get the respective byte from eeprom
+	uint8_t i = 0;
+	uint8_t sIdx = getRegListIdx(cnl, lst);												// the register list index
+
+	if (sIdx == 0xFF) {
+		#ifdef EE_DBG
+			dbg << F("EE: sIdx ") << _HEXB(sIdx) << F (" not found\n");
+		#endif
+		return 0x00;																	// given list not found
+	}
+
+	if (!checkIndex(cnl, lst, idx)) {
+		#ifdef EE_DBG
+			dbg << F("EE: idx ") << _HEXB(idx) << F (" out of range\n");
+		#endif
+		return 0x00;																	// check if peer index is in range
+	}
+
+	uint16_t eIdx = cnlTbl[sIdx].pAddr + (cnlTbl[sIdx].sLen * idx);
+
+	for (i = 0; i < cnlTbl[sIdx].sLen; i++) {											// search for the right address in cnlAddr
+		if (_pgmB(devDef.cnlAddr[cnlTbl[sIdx].sIdx] + i) == addr) {						// if byte fits
+			getEEPromBlock(eIdx + i, 1, (void*)&retByte);								// get the respective byte from eeprom
 			return retByte;																// and exit
 		}
 	}
+
+	#ifdef EE_DBG
+		dbg << F("EE: address ") << _HEXB(addr) << (" not fount in list ") << _HEXB(lst) << (" for channel ") << _HEXB(cnl) << F("\n");
+	#endif
+
+	return 0;
 }
+
 uint32_t EE::getHMID(void) {
 	uint8_t a[3];
 	a[0] = HMID[2];
@@ -122,8 +153,8 @@ EE::EE() {
 // general functions
 void     EE::init(void) {
 	#ifdef EE_DBG																		// only if ee debug is set
-	dbgStart();																			// serial setup
-	dbg << F("EE.\n");																	// ...and some information
+		dbgStart();																			// serial setup
+		dbg << F("EE.\n");																// ...and some information
 	#endif
 
 	initEEProm();																		// init function if a i2c eeprom is used
@@ -182,7 +213,7 @@ void     EE::getMasterID(void) {
 	MAID[2] = getRegAddr(0, 0, 0, 0x0c);
 }
 void     EE::testModul(void) {															// prints register.h content on console
-	#ifdef EE_DBG																		// only if ee debug is set
+	#ifdef EE_DBG_TEST																		// only if ee debug is set
 	dbg << '\n' << pLine;
 	dbg << F("register.h - lists\n");
 	dbg << pLine;

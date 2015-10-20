@@ -65,7 +65,7 @@ void SN::poll(void) {
 		} else {																			// send it external
 			uint8_t tBurst = this->mBdy.mFlg.BURST;											// get burst flag, while string will get encoded
 
-			memcpy(this->msgPartToSign, this->buf, sndLen);									// copy the first 10 bytes without length of message for calculating AES signing response
+//			memcpy(this->msgPartToSign, this->buf, sndLen);									// copy the first 10 bytes without length of message for calculating AES signing response
 
 			pHM->encode(this->buf);															// encode the string
 
@@ -110,16 +110,19 @@ void SN::poll(void) {
 		#endif
 	}
 
-	if (this->retrCnt == 0xff) {															// answer was received, clean up the structure
-		this->timeOut = 0;
-		this->retrCnt = 0;
-		this->maxRetr = 0;
-		this->active = 0;
-		sndTmr.set(0);
-		
+	if (this->retrCnt == 0xFF) {															// answer was received, clean up the structure
+//		dbg << F(">>> clear timer") << _TIME << "\n";
+
+		this->cleanUp();
 		pHM->pw.stayAwake(100);
 		if (!pHM->ld.active) pHM->ld.set(ack);												// fire the status led
 	}
+}
 
-	
+void SN::cleanUp(void) {
+	this->timeOut = 0;
+	this->retrCnt = 0;
+	this->maxRetr = 0;
+	this->active = 0;
+	sndTmr.set(0);
 }
