@@ -1,6 +1,6 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 // AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+// 2013-08-03 <trilu@gmx.de>, <dirk@hfma.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
 //- AskSin protocol functions ---------------------------------------------------------------------------------------------
 //- with a lot of support from martin876 at FHEM forum
@@ -46,8 +46,6 @@ void AS::init(void) {
 	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
 	memcpy_P(HMSR, HMSerialData+3, 10);														// set HMSerial from pgmspace
 
-	dbg << F("HmKey: ") << _HEX(HMKEY, 16) << "\n" << F("KeyId: ") << _HEX(hmKeyIndex, 1) << "\n";
-
 	sn.init(this);																			// send module
 	rv.init(this);																			// receive module
 	rg.init(this);																			// module registrar
@@ -63,9 +61,10 @@ void AS::init(void) {
 	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
 }
 
+/**
+ * @brief Cyclic poll all related functions
+ */
 void AS::poll(void) {
-
-	// check if something received
 	if (ccGetGDO0()) {																		// check if something was received
 		cc.rcvData(rv.buf);																	// copy the data into the receiver module
 		if (rv.hasData) decode(rv.buf);														// decode the string
@@ -100,8 +99,6 @@ void AS::poll(void) {
 		
 	// check if we could go to standby
 	pw.poll();																				// poll the power management
-	
-	// some sanity poll routines
 }
 
 /**
@@ -112,15 +109,14 @@ void AS::poll(void) {
  * 1A 94 84 00 1F B7 4A 01 02 04 15    00 6C  4B 45 51 30 32 33 37 33 39 36  10 41     01     00
  */
 void AS::sendDEVICE_INFO(void) {
-	uint8_t xCnt;
+	uint8_t msgCount;
 	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {
-		xCnt = rv.mBdy.mLen;																// send counter - is it an answer or a initial message
+		msgCount = rv.mBdy.mLen;															// send counter - is it an answer or a initial message
 	} else {
-		xCnt = sn.msgCnt++;
+		msgCount = sn.msgCnt++;
 	}
 
 	sn.mBdy.mLen = 0x1A;
-//	sn.mBdy.mCnt = xCnt;
 	sn.mBdy.mFlg.CFG = 1;
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 
@@ -128,29 +124,11 @@ void AS::sendDEVICE_INFO(void) {
 	memcpy(sn.buf+13, HMSR, 10);
 	memcpy_P(sn.buf+23, devDef.devIdnt+3, 4);
 
-	prepareToSend(xCnt, AS_MESSAGE_DEVINFO, MAID);
+	prepareToSend(msgCount, AS_MESSAGE_DEVINFO, MAID);
 
 	pairActive = 1;																			// set pairing flag
 	pairTmr.set(20000);																		// set pairing time
 	ld.set(pairing);																		// and visualize the status
-}
-
-/**
- * @brief Send ACK message
- *
- * Message description:
- *             Sender__ Receiver ACK
- * 0A 24 80 02 1F B7 4A 63 19 63 00
- */
-void AS::sendACK(void) {
-	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
-
-	sn.mBdy.mLen = 0x0A;
-	sn.mBdy.mFlg.CFG = 0;
-	sn.mBdy.mFlg.BIDI = 0;
-//	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.by10 = 0x00;
-	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 }
 
 /**
@@ -166,6 +144,36 @@ void AS::checkSendACK(uint8_t ackOk) {
 	}
 }
 
+/**
+ * @brief Send ACK message
+ *
+ * Message description:
+ *             Sender__ Receiver ACK
+ * 0A 24 80 02 1F B7 4A 63 19 63 00
+ */
+inline void AS::sendACK(void) {
+	if (rv.mBdy.mFlg.BIDI) {															// prevent answer for requests from a user class on repeated key press
+		sn.mBdy.mLen = 0x0A;
+		sn.mBdy.mFlg.CFG = 0;
+		sn.mBdy.mFlg.BIDI = 0;
+		sn.mBdy.by10 = 0x00;
+		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+	}
+}
+
+/**
+ * @brief Send a NACK (not ACK)
+ *
+ * Message description:
+ *             Sender__ Receiver NACK
+ * 0A 24 80 02 1F B7 4A 63 19 63 80
+ */
+inline void AS::sendNACK(void) {
+	sn.mBdy.mLen = 0x0A;
+	sn.mBdy.by10 = AS_RESPONSE_NACK;
+	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+}
+
 #ifdef SUPPORT_AES
 	/**
 	 * @brief Send an ACK of previous AES handshake
@@ -176,9 +184,7 @@ void AS::checkSendACK(uint8_t ackOk) {
 	 *
 	 * @param data pointer to aes ack data
 	 */
-	void AS::sendAckAES(uint8_t *data) {
-		if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
-
+	inline void AS::sendAckAES(uint8_t *data) {
 		sn.mBdy.mLen = 0x0E;
 		sn.mBdy.mFlg.BIDI = 0;
 		sn.mBdy.by10 = AS_RESPONSE_ACK;
@@ -204,39 +210,16 @@ void AS::checkSendACK(uint8_t ackOk) {
  * @param action
  */
 void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
-	if (!rv.mBdy.mFlg.BIDI) return;															// overcome the problem to answer from a user class on repeated key press
-	
-	sn.mBdy.mLen      = 0x0E;
-//	sn.mBdy.mCnt = rv.mBdy.mCnt;
-	sn.mBdy.mFlg.BIDI = 0;
-//	sn.mBdy.mTyp = 0x02;
-//	memcpy(sn.mBdy.reID, HMID, 3);
-//	memcpy(sn.mBdy.toID, rv.mBdy.reID, 3);
-	sn.mBdy.by10      = 0x01;
-	sn.mBdy.by11      = channel;
-	sn.mBdy.pyLd[0]   = state;
-	sn.mBdy.pyLd[1]   = action | (bt.getStatus() << 7);
-	sn.mBdy.pyLd[2]   = cc.rssi;
-
-	prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
-}
-
-/**
- * @brief Send a NACK (not ACK)
- *
- * Message description:
- *             Sender__ Receiver NACK
- * 0A 24 80 02 1F B7 4A 63 19 63 80
- */
-void AS::sendNACK(void) {
-	sn.mBdy.mLen = 0x0A;
-//	sn.mBdy.mCnt = rv.mBdy.mLen;
-//	sn.mBdy.mTyp = 0x02;
-//	memcpy(sn.mBdy.reID,HMID,3);
-//	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
-	sn.mBdy.by10 = AS_RESPONSE_NACK;
-
-	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+	if (rv.mBdy.mFlg.BIDI) {																// prevent answer for requests from a user class on repeated key press
+		sn.mBdy.mLen      = 0x0E;
+		sn.mBdy.mFlg.BIDI = 0;
+		sn.mBdy.by10      = 0x01;
+		sn.mBdy.by11      = channel;
+		sn.mBdy.pyLd[0]   = state;
+		sn.mBdy.pyLd[1]   = action | (bt.getStatus() << 7);
+		sn.mBdy.pyLd[2]   = cc.rssi;
+		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+	}
 }
 
 /**
@@ -248,10 +231,6 @@ void AS::sendNACK(void) {
  */
 void AS::sendNACK_TARGET_INVALID(void) {
 	sn.mBdy.mLen = 0x0A;
-//	sn.mBdy.mCnt = rv.mBdy.mLen;
-//	sn.mBdy.mTyp = 0x02;
-//	memcpy(sn.mBdy.reID,HMID,3);
-//	memcpy(sn.mBdy.toID,rv.mBdy.reID,3);
 	sn.mBdy.by10 = AS_RESPONSE_NACK_TARGET_INVALID;
 	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
 }
@@ -278,9 +257,6 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) 
 	}
 
 	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
-//	sn.mBdy.mTyp = 0x10;
-//	memcpy(sn.mBdy.reID, HMID, 3);
-//	memcpy(sn.mBdy.toID, MAID, 3);
 	sn.mBdy.by10      = AS_INFO_ACTUATOR_STATUS;
 	sn.mBdy.by11      = channel;
 	sn.mBdy.pyLd[0]   = state;
@@ -412,7 +388,6 @@ void AS::sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *paylo
 	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
 	stcPeer.mTyp   = mType;
 	stcPeer.active = 1;
-	// --------------------------------------------------------------------
 }
 
 void AS::sendSensorData(void) {
@@ -428,7 +403,6 @@ void AS::sendSensorData(void) {
 	//Val3=> '16,4,$val=(hex($val))',
 	//Fld4=> "20,2",
 	//Val4=> '24,4,$val=(hex($val))'} },
-	// --------------------------------------------------------------------
 }
 
 void AS::sendClimateEvent(void) {
@@ -437,7 +411,6 @@ void AS::sendClimateEvent(void) {
 	//"58"          => { txt => "ClimateEvent", params => {
 	//CMD      => "00,2",
 	//ValvePos => '02,2,$val=(hex($val))', } },
-	// --------------------------------------------------------------------
 }
 
 void AS::sendSetTeamTemp(void) {
@@ -447,7 +420,6 @@ void AS::sendSetTeamTemp(void) {
 	//CMD      => "00,2",
 	//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
 	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
-	// --------------------------------------------------------------------
 }
 
 void AS::sendWeatherEvent(void) {
@@ -456,15 +428,14 @@ void AS::sendWeatherEvent(void) {
 	//"70"          => { txt => "WeatherEvent", params => {
 	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 	//HUM      => '04,2,$val=(hex($val))', } },
-	// --------------------------------------------------------------------
 }
 
 // private:		//---------------------------------------------------------------------------------------------------------
 // - poll functions --------------------------------
 void AS::sendSliceList(void) {
-	if (sn.active) return;																	// check if send function has a free slot, otherwise return
-
 	uint8_t cnt;
+
+	if (sn.active) return;																	// check if send function has a free slot, otherwise return
 
 	if        (stcSlice.peer) {			// INFO_PEER_LIST
 		cnt = ee.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, sn.buf+11);					// get the slice and the amount of bytes
@@ -479,7 +450,7 @@ void AS::sendSliceList(void) {
 		stcSlice.curSlc++;																	// increase slice counter
 		//dbg << "reg2 slc: " << _HEX(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
 		
-	} else if (stcSlice.reg3) {			// INFO_PARAM_RESPONSE_SEQ
+	} else if (stcSlice.reg3) {																// INFO_PARAM_RESPONSE_SEQ
 
 	}
 
@@ -585,20 +556,12 @@ void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 	// LONG   = bit 6
 	// LOWBAT = bit 7
 
-	sn.mBdy.mLen = stcPeer.lenPL + 9;														// set message length
-//	sn.mBdy.mCnt = sn.msgCnt;																// set message counter
-
-	sn.mBdy.mFlg.CFG = 1;
-	sn.mBdy.mFlg.BIDI = stcPeer.bidi;														// message flag
+	sn.mBdy.mLen       = stcPeer.lenPL + 9;													// set message length
+	sn.mBdy.mFlg.CFG   = 1;
+	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;														// message flag
 	sn.mBdy.mFlg.BURST = l4_0x01.peerNeedsBurst;
-	
-//	sn.mBdy.mTyp = stcPeer.mTyp;															// message type
-	//uint8_t t1[] = {0x23,0x70,0xD8};
-	//memcpy(sn.mBdy.reID, t1, 3);															// sender id
-//	memcpy(sn.mBdy.reID, HMID, 3);															// sender id
-//	memcpy(sn.mBdy.toID, xPeer, 3);															// receiver id
-	sn.mBdy.by10 = stcPeer.cnl;
-	sn.mBdy.by10 |= (bt.getStatus() << 7);													// battery bit
+	sn.mBdy.by10       = stcPeer.cnl;
+	sn.mBdy.by10      |= (bt.getStatus() << 7);												// battery bit
 	memcpy(sn.buf+11, stcPeer.pL, stcPeer.lenPL);											// payload
 	
 	sn.maxRetr = retr;																		// send only one time
@@ -1154,7 +1117,7 @@ void AS::deviceReset(void) {
  *             Sender__ Receiver    Serial number
  * 14 77 80 10 1E 7A AD 63 19 63 00 4A 45 51 30 37 33 31 39 30 35
  */
-void AS::sendINFO_SERIAL(void) {
+inline void AS::sendINFO_SERIAL(void) {
 	sn.mBdy.mLen = 0x14;
 	sn.mBdy.by10 = AS_INFO_SERIAL;
 	memcpy(sn.buf+11, HMSR, 10);
@@ -1170,13 +1133,9 @@ void AS::sendINFO_SERIAL(void) {
  *
  * @param length
  */
-void AS::sendINFO_PEER_LIST(uint8_t length) {
+inline void AS::sendINFO_PEER_LIST(uint8_t length) {
 	sn.mBdy.mLen = length + 10;
-//	sn.mBdy.mCnt = stcSlice.mCnt++;
 	sn.mBdy.mFlg.BIDI = 1;
-//	sn.mBdy.mTyp = 0x10;
-//	memcpy(sn.mBdy.reID, HMID, 3);
-//	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
 	sn.mBdy.by10 = AS_INFO_PEER_LIST;																	//stcSlice.cnl;
 	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
@@ -1190,13 +1149,9 @@ void AS::sendINFO_PEER_LIST(uint8_t length) {
  *
  * @param length
  */
-void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
+inline void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
 	sn.mBdy.mLen = length + 10;
-//	sn.mBdy.mCnt = stcSlice.mCnt++;
 	sn.mBdy.mFlg.BIDI = 1;
-//	sn.mBdy.mTyp = 0x10;
-//	memcpy(sn.mBdy.reID, HMID, 3);
-//	memcpy(sn.mBdy.toID, stcSlice.toID, 3);
 	sn.mBdy.by10 = (length < 3) ? AS_INFO_PARAM_RESPONSE_SEQ : AS_INFO_PARAM_RESPONSE_PAIRS;
 	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }

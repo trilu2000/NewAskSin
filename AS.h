@@ -132,12 +132,12 @@ class AS {
 
 	// - send functions --------------------------------
 	void sendDEVICE_INFO(void);
-	void sendACK(void);
+	inline void sendACK(void);
 	void checkSendACK(uint8_t ackOk);
 	void sendPayload(uint8_t payloadType, uint8_t *data, uint8_t dataLen);
-	void sendAckAES(uint8_t *data);
+	inline void sendAckAES(uint8_t *data);
 	void sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action);
-	void sendNACK(void);
+	inline void sendNACK(void);
 	void sendNACK_TARGET_INVALID(void);
 	void sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag);
 	void sendINFO_TEMP(void);
@@ -167,9 +167,9 @@ class AS {
 	void recvMessage(void);
 
 	// - send functions --------------------------------
-	void sendINFO_SERIAL(void);
-	void sendINFO_PEER_LIST(uint8_t len);
-	void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
+	inline void sendINFO_SERIAL(void);
+	inline void sendINFO_PEER_LIST(uint8_t len);
+	inline void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
 	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
 	void sendINFO_PARAMETER_CHANGE(void);
 
