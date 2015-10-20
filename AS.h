@@ -158,6 +158,12 @@ class AS {
 
   private:		//---------------------------------------------------------------------------------------------------------
 
+	inline uint8_t configPeerAdd(uint8_t by10);
+	inline uint8_t configPeerRemove();
+	inline void configStart();
+	inline void configEnd(uint8_t cnl1);
+	inline void configWriteIndex(void);
+
 	// - poll functions --------------------------------
 	void sendSliceList(void);																// scheduler to send config messages, peers and regs
 	void sendPeerMsg(void);																	// scheduler for peer messages

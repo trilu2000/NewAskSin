@@ -296,7 +296,7 @@ extern uint8_t HMKEY[];
 extern uint8_t hmKeyIndex[];
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
-uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
+inline uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
 uint8_t  isEmpty(void *p1, uint8_t len);												// check if a byte array is empty
 
 #endif

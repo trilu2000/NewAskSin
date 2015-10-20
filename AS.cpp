@@ -959,96 +959,131 @@ void AS::processMessageConfig(uint8_t by10, uint8_t cnl1) {
 	uint8_t ackOk = 1;
 
 	if (rv.mBdy.by11 == AS_CONFIG_PEER_ADD) {													// CONFIG_PEER_ADD
-		/* Message description:
-		 *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
-		 * 0C 0A A4 01 23 70 EC 1E 7A AD 01 01      1F A6 5C 06            05
-		 */
-		ee.remPeer(rv.mBdy.by10, rv.buf+12);													// first call remPeer to avoid doubles
-		ackOk = ee.addPeer(rv.mBdy.by10, rv.buf+12);											// send to addPeer function
-
-		// let module registrations know of the change
-		if ((ackOk) && (modTbl[by10].cnl)) {
-			modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
-		}
+		ackOk = configPeerAdd(by10);
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE) {											// CONFIG_PEER_REMOVE
-		/* Message description:
-		 *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
-		 * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
-		 */
-		ackOk = ee.remPeer(rv.mBdy.by10,rv.buf+12);												// call the remPeer function
+		ackOk = configPeerRemove();
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_START) {												// CONFIG_START
-		/* Message description:
-		 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
-		 * 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
-		 */
-		cFlag.cnl = rv.mBdy.by10;																// fill structure to remember where to write
-		cFlag.lst = rv.buf[16];
-		if ((cFlag.lst == 3) || (cFlag.lst == 4)) {
-			cFlag.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);
-		} else {
-			cFlag.idx = 0;
-		}
-
-		if (cFlag.idx != 0xFF) {
-			cFlag.active = 1;																	// set active if there is no error on index
-			cnfTmr.set(20000);																	// set timeout time, will be checked in poll function
-			// TODO: set message id flag to config in send module
-		}
+		configStart();
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_END) {													// CONFIG_END
-		/*
-		 * Message description:
-		 *             Sender__ Receiver    Channel
-		 * 10 04 A0 01 63 19 63 01 02 04 01 06
-		 */
-		cFlag.active = 0;																		// set inactive
-		if ((cFlag.cnl == 0) && (cFlag.idx == 0)) {
-			ee.getMasterID();
-		}
-		// remove message id flag to config in send module
-
-		if ((cFlag.cnl > 0) && (modTbl[cnl1].cnl)) {
-			/*
-			 * Check if a new list1 was written and reload.
-			 * No need for reload list3/4 because they will be loaded on an peer event.
-			 */
-			if (cFlag.lst == 1) {
-				ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cnl1].lstCnl); 						// load list1 in the respective buffer
-			}
-			modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);											// inform the module of the change
-		}
+		configEnd (cnl1);
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX) {											// CONFIG_WRITE_INDEX
+		configWriteIndex();
 
-		/*
-		 * Message description:
-		 *             Sender__ Receiver        Channel ConfigData: Register:BytePairs
-		 * 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
-		 */
-		if ((cFlag.active) && (cFlag.cnl == rv.mBdy.by10)) {									// check if we are in config mode and if the channel fit
-			ee.setListArray(cFlag.cnl, cFlag.lst, cFlag.idx, rv.buf[0]+1-11, rv.buf+12);		// write the string to EEprom
-
-			if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {											// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
-				uint8_t maIdFlag = 0;
-				for (uint8_t i = 0; i < (rv.buf[0]+1-11); i+=2) {
-					if (rv.buf[12+i] == 0x0A) maIdFlag = 1;
-					#ifdef AS_DBG
-						dbg << "x" << i << " :" << _HEXB(rv.buf[12+i]) << '\n';
-					#endif
-				}
-				if (maIdFlag) {
-					ee.getMasterID();
-					#ifdef AS_DBG
-						dbg << "new masterid\n" << '\n';
-					#endif
-				}
-			}
-		}
 	}
 
 	checkSendACK(ackOk);																			// send appropriate answer
+}
+
+/**
+ * @brief Process CONFIG_PEER_REMOVE messages
+ *
+ * Message description:
+ *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
+ * 0C 0A A4 01 23 70 EC 1E 7A AD 01 01      1F A6 5C 06            05
+ */
+inline uint8_t AS::configPeerAdd(uint8_t by10) {
+	ee.remPeer(rv.mBdy.by10, rv.buf+12);													// first call remPeer to avoid doubles
+	uint8_t ackOk = ee.addPeer(rv.mBdy.by10, rv.buf+12);											// send to addPeer function
+
+	// let module registrations know of the change
+	if ((ackOk) && (modTbl[by10].cnl)) {
+		modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
+	}
+
+	return ackOk;
+}
+
+/**
+ * @brief Process CONFIG_PEER_REMOVE messages
+ *
+ * Message description:
+ *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
+ * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
+ */
+inline uint8_t AS::configPeerRemove() {
+	return ee.remPeer(rv.mBdy.by10,rv.buf+12);													// call the remPeer function
+}
+
+/**
+ * @brief Process CONFIG_START messages
+ *
+ * Message description:
+ *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
+ * 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
+ */
+inline void AS::configStart() {
+	cFlag.cnl = rv.mBdy.by10;																// fill structure to remember where to write
+	cFlag.lst = rv.buf[16];
+	if ((cFlag.lst == 3) || (cFlag.lst == 4)) {
+		cFlag.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf + 12);
+	} else {
+		cFlag.idx = 0;
+	}
+
+	if (cFlag.idx != 0xFF) {
+		cFlag.active = 1;																	// set active if there is no error on index
+		cnfTmr.set(20000);																	// set timeout time, will be checked in poll function
+		// TODO: set message id flag to config in send module
+	}
+}
+
+/**
+ * @brief Process CONFIG_END messages
+ *
+ * Message description:
+ *             Sender__ Receiver    Channel
+ * 10 04 A0 01 63 19 63 01 02 04 01 06
+ */
+inline void AS::configEnd(uint8_t cnl1) {
+	cFlag.active = 0;																		// set inactive
+	if ((cFlag.cnl == 0) && (cFlag.idx == 0)) {
+		ee.getMasterID();
+	}
+	// remove message id flag to config in send module
+
+	if ((cFlag.cnl > 0) && (modTbl[cnl1].cnl)) {
+		/*
+		 * Check if a new list1 was written and reload.
+		 * No need for reload list3/4 because they will be loaded on an peer event.
+		 */
+		if (cFlag.lst == 1) {
+			ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cnl1].lstCnl); 						// load list1 in the respective buffer
+		}
+		modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);											// inform the module of the change
+	}
+}
+
+/**
+ * @brief Process CONFIG_WRITE_INDEX messages
+ *
+ * Message description:
+ *             Sender__ Receiver        Channel ConfigData: Register:BytePairs
+ * 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
+ */
+ inline void AS::configWriteIndex(void) {
+	if ((cFlag.active) && (cFlag.cnl == rv.mBdy.by10)) {									// check if we are in config mode and if the channel fit
+		ee.setListArray(cFlag.cnl, cFlag.lst, cFlag.idx, rv.buf[0]+1-11, rv.buf+12);		// write the string to EEprom
+
+		if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {											// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
+			uint8_t maIdFlag = 0;
+			for (uint8_t i = 0; i < (rv.buf[0]+1-11); i+=2) {
+				if (rv.buf[12+i] == 0x0A) maIdFlag = 1;
+				#ifdef AS_DBG
+					dbg << "x" << i << " :" << _HEXB(rv.buf[12+i]) << '\n';
+				#endif
+			}
+			if (maIdFlag) {
+				ee.getMasterID();
+				#ifdef AS_DBG
+					dbg << "new masterid\n" << '\n';
+				#endif
+			}
+		}
+	}
 }
 
 /**

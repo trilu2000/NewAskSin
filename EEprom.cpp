@@ -645,7 +645,7 @@ uint8_t  EE::checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx) {
 }
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
-uint16_t crc16(uint16_t crc, uint8_t a) {
+inline uint16_t crc16(uint16_t crc, uint8_t a) {
 	uint16_t i;
 
 	crc ^= a;
