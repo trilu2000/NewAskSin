@@ -800,7 +800,7 @@ void AS::recvMessage(void) {
 			// memcmp returns 0 if compare true
 			 if (!memcmp(data+6, rv.prevBuf+1, 10)) {												// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
 				#ifdef AES_DBG
-					dbg << F("Signatur OK\n");
+					dbg << F("Signature check success\n");
 				#endif
 
 				sendAckAES(authAck);																// send AES-Ack
@@ -826,7 +826,7 @@ void AS::recvMessage(void) {
 
 			 } else {
 				#ifdef AES_DBG
-					 dbg << F("Signatur NOT OK\n");
+					 dbg << F("Signature check failed\n");
 				#endif
 			}
 
