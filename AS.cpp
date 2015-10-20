@@ -695,17 +695,22 @@ void AS::recvMessage(void) {
 
 		} else {
 
-			// TODO: check for AES-Signing
-		//	if (signingOn) {
-		//		memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);															// remember this message
-		//		sendSignRequest();
-		//	} else {
-				processMessageConfig(by10, cnl1);
-		//	}
+			#ifdef SUPPORT_AES
+				// TODO: check all channels for AES_ACTIVE -> rv.mBdy.by11
+				if (ee.getRegAddr(1, 1, 0, AS_REG_L1_AES_ACTIVE)) {
+					memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
+					sendSignRequest();
+
+				} else {
+			#endif
+					processMessageConfig(by10, cnl1);
+			#ifdef SUPPORT_AES
+				}
+			#endif
 		}
 
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) {
-		if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt)) {
+		if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt) && (rv.mBdy.by10 != AS_RESPONSE_AES_CHALLANGE)) {
 			sn.retrCnt = 0xFF;																		// was an ACK to an active message, message counter is similar - set retrCnt to 255
 		}
 
@@ -715,10 +720,7 @@ void AS::recvMessage(void) {
 			 *             Sender__ Receiver ACK
 			 * 0A 05 80 02 63 19 63 01 02 04 00
 			 */
-//			if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt)) {
-//				sn.retrCnt = 0xFF;																	// was an ACK to an active message, message counter is similar - set retrCnt to 255
-//			}
-			//dbg << "act:" << sn.active << " rC:" << rv.mBdy.mLen << " sC:" << sn.lastMsgCnt << " cntr:" << sn.retrCnt << '\n';
+			// nothing to do yet
 
 		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK_STATUS) {										// ACK_STATUS
 			/*
@@ -728,43 +730,72 @@ void AS::recvMessage(void) {
 			 *
 			 * Action: Down=0x20, UP=0x10, LowBat=&0x80
 			 */
-//			if ((sn.active) && (rv.mBdy.mLen == sn.lastMsgCnt)) {
-//				sn.retrCnt = 0xFF;																	// was an ACK to an active message, message counter is similar - set retrCnt to 255
-//			}
+			// nothing to do yet
 
 		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK2) {												// ACK2
-			// TODO: Make ready
-
+			// nothing to do yet
 
 		#ifdef SUPPORT_AES
-			} else if (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE) {									// ACK_PROC AES-Challenge
+			} else if (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE) {									// AES-Challenge
 				/*
 				 * Message description:
-				 *             Sender__ Receiver SigningResponse Encrypted data (signature)
-				 * 11 24 80 02 1F B7 4A 63 19 63 03              9B 00 08 07 00 F1 0F 38 B9 C2 72 E9 CC 95 3B 71`
+				 *             Sender__ Receiver By10 By11  Challenge_____ KeyIndex
+				 * 11 24 80 02 1F B7 4A 63 19 63 02   04 01 02 03 04 05 06 02`
 				 */
-				uint8_t payload[16];
+				sn.cleanUp();																		// cleanup send module data;
+
 				uint8_t challenge[6];
+				memcpy(challenge, rv.buf+11, 6);													// get challenge
+				makeTmpKey(challenge);																// Build the temporarily key from challenge
 
-				memcpy(challenge, rv.mBdy.pyLd, 6);													// get challenge
-				makeTmpKey(challenge);
-				payloadEncrypt(payload, sn.msgPartToSign);
+				/**
+				 * Generate the message to encrypt.
+				 * @brief Encrypt the payload
+				 *        The temporarily key was built by XORing the key with the challenge
+				 *
+				 *        The payload to encrypt:
+				 *        6 Random-Bytes___ The bytes 1-11 of the message to sign
+				 *        xx xx xx xx xx xx 0A A4 01 23 70 EC 1E 7A AD 02
+				 *
+				 *        The iv (initial vector) is 16 bytes long and contains the
+				 *        bytes 11 - n of the message to sign padded with 0x00
+				 *
+				 * @param encPayload   pointer to the buffer stored the final encrypted payload
+				 * @param msgToEnc     pointer to the message should encrypted
+				 */
 
+				initPrng();																			// initialize the pseudo random number generator
+
+				/**
+				 * Prepare the message for encryption.
+				 * Message description:
+				 * 6 random bytes___   The bytes 1-11 of the message to sign
+				 * xx xx xx xx xx xx   0A A4 01 23 70 EC 1E 7A AD 02
+				 */
+				uint8_t msgLen = sn.msgToSign[5];													// the message length stored at byte 5
+				uint8_t i;
+				for (i = 0; i < 32; i++) {
+					if (i < 6) {
+						sn.msgToSign[i] = (uint8_t)rand();											// fill the first 6 bytes with random data
+					} else if (i > msgLen + 5 ) {
+						sn.msgToSign[i] = 0x00;														// the unused message bytes padded with 0x00
+					}
+				}
+
+				aes128_enc(sn.msgToSign, &ctx);														// encrypt the message width the generated temporarily key first time
+				for (i = 0; i < 16; i++) {
+					sn.msgToSign[i] ^= sn.msgToSign[i+16];											// xor encrypted payload with iv (the bytes 11-27
+				}
+				aes128_enc(sn.msgToSign, &ctx);														// encrypt payload width previous generated temporarily key again
 				sn.mBdy.mLen = 0x19;
-				sn.mBdy.by10 = payload[0];
-				memcpy(sn.buf+10, payload, 16);
 
-				prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE_AES, rv.mBdy.reID);
+				memcpy(sn.buf+10, sn.msgToSign, 16);
+
+				prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE_AES, rv.mBdy.reID);
 		#endif
 
 		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK) {												// NACK
 			// TODO: Make ready
-
-			// for test
-			//static uint8_t x2[2];
-			//x2[0] = 0x02;
-			//x2[1] += 1;
-			//sendREMOTE(1, 1, x2);
 	
 		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK_TARGET_INVALID) {								// NACK_TARGET_INVALID
 			// TODO: Make ready
@@ -778,72 +809,91 @@ void AS::recvMessage(void) {
 			 *             Sender__ Receiver AES-Response-Data
 			 * 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
 			 */
-
 			sn.cleanUp();																			// cleanup send module data;
-			
-			uint8_t pBuf[16];																				// We need a 16 bytes buffer
-			memcpy(pBuf, rv.buf+10, 16);
 
-			if (checkPayloadDecrypt(pBuf, rv.prevBuf)) {													// check the decrypted result of previous received message
+			/**
+			 * Decrypt payload and compare the result to the previous original message
+			 */
+			uint8_t iv[16];																			// 16 bytes initial vector
+			uint8_t data[16];																		// 16 bytes initial vector
+			memcpy(data, rv.buf+10, 16);
+			memcpyPad0(iv, 16, rv.prevBuf+11, rv.prevBuf[0]-10);									// Copy the send msgOriginal to iv. If msgOriginal shorter then 16 bytes, padded with 0x00
+			aes128_dec(data, &ctx);																	// decrypt payload with temporarily key first time
 
-				if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
-					#ifdef AES_DBG
-						dbg << F("Signatur OK\n");
-					#endif
+			uint8_t i;
+			for (i = 0; i < 16; i++) data[i] ^= iv[i];												// xor encrypted payload with iv
 
-					// here we post process original message after sign authentication
-					memcpy(rv.buf, rv.prevBuf, rv.prevBuf[0]+1);												// copy original message to current receive buffer
-					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
-						processMessageConfig(rv.mBdy.by10, cFlag.cnl - 1);
+			uint8_t authAck[4];
+			memcpy(authAck, data, 4);																// build auth ACK
+			aes128_dec(data, &ctx);																	// decrypt payload with temporarily key again
 
-					} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
-						processMessageAction();
-					}
+			/**
+			 * Compare decrypted message with original message
+			 */
+			#ifdef AES_DBG
+				dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
+			#endif
 
-				} else if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE2) {
-					setEEPromBlock(15, 16, newHmKey);														// store HMKEY
-					getEEPromBlock(15, 16, HMKEY);
-					setEEPromBlock(14, 1, newHmKeyIndex);													// store used key index
-					hmKeyIndex[0] = newHmKeyIndex[0];
-					#ifdef AES_DBG
-						dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << "\n";
-					#endif
+			// memcmp returns 0 if compare true
+			 if (!memcmp(data+6, rv.prevBuf+1, 10)) {												// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
+				#ifdef AES_DBG
+					dbg << F("Signatur OK\n");
+				#endif
 
-					keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
+				sendAckAES(authAck);																// send AES-Ack
+
+				if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
+					processMessageConfig(rv.mBdy.by10, cFlag.cnl - 1);
+				} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
+					processMessageAction();
 				}
+
+			 } else {
+				#ifdef AES_DBG
+					 dbg << F("Signatur NOT OK\n");
+				#endif
+
+				setEEPromBlock(15, 16, newHmKey);													// store HMKEY
+				getEEPromBlock(15, 16, HMKEY);
+				setEEPromBlock(14, 1, newHmKeyIndex);												// store used key index
+				hmKeyIndex[0] = newHmKeyIndex[0];
+				#ifdef AES_DBG
+					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << "\n";
+				#endif
+
+				keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 			}
 
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {												// AES Key Exchange
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {										// AES Key Exchange
 			/*
 			 * Message description:
 			 *             Sender__ Receiver Decrypted Payload with one key part
 			 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
 			 */
 
-			uint8_t pBuf[16];																				// We need a 16 bytes buffer
+			uint8_t pBuf[16];																		// We need a 16 bytes buffer
 			memcpy(pBuf, rv.buf+10, 16);
 
-			aes128_init(HMKEY, &ctx);																		// load HMKEY
-			aes128_dec(pBuf, &ctx);																			// decrypt payload width HMKEY first time
+			aes128_init(HMKEY, &ctx);																// load HMKEY
+			aes128_dec(pBuf, &ctx);																	// decrypt payload width HMKEY first time
 
 			#ifdef AES_DBG
 				dbg << F("dec Buffer: ") << _HEX(pBuf, 16) << "\n";
 			#endif
 
-			if (pBuf[0] == 0x01) {																			// the decrypted data must start with 0x01
+			if (pBuf[0] == 0x01) {																	// the decrypted data must start with 0x01
 				keyPartIndex = (pBuf[1] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
 				if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE1) {
 					newHmKeyIndex[0] = pBuf[1];
 				}
 
-//				dbg << F("newHmKeyIndex: ") << _HEXB(newHmKeyIndex[0]) << _TIME << "\n";
 				memcpy(newHmKey + keyPartIndex, pBuf+2, 8);
 
 				#ifdef AES_DBG
 					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << "\n";
 				#endif
 
-				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);													// remember this message
+				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
 
 				sendSignRequest();
 
@@ -854,10 +904,8 @@ void AS::recvMessage(void) {
 
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {															// action message
 		#ifdef SUPPORT_AES
-			uint8_t expectAES = ee.getRegAddr(rv.mBdy.by11, 1, 0, 0x08);									// expectAES is stored at address 0x08 in list 1
-//			dbg << F("expAES: ") << _HEXB(expectAES) << "\n";
-
-			if (expectAES == 1) {
+			// TODO: check all channels for AES_ACTIVE -> rv.mBdy.by11
+			if (ee.getRegAddr(1, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
 				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);													// remember this message
 				sendSignRequest();
 			} else {
@@ -1113,7 +1161,6 @@ void AS::sendINFO_SERIAL(void) {
 	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_INFO, rv.mBdy.reID);
 }
 
-
 /**
  * @brief Send the peer list
  *
@@ -1171,23 +1218,6 @@ void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
 	sn.mBdy.reID[1] = HMID[1];
 	sn.mBdy.reID[2] = HMID[2];
 	memcpy(sn.mBdy.toID, receiverAddr, 3);
-
-	#ifdef SUPPORT_AES
-		/*
-		 * TODO: check if AES signing required for following INFO_MESSAGES-Types:
-		 *       INFO_SERIAL, INFO_PEER_LIST, INFO_PARAM_RESPONSE_PAIRS
-		 *       INFO_PARAM_RESPONSE_SEQ or INFO_PARAMETER_CHANGE
-		 */
-		if ( mType > AS_MESSAGE_INFO || (mType == AS_MESSAGE_INFO && sn.mBdy.by10 == AS_INFO_ACTUATOR_STATUS) ) {
-			if ( ee.getRegAddr(rv.mBdy.by11, 1, 0, 0x08) ) {						// expectAES is stored at address 0x08 in list 1
-				/*
-				 * Copy the send message to msgPartToSign. We need them for later AES signing
-				 * We need only bytes 1 - 27 padded with 0x00
-				 */
-				memcpyPad0(sn.msgPartToSign, 27, sn.buf, sn.buf[0]);
-			}
-		}
-	#endif
 
 	sn.active = 1;																			// remember to fire the message
 }
@@ -1429,7 +1459,7 @@ void AS::encode(uint8_t *buf) {
 
 		/*
 		 * Here we make a temporarily key with the challenge and the HMKEY.
-		 * We need this for later signature verification. @see checkPayloadDecrypt
+		 * We need this for later signature verification.
 		 */
 		makeTmpKey(sn.buf+11);
 
@@ -1452,84 +1482,6 @@ void AS::encode(uint8_t *buf) {
 		}
 
 		aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
-	}
-
-	/**
-	 * @brief Encrypt the payload
-	 *        The temporarily key was built by XORing the key with the challenge
-	 *
-	 *        The payload to encrypt:
-	 *        6 Random-Bytes___ The bytes 1-11 of the message to sign
-	 *        xx xx xx xx xx xx 0A A4 01 23 70 EC 1E 7A AD 02
-	 *
-	 *        The iv (initial vector) is 16 bytes long and contains the
-	 *        bytes 11 - n of the message to sign padded with 0x00
-	 *
-	 * @param encPayload   pointer to the buffer stored the final encrypted payload
-	 * @param msgToEnc     pointer to the message should encrypted
-	 */
-	void AS::payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc) {
-		uint8_t iv[16];																// initial vector
-
-		uint32_t mill = millis();
-		encPayload[0] = 0;
-		encPayload[1] = 0;
-		encPayload[2] = (uint8_t)((mill & 0xFF000000) >> 24);						// first 6 bytes of payload probably is a counter
-		encPayload[3] = (uint8_t)((mill & 0x00FF0000) >> 16);						// we store current millis in bytes 2-5 of payload
-		encPayload[4] = (uint8_t)((mill & 0x0000FF00) >> 8);
-		encPayload[5] = (uint8_t)((mill & 0x000000FF));
-
-		memcpy(encPayload+6, msgToEnc+1, 10);										// build payload to encrypt
-		memcpy(iv, msgToEnc+11, 16);												// build initial vector
-
-		aes128_enc(encPayload, &ctx);												// encrypt payload width previous generated temporarily key first time
-
-		for (uint8_t i = 0; i < 16; i++) {
-			encPayload[i] ^= iv[i];													// xor encrypted payload with iv
-		}
-
-		aes128_enc(encPayload, &ctx);												// encrypt payload width previous generated temporarily key again
-	}
-
-	/**
-	 * @brief Decrypt payload and compare the result to the previous original message
-	 *
-	 * @param data         pointer encrypted data
-	 * @param msgOriginal  pointer to the saved previous original message
-	 */
-	uint8_t AS::checkPayloadDecrypt (uint8_t *data, uint8_t *msgOriginal) {
-//		uint8_t data[16];															// 16 bytes buffer for received payload
-		uint8_t iv[16];																// 16 bytes initial vector
-		uint8_t authAck[4];
-		uint8_t i;
-
-//		dbg << F(">>> begin checkdata: ") << _TIME  << "\n";
-
-//		memcpy(data, rv.buf+10, 16);
-
-		//dbg << F(">>> original: ") << _HEX(msgOriginal, msgOriginal[0])  << "\n";
-
-		memcpyPad0(iv, 16, msgOriginal+11, msgOriginal[0]-10);						// Copy the send msgOriginal to iv. If msgOriginal shorter then 16 bytes, padded with 0x00
-		aes128_dec(data, &ctx);														// decrypt payload with temporarily key first time
-
-		for (i = 0; i < 16; i++) data[i] ^= iv[i];									// xor encrypted payload with iv
-
-		memcpy(authAck, data, 4);													// build auth ACK
-
-		aes128_dec(data, &ctx);														// decrypt payload with temporarily key again
-
-		#ifdef AES_DBG
-			dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
-		#endif
-
-		// memcmp returns 0 if compare true
-		 if (!memcmp(data+ 6, msgOriginal+1, 10)) {									// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
-			 sendAckAES(authAck);													// send AES-Ack
-			 return 1;
-
-		 } else {
-			 return 0;
-		 }
 	}
 
 	void AS:: memcpyPad0(uint8_t *target, uint8_t tLen, uint8_t *source, uint8_t sLen) {

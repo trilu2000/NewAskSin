@@ -46,7 +46,6 @@ class RV {
 	uint8_t *buf;							// cast to byte array
 
 	uint8_t prevBuf[27];					// store the last receive message to verify with AES signed data.
-	uint8_t nextIsEncrypted;
 
 	#define hasData		buf[0]?1:0			// check if something is in the buffer
 
