@@ -40,4 +40,3 @@ __vm/
 *.vcxproj
 *.filters
 ~$*.docx
-hmkey.h

@@ -1,5 +1,4 @@
 #ifndef _HMKEY_h
-
 	#define _HMKEY_h
 
 	/*
