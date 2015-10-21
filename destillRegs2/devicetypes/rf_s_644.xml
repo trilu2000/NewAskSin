@@ -1,90 +1,66 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="24" supports_aes="true">
+<device version="5" supports_aes="true">
 	<supported_types>
-		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl" priority="2">
+		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-3" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0011"/>
+			<parameter index="10.0" size="2.0" const_value="0x00C8"/>
 		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-2" priority="2">
+		<type name="radio-controlled switch actuator 1-channel (surface-mount)" id="HM-LC-Sw1-SM-2" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00A1"/>
+			<parameter index="10.0" size="2.0" const_value="0x00C9"/>
 		</type>
-		<type name="radio-controlled switch actuator 1-channel (surface-mount)" id="HM-LC-Sw1-SM" priority="2">
+		<type name="radio-controlled switch actuator 4-channel (surface-mount)" id="HM-LC-Sw4-SM-2" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0002"/>
+			<parameter index="10.0" size="2.0" const_value="0x00CD"/>
 		</type>
-		<type name="radio-controlled switch actuator 2-channel (surface-mount)" id="HM-LC-Sw2-SM" priority="2">
+		<type name="radio-controlled switch actuator 4-channel (PCB)" id="HM-LC-Sw4-PCB-2" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x000A"/>
+			<parameter index="10.0" size="2.0" const_value="0x00CE"/>
 		</type>
-		<type name="radio-controlled switch actuator 4-channel (surface-mount)" id="HM-LC-Sw4-SM" priority="2">
+		<type name="radio-controlled switch actuator 4-channel (wall-mount)" id="HM-LC-Sw4-WM-2" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0003"/>
+			<parameter index="10.0" size="2.0" const_value="0x00CF"/>
 		</type>
-		<type name="radio-controlled switch actuator 4-channel (PCB)" id="HM-LC-Sw4-PCB" priority="2">
+		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1-FM-2" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x002D"/>
+			<parameter index="10.0" size="2.0" const_value="0x00CA"/>
 		</type>
-		<type name="radio-controlled switch actuator 4-channel (wall-mount)" id="HM-LC-Sw4-WM" priority="2">
+		<type name="radio-controlled switch actuator 2-channel (flush-mount)" id="HM-LC-Sw2-FM-2" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0066"/>
+			<parameter index="10.0" size="2.0" const_value="0x00CB"/>
 		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1-FM" priority="2">
+		<type name="radio-controlled switch actuator 4-channel (DIN rails)" id="HM-LC-Sw4-DR-2" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0004"/>
+			<parameter index="10.0" size="2.0" const_value="0x00D0"/>
 		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount) Schueco" id="263 130" priority="2">
+		<type name="radio-controlled switch actuator 2-channel (DIN rails)" id="HM-LC-Sw2-DR-2" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x008B"/>
+			<parameter index="10.0" size="2.0" const_value="0x00CC"/>
 		</type>
-		<type name="radio-controlled switch actuator 2-channel (flush-mount)" id="HM-LC-Sw2-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0009"/>
+		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-DN-R1" updatable="true" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x25"/>
+			<parameter index="10.0" size="2.0" const_value="0x00D8"/>
 		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1-PB-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0051"/>
+		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-DN-R2" updatable="true" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x25"/>
+			<parameter index="10.0" size="2.0" const_value="0x00E6"/>
 		</type>
-		<type name="radio-controlled switch actuator 2-channel (flush-mount)" id="HM-LC-Sw2-PB-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0052"/>
+		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-DN-R3" updatable="true" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x25"/>
+			<parameter index="10.0" size="2.0" const_value="0x00E7"/>
 		</type>
-		<type name="radio-controlled switch actuator 4-channel (DIN rails)" id="HM-LC-Sw4-DR" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0061"/>
+		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-DN-R4" updatable="true" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x25"/>
+			<parameter index="10.0" size="2.0" const_value="0x00E8"/>
 		</type>
-		<type name="radio-controlled switch actuator 2-channel (DIN rails)" id="HM-LC-Sw2-DR" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0062"/>
+		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-DN-R5" updatable="true" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x25"/>
+			<parameter index="10.0" size="2.0" const_value="0x00E9"/>
 		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel Roto" id="ZEL STG RM FZS" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x007C"/>
-		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel Roto" id="ZEL STG RM FZS-2" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00A2"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R1" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EB"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R2" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EC"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R3" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00ED"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R4" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EE"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R5" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EF"/>
+		<type name="radio-controlled switch actuator 1-channel (DIN rails)" id="HM-LC-Sw1-DR" updatable="true" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x25"/>
+			<parameter index="10.0" size="2.0" const_value="0x00F0"/>
 		</type>
 	</supported_types>
 	<paramset type="MASTER" id="switch_dev_master">
@@ -138,6 +114,14 @@
 				<parameter id="AES_KEY" operations="read" ui_flags="invisible">
 					<logical type="integer" min="0" max="127"/>
 					<physical type="integer" interface="internal" value_id="AES_KEY"/>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>

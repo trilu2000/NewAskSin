@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="3" rx_modes="CONFIG,WAKEUP,LAZY_CONFIG" peering_sysinfo_expect_channel="false" supports_aes="true">
+<device version="4" rx_modes="CONFIG,WAKEUP,LAZY_CONFIG" peering_sysinfo_expect_channel="false" supports_aes="true">
 	<supported_types>
-		<type name="HM Remote Security 4-2" id="HM-RC-Sec4-2" priority="2">
+		<type name="HM Remote Security 4-2" id="HM-RC-Sec4-2" priority="2" updatable="true">
 			<parameter index="10.0" size="2.0" const_value="0x00A5"/>
+		</type>
+		<type name="HM Remote Security 4-3" id="HM-RC-Sec4-3" priority="2" updatable="true">
+			<parameter index="10.0" size="2.0" const_value="0x00D5"/>
 		</type>
 	</supported_types>
 	<paramset type="MASTER" id="remote_dev_master">
@@ -44,6 +47,14 @@
 				<parameter id="RSSI_PEER" operations="read,event">
 					<logical type="integer"/>
 					<physical type="integer" interface="internal" value_id="RSSI_PEER"/>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>

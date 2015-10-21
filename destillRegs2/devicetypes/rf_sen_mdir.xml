@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="8" rx_modes="CONFIG,WAKEUP,LAZY_CONFIG" supports_aes="true">
+<device version="10" rx_modes="CONFIG,WAKEUP,LAZY_CONFIG" supports_aes="true">
 	<supported_types>
-		<type name="HM radio-controlled motion detector surface-mount" id="HM-Sen-MDIR-SM" priority="2">
+		<type name="HM radio-controlled motion detector outdoor" id="HM-Sen-MDIR-O-2" priority="2" updatable="true">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x16"/>
-			<parameter index="10.0" size="2.0" const_value="0x004F"/>
+			<parameter index="10.0" size="2.0" const_value="0x00C1"/>
 		</type>
 		<type name="HM radio-controlled motion detector outdoor" id="HM-Sen-MDIR-O" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x16"/>
 			<parameter index="10.0" size="2.0" const_value="0x005D"/>
+		</type>
+		<type name="HM radio-controlled motion detector surface-mount" id="HM-Sen-MDIR-SM" priority="2" updatable="true">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x16"/>
+			<parameter index="10.0" size="2.0" const_value="0x004F"/>
 		</type>
 		<type name="Generic Motion Detector" id="HM-MD" priority="1">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x16"/>
@@ -71,6 +75,14 @@
 					<physical type="integer" interface="command">
 						<set request="ENTER_BOOTLOADER"/>
 					</physical>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>

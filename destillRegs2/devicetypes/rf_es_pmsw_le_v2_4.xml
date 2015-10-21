@@ -1,102 +1,21 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="24" supports_aes="true">
+<device version="1" supports_aes="true" cyclic_timeout="600">
 	<supported_types>
-		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0011"/>
+		<type name="power meter switch actuator 1-channel" id="HM-ES-PMSw1-Pl" updatable="true" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x24"/>
+			<parameter index="10.0" size="2.0" const_value="0x00ac"/>
 		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-2" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00A1"/>
-		</type>
-		<type name="radio-controlled switch actuator 1-channel (surface-mount)" id="HM-LC-Sw1-SM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0002"/>
-		</type>
-		<type name="radio-controlled switch actuator 2-channel (surface-mount)" id="HM-LC-Sw2-SM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x000A"/>
-		</type>
-		<type name="radio-controlled switch actuator 4-channel (surface-mount)" id="HM-LC-Sw4-SM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0003"/>
-		</type>
-		<type name="radio-controlled switch actuator 4-channel (PCB)" id="HM-LC-Sw4-PCB" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x002D"/>
-		</type>
-		<type name="radio-controlled switch actuator 4-channel (wall-mount)" id="HM-LC-Sw4-WM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0066"/>
-		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0004"/>
-		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount) Schueco" id="263 130" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x008B"/>
-		</type>
-		<type name="radio-controlled switch actuator 2-channel (flush-mount)" id="HM-LC-Sw2-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0009"/>
-		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1-PB-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0051"/>
-		</type>
-		<type name="radio-controlled switch actuator 2-channel (flush-mount)" id="HM-LC-Sw2-PB-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0052"/>
-		</type>
-		<type name="radio-controlled switch actuator 4-channel (DIN rails)" id="HM-LC-Sw4-DR" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0061"/>
-		</type>
-		<type name="radio-controlled switch actuator 2-channel (DIN rails)" id="HM-LC-Sw2-DR" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0062"/>
-		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel Roto" id="ZEL STG RM FZS" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x007C"/>
-		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel Roto" id="ZEL STG RM FZS-2" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00A2"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R1" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EB"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R2" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EC"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R3" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00ED"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R4" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EE"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R5" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EF"/>
+		<type name="generic power meter switch" id="HM-ES-PMSwX" priority="1">
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x24"/>
+			<parameter index="22.0" size="1.0" const_value="0x51"/>
+			<parameter index="23.5" size="0.1" const_value="1"/>
 		</type>
 	</supported_types>
 	<paramset type="MASTER" id="switch_dev_master">
 		<parameter id="INTERNAL_KEYS_VISIBLE" ui_flags="internal">
-			<logical type="boolean" default="true"/>
+			<logical type="boolean" default="false"/>
 			<physical type="integer" interface="config" list="0" index="2.7" size="0.1"/>
-		</parameter>
-		<parameter id="CONF_BUTTON_TIME">
-			<logical type="integer" min="1" max="254" default="255" unit="minutes">
-				<special_value id="PERMANENT" value="255"/>
-			</logical>
-			<physical type="integer" interface="config" list="0" index="0x15" size="1"/>
 		</parameter>
 		<parameter id="LOCAL_RESET_DISABLE" operations="read,write">
 			<logical type="boolean" default="false"/>
@@ -119,10 +38,6 @@
 					<logical type="boolean"/>
 					<physical type="integer" interface="internal" value_id="CONFIG_PENDING"/>
 				</parameter>
-				<parameter id="LOWBAT" operations="read,event" ui_flags="service">
-					<logical type="boolean"/>
-					<physical type="integer" interface="internal" value_id="LOWBAT"/>
-				</parameter>
 				<parameter id="DUTYCYCLE" operations="read,event" ui_flags="service">
 					<logical type="boolean"/>
 					<physical type="integer" interface="internal" value_id="DUTYCYCLE"/>
@@ -139,9 +54,17 @@
 					<logical type="integer" min="0" max="127"/>
 					<physical type="integer" interface="internal" value_id="AES_KEY"/>
 				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
+				</parameter>
 			</paramset>
 		</channel>
-		<channel index="1" type="SWITCH" count_from_sysinfo="23.0:1.0">
+		<channel index="1" type="SWITCH">
 			<link_roles>
 				<target name="SWITCH"/>
 				<target name="WEATHER_CS"/>
@@ -160,6 +83,206 @@
 				<value id="LCD_SYMBOL" value="2"/>
 				<value id="LCD_LEVEL_INTERP" value="1"/>
 			</enforce_link>
+		</channel>
+		<channel index="2" type="POWERMETER">
+			<paramset type="MASTER" id="power_ch_master">
+				<parameter id="AES_ACTIVE" ui_flags="internal">
+					<logical type="boolean" default="false"/>
+					<physical type="boolean" interface="internal" value_id="AES"/>
+				</parameter>
+				<parameter id="AVERAGING" operations="read,write">
+					<logical type="integer" min="1" max="16" unit="s" default="1"/>
+					<physical type="integer" interface="config" list="1" index="122.0" size="1"/>
+				</parameter>
+				<parameter id="TX_MINDELAY" operations="read,write">
+					<logical type="integer" min="0" max="16" unit="s" default="8"/>
+					<physical type="integer" interface="config" list="1" index="123.0" size="0.7"/>
+				</parameter>
+				<parameter id="TX_THRESHOLD_POWER" operations="read,write">
+					<logical type="float" min="0.01" max="3680.0" unit="W" default="100.00">
+						<special_value id="NOT_USED" value="0"/>
+					</logical>
+					<physical type="integer" interface="config" list="1" index="124" size="3"/>
+					<conversion type="float_integer_scale" factor="100"/>
+				</parameter>
+				<parameter id="TX_THRESHOLD_CURRENT" operations="read,write">
+					<logical type="float" min="1" max="16000.0" unit="mA" default="100">
+						<special_value id="NOT_USED" value="0"/>
+					</logical>
+					<physical type="integer" interface="config" list="1" index="127" size="2"/>
+				</parameter>
+				<parameter id="TX_THRESHOLD_VOLTAGE" operations="read,write">
+					<logical type="float" min="0.1" max="230.0" unit="V" default="10.0">
+						<special_value id="NOT_USED" value="0"/>
+					</logical>
+					<physical type="integer" interface="config" list="1" index="129" size="2"/>
+					<conversion type="float_integer_scale" factor="10"/>
+				</parameter>
+				<parameter id="TX_THRESHOLD_FREQUENCY" operations="read,write">
+					<logical type="float" min="0.01" max="2.55" unit="Hz" default="1">
+						<special_value id="NOT_USED" value="0"/>
+					</logical>
+					<physical type="integer" interface="config" list="1" index="131" size="1"/>
+					<conversion type="float_integer_scale" factor="100"/>
+				</parameter>
+			</paramset>
+			<paramset type="VALUES" id="power_ch_values">
+				<parameter id="BOOT" operations="read,event" ui_flags="internal" control="POWERMETER.BOOT">
+					<logical type="boolean" default="false"/>
+					<physical type="integer" interface="command" value_id="BOOT" no_init="true">
+						<event frame="POWER_EVENT_CYCLIC"/>
+						<event frame="POWER_EVENT"/>
+						<get request="LEVEL_GET" response="POWER_EVENT" process_as_event="true"/>
+					</physical>
+				</parameter>
+				<parameter id="ENERGY_COUNTER" operations="read,event" control="POWERMETER.ENERGY_COUNTER">
+					<logical type="float" min="0.0" max="838860.7" unit="Wh"/>
+					<physical type="integer" interface="command" value_id="ENERGY_COUNTER" no_init="true">
+						<event frame="POWER_EVENT_CYCLIC"/>
+						<event frame="POWER_EVENT"/>
+						<get request="LEVEL_GET" response="POWER_EVENT" process_as_event="true"/>
+					</physical>
+					<conversion type="float_integer_scale" factor="10"/>
+				</parameter>
+				<parameter id="POWER" operations="read,event" control="POWERMETER.POWER">
+					<logical type="float" min="0.00" max="167772.15" unit="W"/>
+					<physical type="integer" interface="command" value_id="POWER" no_init="true">
+						<event frame="POWER_EVENT_CYCLIC"/>
+						<event frame="POWER_EVENT"/>
+						<get request="LEVEL_GET" response="POWER_EVENT" process_as_event="true"/>
+					</physical>
+					<conversion type="float_integer_scale" factor="100"/>
+				</parameter>
+				<parameter id="CURRENT" operations="read,event" control="POWERMETER.CURRENT">
+					<logical type="float" min="0.0" max="65535.0" unit="mA"/>
+					<physical type="integer" interface="command" value_id="CURRENT" no_init="true">
+						<event frame="POWER_EVENT_CYCLIC"/>
+						<event frame="POWER_EVENT"/>
+						<get request="LEVEL_GET" response="POWER_EVENT" process_as_event="true"/>
+					</physical>
+					<conversion type="float_integer_scale" factor="1"/>
+				</parameter>
+				<parameter id="VOLTAGE" operations="read,event" control="POWERMETER.VOLTAGE">
+					<logical type="float" min="0.0" max="6553.5" unit="V"/>
+					<physical type="integer" interface="command" value_id="VOLTAGE" no_init="true">
+						<event frame="POWER_EVENT_CYCLIC"/>
+						<event frame="POWER_EVENT"/>
+						<get request="LEVEL_GET" response="POWER_EVENT" process_as_event="true"/>
+					</physical>
+					<conversion type="float_integer_scale" factor="10"/>
+				</parameter>
+				<parameter id="FREQUENCY" operations="read,event" control="POWERMETER.FREQUENCY">
+					<logical type="float" min="48.72" max="51.27" unit="Hz"/>
+					<physical type="integer" interface="command" value_id="FREQUENCY" no_init="true">
+						<event frame="POWER_EVENT_CYCLIC"/>
+						<event frame="POWER_EVENT"/>
+						<get request="LEVEL_GET" response="POWER_EVENT" process_as_event="true"/>
+					</physical>
+					<conversion type="float_integer_scale" factor="100" offset="-50.00"/>
+				</parameter>
+			</paramset>
+		</channel>
+		<channel index="3" type="CONDITION_POWER" autoregister="true">
+			<link_roles>
+				<source name="SWITCH"/>
+				<source name="KEYMATIC"/>
+				<source name="WINMATIC"/>
+			</link_roles>
+			<paramset type="MASTER" id="cond_power_ch_master">
+				<subset ref="condition_paramset"/>
+				<parameter id="COND_TX_THRESHOLD_HI_POWER" operations="read,write">
+					<logical type="float" min="0" max="3680.0" unit="W" default="200.00"/>
+					<physical type="integer" interface="config" list="1" index="135" size="4"/>
+					<conversion type="float_integer_scale" factor="100"/>
+				</parameter>
+				<parameter id="COND_TX_THRESHOLD_LO_POWER" operations="read,write">
+					<logical type="float" min="0" max="3680.0" unit="W" default="100.00"/>
+					<physical type="integer" interface="config" list="1" index="139" size="4"/>
+					<conversion type="float_integer_scale" factor="100"/>
+				</parameter>
+			</paramset>
+			<paramset type="LINK" id="cond_power_ch_link">
+				<subset ref="condition_linkset"/>
+			</paramset>
+			<paramset type="VALUES" id="cond_power_ch_values">
+				<subset ref="condition_valueset"/>
+			</paramset>
+		</channel>
+		<channel index="4" type="CONDITION_CURRENT" autoregister="true">
+			<link_roles>
+				<source name="SWITCH"/>
+				<source name="KEYMATIC"/>
+				<source name="WINMATIC"/>
+			</link_roles>
+			<paramset type="MASTER" id="cond_current_ch_master">
+				<subset ref="condition_paramset"/>
+				<parameter id="COND_TX_THRESHOLD_HI_CURRENT" operations="read,write">
+					<logical type="integer" min="0" max="16000" unit="mA" default="2000"/>
+					<physical type="integer" interface="config" list="1" index="135" size="4"/>
+				</parameter>
+				<parameter id="COND_TX_THRESHOLD_LO_CURRENT" operations="read,write">
+					<logical type="integer" min="0" max="16000" unit="mA" default="1000"/>
+					<physical type="integer" interface="config" list="1" index="139" size="4"/>
+				</parameter>
+			</paramset>
+			<paramset type="LINK" id="cond_current_ch_link">
+				<subset ref="condition_linkset"/>
+			</paramset>
+			<paramset type="VALUES" id="cond_current_ch_values">
+				<subset ref="condition_valueset"/>
+			</paramset>
+		</channel>
+		<channel index="5" type="CONDITION_VOLTAGE" autoregister="true">
+			<link_roles>
+				<source name="SWITCH"/>
+				<source name="KEYMATIC"/>
+				<source name="WINMATIC"/>
+			</link_roles>
+			<paramset type="MASTER" id="cond_voltage_ch_master">
+				<subset ref="condition_paramset"/>
+				<parameter id="COND_TX_THRESHOLD_HI_VOLTAGE" operations="read,write">
+					<logical type="float" min="115.0" max="255.0" unit="V" default="240.0"/>
+					<physical type="integer" interface="config" list="1" index="135" size="4"/>
+					<conversion type="float_integer_scale" factor="10"/>
+				</parameter>
+				<parameter id="COND_TX_THRESHOLD_LO_VOLTAGE" operations="read,write">
+					<logical type="float" min="115.0" max="255.0" unit="V" default="220.0"/>
+					<physical type="integer" interface="config" list="1" index="139" size="4"/>
+					<conversion type="float_integer_scale" factor="10"/>
+				</parameter>
+			</paramset>
+			<paramset type="LINK" id="cond_voltage_ch_link">
+				<subset ref="condition_linkset"/>
+			</paramset>
+			<paramset type="VALUES" id="cond_voltage_ch_values">
+				<subset ref="condition_valueset"/>
+			</paramset>
+		</channel>
+		<channel index="6" type="CONDITION_FREQUENCY" autoregister="true">
+			<link_roles>
+				<source name="SWITCH"/>
+				<source name="KEYMATIC"/>
+				<source name="WINMATIC"/>
+			</link_roles>
+			<paramset type="MASTER" id="cond_frequency_ch_master">
+				<subset ref="condition_paramset"/>
+				<parameter id="COND_TX_THRESHOLD_HI_FREQUENCY" operations="read,write">
+					<logical type="float" min="48.72" max="51.27" unit="Hz" default="50.20"/>
+					<physical type="integer" interface="config" list="1" index="135" size="4"/>
+					<conversion type="float_integer_scale" factor="100"/>
+				</parameter>
+				<parameter id="COND_TX_THRESHOLD_LO_FREQUENCY" operations="read,write">
+					<logical type="float" min="48.72" max="51.27" unit="Hz" default="49.80"/>
+					<physical type="integer" interface="config" list="1" index="139" size="4"/>
+					<conversion type="float_integer_scale" factor="100"/>
+				</parameter>
+			</paramset>
+			<paramset type="LINK" id="cond_frequency_ch_link">
+				<subset ref="condition_linkset"/>
+			</paramset>
+			<paramset type="VALUES" id="cond_frequency_ch_values">
+				<subset ref="condition_valueset"/>
+			</paramset>
 		</channel>
 	</channels>
 	<frames>
@@ -191,6 +314,25 @@
 			<parameter type="integer" const_value="0" param="STATE"/>
 			<parameter type="integer" const_value="0" param="STATE_FLAGS"/>
 			<parameter type="integer" const_value="0" param="INHIBIT"/>
+		</frame>
+		<frame id="POWER_EVENT_CYCLIC" direction="from_device" event="true" fixed_channel="2" type="0x5e">
+			<parameter type="integer" index="9.7" size="0.1" param="BOOT"/>
+			<parameter type="integer" index="9.0" size="2.7" param="ENERGY_COUNTER"/>
+			<parameter type="integer" index="12.0" size="3.0" param="POWER"/>
+			<parameter type="integer" index="15.0" size="2.0" param="CURRENT"/>
+			<parameter type="integer" index="17.0" size="2.0" param="VOLTAGE"/>
+			<parameter type="integer" signed="true" index="19.0" size="1.0" param="FREQUENCY"/>
+		</frame>
+		<frame id="POWER_EVENT" direction="from_device" event="true" fixed_channel="2" type="0x5f">
+			<parameter type="integer" index="9.7" size="0.1" param="BOOT"/>
+			<parameter type="integer" index="9.0" size="2.7" param="ENERGY_COUNTER"/>
+			<parameter type="integer" index="12.0" size="3.0" param="POWER"/>
+			<parameter type="integer" index="15.0" size="2.0" param="CURRENT"/>
+			<parameter type="integer" index="17.0" size="2.0" param="VOLTAGE"/>
+			<parameter type="integer" signed="true" index="19.0" size="1.0" param="FREQUENCY"/>
+		</frame>
+		<frame id="CONDITIONAL_SWITCH_COMMAND" direction="from_device" event="true" type="0x41" channel_field="9:0.6">
+			<parameter type="integer" index="11.0" size="1.0" param="DECISION_VALUE"/>
 		</frame>
 	</frames>
 	<paramset_defs>
@@ -246,12 +388,6 @@
 				<logical type="integer" min="0" max="10" default="6"/>
 				<physical type="integer" interface="config" list="1" index="48" size="1"/>
 			</parameter>
-			<parameter id="POWERUP_ACTION" operations="read,write"><logical type="option">
-					<option id="POWERUP_OFF" default="true"/>
-					<option id="POWERUP_ON"/>
-				</logical>
-				<physical type="integer" interface="config" list="1" index="86" size="0.1"/>
-			</parameter>
 			<parameter id="STATUSINFO_MINDELAY" operations="read,write">
 				<logical type="float" min="0.5" max="15.5" default="2.0" unit="s">
 					<special_value id="NOT_USED" value="0.0"/>
@@ -259,7 +395,7 @@
 				<physical type="integer" interface="config" list="1" index="87.0" size="0.5"/>
 				<conversion type="float_integer_scale" factor="2"/>
 			</parameter>
-			<parameter id="STATUSINFO_RANDOM" operations="read,write">
+			<parameter id="STATUSINFO_RANDOM_A" operations="read,write">
 				<logical type="float" min="0.0" max="7.0" default="1.0" unit="s"/>
 				<physical type="integer" interface="config" list="1" index="87.5" size="0.3"/>
 				<conversion type="float_integer_scale" factor="1"/>
@@ -633,6 +769,64 @@
 				<value id="SHORT_JT_ON" value="OFFDELAY"/>
 				<value id="SHORT_JT_ONDELAY" value="ON"/>
 			</default_values>
+		</paramset>
+		<paramset id="condition_valueset">
+			<parameter id="DECISION_VALUE" operations="read,event" control="NONE">
+				<logical type="integer" min="0" max="255"/>
+				<physical type="integer" interface="command" value_id="DECISION_VALUE">
+					<event frame="CONDITIONAL_SWITCH_COMMAND" auth_violate_policy="reject"/>
+				</physical>
+			</parameter>
+		</paramset>
+		<paramset id="condition_paramset">
+			<parameter id="AES_ACTIVE" ui_flags="internal">
+				<logical type="boolean" default="false"/>
+				<physical type="boolean" interface="internal" value_id="AES"/>
+			</parameter>
+			<parameter id="LED_ONTIME">
+				<logical type="float" min="0.0" max="1.275" unit="s" default="0.5"/>
+				<physical type="integer" interface="config" list="1" index="34" size="1"/>
+				<conversion type="float_integer_scale" factor="200"/>
+			</parameter>
+			<parameter id="TRANSMIT_TRY_MAX">
+				<logical type="integer" min="1.0" max="10.0" default="6.0"/>
+				<physical type="integer" interface="config" list="1" index="48" size="1"/>
+			</parameter>
+			<parameter id="COND_TX_CYCLIC_ABOVE" operations="read,write">
+				<logical type="boolean" default="false"/>
+				<physical type="integer" interface="config" list="1" index="132.3" size="0.1"/>
+			</parameter>
+			<parameter id="COND_TX_CYCLIC_BELOW" operations="read,write">
+				<logical type="boolean" default="false"/>
+				<physical type="integer" interface="config" list="1" index="132.2" size="0.1"/>
+			</parameter>
+			<parameter id="COND_TX_RISING" operations="read,write">
+				<logical type="boolean" default="false"/>
+				<physical type="integer" interface="config" list="1" index="132.1" size="0.1"/>
+			</parameter>
+			<parameter id="COND_TX_FALLING" operations="read,write">
+				<logical type="boolean" default="false"/>
+				<physical type="integer" interface="config" list="1" index="132.0" size="0.1"/>
+			</parameter>
+			<parameter id="COND_TX_DECISION_ABOVE" operations="read,write">
+				<logical type="integer" min="0" max="255" default="200"/>
+				<physical type="integer" interface="config" list="1" index="133" size="1"/>
+			</parameter>
+			<parameter id="COND_TX_DECISION_BELOW" operations="read,write">
+				<logical type="integer" min="0" max="255" default="0"/>
+				<physical type="integer" interface="config" list="1" index="134" size="1"/>
+			</parameter>
+		</paramset>
+		<paramset id="condition_linkset">
+			<parameter id="PEER_NEEDS_BURST">
+				<logical type="boolean" default="false"/>
+				<physical type="integer" interface="config" list="4" index="1.0" size="0.1"/>
+			</parameter>
+			<parameter id="EXPECT_AES">
+				<logical type="boolean" default="false"/>
+				<physical type="integer" interface="config" list="4" index="1.7" size="0.1"/>
+			</parameter>
+			<enforce id="EXPECT_AES" value="$PEER.AES"/>
 		</paramset>
 	</paramset_defs>
 </device>

@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="6" rx_modes="CONFIG,WAKEUP,LAZY_CONFIG" peering_sysinfo_expect_channel="false" supports_aes="false">
+<device version="7" rx_modes="CONFIG,WAKEUP,LAZY_CONFIG" peering_sysinfo_expect_channel="false" supports_aes="true">
 	<supported_types>
 		<type name="HM Remote 4-2" id="HM-RC-4-2" updatable="true" priority="2">
 			<parameter index="10.0" size="2.0" const_value="0x00A0"/>
 		</type>
 		<type name="HM Push Button 6" id="HM-PB-6-WM55" updatable="true" priority="2">
 			<parameter index="10.0" size="2.0" const_value="0x00A9"/>
+		</type>
+		<type name="HM Remote 8" id="HM-RC-8" updatable="true" priority="2">
+			<parameter index="10.0" size="2.0" const_value="0x00DA"/>
+		</type>
+		<type name="HM Remote 4-3" id="HM-RC-4-3" updatable="true" priority="2">
+			<parameter index="10.0" size="2.0" const_value="0x00D4"/>
 		</type>
 	</supported_types>
 	<paramset type="MASTER" id="remote_dev_master">
@@ -58,7 +64,7 @@
 				</parameter>
 			</paramset>
 		</channel>
-		<channel autoregister="true" index="1" type="KEY" count_from_sysinfo="23.0:1.0" pair_function="BA" function="A" paired="true" aes_default="false">
+		<channel autoregister="true" index="1" type="KEY" count_from_sysinfo="23.0:1.0" pair_function="BA" function="A" paired="true" aes_default="true">
 			<link_roles>
 				<source name="SWITCH"/>
 				<source name="KEYMATIC"/>

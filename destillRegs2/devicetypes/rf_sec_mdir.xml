@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="9" rx_modes="CONFIG,WAKEUP,LAZY_CONFIG" supports_aes="true" cyclic_timeout="1200">
+<device version="11" rx_modes="CONFIG,WAKEUP,LAZY_CONFIG" supports_aes="true" cyclic_timeout="1200">
 	<supported_types>
+		<type name="HM radio-controlled motion detector" id="HM-Sec-MDIR-2" priority="2" updatable="true">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x16"/>
+			<parameter index="10.0" size="2.0" const_value="0x00C0"/>
+		</type>
 		<type name="HM radio-controlled motion detector" id="HM-Sec-MDIR" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x16"/>
 			<parameter index="10.0" size="2.0" const_value="0x004A"/>
@@ -78,6 +82,14 @@
 					<physical type="integer" interface="command">
 						<set request="ENTER_BOOTLOADER"/>
 					</physical>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>

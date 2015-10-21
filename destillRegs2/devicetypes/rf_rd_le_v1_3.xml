@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="1" supports_aes="true" cyclic_timeout="88200">
+<device version="2" supports_aes="true" cyclic_timeout="88200">
 	<supported_types>
-		<type name="HomeMatic Rain detector" id="HM-Sen-RD-O" priority="2">
+		<type name="HomeMatic Rain detector" id="HM-Sen-RD-O" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x13"/>
 			<parameter index="10.0" size="2.0" const_value="0x00a7"/>
 		</type>
@@ -61,6 +61,14 @@
 				<parameter id="RSSI_PEER" operations="read,event">
 					<logical type="integer"/>
 					<physical type="integer" interface="internal" value_id="RSSI_PEER"/>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>

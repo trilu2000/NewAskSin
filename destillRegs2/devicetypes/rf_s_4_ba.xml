@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="2" rx_modes="BURST" supports_aes="true">
+<device version="3" rx_modes="BURST" supports_aes="true">
 	<supported_types>
-		<type name="radio-controlled switch actuator 4-channel PCB" id="HM-LC-Sw4-Ba-PCB" priority="2">
+		<type name="radio-controlled switch actuator 4-channel PCB" id="HM-LC-Sw4-Ba-PCB" priority="2" updatable="true">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x10"/>
 			<parameter index="10.0" size="2.0" const_value="0x00AB"/>
 		</type>
@@ -64,6 +64,14 @@
 				<parameter id="RSSI_PEER" operations="read,event">
 					<logical type="integer"/>
 					<physical type="integer" interface="internal" value_id="RSSI_PEER"/>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>

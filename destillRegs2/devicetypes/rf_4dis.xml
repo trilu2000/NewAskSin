@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="30" rx_modes="CONFIG" peering_sysinfo_expect_channel="false" supports_aes="true">
+<device version="31" rx_modes="CONFIG" peering_sysinfo_expect_channel="false" supports_aes="true">
 	<supported_types>
 		<type name="HM Remote Display 4 buttons" id="HM-PB-4Dis-WM" priority="2">
 			<parameter index="10.0" size="2.0" const_value="0x0060"/>
@@ -10,6 +10,9 @@
 		</type>
 		<type name="HM Remote Display 4 buttons Schueco" id="263 155" priority="2">
 			<parameter index="10.0" size="2.0" const_value="0x008E"/>
+		</type>
+		<type name="HM Remote Display 4 buttons" id="HM-PB-4Dis-WM-2" priority="2">
+			<parameter index="10.0" size="2.0" const_value="0x00DD"/>
 		</type>
 	</supported_types>
 	<paramset type="MASTER" id="remote_dev_master">

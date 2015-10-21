@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="5" supports_aes="true">
+<device version="7" supports_aes="true">
 	<supported_types>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1PBU-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x22"/>
+		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1PBU-FM" priority="2" updatable="true">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
 			<parameter index="10.0" size="2.0" const_value="0x0069"/>
 		</type>
 		<type name="radio-controlled switch actuator 1-channel (flush-mount) Schueco" id="263 131" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x22"/>
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
 			<parameter index="10.0" size="2.0" const_value="0x008C"/>
 		</type>
 	</supported_types>
@@ -56,6 +56,14 @@
 				<parameter id="AES_KEY" operations="read" ui_flags="invisible">
 					<logical type="integer" min="0" max="127"/>
 					<physical type="integer" interface="internal" value_id="AES_KEY"/>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>
@@ -163,6 +171,12 @@
 			<parameter id="TRANSMIT_TRY_MAX" operations="read,write">
 				<logical type="integer" min="0" max="10" default="6"/>
 				<physical type="integer" interface="config" list="1" index="48" size="1"/>
+			</parameter>
+			<parameter id="POWERUP_ACTION" operations="read,write"><logical type="option">
+					<option id="POWERUP_OFF" default="true"/>
+					<option id="POWERUP_ON"/>
+				</logical>
+				<physical type="integer" interface="config" list="1" index="86" size="0.1"/>
 			</parameter>
 			<parameter id="STATUSINFO_MINDELAY" operations="read,write">
 				<logical type="float" min="0.5" max="15.5" default="2.0" unit="s">

@@ -1,20 +1,26 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="8" supports_aes="true">
+<device version="3" supports_aes="true">
 	<supported_types>
-		<type name="radio-controlled blind actuator 1-channel (flush-mount)" id="HM-LC-Bl1PBU-FM" updatable="true" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x22"/>
-			<parameter index="10.0" size="2.0" const_value="0x006A"/>
+		<type name="radio-controlled blind actuator 1-channel (surface-mount)" id="HM-LC-Bl1-SM-2" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
+			<parameter index="10.0" size="2.0" const_value="0x00D1"/>
 		</type>
-		<type name="radio-controlled blind actuator 1-channel (flush-mount) Schueco" id="263 147" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x22"/>
-			<parameter index="10.0" size="2.0" const_value="0x0087"/>
+		<type name="radio-controlled blind actuator 1-channel (flush-mount)" id="HM-LC-Bl1-FM-2" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
+			<parameter index="10.0" size="2.0" const_value="0x00D2"/>
 		</type>
 	</supported_types>
 	<paramset type="MASTER" id="blind_dev_master">
 		<parameter id="INTERNAL_KEYS_VISIBLE" ui_flags="internal">
 			<logical type="boolean" default="true"/>
 			<physical type="integer" interface="config" list="0" index="2.7" size="0.1"/>
+		</parameter>
+		<parameter id="CONF_BUTTON_TIME">
+			<logical type="integer" min="1" max="254" default="255" unit="minutes">
+				<special_value id="PERMANENT" value="255"/>
+			</logical>
+			<physical type="integer" interface="config" list="0" index="0x15" size="1"/>
 		</parameter>
 		<parameter id="LOCAL_RESET_DISABLE" operations="read,write">
 			<logical type="boolean" default="false"/>
@@ -53,14 +59,6 @@
 				<parameter id="RSSI_PEER" operations="read,event">
 					<logical type="integer"/>
 					<physical type="integer" interface="internal" value_id="RSSI_PEER"/>
-				</parameter>
-				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
-					<logical type="boolean"/>
-					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
-				</parameter>
-				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
-					<logical type="boolean"/>
-					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>

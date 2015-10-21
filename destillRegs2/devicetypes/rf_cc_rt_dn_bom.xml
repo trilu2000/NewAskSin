@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="0" rx_modes="CONFIG,BURST" supports_aes="true">
+<device version="4" rx_modes="CONFIG,BURST" cyclic_timeout="552" supports_aes="true">
 	<supported_types>
 		<type name="ClimateControl-RadiatorThermostat" id="HM-CC-RT-DN-BoM" updatable="true">
 			<parameter index="10.0" size="2.0" const_value="0xbd"/>
@@ -8,7 +8,7 @@
 	</supported_types>
 	<paramset type="MASTER" id="cc_rt_dev_master">
 		<parameter id="BURST_RX">
-			<logical type="boolean" default="false"/>
+			<logical type="boolean" default="true"/>
 			<physical type="integer" interface="config" list="0" index="1" size="1.0"/>
 		</parameter>
 		<parameter id="BUTTON_LOCK">
@@ -89,7 +89,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="TEMPERATUREFALL_WINDOW_OPEN_TIME_PERIOD">
-			<logical type="integer" min="0" max="60" default="0" unit="minutes"/>
+			<logical type="integer" min="0" max="60" default="15" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="6.0" size="0.4"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -106,7 +106,7 @@
 			<physical type="integer" interface="config" list="7" index="7.0" size="0.3"/>
 		</parameter>
 		<parameter id="DECALCIFICATION_TIME">
-			<logical type="integer" min="0" max="1410" default="0" unit="minutes"/>
+			<logical type="integer" min="0" max="1410" default="660" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="8.0" size="0.6"/>
 			<conversion type="integer_integer_scale" div="30"/>
 		</parameter>
@@ -160,11 +160,11 @@
 			<physical type="integer" interface="config" list="7" index="11.0" size="0.7"/>
 		</parameter>
 		<parameter id="VALVE_ERROR_RUN_POSITION">
-			<logical type="integer" min="0" max="100" default="0" unit="%"/>
+			<logical type="integer" min="0" max="100" default="15" unit="%"/>
 			<physical type="integer" interface="config" list="7" index="13.0" size="0.7"/>
 		</parameter>
 		<parameter id="VALVE_MAXIMUM_POSITION">
-			<logical type="integer" min="0" max="100" default="0" unit="%"/>
+			<logical type="integer" min="0" max="100" default="100" unit="%"/>
 			<physical type="integer" interface="config" list="7" index="12.0" size="0.7"/>
 		</parameter>
 		<parameter id="DAYLIGHT_SAVING_TIME">
@@ -181,8 +181,8 @@
 		</parameter>
 		<parameter id="MANU_MODE_PRIORITIZATION">
 			<logical type="option">
-				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_RT_TC_SC_SELF" default="true"/>
-				<option id="SET_TEMPERATURE_CHANGE_BY_ALL"/>
+				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_RT_TC_SC_SELF"/>
+				<option id="SET_TEMPERATURE_CHANGE_BY_ALL" default="true"/>
 				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_RT_TC_CCU_SELF"/>
 				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_CCU"/>
 				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_SELF"/>
@@ -191,8 +191,8 @@
 		</parameter>
 		<parameter id="PARTY_MODE_PRIORITIZATION">
 			<logical type="option">
-				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_RT_TC_SC_SELF" default="true"/>
-				<option id="SET_TEMPERATURE_CHANGE_BY_ALL"/>
+				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_RT_TC_SC_SELF"/>
+				<option id="SET_TEMPERATURE_CHANGE_BY_ALL" default="true"/>
 				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_RT_TC_CCU_SELF"/>
 				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_CCU"/>
 				<option id="SET_TEMPERATURE_CHANGE_ONLY_BY_SELF"/>
@@ -210,17 +210,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_2">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1320" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="22.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_SATURDAY_2">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="22.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_3">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="24.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -230,7 +230,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_4">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="26.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -240,7 +240,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_5">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="28.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -250,7 +250,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_6">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="30.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -260,7 +260,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_7">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="32.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -270,7 +270,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_8">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="34.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -280,7 +280,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_9">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="36.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -290,7 +290,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_10">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="38.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -300,7 +300,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_11">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="40.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -310,7 +310,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_12">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="42.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -320,7 +320,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SATURDAY_13">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="44.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -340,17 +340,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_2">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1320" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="48.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_SUNDAY_2">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="48.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_3">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="50.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -360,7 +360,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_4">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="52.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -370,7 +370,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_5">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="54.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -380,7 +380,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_6">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="56.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -390,7 +390,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_7">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="58.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -400,7 +400,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_8">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="60.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -410,7 +410,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_9">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="62.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -420,7 +420,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_10">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="64.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -430,7 +430,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_11">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="66.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -440,7 +440,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_12">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="68.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -450,7 +450,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_SUNDAY_13">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="70.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -470,17 +470,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_2">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="540" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="74.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_MONDAY_2">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="74.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_3">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1020" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="76.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -490,17 +490,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_4">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1320" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="78.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_MONDAY_4">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="78.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_5">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="80.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -510,7 +510,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_6">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="82.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -520,7 +520,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_7">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="84.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -530,7 +530,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_8">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="86.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -540,7 +540,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_9">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="88.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -550,7 +550,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_10">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="90.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -560,7 +560,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_11">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="92.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -570,7 +570,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_12">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="94.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -580,7 +580,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_MONDAY_13">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="96.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -600,17 +600,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_2">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="540" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="100.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_TUESDAY_2">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="100.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_3">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1020" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="102.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -620,17 +620,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_4">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1320" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="104.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_TUESDAY_4">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="104.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_5">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="106.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -640,7 +640,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_6">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="108.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -650,7 +650,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_7">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="110.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -660,7 +660,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_8">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="112.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -670,7 +670,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_9">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="114.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -680,7 +680,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_10">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="116.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -690,7 +690,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_11">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="118.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -700,7 +700,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_12">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="120.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -710,7 +710,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_TUESDAY_13">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="122.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -730,17 +730,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_2">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="540" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="126.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_WEDNESDAY_2">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="126.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_3">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1020" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="128.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -750,17 +750,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_4">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1320" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="130.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_WEDNESDAY_4">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="130.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_5">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="132.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -770,7 +770,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_6">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="134.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -780,7 +780,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_7">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="136.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -790,7 +790,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_8">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="138.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -800,7 +800,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_9">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="140.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -810,7 +810,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_10">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="142.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -820,7 +820,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_11">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="144.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -830,7 +830,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_12">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="146.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -840,7 +840,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_WEDNESDAY_13">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="148.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -860,17 +860,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_2">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="540" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="152.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_THURSDAY_2">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="152.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_3">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1020" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="154.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -880,17 +880,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_4">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1320" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="156.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_THURSDAY_4">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="156.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_5">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="158.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -900,7 +900,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_6">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="160.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -910,7 +910,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_7">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="162.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -920,7 +920,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_8">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="164.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -930,7 +930,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_9">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="166.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -940,7 +940,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_10">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="168.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -950,7 +950,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_11">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="170.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -960,7 +960,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_12">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="172.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -970,7 +970,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_THURSDAY_13">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="174.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -990,17 +990,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_2">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="540" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="178.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_FRIDAY_2">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="178.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_3">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1020" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="180.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1010,17 +1010,17 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_4">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1320" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="182.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
 		<parameter id="TEMPERATURE_FRIDAY_4">
-			<logical type="float" min="5.0" max="30.0" default="17.0" unit="&#176;C"/>
+			<logical type="float" min="5.0" max="30.0" default="21.0" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="7" index="182.1" size="0.6"/>
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_5">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="184.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1030,7 +1030,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_6">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="186.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1040,7 +1040,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_7">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="188.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1050,7 +1050,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_8">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="190.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1060,7 +1060,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_9">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="192.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1070,7 +1070,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_10">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="194.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1080,7 +1080,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_11">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="196.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1090,7 +1090,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_12">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="198.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1100,7 +1100,7 @@
 			<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 		<parameter id="ENDTIME_FRIDAY_13">
-			<logical type="integer" min="5" max="1440" default="360" unit="minutes"/>
+			<logical type="integer" min="5" max="1440" default="1440" unit="minutes"/>
 			<physical type="integer" interface="config" list="7" index="200.0" size="2.0" mask="0x01ff"/>
 			<conversion type="integer_integer_scale" div="5"/>
 		</parameter>
@@ -1238,8 +1238,8 @@
 						<option id="BOOST-MODE"/>
 					</logical>
 					<physical type="integer" interface="command" value_id="CONTROL_MODE" no_init="true">
-						<get request="LEVEL_GET" response="INFO_LEVEL" process_as_event="true"/>
 						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 				</parameter>
 				<parameter id="FAULT_REPORTING" operations="read,event" ui_flags="service" control="NONE">
@@ -1254,6 +1254,13 @@
 						<option id="VALVE_ERROR_POSITION"/>
 					</logical>
 					<physical type="integer" interface="command" value_id="FAULT_REPORTING" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
+					</physical>
+				</parameter>
+				<parameter id="WINDOW_STATE" operations="read,event">
+					<logical type="boolean"/>
+					<physical type="integer" interface="command" value_id="WINDOW_STATE">
 						<event frame="INFO_LEVEL"/>
 					</physical>
 				</parameter>
@@ -1270,6 +1277,13 @@
 						<event frame="INFO_LEVEL"/>
 					</physical>
 				</parameter>
+				<parameter id="BOOST_TIME" operations="read,event">
+					<logical type="integer" min="0" max="30" default="0" unit="min"/>
+					<physical type="integer" interface="command" value_id="BOOST_TIME">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
+					</physical>
+				</parameter>
 				<parameter id="ACTUAL_TEMPERATURE" operations="read" control="NONE">
 					<logical type="float" min="-10.0" max="50.0" unit="&#176;C"/>
 					<physical type="integer" interface="command" value_id="ACTUAL_TEMPERATURE">
@@ -1277,11 +1291,12 @@
 					</physical>
 					<conversion type="float_integer_scale" factor="10.0"/>
 				</parameter>
-				<parameter id="SET_TEMPERATURE" operations="read,event,write" control="HEATING_CONTROL.SETPOINT">
+				<parameter id="SET_TEMPERATURE" operations="read,write,event" control="HEATING_CONTROL.SETPOINT">
 					<logical type="float" min="5.0" max="30.0" default="20.0" unit="&#176;C"></logical>
 					<physical type="integer" interface="command" value_id="SET_TEMPERATURE" no_init="true">
 						<set request="SET_TEMPERATURE_SET"/>
 						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 					<conversion type="float_integer_scale" factor="2"/>
 				</parameter>
@@ -1316,53 +1331,71 @@
 						<set request="LOWERING_MODE_SET"/>
 					</physical>
 				</parameter>
-				<parameter id="PARTY_MODE" operations="write" control="NONE">
+				<parameter id="PARTY_TEMPERATURE" operations="read,write,event" control="NONE">
 					<logical type="float" min="5.0" max="30.0" default="20.0" unit="&#176;C"></logical>
 					<physical type="integer" interface="command" value_id="PARTY_TEMPERATURE" no_init="true">
 						<set request="PARTY_MODE_SET"/>
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 					<conversion type="float_integer_scale" factor="2"/>
 				</parameter>
-				<parameter id="PARTY_START_TIME" operations="write" control="NONE">
+				<parameter id="PARTY_START_TIME" operations="read,write,event" control="NONE">
 					<logical type="integer" min="0" max="1410" default="0" unit="minutes"/>
-					<physical type="integer" interface="command" value_id="PARTY_START_TIME" no_init="false">
+					<physical type="integer" interface="command" value_id="PARTY_START_TIME" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 					<conversion type="integer_integer_scale" div="30"/>
 				</parameter>
-				<parameter id="PARTY_START_DAY" operations="write" control="NONE">
+				<parameter id="PARTY_START_DAY" operations="read,write,event" control="NONE">
 					<logical type="integer" min="1" max="31" default="1" unit="day"/>
-					<physical type="integer" interface="command" value_id="PARTY_START_DAY" no_init="false">
+					<physical type="integer" interface="command" value_id="PARTY_START_DAY" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 				</parameter>
-				<parameter id="PARTY_START_MONTH" operations="write" control="NONE">
+				<parameter id="PARTY_START_MONTH" operations="read,write,event" control="NONE">
 					<logical type="integer" min="1" max="12" default="1" unit="month"/>
-					<physical type="integer" interface="command" value_id="PARTY_START_MONTH" no_init="false">
+					<physical type="integer" interface="command" value_id="PARTY_START_MONTH" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 				</parameter>
-				<parameter id="PARTY_START_YEAR" operations="write" control="NONE">
+				<parameter id="PARTY_START_YEAR" operations="read,write,event" control="NONE">
 					<logical type="integer" min="0" max="99" default="12" unit="year"/>
-					<physical type="integer" interface="command" value_id="PARTY_START_YEAR" no_init="false">
+					<physical type="integer" interface="command" value_id="PARTY_START_YEAR" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 				</parameter>
-				<parameter id="PARTY_STOP_TIME" operations="write" control="NONE">
+				<parameter id="PARTY_STOP_TIME" operations="read,write,event" control="NONE">
 					<logical type="integer" min="0" max="1410" default="0" unit="minutes"/>
-					<physical type="integer" interface="command" value_id="PARTY_STOP_TIME" no_init="false">
+					<physical type="integer" interface="command" value_id="PARTY_STOP_TIME" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 					<conversion type="integer_integer_scale" div="30"/>
 				</parameter>
-				<parameter id="PARTY_STOP_DAY" operations="write" control="NONE">
+				<parameter id="PARTY_STOP_DAY" operations="read,write,event" control="NONE">
 					<logical type="integer" min="1" max="31" default="1" unit="day"/>
-					<physical type="integer" interface="command" value_id="PARTY_STOP_DAY" no_init="false">
+					<physical type="integer" interface="command" value_id="PARTY_STOP_DAY" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 				</parameter>
-				<parameter id="PARTY_STOP_MONTH" operations="write" control="NONE">
+				<parameter id="PARTY_STOP_MONTH" operations="read,write,event" control="NONE">
 					<logical type="integer" min="1" max="12" default="1" unit="month"/>
-					<physical type="integer" interface="command" value_id="PARTY_STOP_MONTH" no_init="false">
+					<physical type="integer" interface="command" value_id="PARTY_STOP_MONTH" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 				</parameter>
-				<parameter id="PARTY_STOP_YEAR" operations="write" control="NONE">
+				<parameter id="PARTY_STOP_YEAR" operations="read,write,event" control="NONE">
 					<logical type="integer" min="0" max="99" default="12" unit="year"/>
-					<physical type="integer" interface="command" value_id="PARTY_STOP_YEAR" no_init="false">
+					<physical type="integer" interface="command" value_id="PARTY_STOP_YEAR" no_init="true">
+						<event frame="INFO_LEVEL"/>
+						<event frame="ACK_STATUS"/>
 					</physical>
 				</parameter>
 			</paramset>
@@ -1477,8 +1510,50 @@
 			<parameter type="integer" index="10.0" size="1.2" param="ACTUAL_TEMPERATURE"/>
 			<parameter type="integer" index="12.5" size="0.3" param="FAULT_REPORTING"/>
 			<parameter type="integer" index="12.0" size="0.5" param="BATTERY_STATE"/>
+			<parameter type="integer" index="13.7" size="0.1" param="WINDOW_STATE"/>
 			<parameter type="integer" index="13.0" size="0.7" param="VALVE_STATE"/>
 			<parameter type="integer" index="14.6" size="0.2" param="CONTROL_MODE"/>
+			<parameter type="integer" index="14.0" size="0.6" param="BOOST_TIME"/>
+			<parameter type="integer" index="14.0" size="0.6" param="PARTY_START_TIME"/>
+			<parameter type="integer" index="15.0" size="0.5" param="PARTY_START_DAY"/>
+			<parameter type="integer" index="20.4" size="0.4" param="PARTY_START_MONTH"/>
+			<parameter type="integer" index="16.0" size="0.7" param="PARTY_START_YEAR"/>
+			<parameter type="integer" index="17.0" size="0.6" param="PARTY_STOP_TIME"/>
+			<parameter type="integer" index="18.0" size="0.5" param="PARTY_STOP_DAY"/>
+			<parameter type="integer" index="20.0" size="0.4" param="PARTY_STOP_MONTH"/>
+			<parameter type="integer" index="19.0" size="0.7" param="PARTY_STOP_YEAR"/>
+		</frame>
+		<frame id="INFO_LEVEL1" direction="from_device" allowed_receivers="BROADCAST,CENTRAL,OTHER" event="true" type="0x10" subtype="0x06" subtype_index="9" fixed_channel="4">
+			<parameter type="integer" index="11.0" size="0.6" param="SET_TEMPERATURE"/>
+			<parameter type="integer" index="12.7" size="0.1" param="LOWBAT"/>
+			<parameter type="integer" index="12.1" size="0.3" param="FAULT_REPORTING"/>
+			<parameter type="integer" index="14.6" size="0.2" param="CONTROL_MODE"/>
+			<parameter type="integer" index="14.0" size="0.6" param="BOOST_TIME"/>
+			<parameter type="integer" index="14.0" size="0.6" param="PARTY_START_TIME"/>
+			<parameter type="integer" index="15.0" size="0.5" param="PARTY_START_DAY"/>
+			<parameter type="integer" index="20.4" size="0.4" param="PARTY_START_MONTH"/>
+			<parameter type="integer" index="16.0" size="0.7" param="PARTY_START_YEAR"/>
+			<parameter type="integer" index="17.0" size="0.6" param="PARTY_STOP_TIME"/>
+			<parameter type="integer" index="18.0" size="0.5" param="PARTY_STOP_DAY"/>
+			<parameter type="integer" index="20.0" size="0.4" param="PARTY_STOP_MONTH"/>
+			<parameter type="integer" index="19.0" size="0.7" param="PARTY_STOP_YEAR"/>
+			<parameter type="integer" index="21.0" size="0.6" param="PARTY_TEMPERATURE"/>
+		</frame>
+		<frame id="ACK_STATUS" direction="from_device" allowed_receivers="CENTRAL" event="true" type="0x02" subtype="0x01" subtype_index="9" channel_field="10">
+			<parameter type="integer" index="11.0" size="0.6" param="SET_TEMPERATURE"/>
+			<parameter type="integer" index="12.7" size="0.1" param="LOWBAT"/>
+			<parameter type="integer" index="12.1" size="0.3" param="FAULT_REPORTING"/>
+			<parameter type="integer" index="14.6" size="0.2" param="CONTROL_MODE"/>
+			<parameter type="integer" index="14.0" size="0.6" param="BOOST_TIME"/>
+			<parameter type="integer" index="14.0" size="0.6" param="PARTY_START_TIME"/>
+			<parameter type="integer" index="15.0" size="0.5" param="PARTY_START_DAY"/>
+			<parameter type="integer" index="20.4" size="0.4" param="PARTY_START_MONTH"/>
+			<parameter type="integer" index="16.0" size="0.7" param="PARTY_START_YEAR"/>
+			<parameter type="integer" index="17.0" size="0.6" param="PARTY_STOP_TIME"/>
+			<parameter type="integer" index="18.0" size="0.5" param="PARTY_STOP_DAY"/>
+			<parameter type="integer" index="20.0" size="0.4" param="PARTY_STOP_MONTH"/>
+			<parameter type="integer" index="19.0" size="0.7" param="PARTY_STOP_YEAR"/>
+			<parameter type="integer" index="21.0" size="0.6" param="PARTY_TEMPERATURE"/>
 		</frame>
 		<frame id="LEVEL_GET" direction="to_device" type="0x01" channel_field="9">
 			<parameter type="integer" index="10.0" size="1.0" const_value="14"/>

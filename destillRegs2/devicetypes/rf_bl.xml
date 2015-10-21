@@ -1,30 +1,46 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="11" supports_aes="true">
+<device version="13" supports_aes="true">
 	<supported_types>
 		<type name="radio-controlled blind actuator 1-channel (surface-mount)" id="HM-LC-Bl1-SM" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
 			<parameter index="10.0" size="2.0" const_value="0x0006"/>
 		</type>
 		<type name="radio-controlled blind actuator 1-channel (flush-mount)" id="HM-LC-Bl1-FM" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
 			<parameter index="10.0" size="2.0" const_value="0x0005"/>
 		</type>
 		<type name="radio-controlled blind actuator 1-channel (flush-mount)" id="HM-LC-Bl1-PB-FM" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
 			<parameter index="10.0" size="2.0" const_value="0x0053"/>
 		</type>
 		<type name="radio-controlled blind actuator 1-channel (flush-mount) Roto" id="ZEL STG RM FEP 230V" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
 			<parameter index="10.0" size="2.0" const_value="0x007B"/>
 		</type>
 		<type name="radio-controlled blind actuator 1-channel (flush-mount) Schueco" id="263 146" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
 			<parameter index="10.0" size="2.0" const_value="0x0086"/>
 		</type>
 		<type name="generic blind actuator" id="HM-LC-BlX" priority="1">
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
 			<parameter index="22.0" size="1.0" const_value="0x30"/>
 		</type>
 	</supported_types>
 	<paramset type="MASTER" id="blind_dev_master">
 		<parameter id="INTERNAL_KEYS_VISIBLE" ui_flags="internal">
-			<logical type="boolean" default="false"/>
+			<logical type="boolean" default="true"/>
 			<physical type="integer" interface="config" list="0" index="2.7" size="0.1"/>
+		</parameter>
+		<parameter id="CONF_BUTTON_TIME">
+			<logical type="integer" min="1" max="254" default="255" unit="minutes">
+				<special_value id="PERMANENT" value="255"/>
+			</logical>
+			<physical type="integer" interface="config" list="0" index="0x15" size="1"/>
+		</parameter>
+		<parameter id="LOCAL_RESET_DISABLE" operations="read,write">
+			<logical type="boolean" default="false"/>
+			<physical type="integer" interface="config" list="0" index="24.0" size="0.1"/>
 		</parameter>
 	</paramset>
 	<channels>
@@ -192,13 +208,29 @@
 				<conversion type="float_integer_scale" factor="10" offset="0.0"/>
 			</parameter>
 			<parameter id="CHANGE_OVER_DELAY">
-				<logical type="float" min="0.0" max="25.5" default="0.5" unit="s"/>
+				<logical type="float" min="0.5" max="25.5" default="0.5" unit="s"/>
 				<physical type="integer" interface="config" list="1" index="15" size="1"/>
 				<conversion type="float_integer_scale" factor="10" offset="0.0"/>
 			</parameter>
 			<parameter id="REFERENCE_RUN_COUNTER">
 				<logical type="integer" min="0" max="255" default="0"/>
 				<physical type="integer" interface="config" list="1" index="16" size="1"/>
+			</parameter>
+			<parameter id="TRANSMIT_TRY_MAX" operations="read,write">
+				<logical type="integer" min="0" max="10" default="6"/>
+				<physical type="integer" interface="config" list="1" index="48" size="1"/>
+			</parameter>
+			<parameter id="STATUSINFO_MINDELAY" operations="read,write">
+				<logical type="float" min="0.5" max="15.5" default="2.0" unit="s">
+					<special_value id="NOT_USED" value="0.0"/>
+				</logical>
+				<physical type="integer" interface="config" list="1" index="87.0" size="0.5"/>
+				<conversion type="float_integer_scale" factor="2"/>
+			</parameter>
+			<parameter id="STATUSINFO_RANDOM" operations="read,write">
+				<logical type="float" min="0.0" max="7.0" default="1.0" unit="s"/>
+				<physical type="integer" interface="config" list="1" index="87.5" size="0.3"/>
+				<conversion type="float_integer_scale" factor="1"/>
 			</parameter>
 		</paramset>
 		<paramset id="blind_linkset">

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="9" supports_aes="true">
+<device version="12" supports_aes="true">
 	<supported_types>
-		<type name="radio chime with light flash" id="HM-OU-CFM-Pl" priority="2">
+		<type name="radio chime with light flash" id="HM-OU-CFM-Pl" priority="2" updatable="true">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x10"/>
 			<parameter index="10.0" size="2.0" const_value="0x0075"/>
 		</type>
@@ -52,6 +52,14 @@
 				<parameter id="RSSI_PEER" operations="read,event">
 					<logical type="integer"/>
 					<physical type="integer" interface="internal" value_id="RSSI_PEER"/>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>
@@ -174,7 +182,7 @@
 				</physical>
 				<conversion type="toggle" value="STATE"/>
 			</parameter>
-			<parameter id="SUBMIT" operations="write">
+			<parameter id="SUBMIT" operations="write" control="NONE">
 				<logical type="string"/>
 				<physical type="string" interface="command" value_id="ACTION">
 					<set request="SUBMIT"/>
@@ -651,7 +659,7 @@
 				</physical>
 				<conversion type="toggle" value="STATE"/>
 			</parameter>
-			<parameter id="SUBMIT" operations="write">
+			<parameter id="SUBMIT" operations="write" control="NONE">
 				<logical type="string"/>
 				<physical type="string" interface="command" value_id="ACTION">
 					<set request="SUBMIT"/>

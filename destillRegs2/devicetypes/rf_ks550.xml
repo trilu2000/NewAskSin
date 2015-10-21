@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="7" rx_modes="CONFIG,WAKEUP" cyclic_timeout="600">
+<device version="8" rx_modes="CONFIG,WAKEUP" cyclic_timeout="600">
 	<supported_types>
 		<type name="KS550" id="KS550">
 			<parameter index="10.0" size="2.0" const_value="7"/>
@@ -14,7 +14,7 @@
 		<type name="KS550LC" id="KS550LC">
 			<parameter index="10.0" size="2.0" const_value="51"/>
 		</type>
-		<type name="HM-WDS100-C6-O" id="HM-WDS100-C6-O">
+		<type name="HM-WDS100-C6-O" id="HM-WDS100-C6-O" updatable="true">
 			<parameter index="10.0" size="2.0" const_value="0x0040"/>
 		</type>
 	</supported_types>
@@ -52,6 +52,14 @@
 				<parameter id="RSSI_PEER" operations="read,event">
 					<logical type="integer"/>
 					<physical type="integer" interface="internal" value_id="RSSI_PEER"/>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>

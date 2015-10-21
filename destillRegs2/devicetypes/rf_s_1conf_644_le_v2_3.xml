@@ -1,102 +1,22 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="24" supports_aes="true">
+<device version="7" supports_aes="true">
 	<supported_types>
-		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0011"/>
+		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1PBU-FM" priority="2" updatable="true">
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x23"/>
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x22"/>
+			<parameter index="10.0" size="2.0" const_value="0x0069"/>
 		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel" id="HM-LC-Sw1-Pl-2" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00A1"/>
-		</type>
-		<type name="radio-controlled switch actuator 1-channel (surface-mount)" id="HM-LC-Sw1-SM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0002"/>
-		</type>
-		<type name="radio-controlled switch actuator 2-channel (surface-mount)" id="HM-LC-Sw2-SM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x000A"/>
-		</type>
-		<type name="radio-controlled switch actuator 4-channel (surface-mount)" id="HM-LC-Sw4-SM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0003"/>
-		</type>
-		<type name="radio-controlled switch actuator 4-channel (PCB)" id="HM-LC-Sw4-PCB" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x002D"/>
-		</type>
-		<type name="radio-controlled switch actuator 4-channel (wall-mount)" id="HM-LC-Sw4-WM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0066"/>
-		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0004"/>
-		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount) Schueco" id="263 130" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x008B"/>
-		</type>
-		<type name="radio-controlled switch actuator 2-channel (flush-mount)" id="HM-LC-Sw2-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0009"/>
-		</type>
-		<type name="radio-controlled switch actuator 1-channel (flush-mount)" id="HM-LC-Sw1-PB-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0051"/>
-		</type>
-		<type name="radio-controlled switch actuator 2-channel (flush-mount)" id="HM-LC-Sw2-PB-FM" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0052"/>
-		</type>
-		<type name="radio-controlled switch actuator 4-channel (DIN rails)" id="HM-LC-Sw4-DR" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0061"/>
-		</type>
-		<type name="radio-controlled switch actuator 2-channel (DIN rails)" id="HM-LC-Sw2-DR" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x0062"/>
-		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel Roto" id="ZEL STG RM FZS" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x007C"/>
-		</type>
-		<type name="radio-controlled socket adapter switch actuator 1-channel Roto" id="ZEL STG RM FZS-2" priority="2">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00A2"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R1" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EB"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R2" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EC"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R3" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00ED"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R4" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EE"/>
-		</type>
-		<type name="Wireless Switch Actuator 1-channel with clamp terminal,  plug adapter" id="HM-LC-Sw1-Pl-CT-R5" priority="1">
-			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x24"/>
-			<parameter index="10.0" size="2.0" const_value="0x00EF"/>
+		<type name="radio-controlled switch actuator 1-channel (flush-mount) Schueco" id="263 131" priority="2">
+			<parameter index="9.0" size="1.0" cond_op="LE" const_value="0x23"/>
+			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x22"/>
+			<parameter index="10.0" size="2.0" const_value="0x008C"/>
 		</type>
 	</supported_types>
 	<paramset type="MASTER" id="switch_dev_master">
 		<parameter id="INTERNAL_KEYS_VISIBLE" ui_flags="internal">
 			<logical type="boolean" default="true"/>
 			<physical type="integer" interface="config" list="0" index="2.7" size="0.1"/>
-		</parameter>
-		<parameter id="CONF_BUTTON_TIME">
-			<logical type="integer" min="1" max="254" default="255" unit="minutes">
-				<special_value id="PERMANENT" value="255"/>
-			</logical>
-			<physical type="integer" interface="config" list="0" index="0x15" size="1"/>
 		</parameter>
 		<parameter id="LOCAL_RESET_DISABLE" operations="read,write">
 			<logical type="boolean" default="false"/>
@@ -138,6 +58,14 @@
 				<parameter id="AES_KEY" operations="read" ui_flags="invisible">
 					<logical type="integer" min="0" max="127"/>
 					<physical type="integer" interface="internal" value_id="AES_KEY"/>
+				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
 				</parameter>
 			</paramset>
 		</channel>
@@ -245,12 +173,6 @@
 			<parameter id="TRANSMIT_TRY_MAX" operations="read,write">
 				<logical type="integer" min="0" max="10" default="6"/>
 				<physical type="integer" interface="config" list="1" index="48" size="1"/>
-			</parameter>
-			<parameter id="POWERUP_ACTION" operations="read,write"><logical type="option">
-					<option id="POWERUP_OFF" default="true"/>
-					<option id="POWERUP_ON"/>
-				</logical>
-				<physical type="integer" interface="config" list="1" index="86" size="0.1"/>
 			</parameter>
 			<parameter id="STATUSINFO_MINDELAY" operations="read,write">
 				<logical type="float" min="0.5" max="15.5" default="2.0" unit="s">

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="19" supports_aes="true" cyclic_timeout="88200">
+<device version="21" supports_aes="true" cyclic_timeout="88200">
 	<supported_types>
-		<type name="HomeMatic Rain detector" id="HM-Sen-RD-O" priority="2">
+		<type name="HomeMatic Rain detector" id="HM-Sen-RD-O" updatable="true" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x14"/>
 			<parameter index="10.0" size="2.0" const_value="0x00a7"/>
 		</type>
@@ -62,6 +62,14 @@
 					<logical type="integer"/>
 					<physical type="integer" interface="internal" value_id="RSSI_PEER"/>
 				</parameter>
+				<parameter id="DEVICE_IN_BOOTLOADER" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="DEVICE_IN_BOOTLOADER"/>
+				</parameter>
+				<parameter id="UPDATE_PENDING" operations="read,event" ui_flags="service">
+					<logical type="boolean"/>
+					<physical type="integer" interface="internal" value_id="UPDATE_PENDING"/>
+				</parameter>
 			</paramset>
 		</channel>
 		<channel autoregister="true" index="1" type="RAINDETECTOR" count="1">
@@ -76,7 +84,7 @@
 					<physical type="boolean" interface="internal" value_id="AES"/>
 				</parameter>
 				<parameter id="EVENT_FILTERTIME">
-					<logical type="float" min="0.0" max="7620.0" unit="s" default="0.0"/>
+					<logical type="float" min="1.0" max="7620.0" unit="s" default="0.0"/>
 					<physical type="integer" interface="config" list="1" index="35" size="1"/>
 					<conversion type="float_configtime" factors="1,60" value_size="0.7"/>
 				</parameter>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="2" rx_modes="CONFIG,WAKEUP" cyclic_timeout="600">
+<device version="3" rx_modes="CONFIG,WAKEUP" cyclic_timeout="40000">
 	<supported_types>
 		<type name="HM-WDS30-OT2-SM" id="HM-WDS30-OT2-SM">
 			<parameter index="10.0" size="2.0" const_value="0x00A8"/>
@@ -47,9 +47,13 @@
 					<logical type="boolean"/>
 					<physical type="integer" interface="internal" value_id="CONFIG_PENDING"/>
 				</parameter>
-				<parameter id="LOWBAT" operations="read,event" ui_flags="service">
+				<parameter id="LOWBAT" operations="read,event" ui_flags="service" control="NONE">
 					<logical type="boolean"/>
-					<physical type="integer" interface="internal" value_id="LOWBAT"/>
+					<physical type="integer" interface="command" value_id="LOWBAT">
+						<event frame="WEATHER_EV_BAT"/>
+						<event frame="MEASURE_EV_BAT"/>
+						<event frame="INFO_LEVEL"/>
+					</physical>
 				</parameter>
 				<parameter id="RSSI_DEVICE" operations="read,event">
 					<logical type="integer"/>
@@ -75,6 +79,14 @@
 						<field id="AutoconfRoles" value="WEATHER"/>
 					</description>
 				</parameter>
+				<parameter id="LOWBAT" operations="read,event" control="NONE">
+					<logical type="boolean"/>
+					<physical type="integer" interface="command" value_id="LOWBAT">
+						<event frame="WEATHER_EV_BAT"/>
+						<event frame="MEASURE_EV_BAT"/>
+						<event frame="INFO_LEVEL"/>
+					</physical>
+				</parameter>
 			</paramset>
 		</channel>
 		<channel index="5" type="WEATHER">
@@ -93,6 +105,14 @@
 					<description>
 						<field id="AutoconfRoles" value="WEATHER"/>
 					</description>
+				</parameter>
+				<parameter id="LOWBAT" operations="read,event" control="NONE">
+					<logical type="boolean"/>
+					<physical type="integer" interface="command" value_id="LOWBAT">
+						<event frame="WEATHER_EV_BAT"/>
+						<event frame="MEASURE_EV_BAT"/>
+						<event frame="INFO_LEVEL"/>
+					</physical>
 				</parameter>
 			</paramset>
 			<paramset type="LINK" id="wds30ot2_ch_link">
@@ -114,6 +134,15 @@
 		</frame>
 		<frame id="MEASURE_EVENT" direction="from_device" event="true" type="0x53" channel_field="19.0:0.6">
 			<parameter type="integer" signed="true" index="20.0" size="2.0" param="TEMPERATURE"/>
+		</frame>
+		<frame id="INFO_LEVEL" direction="from_device" allowed_receivers="BROADCAST,CENTRAL,OTHER" event="true" type="0x10" subtype="6" subtype_index="9" fixed_channel="*">
+			<parameter type="integer" index="12.7" size="0.1" param="LOWBAT"/>
+		</frame>
+		<frame id="WEATHER_EV_BAT" direction="from_device" event="true" fixed_channel="*" type="0x70">
+			<parameter type="integer" index="9.7" size="0.1" param="LOWBAT"/>
+		</frame>
+		<frame id="MEASURE_EV_BAT" direction="from_device" event="true" type="0x53" fixed_channel="*">
+			<parameter type="integer" index="9.7" size="0.1" param="LOWBAT"/>
 		</frame>
 	</frames>
 	<paramset_defs>

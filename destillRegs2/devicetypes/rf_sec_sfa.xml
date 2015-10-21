@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
-<device version="11" supports_aes="true">
+<device version="12" supports_aes="true">
 	<supported_types>
 		<type name="radio-controlled siren flash actuator (surface-mount)" id="HM-Sec-SFA-SM" priority="2">
 			<parameter index="9.0" size="1.0" cond_op="GE" const_value="0x01"/>
@@ -172,6 +172,7 @@
 			<parameter type="integer" index="12.1" size="0.1" param="ERROR_POWER"/>
 			<parameter type="integer" index="12.2" size="0.1" param="ERROR_SABOTAGE"/>
 			<parameter type="integer" index="12.3" size="0.1" param="ERROR_BATTERY"/>
+			<parameter type="integer" index="12.7" size="0.1" param="LOWBAT"/>
 		</frame>
 		<frame id="ACK_STATUS" direction="from_device" allowed_receivers="BROADCAST,CENTRAL,OTHER" event="true" type="0x02" subtype="1" subtype_index="9" channel_field="10">
 			<parameter type="integer" index="11.0" size="1.0" param="STATE"/>
@@ -181,6 +182,7 @@
 			<parameter type="integer" index="12.1" size="0.1" param="ERROR_POWER"/>
 			<parameter type="integer" index="12.2" size="0.1" param="ERROR_SABOTAGE"/>
 			<parameter type="integer" index="12.3" size="0.1" param="ERROR_BATTERY"/>
+			<parameter type="integer" index="12.7" size="0.1" param="LOWBAT"/>
 		</frame>
 		<frame id="TOGGLE_INSTALL_TEST" direction="to_device" type="0x11" subtype="0x02" subtype_index="9" channel_field="10">
 			<parameter type="integer" index="11.0" size="1.0" param="TOGGLE_FLAG"/>
@@ -258,6 +260,13 @@
 					<event frame="INFO_POWERON"/>
 				</physical>
 				<conversion type="boolean_integer"/>
+			</parameter>
+			<parameter id="LOWBAT" operations="read,event" control="NONE">
+				<logical type="boolean"/>
+				<physical type="integer" interface="command" value_id="LOWBAT">
+					<event frame="INFO_LEV_ERR"/>
+					<event frame="ACK_STAT_ERR"/>
+				</physical>
 			</parameter>
 			<parameter id="INSTALL_TEST" operations="write" ui_flags="internal">
 				<logical type="action"/>
