@@ -5,6 +5,7 @@
 	#include <AS.h>
 	#include "hardware.h"
 	#include <cmBlind.h>
+	#include "hmkey.h"
 
 	AS hm;																			// asksin framework
 	cmBlind cmBlind[1];																// create 1 instances of channel module
@@ -17,8 +18,8 @@
 	const uint8_t HMSerialData[] PROGMEM = {
 		/* HMID */            0x01, 0x02, 0x06,
 		/* Serial number */   'H', 'B', 'b', 'l', 'i', 'n', 'd', '0', '0', '1',		// HBblind001
-		/* Default-Key */     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-		/* Key-Index */       0x00
+		/* Default-Key */     HM_DEVICE_AES_KEY,
+		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX
 	};
 
 	/*
