@@ -132,7 +132,7 @@ class AS {
 
 	// - send functions --------------------------------
 	void sendDEVICE_INFO(void);
-	inline void sendACK(void);
+	void sendACK(void);
 	void checkSendACK(uint8_t ackOk);
 	void sendPayload(uint8_t payloadType, uint8_t *data, uint8_t dataLen);
 	inline void sendAckAES(uint8_t *data);
@@ -152,25 +152,40 @@ class AS {
 	void sendWeatherEvent(void);
 	void sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *payload, uint8_t pLen);
 
-	void processMessageConfig(uint8_t by10, uint8_t cnl1);
+	void processMessageConfigAction(uint8_t by10, uint8_t cnl1);
 	void processMessageAction();
 	void deviceReset(void);
 
   private:		//---------------------------------------------------------------------------------------------------------
 
+	inline void processMessageSwitchEvent();
+
+	inline void processMessageResponseAES_Challenge(void);
+	inline void processMessageResponseAES(void);
+	inline void processMessageKeyExchange(void);
+
+	void processMessageConfig(uint8_t by10);
+	inline void processMessageConfigStatusRequest(uint8_t by10);
+	inline void processMessageConfigPairSerial(void);
+	inline void processMessageConfigSerialReq(void);
+	inline void processMessageConfigParamReq(void);
+	inline void processMessageConfigPeerListReq(void);
+	inline void processMessageConfigAESProtected(uint8_t by10);
+
+	inline void actionSwitchEvent();
 	inline uint8_t configPeerAdd(uint8_t by10);
 	inline uint8_t configPeerRemove();
 	inline void configStart();
-	inline void configEnd(uint8_t cnl1);
+	inline void configEnd();
 	inline void configWriteIndex(void);
 
 	// - poll functions --------------------------------
-	void sendSliceList(void);																// scheduler to send config messages, peers and regs
-	void sendPeerMsg(void);																	// scheduler for peer messages
-	void prepPeerMsg(uint8_t *xPeer, uint8_t retr);
+	inline void sendSliceList(void);															// scheduler to send config messages, peers and regs
+	inline void sendPeerMsg(void);																// scheduler for peer messages
+	void preparePeerMessage(uint8_t *xPeer, uint8_t retr);
 			
 	// - receive functions -----------------------------
-	void recvMessage(void);
+	void processMessage(void);
 
 	// - send functions --------------------------------
 	inline void sendINFO_SERIAL(void);
@@ -187,9 +202,8 @@ class AS {
 
 	void sendSignRequest(void);
 
-	void memcpyPad0(uint8_t *target, uint8_t tLen, uint8_t *source, uint8_t sLen);
-	void initPrng();
-	void initRandomSeed();
+	void initPseudoRandomNumberGenerator();
+	inline void initRandomSeed();
 	
   protected:	//---------------------------------------------------------------------------------------------------------
 	// - homematic specific functions ------------------

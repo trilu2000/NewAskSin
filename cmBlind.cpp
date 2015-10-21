@@ -9,7 +9,6 @@
 //#define BL_DBG																			// debug message flag
 #include <cmBlind.h>
 
-
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
@@ -216,7 +215,7 @@ void cmBlind::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 
 }
 
-void cmBlind::toggleDim(void) {
+inline void cmBlind::toggleDim(void) {
 	dbg << F("toggleDim") << '\n';
 
 	if (modStat == 0)   directionDim = 1;													// remember the direction , down or up
@@ -253,7 +252,7 @@ void cmBlind::downDim(void) {
 	adjDlyPWM = 1;																			// do the adjustment in 1ms steps
 }
 
-void cmBlind::adjPWM(void) {
+inline void cmBlind::adjPWM(void) {
 
 	// something to do?
 	if (setStat == modStat) return;															// nothing to do
@@ -279,7 +278,7 @@ void cmBlind::adjPWM(void) {
 	adjTmr.set(adjDlyPWM);																	// set timer for next action
 }
 
-void cmBlind::sendStatus(void) {
+inline void cmBlind::sendStatus(void) {
 
 	if (!sendStat) return;																	// nothing to do
 	if (!msgTmr.done()) return;																// not the right time
@@ -439,7 +438,7 @@ void cmBlind::poll(void) {
 }
 
   //- helpers defined functions -------------------------------------------------------------------------------------------
-void cmBlind::showStruct(void) {
+inline void cmBlind::showStruct(void) {
 
 	dbg << "\nctRampOn " << l3->ctRampOn << ", ctRampOff " << l3->ctRampOff << ", ctDlyOn " << l3->ctDlyOn << \
 	        ", ctDlyOff " << l3->ctDlyOff << ", ctOn " << l3->ctOn << ", ctOff " << l3->ctOff << \
@@ -467,7 +466,7 @@ void cmBlind::showStruct(void) {
 //-------------------------------------------------------------------------------------------------------------------------
 //- mandatory functions for every new module to communicate within HM protocol stack -
 //-------------------------------------------------------------------------------------------------------------------------
-void cmBlind::setToggle(void) {
+inline void cmBlind::setToggle(void) {
 	// setToggle will be addressed by config button in mode 2 by a short key press
 	// here we can toggle the status of the actor
 	#ifdef BL_DBG
@@ -515,7 +514,7 @@ void cmBlind::pairSetEvent(uint8_t *data, uint8_t len) {
 	msgTmr.set(100);																		// give some time
 }
 
-void cmBlind::pairStatusReq(void) {
+inline void cmBlind::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	#ifdef BL_DBG
 	dbg << F("PSR\n");
@@ -590,7 +589,7 @@ void cmBlind::peerAddEvent(uint8_t *data, uint8_t len) {
 		if (data[1]) hm->ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
 }
-void cmBlind::firstStart(void) {
+inline void cmBlind::firstStart(void) {
 	//#ifdef BL_DBG
 	dbg << F("firstStart\n");
 	//#endif

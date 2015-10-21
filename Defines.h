@@ -5,6 +5,16 @@
 
 #ifndef _DEFINES_H
 
+	// Register list0 values
+	#define AS_REG_L0_HMKEY_1                0x0A
+	#define AS_REG_L0_HMKEY_2                0x0B
+	#define AS_REG_L0_HMKEY_2                0x0C
+	#define AS_REG_L0_CONF_BUTTON_TIME       0x15
+	#define AS_REG_L0_LOCAL_RESET_DISABLE    0x18
+
+	// Register list1 values
+	#define AS_REG_L1_AES_ACTIVE             0x08
+
 	// Byte 3: message types
 	#define AS_MESSAGE_DEVINFO               0x00
 	#define AS_MESSAGE_CONFIG                0x01
@@ -66,7 +76,4 @@
 	#define AS_STATUS_KEYCHANGE_INACTIVE     0xFF
 	#define AS_STATUS_KEYCHANGE_ACTIVE1      0x00
 	#define AS_STATUS_KEYCHANGE_ACTIVE2      0x08
-
-	// Register values
-	#define AS_REG_L1_AES_ACTIVE             0x08
 #endif

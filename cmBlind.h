@@ -274,16 +274,16 @@ class cmBlind {
 	void     trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);						// messages coming from sensor
 
   private://---------------------------------------------------------------------------------------------------------------
-	void     toggleDim(void);																// dim up or down with one key
+	inline void     toggleDim(void);																// dim up or down with one key
 	void     upDim(void);																	// up dim procedure
 	void     downDim(void);																	// down dim procedure
 
-	void     adjPWM(void);																	// adjusts PWM value in a regular manner
-	void     sendStatus(void);																// send status function
+	inline void     adjPWM(void);																	// adjusts PWM value in a regular manner
+	inline void     sendStatus(void);																// send status function
 	void     poll(void);																	// blind polling function
 	
   //- helpers defined functions -------------------------------------------------------------------------------------------
-	void     showStruct(void);
+	inline void     showStruct(void);
 
 	
   public://----------------------------------------------------------------------------------------------------------------
@@ -294,17 +294,17 @@ class cmBlind {
 
 	AS       *hm;																			// pointer to HM class instance
 
-	void     setToggle(void);																// toggle the module initiated by config button
+	inline void     setToggle(void);																// toggle the module initiated by config button
 	void     configCngEvent(void);															// list1 on registered channel had changed
 	void     pairSetEvent(uint8_t *data, uint8_t len);										// pair message to specific channel, handover information for value, ramp time and so on
-	void     pairStatusReq(void);															// event on status request
+	inline void     pairStatusReq(void);															// event on status request
 	void     peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len);						// peer message was received on the registered channel, handover the message bytes and length
 
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
 	void     regInHM(uint8_t cnl, uint8_t lst, AS *instPtr);								// register this module in HM on the specific channel
 	void     hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
 	void     peerAddEvent(uint8_t *data, uint8_t len);										// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
-	void     firstStart(void);																// first start detection, to write list1
+	inline void     firstStart(void);																// first start detection, to write list1
 };
 
 

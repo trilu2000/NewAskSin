@@ -75,8 +75,13 @@ void AS::poll(void) {
 	if (sn.active) sn.poll();																// check if there is something to send
 
 	// handle the slice send functions
-	if (stcSlice.active) sendSliceList();													// poll the slice list send function
-	if (stcPeer.active) sendPeerMsg();														// poll the peer message sender
+	if (stcSlice.active) {
+		sendSliceList();																	// poll the slice list send function
+	}
+
+	if (stcPeer.active) {
+		sendPeerMsg();																		// poll the peer message sender
+	}
 	
 	// time out the config flag
 	if (cFlag.active) {																		// check only if we are still in config mode
@@ -151,7 +156,7 @@ void AS::checkSendACK(uint8_t ackOk) {
  *             Sender__ Receiver ACK
  * 0A 24 80 02 1F B7 4A 63 19 63 00
  */
-inline void AS::sendACK(void) {
+void AS::sendACK(void) {
 	if (rv.mBdy.mFlg.BIDI) {															// prevent answer for requests from a user class on repeated key press
 		sn.mBdy.mLen = 0x0A;
 		sn.mBdy.mFlg.CFG = 0;
@@ -224,6 +229,8 @@ void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
 
 /**
  * @brief Send a NACK (not ACK and target invalid)
+ *
+ * TODO: remove? don't used yet
  *
  * Message description:
  *             Sender__ Receiver NACK_TAGRET_INVALID
@@ -432,7 +439,7 @@ void AS::sendWeatherEvent(void) {
 
 // private:		//---------------------------------------------------------------------------------------------------------
 // - poll functions --------------------------------
-void AS::sendSliceList(void) {
+inline void AS::sendSliceList(void) {
 	uint8_t cnt;
 
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
@@ -460,11 +467,10 @@ void AS::sendSliceList(void) {
 	}
 }
 
-void AS::sendPeerMsg(void) {
+inline void AS::sendPeerMsg(void) {
 	uint8_t maxRetries;
 
-	if (stcPeer.bidi) maxRetries = 3;
-	else maxRetries = 1;
+	maxRetries = (stcPeer.bidi) ? 3 : 1;
 	
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
 	
@@ -473,7 +479,7 @@ void AS::sendPeerMsg(void) {
 		stcPeer.maxIdx = ee.getPeerSlots(stcPeer.cnl);										// get amount of messages of peer channel
 	
 		if (stcPeer.maxIdx == ee.countFreeSlots(stcPeer.cnl) ) {							// check if at least one peer exist in db, otherwise send to master and stop function
-			prepPeerMsg(MAID, maxRetries);
+			preparePeerMessage(MAID, maxRetries);
 			sn.msgCnt++;																	// increase the send message counter
 			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));									// clean out and return
 			return;
@@ -502,7 +508,9 @@ void AS::sendPeerMsg(void) {
 	}
 	
 	// set respective bit to check if ACK was received
-	if (!stcPeer.rnd) stcPeer.slt[stcPeer.curIdx >> 3] |= (1<<(stcPeer.curIdx & 0x07));		// set bit in slt table										// clear bit in slt and increase counter
+	if (!stcPeer.rnd) {
+		stcPeer.slt[stcPeer.curIdx >> 3] |= (1<<(stcPeer.curIdx & 0x07));					// set bit in slt table										// clear bit in slt and increase counter
+	}
 
 
 	// exit while bit is not set
@@ -534,15 +542,16 @@ void AS::sendPeerMsg(void) {
 	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
 	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.cnl, 4, stcPeer.curIdx, 0x01);
 	
-	prepPeerMsg(tPeer, 1);
+	preparePeerMessage(tPeer, 1);
 	
-	if (!sn.mBdy.mFlg.BIDI)
-	stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));						// clear bit, because it is a message without need to be repeated
+	if (!sn.mBdy.mFlg.BIDI) {
+		stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// clear bit, because it is a message without need to be repeated
+	}
 
 	stcPeer.curIdx++;																		// increase counter for next time
 }
 
-void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
+void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retr) {
 
 	// description --------------------------------------------------------
 	//    len  cnt  flg  typ  reID      toID      pl
@@ -572,112 +581,44 @@ void AS::prepPeerMsg(uint8_t *xPeer, uint8_t retr) {
 /**
  * @brief Receive handler: Process received messages
  */
-void AS::recvMessage(void) {
+void AS::processMessage(void) {
 	uint8_t by10 = rv.mBdy.by10 - 1;
-	uint8_t cnl1 = cFlag.cnl - 1;
 
 	// check which type of message was received
-	if         (rv.mBdy.mTyp == AS_MESSAGE_DEVINFO) {												// Device info
+	if        (rv.mBdy.mTyp == AS_MESSAGE_DEVINFO) {
 		//TODO: do something with the information
 
-	} else if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {													// CONFIG-Requests
+	} else if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
 
-		if (rv.mBdy.by11 == AS_CONFIG_PEER_LIST_REQ) {												// CONFIG_PEER_LIST_REQ
-			/* Message description:
-			 *             Sender__ Receiver    Channel
-			 * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
-			 */
-			stcSlice.totSlc = ee.countPeerSlc(rv.mBdy.by10);										// how many slices are need
-			stcSlice.mCnt = rv.mBdy.mCnt;															// remember the message count
-			memcpy(stcSlice.toID, rv.mBdy.reID, 3);
-			stcSlice.cnl = rv.mBdy.by10;															// send input to the send peer function
-			stcSlice.peer = 1;																		// set the type of answer
-			stcSlice.active = 1;																	// start the send function
-			// answer will send from sendsList(void)
+		if (rv.mBdy.by11        == AS_CONFIG_PEER_LIST_REQ) {
+			processMessageConfigPeerListReq();
 
-		} else if (rv.mBdy.by11 == AS_CONFIG_PARAM_REQ) {											// CONFIG_PARAM_REQ
-			/* Message description:
-			 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
-			 * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
-			 */
-			if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {										// only list 3 and list 4 needs an peer id and idx
-				stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);							// get peer index
-			} else {
-				stcSlice.idx = 0;																	// otherwise peer index is 0
-			}
+		} else if (rv.mBdy.by11 == AS_CONFIG_PARAM_REQ) {
+			processMessageConfigParamReq();
 
-			stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);							// how many slices are need
-			stcSlice.mCnt = rv.mBdy.mCnt;															// remember the message count
-			memcpy(stcSlice.toID, rv.mBdy.reID, 3);
-			stcSlice.cnl = rv.mBdy.by10;															// send input to the send peer function
-			stcSlice.lst = rv.buf[16];																// send input to the send peer function
-			stcSlice.reg2 = 1;																		// set the type of answer
+		} else if (rv.mBdy.by11 == AS_CONFIG_SERIAL_REQ) {
+			processMessageConfigSerialReq();
 
-			#ifdef AS_DBG
-				dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
-				dbg << "totSlc: " << stcSlice.totSlc << '\n';
-			#endif
+		} else if (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL) {
+			processMessageConfigPairSerial();
 
-			if ((stcSlice.idx != 0xFF) && (stcSlice.totSlc > 0)) {
-				stcSlice.active = 1;																// only send register content if something is to send															// start the send function
-			} else {
-				memset((void*)&stcSlice, 0, 10);													// otherwise empty variable
-			}
-
-		} else if (rv.mBdy.by11 == AS_CONFIG_SERIAL_REQ) {											// CONFIG_SERIAL_REQ
-			/*
-			 * Message description:
-			 *             Sender__ Receiver
-			 * 0B 77 A0 01 63 19 63 01 02 04 00 09
-			 */
-			sendINFO_SERIAL();																		// jump to create the answer
-
-		} else if (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL) {											// PAIR_SERIAL
-			/*
-			 * Message description:
-			 *             Sender__ Receiver       SerialNumber
-			 * 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
-			 */
-			if (!memcmp(rv.buf+12, HMSR, 10)) {														// compare serial and send device info
-				sendDEVICE_INFO();
-			}
-
-		} else if (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST) { 										// CONFIG_STATUS_REQUEST
-			/*
-			 * Message description:
-			 *             Sender__ Receiver Channel
-			 * 15 93 B4 01 63 19 63 00 00 00 01      0E
-			 */
-
-			// check if a module is registered and send the information, otherwise report an empty status
-			if (modTbl[by10].cnl) {
-				modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen-11);
-			} else {
-				sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);
-			}
+		} else if (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST) {
+			processMessageConfigStatusRequest(by10);
 
 		} else {
-
-			#ifdef SUPPORT_AES
-				// TODO: check all channels for AES_ACTIVE -> rv.mBdy.by11
-				if (ee.getRegAddr(1, 1, 0, AS_REG_L1_AES_ACTIVE)) {
-					memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
-					sendSignRequest();
-
-				} else {
-			#endif
-					processMessageConfig(by10, cnl1);
-			#ifdef SUPPORT_AES
-				}
-			#endif
+			processMessageConfigAESProtected(by10);
 		}
 
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) {
+		/*
+		 * This is an response (ACK) to an active message.
+		 * In exception of AS_RESPONSE_AES_CHALLANGE message, we set retrCnt to 0xFF
+		 */
 		if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt) && (rv.mBdy.by10 != AS_RESPONSE_AES_CHALLANGE)) {
-			sn.retrCnt = 0xFF;																		// was an ACK to an active message, message counter is similar - set retrCnt to 255
+			sn.retrCnt = 0xFF;
 		}
 
-		if (rv.mBdy.by10 == AS_RESPONSE_ACK) {														// ACK
+		if (rv.mBdy.by10 == AS_RESPONSE_ACK) {
 			/*
 			 * Message description:
 			 *             Sender__ Receiver ACK
@@ -685,7 +626,7 @@ void AS::recvMessage(void) {
 			 */
 			// nothing to do yet
 
-		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK_STATUS) {										// ACK_STATUS
+		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK_STATUS) {
 			/*
 			 * Message description:
 			 *             Sender__ Receiver ACK Channel State Action RSSI
@@ -695,110 +636,58 @@ void AS::recvMessage(void) {
 			 */
 			// nothing to do yet
 
-		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK2) {												// ACK2
+		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK2) {
 			// nothing to do yet
 
 		#ifdef SUPPORT_AES
-			} else if (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE) {									// AES-Challenge
-				/*
-				 * Message description:
-				 *             Sender__ Receiver By10 By11  Challenge_____ KeyIndex
-				 * 11 24 80 02 1F B7 4A 63 19 63 02   04 01 02 03 04 05 06 02`
-				 */
-				sn.cleanUp();																		// cleanup send module data;
-
-				uint8_t challenge[6];
-				memcpy(challenge, rv.buf+11, 6);													// get challenge
-				makeTmpKey(challenge);																// Build the temporarily key from challenge
-
-				/**
-				 * Generate the message to encrypt.
-				 * @brief Encrypt the payload
-				 *        The temporarily key was built by XORing the key with the challenge
-				 *
-				 *        The payload to encrypt:
-				 *        6 Random-Bytes___ The bytes 1-11 of the message to sign
-				 *        xx xx xx xx xx xx 0A A4 01 23 70 EC 1E 7A AD 02
-				 *
-				 *        The iv (initial vector) is 16 bytes long and contains the
-				 *        bytes 11 - n of the message to sign padded with 0x00
-				 *
-				 * @param encPayload   pointer to the buffer stored the final encrypted payload
-				 * @param msgToEnc     pointer to the message should encrypted
-				 */
-
-				initPrng();																			// initialize the pseudo random number generator
-
-				/**
-				 * Prepare the message for encryption.
-				 * Message description:
-				 * 6 random bytes___   The bytes 1-11 of the message to sign
-				 * xx xx xx xx xx xx   0A A4 01 23 70 EC 1E 7A AD 02
-				 */
-				uint8_t msgLen = sn.msgToSign[5];													// the message length stored at byte 5
-				uint8_t i;
-				for (i = 0; i < 32; i++) {
-					if (i < 6) {
-						sn.msgToSign[i] = (uint8_t)rand();											// fill the first 6 bytes with random data
-					} else if (i > msgLen + 5 ) {
-						sn.msgToSign[i] = 0x00;														// the unused message bytes padded with 0x00
-					}
-				}
-
-				aes128_enc(sn.msgToSign, &ctx);														// encrypt the message width the generated temporarily key first time
-				for (i = 0; i < 16; i++) {
-					sn.msgToSign[i] ^= sn.msgToSign[i+16];											// xor encrypted payload with iv (the bytes 11-27
-				}
-				aes128_enc(sn.msgToSign, &ctx);														// encrypt payload width previous generated temporarily key again
-				sn.mBdy.mLen = 0x19;
+			} else if (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE) {
+				processMessageResponseAES_Challenge();
 
 				memcpy(sn.buf+10, sn.msgToSign, 16);
-
 				prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE_AES, rv.mBdy.reID);
 		#endif
 
-		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK) {												// NACK
-			// TODO: Make ready
-	
-		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK_TARGET_INVALID) {								// NACK_TARGET_INVALID
-			// TODO: Make ready
-	
+		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK) {
+			// nothing to do yet
+
+		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK_TARGET_INVALID) {
+			// nothing to do yet
+
 		}
 
 	#ifdef SUPPORT_AES
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE_AES)) {										// AES Response
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE_AES)) {
 			/*
 			 * Message description:
 			 *             Sender__ Receiver AES-Response-Data
 			 * 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
 			 */
-			sn.cleanUp();																			// cleanup send module data;
+			sn.cleanUp();																		// cleanup send module data;
 
-			/**
-			 * Decrypt payload and compare the result to the previous original message
-			 */
-			uint8_t iv[16];																			// 16 bytes initial vector
-			uint8_t data[16];																		// 16 bytes initial vector
-			memcpy(data, rv.buf+10, 16);
-			memcpyPad0(iv, 16, rv.prevBuf+11, rv.prevBuf[0]-10);									// Copy the send msgOriginal to iv. If msgOriginal shorter then 16 bytes, padded with 0x00
-			aes128_dec(data, &ctx);																	// decrypt payload with temporarily key first time
+			uint8_t iv[16];																		// 16 bytes initial vector
+			memset(iv, 0x00, 16);																// fill IV with 0x00;
+			memcpy(iv, rv.prevBuf+11, rv.prevBuf[0]-10);
+			aes128_dec(rv.buf+10, &ctx);														// decrypt payload with temporarily key first time
 
-			uint8_t i;
-			for (i = 0; i < 16; i++) data[i] ^= iv[i];												// xor encrypted payload with iv
+			for (uint8_t i = 0; i < 16; i++) rv.buf[i+10] ^= iv[i];								// xor encrypted payload with iv
 
 			uint8_t authAck[4];
-			memcpy(authAck, data, 4);																// build auth ACK
-			aes128_dec(data, &ctx);																	// decrypt payload with temporarily key again
+			authAck[0] = rv.buf[10];
+			authAck[1] = rv.buf[11];
+			authAck[2] = rv.buf[12];
+			authAck[3] = rv.buf[13];
+
+			aes128_dec(rv.buf+10, &ctx);														// decrypt payload with temporarily key again
 
 			/**
 			 * Compare decrypted message with original message
 			 */
 			#ifdef AES_DBG
-				dbg << F(">>> compare: ") << _HEX(data, 16) << " | "<< _HEX(msgOriginal, 11) << "\n";
+				dbg << F(">>> compare: ") << _HEX(rv.buf+10, 16) << " | "<< _HEX(rv.prevBuf, 11) << "\n";
 			#endif
 
 			// memcmp returns 0 if compare true
-			 if (!memcmp(data+6, rv.prevBuf+1, 10)) {												// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
+			 if (!memcmp(rv.buf+16, rv.prevBuf+1, 10)) {										// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
 				#ifdef AES_DBG
 					dbg << F("Signature check success\n");
 				#endif
@@ -807,7 +696,7 @@ void AS::recvMessage(void) {
 
 				if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
 					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
-						processMessageConfig(rv.mBdy.by10, cFlag.cnl - 1);
+						processMessageConfig(rv.mBdy.by10 - 1);
 					} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
 						processMessageAction();
 					}
@@ -831,41 +720,8 @@ void AS::recvMessage(void) {
 			}
 
 		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {										// AES Key Exchange
-			/*
-			 * Message description:
-			 *             Sender__ Receiver Decrypted Payload with one key part
-			 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
-			 */
+			processMessageKeyExchange();
 
-			uint8_t pBuf[16];																		// We need a 16 bytes buffer
-			memcpy(pBuf, rv.buf+10, 16);
-
-			aes128_init(HMKEY, &ctx);																// load HMKEY
-			aes128_dec(pBuf, &ctx);																	// decrypt payload width HMKEY first time
-
-			#ifdef AES_DBG
-				dbg << F("dec Buffer: ") << _HEX(pBuf, 16) << "\n";
-			#endif
-
-			if (pBuf[0] == 0x01) {																	// the decrypted data must start with 0x01
-				keyPartIndex = (pBuf[1] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
-				if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE1) {
-					newHmKeyIndex[0] = pBuf[1];
-				}
-
-				memcpy(newHmKey + keyPartIndex, pBuf+2, 8);
-
-				#ifdef AES_DBG
-					dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << "\n";
-				#endif
-
-				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
-
-				sendSignRequest();
-
-			} else {
-				keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
-			}
 	#endif
 
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {															// action message
@@ -911,9 +767,10 @@ void AS::recvMessage(void) {
 		 * 				CHANNEL  => "08,2",
 		 * 				COUNTER  => "10,2", } },
 		 */
+		uint8_t cnl = 0;
+		uint8_t pIdx;
+		uint8_t tmp;
 
-		uint8_t cnl = 0, pIdx, tmp;
-		
 		// check if we have the peer in the database to get the channel
 		if ((rv.mBdy.mTyp == AS_MESSAGE_SWITCH_EVENT) && (rv.mBdy.mLen == 0x0F)) {
 			tmp = rv.buf[13];																// save byte13, because we will replace it
@@ -927,35 +784,227 @@ void AS::recvMessage(void) {
 		} else {
 			cnl = ee.isPeerValid(rv.peerId);
 			if (cnl) pIdx = ee.getIdxByPeer(cnl, rv.peerId);								// get the index of the respective peer in the channel store
-			
+
 		}
 
 		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rv.mBdy.mTyp) << " by10: " << _HEXB(rv.mBdy.by10)  << " by11: " << _HEXB(rv.mBdy.by11) << " data: " << _HEX((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
-		if (cnl == 0) return;
-		
-		// check if a module is registered and send the information, otherwise report an empty status
-		if (modTbl[cnl-1].cnl) {
 
-			//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
-			ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);				// get list3 or list4 loaded into the user module
-			
-			// call the user module
-			modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
+		if (cnl > 0) {
+			// check if a module is registered and send the information, otherwise report an empty status
+			if (modTbl[cnl-1].cnl) {
 
-		} else {
-			sendACK();
+				//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
+				ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);			// get list3 or list4 loaded into the user module
 
+				// call the user module
+				modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
+
+			} else {
+				sendACK();
+
+			}
 		}
 
 	}
 
 }
 
+#ifdef SUPPORT_AES
+	/*
+	 * @brief Process message MESSAGE_KEY_EXCHANGE.
+	 *
+	 * Message description:
+	 *             Sender__ Receiver Decrypted Payload with one key part
+	 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
+	 */
+	inline void AS::processMessageKeyExchange(void) {
+		memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);												// remember this message
+
+		aes128_init(HMKEY, &ctx);																// load HMKEY
+		aes128_dec(rv.buf+10, &ctx);															// decrypt payload width HMKEY first time
+
+		#ifdef AES_DBG
+			dbg << F("decrypted buffer: ") << _HEX(rv.buf+10, 16) << "\n";
+		#endif
+
+		if (rv.buf[10] == 0x01) {																// the decrypted data must start with 0x01
+			keyPartIndex = (rv.buf[11] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
+			if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE1) {
+				newHmKeyIndex[0] = rv.buf[11];
+			}
+
+			memcpy(newHmKey + keyPartIndex, rv.buf+12, 8);
+
+			#ifdef AES_DBG
+				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << "\n";
+			#endif
+
+			sendSignRequest();
+
+		} else {
+			keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
+		}
+	}
+
+	/*
+	 * @brief Process message RESPONSE_AES_CHALLANGE.
+	 *
+	 * Message description:
+	 *             Sender__ Receiver By10 By11  Challenge_____ KeyIndex
+	 * 11 24 80 02 1F B7 4A 63 19 63 02   04 01 02 03 04 05 06 02`
+	 *
+	 * The Encryption:
+	 * 1. The temporarily key was built by XORing the key with the challenge
+	 * 2. Prepare the payload:
+	 *    6 Random-Bytes___ The bytes 1-11 of the message to sign
+	 *    xx xx xx xx xx xx 0A A4 01 23 70 EC 1E 7A AD 02
+	 * 3. Encrypt the payload width the generated temporarily key first time -> ePL (encrypted Payload)
+	 * 4. IV (initial vector) was build from bytes 11 - n of the message to sign padded with 0x00
+	 * 5. The encrypted payload (ePL) was XORed with the IV -> ePl^IV
+	 * 6. Encrypt the ePl^IV width the generated temporarily again
+	 */
+	inline void AS::processMessageResponseAES_Challenge(void) {
+		uint8_t i;
+
+		sn.cleanUp();																		// cleanup send module data;
+		initPseudoRandomNumberGenerator();
+
+		uint8_t challenge[6];
+		memcpy(challenge, rv.buf+11, 6);													// get challenge
+
+		makeTmpKey(challenge);																// Build the temporarily key from challenge
+
+		// Prepare the payload for encryption.
+		uint8_t msgLen = sn.msgToSign[5];													// the message length stored at byte 5
+		for (i = 0; i < 32; i++) {
+			if (i < 6) {
+				sn.msgToSign[i] = (uint8_t)rand();											// fill the first 6 bytes with random data
+			} else if (i > msgLen + 5 ) {
+				sn.msgToSign[i] = 0x00;														// the unused message bytes padded with 0x00
+			}
+		}
+
+		aes128_enc(sn.msgToSign, &ctx);														// encrypt the message first time
+		for (i = 0; i < 16; i++) {
+			sn.msgToSign[i] ^= sn.msgToSign[i+16];											// xor encrypted payload with IV (the bytes 11-27)
+		}
+
+		aes128_enc(sn.msgToSign, &ctx);														// encrypt payload again
+		sn.mBdy.mLen = 0x19;
+	}
+#endif
+
+/*
+ * @brief Process message CONFIG_PAIR_SERIAL.
+ *
+ * Message description:
+ *             Sender__ Receiver Channel
+ * 15 93 B4 01 63 19 63 00 00 00 01      0E
+ */
+inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
+	// check if a module is registered and send the information, otherwise report an empty status
+	if (modTbl[by10].cnl) {
+		modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen-11);
+	} else {
+		sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);
+	}
+}
+
+/*
+ * @brief Process message CONFIG_STATUS_REQUEST.
+ *
+ * Message description:
+ *             Sender__ Receiver       SerialNumber
+ * 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
+ */
+inline void AS::processMessageConfigPairSerial(void) {
+	if (!memcmp(rv.buf+12, HMSR, 10)) {														// compare serial and send device info
+		sendDEVICE_INFO();
+	}
+}
+
+/*
+ * @brief Process message CONFIG_SERIAL_REQ.
+ *
+ * Message description:
+ *             Sender__ Receiver
+ * 0B 77 A0 01 63 19 63 01 02 04 00 09
+ */
+inline void AS::processMessageConfigSerialReq(void) {
+	sendINFO_SERIAL();
+
+}
+
+/*
+ * @brief Process message CONFIG_PARAM_REQ.
+ *
+ * Message description:
+ *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
+ * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
+ */
+inline void AS::processMessageConfigParamReq(void) {
+	if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {										// only list 3 and list 4 needs an peer id and idx
+		stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);							// get peer index
+	} else {
+		stcSlice.idx = 0;																	// otherwise peer index is 0
+	}
+
+	stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);							// how many slices are need
+	stcSlice.mCnt = rv.mBdy.mCnt;															// remember the message count
+	memcpy(stcSlice.toID, rv.mBdy.reID, 3);
+	stcSlice.cnl = rv.mBdy.by10;															// send input to the send peer function
+	stcSlice.lst = rv.buf[16];																// send input to the send peer function
+	stcSlice.reg2 = 1;																		// set the type of answer
+
+	#ifdef AS_DBG
+		dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
+		dbg << "totSlc: " << stcSlice.totSlc << '\n';
+	#endif
+
+	if ((stcSlice.idx != 0xFF) && (stcSlice.totSlc > 0)) {
+		stcSlice.active = 1;																// only send register content if something is to send															// start the send function
+	} else {
+		memset((void*)&stcSlice, 0, 10);													// otherwise empty variable
+	}
+}
+
+/*
+ * @brief Process message CONFIG_PEER_LIST_REQ.
+ *
+ * Message description:
+ *             Sender__ Receiver    Channel
+ * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
+ */
+inline void AS::processMessageConfigPeerListReq(void) {
+	stcSlice.totSlc = ee.countPeerSlc(rv.mBdy.by10);										// how many slices are need
+	stcSlice.mCnt = rv.mBdy.mCnt;															// remember the message count
+	memcpy(stcSlice.toID, rv.mBdy.reID, 3);
+	stcSlice.cnl = rv.mBdy.by10;															// send input to the send peer function
+	stcSlice.peer = 1;																		// set the type of answer
+	stcSlice.active = 1;																	// start the send function
+	// answer will send from sendsList(void)
+}
+
+inline void AS::processMessageConfigAESProtected(uint8_t by10) {
+	#ifdef SUPPORT_AES
+		// TODO: check all channels for AES_ACTIVE -> rv.mBdy.by11
+		if (ee.getRegAddr(1, 1, 0, AS_REG_L1_AES_ACTIVE)) {
+			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
+			sendSignRequest();
+
+		} else {
+	#endif
+			processMessageConfig(by10);
+	#ifdef SUPPORT_AES
+		}
+	#endif
+}
+
 /**
  * @brief Process all configuration messages with write actions.
  *        TODO: respect AES signing
  */
-void AS::processMessageConfig(uint8_t by10, uint8_t cnl1) {
+void AS::processMessageConfig(uint8_t by10) {
 	uint8_t ackOk = 1;
 
 	if (rv.mBdy.by11 == AS_CONFIG_PEER_ADD) {													// CONFIG_PEER_ADD
@@ -968,7 +1017,7 @@ void AS::processMessageConfig(uint8_t by10, uint8_t cnl1) {
 		configStart();
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_END) {													// CONFIG_END
-		configEnd (cnl1);
+		configEnd ();
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX) {											// CONFIG_WRITE_INDEX
 		configWriteIndex();
@@ -982,11 +1031,11 @@ void AS::processMessageConfig(uint8_t by10, uint8_t cnl1) {
  * @brief Process CONFIG_PEER_REMOVE messages
  *
  * Message description:
- *             Sender__ Receiver    Channel Peer-ID_ PeerChannelA  PeerChannelB
- * 0C 0A A4 01 23 70 EC 1E 7A AD 01 01      1F A6 5C 06            05
+ *             Sender__ Receiver Byte10    Channel Peer-ID_ PeerChannelA  PeerChannelB
+ * 0C 0A A4 01 23 70 EC 1E 7A AD 01        01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerAdd(uint8_t by10) {
-	ee.remPeer(rv.mBdy.by10, rv.buf+12);													// first call remPeer to avoid doubles
+	ee.remPeer(rv.mBdy.by10, rv.buf+12);															// first call remPeer to avoid doubles
 	uint8_t ackOk = ee.addPeer(rv.mBdy.by10, rv.buf+12);											// send to addPeer function
 
 	// let module registrations know of the change
@@ -1038,7 +1087,9 @@ inline void AS::configStart() {
  *             Sender__ Receiver    Channel
  * 10 04 A0 01 63 19 63 01 02 04 01 06
  */
-inline void AS::configEnd(uint8_t cnl1) {
+inline void AS::configEnd() {
+	uint8_t cnl1 = cFlag.cnl - 1;
+
 	cFlag.active = 0;																		// set inactive
 	if ((cFlag.cnl == 0) && (cFlag.idx == 0)) {
 		ee.getMasterID();
@@ -1442,7 +1493,7 @@ void AS::encode(uint8_t *buf) {
 		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;										// AES Challenge
 
-		initPrng();																			// initialize the pseudo random number generator
+		initPseudoRandomNumberGenerator();
 
 		uint8_t i = 0;
 		for (i = 0; i < 6; i++) {															// random bytes to the payload
@@ -1477,13 +1528,6 @@ void AS::encode(uint8_t *buf) {
 		aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
 	}
 
-	void AS:: memcpyPad0(uint8_t *target, uint8_t tLen, uint8_t *source, uint8_t sLen) {
-		uint8_t i;
-		for (i = 0; i < tLen; i++) {
-			target[i] = (i < sLen) ? source[i] : 0x00;
-		}
-	}
-
 #endif
 
 
@@ -1493,7 +1537,7 @@ void AS::encode(uint8_t *buf) {
 /**
  * @brief Initialize the random number generator
  */
-void AS::initPrng() {
+void AS::initPseudoRandomNumberGenerator() {
 	srand(this->randomSeed ^ uint16_t (millis() & 0xFFFF));
 }
 
@@ -1501,14 +1545,14 @@ void AS::initPrng() {
  * @brief Initialize the pseudo random number generator
  *        Take all bytes from uninitialized RAM and xor together
  */
-void AS::initRandomSeed() {
+inline void AS::initRandomSeed() {
 	uint16_t *p = (uint16_t*) (RAMEND + 1);
 	extern uint16_t __heap_start;
 	while (p >= &__heap_start + 1) {
 		this->randomSeed ^= * (--p);
 	}
 
-	initPrng();
+	initPseudoRandomNumberGenerator();
 }
 
 /**
