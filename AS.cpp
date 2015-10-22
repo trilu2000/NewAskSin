@@ -1206,13 +1206,8 @@ void AS::processMessageAction() {
 
 /**
  * @brief Reset the Device
- *        Set all register to default vaules, reset HMKEY and so on.
- *
- *        TODO: Check if we should reset the device e.g. via watchdog
- *
- * Message description:
- *             Sender__ Receiver    Serial number
- * 14 77 80 10 1E 7A AD 63 19 63 00 4A 45 51 30 37 33 31 39 30 35
+ *        Set all register to default 0x00, reset HMKEY, reset device via watchdog,
+ *        and so on.
  */
 void AS::deviceReset(void) {
 	ee.clearPeers();
