@@ -163,6 +163,7 @@ class AS {
 	inline void processMessageResponseAES_Challenge(void);
 	inline void processMessageResponseAES(void);
 	inline void processMessageKeyExchange(void);
+	uint8_t checkAnyChannelForAES(void);
 
 	void processMessageConfig(uint8_t by10);
 	inline void processMessageConfigStatusRequest(uint8_t by10);

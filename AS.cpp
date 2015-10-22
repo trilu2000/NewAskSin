@@ -683,7 +683,7 @@ void AS::processMessage(void) {
 			 * Compare decrypted message with original message
 			 */
 			#ifdef AES_DBG
-				dbg << F(">>> compare: ") << _HEX(rv.buf+10, 16) << " | "<< _HEX(rv.prevBuf, 11) << "\n";
+				dbg << F(">>> compare: ") << _HEX(rv.buf+10, 16) << " | "<< _HEX(rv.prevBuf, 11) << '\n';
 			#endif
 
 			// memcmp returns 0 if compare true
@@ -707,7 +707,7 @@ void AS::processMessage(void) {
 					setEEPromBlock(14, 1, newHmKeyIndex);												// store used key index
 					hmKeyIndex[0] = newHmKeyIndex[0];
 					#ifdef AES_DBG
-						dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << "\n";
+						dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << '\n';
 					#endif
 
 					keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
@@ -724,20 +724,31 @@ void AS::processMessage(void) {
 
 	#endif
 
-	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {															// action message
+	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {													// action message
 		#ifdef SUPPORT_AES
-			if (ee.getRegAddr(rv.mBdy.by11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {								// check if aes for the channel active
-				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);													// remember this message
+
+			uint8_t aesActiveForReset = 0;
+			if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {							// device reset requested
+				aesActiveForReset = checkAnyChannelForAES();										// check if AES activated for any channel			}
+			}
+
+			// check if AES for the channel active or aesActiveForReset @see above
+			if (ee.getRegAddr(rv.mBdy.by11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
+				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
 				sendSignRequest();
 			} else {
 		#endif
 
 			processMessageAction();
 			if (rv.ackRq) {
-				if (ee.getRegListIdx(1,3) == 0xFF || (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) ) {
+				if (ee.getRegListIdx(1,3) == 0xFF) {
 					sendACK();
 				} else {
-					sendACK_STATUS(0, 0, 0);
+					uint8_t channel = rv.mBdy.by11;
+					if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {
+						channel = 1;
+					}
+					sendACK_STATUS(rv.mBdy.by11, 0, 0);
 				}
 			}
 
@@ -810,6 +821,20 @@ void AS::processMessage(void) {
 
 #ifdef SUPPORT_AES
 	/*
+	 * @brief Loop thru channels and check if AES is activated for any channel.
+	 */
+	uint8_t AS::checkAnyChannelForAES(void) {
+		uint8_t i;
+		for (i = 1; i <= devDef.cnlNbr; i++) {												// check if AES activated for any channel
+			if (ee.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
+				return 1;
+			}
+		}
+
+		return 0;
+	}
+
+	/*
 	 * @brief Process message MESSAGE_KEY_EXCHANGE.
 	 *
 	 * Message description:
@@ -823,7 +848,7 @@ void AS::processMessage(void) {
 		aes128_dec(rv.buf+10, &ctx);															// decrypt payload width HMKEY first time
 
 		#ifdef AES_DBG
-			dbg << F("decrypted buffer: ") << _HEX(rv.buf+10, 16) << "\n";
+			dbg << F("decrypted buffer: ") << _HEX(rv.buf+10, 16) << '\n';
 		#endif
 
 		if (rv.buf[10] == 0x01) {																// the decrypted data must start with 0x01
@@ -835,7 +860,7 @@ void AS::processMessage(void) {
 			memcpy(newHmKey + keyPartIndex, rv.buf+12, 8);
 
 			#ifdef AES_DBG
-				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << "\n";
+				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << '\n';
 			#endif
 
 			sendSignRequest();
@@ -986,14 +1011,8 @@ inline void AS::processMessageConfigPeerListReq(void) {
 
 inline void AS::processMessageConfigAESProtected(uint8_t by10) {
 	#ifdef SUPPORT_AES
-		uint8_t aesActive = 0;
-		for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {											// check if AES activated for any channel
-			if (ee.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
-				aesActive = 1;
-				break;
-			}
-		}
-
+		uint8_t aesActive = checkAnyChannelForAES();											// check if AES activated for any channel
+		dbg << F(">>> processMessageConfigAESProtected: ") << _HEXB(aesActive) << '\n';
 		if (aesActive == 1) {
 			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
 			sendSignRequest();
@@ -1161,10 +1180,9 @@ void AS::processMessageAction() {
 		 * All other action types like STOP_CHANGE, LED, LEDALL, LEVEL, SLEEPMODE and do on
 		 *
 		 * Message description:
-		 *             Sender__ Receiver action type channel data
-		 * 0E 5E B0 11 63 19 63 1F B7 4A 02  01      C8      00 00 00 00
+		 *             Sender__ Receiver type actionType channel data
+		 * 0E 5E B0 11 63 19 63 1F B7 4A 02   01         01      C8 00 00 00 00
 		 */
-
 		if (modTbl[rv.mBdy.by11-1].cnl) {
 			modTbl[rv.mBdy.by11-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
 		}
@@ -1502,7 +1520,7 @@ void AS::encode(uint8_t *buf) {
 		makeTmpKey(sn.buf+11);
 
 		#ifdef AES_DBG
-			dbg << F(">>> signingRequestData  : ") << _HEX(sn.buf+10, 7) << F(" <<<") << "\n";
+			dbg << F(">>> signingRequestData  : ") << _HEX(sn.buf+10, 7) << F(" <<<") << '\n';
 		#endif
 
 		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
