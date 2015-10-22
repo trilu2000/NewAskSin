@@ -726,8 +726,7 @@ void AS::processMessage(void) {
 
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {															// action message
 		#ifdef SUPPORT_AES
-			// TODO: check all channels for AES_ACTIVE -> rv.mBdy.by11
-			if (ee.getRegAddr(1, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
+			if (ee.getRegAddr(rv.mBdy.by11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {								// check if aes for the channel active
 				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);													// remember this message
 				sendSignRequest();
 			} else {
@@ -735,7 +734,7 @@ void AS::processMessage(void) {
 
 			processMessageAction();
 			if (rv.ackRq) {
-				if (ee.getRegListIdx(1,3) == 0xFF) {
+				if (ee.getRegListIdx(1,3) == 0xFF || (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) ) {
 					sendACK();
 				} else {
 					sendACK_STATUS(0, 0, 0);
@@ -976,19 +975,26 @@ inline void AS::processMessageConfigParamReq(void) {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
  */
 inline void AS::processMessageConfigPeerListReq(void) {
-	stcSlice.totSlc = ee.countPeerSlc(rv.mBdy.by10);										// how many slices are need
-	stcSlice.mCnt = rv.mBdy.mCnt;															// remember the message count
+	stcSlice.totSlc = ee.countPeerSlc(rv.mBdy.by10);											// how many slices are need
+	stcSlice.mCnt = rv.mBdy.mCnt;																// remember the message count
 	memcpy(stcSlice.toID, rv.mBdy.reID, 3);
-	stcSlice.cnl = rv.mBdy.by10;															// send input to the send peer function
-	stcSlice.peer = 1;																		// set the type of answer
-	stcSlice.active = 1;																	// start the send function
+	stcSlice.cnl = rv.mBdy.by10;																// send input to the send peer function
+	stcSlice.peer = 1;																			// set the type of answer
+	stcSlice.active = 1;																		// start the send function
 	// answer will send from sendsList(void)
 }
 
 inline void AS::processMessageConfigAESProtected(uint8_t by10) {
 	#ifdef SUPPORT_AES
-		// TODO: check all channels for AES_ACTIVE -> rv.mBdy.by11
-		if (ee.getRegAddr(1, 1, 0, AS_REG_L1_AES_ACTIVE)) {
+		uint8_t aesActive = 0;
+		for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {											// check if AES activated for any channel
+			if (ee.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
+				aesActive = 1;
+				break;
+			}
+		}
+
+		if (aesActive == 1) {
 			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
 			sendSignRequest();
 
@@ -1142,20 +1148,7 @@ inline void AS::configEnd() {
  *        TODO: respect AES signing
  */
 void AS::processMessageAction() {
-	if (rv.mBdy.by10 == AS_ACTION_SET) {																		// SET
-		/*
-		 * Message description:
-		 *             Sender__ Receiver     channel state  ramp  duration
-		 * 0E 5E B0 11 63 19 63 1F B7 4A 02  01      C8     00 00 00 00
-		 */
-		if (modTbl[rv.mBdy.by11-1].cnl) {
-			modTbl[rv.mBdy.by11-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
-		}
-
-	} else if (rv.mBdy.by10 == AS_ACTION_STOP_CHANGE) {															// STOP_CHANGE
-		// TODO: Make ready
-
-	} else if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {										// RESET
+	if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {												// RESET
 		/*
 		 * Message description:
 		 *             Sender__ Receiver
@@ -1163,17 +1156,18 @@ void AS::processMessageAction() {
 		 */
 		deviceReset();
 
-	} else if (rv.mBdy.by10 == AS_ACTION_LED) {																	// LED
-		// TODO: Make ready
+	} else {
+		/*
+		 * All other action types like STOP_CHANGE, LED, LEDALL, LEVEL, SLEEPMODE and do on
+		 *
+		 * Message description:
+		 *             Sender__ Receiver action type channel data
+		 * 0E 5E B0 11 63 19 63 1F B7 4A 02  01      C8      00 00 00 00
+		 */
 
-	} else if (rv.mBdy.by10 == AS_ACTION_LEDALL && rv.mBdy.by11 == 0x00) {										// LEDALL
-		// TODO: Make ready
-
-	} else if (rv.mBdy.by10 == AS_ACTION_LEVEL) {																// LEVEL
-		// TODO: Make ready
-
-	} else if (rv.mBdy.by10 == AS_ACTION_SLEEPMODE) {															// SLEEPMODE
-		// TODO: Make ready
+		if (modTbl[rv.mBdy.by11-1].cnl) {
+			modTbl[rv.mBdy.by11-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
+		}
 	}
 }
 
