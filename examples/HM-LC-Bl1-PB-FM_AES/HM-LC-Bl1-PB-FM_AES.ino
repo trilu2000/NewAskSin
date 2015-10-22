@@ -2,7 +2,6 @@
 #define SER_DBG
 
 //- load library's --------------------------------------------------------------------------------------------------------
-#include <AS.h>																		// the asksin framework
 #include "register.h"																// device configuration file
 
 /**
@@ -28,9 +27,16 @@ void setup() {
 	sei();																			// enable interrupts
 
 	#ifdef SER_DBG
-		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
-		dbg << F("HmKey: ") << _HEX(HMKEY, 16) << "\n";
-		dbg << F("KeyId: ") << _HEX(hmKeyIndex, 1) << "\n";
+		dbg << F("HMID:  ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << "\n\n";		// some debug
+		dbg << F("HmKey: ") << _HEX(HMKEY, 16) << '\n';
+		dbg << F("KeyId: ") << _HEX(hmKeyIndex, 1) << '\n';
+
+		for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {											// check if AES activated for any channel
+			if (hm.ee.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
+				dbg << F("AES active for channel: ") << _HEXB(i) << '\n';
+			}
+		}
+		dbg << '\n';
 	#endif
 
 	/*
@@ -71,7 +77,7 @@ void initBlind(uint8_t channel) {
 
 void switchBlind(uint8_t status, uint8_t channel) {
 	#ifdef SER_DBG
-		dbg << F("value: ") << channel << ", " << status << "\n";
+		dbg << F("value: ") << channel << F(", ") << status << '\n';
 	#endif
 
 	uint16_t x = status*255;
