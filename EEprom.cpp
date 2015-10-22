@@ -310,14 +310,14 @@ void     EE::testModul(void) {															// prints register.h content on con
 
 	#endif
 }
-uint8_t  EE::isHMIDValid(uint8_t *toID) {
+inline uint8_t  EE::isHMIDValid(uint8_t *toID) {
 	//dbg << "t: " << _HEX(toID, 3) << ", h: " << _HEX(HMID, 3) << '\n';
 	return (!memcmp(toID, HMID, 3));
 }
-uint8_t  EE::isPairValid (uint8_t *reID) {
+inline uint8_t  EE::isPairValid (uint8_t *reID) {
 	return (!memcmp(reID, MAID, 3));
 }
-uint8_t  EE::isBroadCast(uint8_t *toID) {
+inline uint8_t  EE::isBroadCast(uint8_t *toID) {
 	//uint8_t zero[3] = {0,0,0};
 	//return mycmp(toID, zero, 3);
 	return isEmpty(toID, 3);

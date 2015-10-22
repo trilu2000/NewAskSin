@@ -180,9 +180,9 @@ class EE {
 	void     initHMKEY(void);
 	void     getMasterID(void);
 	void     testModul(void);															// prints register.h definition on console
-	uint8_t  isHMIDValid(uint8_t *toID);												// ok, check if a valid pair was given
-	uint8_t  isPairValid(uint8_t *reID);												// ok, check if a valid pair was given
-	uint8_t  isBroadCast(uint8_t *reID);
+	inline uint8_t  isHMIDValid(uint8_t *toID);												// ok, check if a valid pair was given
+	inline uint8_t  isPairValid(uint8_t *reID);												// ok, check if a valid pair was given
+	inline uint8_t  isBroadCast(uint8_t *reID);
 	uint8_t  getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId);
 
 	// peer functions

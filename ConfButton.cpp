@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define CB_DBG
+// #define CB_DBG
 #include "ConfButton.h"
 #include "AS.h"
 

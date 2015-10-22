@@ -19,7 +19,7 @@
 		/* HMID */            0x01, 0x02, 0x06,
 		/* Serial number */   'H', 'B', 'b', 'l', 'i', 'n', 'd', '0', '0', '1',		// HBblind001
 		/* Default-Key */     HM_DEVICE_AES_KEY,
-		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX
+		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
 	};
 
 	/*
