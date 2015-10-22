@@ -71,7 +71,7 @@ void SN::poll(void) {
 			 * The bytes 0-5 remain free. These 5 bytes and the first byte of the copied message
 			 * will fill with 6 bytes random data later.
 			 */
-			memcpy(this->msgToSign+5, this->buf, (sndLen> 26) ? 27 : sndLen+1);
+			memcpy(this->msgToSign+5, this->buf, (sndLen > 27) ? 27 : sndLen);
 
 			pHM->encode(this->buf);															// encode the string
 
@@ -95,7 +95,7 @@ void SN::poll(void) {
 		}
 		
 		#ifdef SN_DBG																		// only if AS debug is set
-			dbg << _HEX(this->buf,sndLen) << ' ' << _TIME << '\n';
+			dbg << _HEX(this->buf, sndLen) << ' ' << _TIME << '\n';
 		#endif
 
 	} else if ((this->retrCnt >= this->maxRetr) && (sndTmr.done() )) {						// max retries achieved, but seems to have no answer
