@@ -6,14 +6,23 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define AS_DBG
-//#define RV_DBG_EX
-
-//#define AES_DBG
-
+/*
+ * Comment out to disable AES support
+ */
 #define SUPPORT_AES
 
+/*
+ * On device reset the watchdog hart reset the entire device.
+ * Comment out to disable this.
+ */
+#define WDT_RESET_ON_RESET
+
+//#define AS_DBG
+//#define RV_DBG_EX
+//#define AES_DBG
+
 #include "AS.h"
+#include <avr/wdt.h>
 
 #ifdef SUPPORT_AES
 	#include "aes.h"
@@ -104,6 +113,10 @@ void AS::poll(void) {
 		
 	// check if we could go to standby
 	pw.poll();																				// poll the power management
+
+	if (resetStatus > 1) {
+		deviceReset();
+	}
 }
 
 /**
@@ -748,7 +761,10 @@ void AS::processMessage(void) {
 					if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {
 						channel = 1;
 					}
-					sendACK_STATUS(rv.mBdy.by11, 0, 0);
+					sendACK_STATUS(channel, 0, 0);
+					if (resetStatus == 1) {
+						resetStatus = 2;
+					}
 				}
 			}
 
@@ -1012,7 +1028,6 @@ inline void AS::processMessageConfigPeerListReq(void) {
 inline void AS::processMessageConfigAESProtected(uint8_t by10) {
 	#ifdef SUPPORT_AES
 		uint8_t aesActive = checkAnyChannelForAES();											// check if AES activated for any channel
-		dbg << F(">>> processMessageConfigAESProtected: ") << _HEXB(aesActive) << '\n';
 		if (aesActive == 1) {
 			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
 			sendSignRequest();
@@ -1167,13 +1182,13 @@ inline void AS::configEnd() {
  *        TODO: respect AES signing
  */
 void AS::processMessageAction() {
-	if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {												// RESET
+	if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {							// RESET
 		/*
 		 * Message description:
 		 *             Sender__ Receiver
 		 * 0B 1C B0 11 63 19 63 1F B7 4A 04 00
 		 */
-		deviceReset();
+		resetStatus = 1;																	// schedule a device reset
 
 	} else {
 		/*
@@ -1208,7 +1223,11 @@ void AS::deviceReset(void) {
 		ee.initHMKEY();
 	#endif
 
-	ld.set(welcome);
+	#ifdef WDT_RESET_ON_RESET
+		wdt_enable(WDTO_15MS);														// configure the watchdog so the reset sould trigger in 15ms
+	#else
+		ld.set(welcome);
+	#endif
 }
 
 /**
