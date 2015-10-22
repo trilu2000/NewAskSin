@@ -203,7 +203,7 @@ void     EE::init(void) {
 void     EE::initHMKEY(void) {
 	memcpy_P(HMKEY, HMSerialData+13, 16);												// get default HMKEY
 	EE:setEEPromBlock(15, 16, HMKEY);													// store default HMKEY to EEprom
-	hmKeyIndex[0] = 0x00;
+	memcpy_P(hmKeyIndex, HMSerialData+29, 1);												// get default HMKEY
 	setEEPromBlock(14, 1, hmKeyIndex);													// get hmKeyIndex from EEprom
 }
 
@@ -542,7 +542,7 @@ uint8_t  EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, u
 	int8_t remByte = cnlTbl[xI].sLen - slcOffset;										// calculate the remaining bytes
 	if (remByte <= 0) {																	// check if we are in the last slice and add terminating zeros
 		*(uint16_t*)buf = 0;															// add them
-		//dbg << slc << " " << slcOffset << " " << cnlTbl[xI].sLen << '\n';
+		//dbg << slc << ' ' << slcOffset << ' ' << cnlTbl[xI].sLen << '\n';
 		return 2;																		// nothing to do anymore
 	}
 	if (remByte >= (maxMsgLen/2)) remByte = (maxMsgLen/2);								// shorten remaining bytes if necessary
