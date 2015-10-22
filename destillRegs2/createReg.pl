@@ -351,6 +351,9 @@ foreach my $test (sort keys %cnlType) {
 ## ----------------------------------------------------------------------------------------------------------
 ## ---------- print register.h ------------------------------------------------------------------------------
 print "\n\n\n";
+print "#ifndef _REGISTER_h\n";
+print "   #define _REGISTER_h\n\n";
+
 printLoadLibs();
 printDefaltTable(\%cType);
 printChannelSliceTable(\%cnlType);
@@ -365,10 +368,6 @@ printStartFunctions();
 
 ## generate sub routine which could be called for first time start
 ## to setup peer connections, power savings, etc
-
-
-
-
 
 
 
@@ -391,32 +390,32 @@ sub prnASCIIStr {
 }
 
 sub printLoadLibs {
-	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-	print "//- load libraries -------------------------------------------------------------------------------------------------------\n";
-	print "#include <AS.h>                                                         // the asksin framework\n";
-	print "#include \"hardware.h\"                                                   // hardware definition\n";
+	#print "   //- load libraries -------------------------------------------------------------------------------------------------------\n";
+	print "   #include <AS.h>                                                       // the asksin framework\n";
+	print "   #include \"hardware.h\"                                                 // hardware definition\n";
 
 	my $oldLibName ="";
 	foreach my $rLKey (sort { $rL{$a}{'libName'} cmp $rL{$b}{'libName'} }  keys %rL) {	
 		if ($rL{$rLKey}{'libName'} eq $oldLibName) {next;};
-		print "#include <" .$rL{$rLKey}{'libName'} .">\n";
+		print "   #include <" .$rL{$rLKey}{'libName'} .">\n";
 		$oldLibName = $rL{$rLKey}{'libName'};
 	}
+	print "   #include \"hmkey.h\"\n";
 	print "\n";
 
 
-	print "//- stage modules --------------------------------------------------------------------------------------------------------\n";
-	print "AS hm;                                                                  // asksin framework\n";
+	#print "   //- stage modules --------------------------------------------------------------------------------------------------------\n";
+	print "   AS hm;                                                               // asksin framework\n";
 
 	$oldRLKey = "";	
 	foreach my $rLKey (sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} } keys %rL) {	
 		if ($rL{$rLKey}{'type'} eq $oldRLKey) {next;};
 
-		print "\n";
-		my $xLine = "$rL{$rLKey}{'modName'} $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'maxIdxSize'}];";
+		##print "\n";
+		my $xLine = "   $rL{$rLKey}{'modName'} $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'maxIdxSize'}];";
 		print $xLine ." "x(72-length($xLine)) ."// create instances of channel module\n";
 		foreach (@{$rL{$rLKey}{'stage_modul'}}) {
-			my $sLine = $_ .";";
+			my $sLine = "   " .$_ .";";
 			print $sLine ." "x(72-length($sLine)) ."// declare function to jump in\n";
 		}
 		$oldRLKey = $rL{$rLKey}{'type'};
@@ -424,6 +423,148 @@ sub printLoadLibs {
 
 	print "\n";
 }
+
+sub printDefaltTable {
+	my %dT = %{shift()};
+	
+	#print "   //- eeprom defaults table ------------------------------------------------------------------------------------------------\n";
+	print "   /*\n";
+	print "   * HMID, Serial number, HM-Default-Key, Key-Index\n";
+	print "   */\n";
+
+	print "   const uint8_t HMSerialData[] PROGMEM = {\n";
+	print "      /* HMID */            " .prnHexStr($dT{'hmID'},3) ."\n";
+	print "      /* Serial number */   " .prnASCIIStr($dT{'serial'}) ."    // $dT{'serial'}\n";
+	print "      /* Default-Key */     HM_DEVICE_AES_KEY,\n";
+	print "      /* Key-Index */       HM_DEVICE_AES_KEY_INDEX\n";
+	print "   };\n\n";
+
+	print "   /*\n";
+	print "   * Settings of HM device\n";
+	print "   * firmwareVersion: The firmware version reported by the device\n";
+	print "   *                  Sometimes this value is important for select the related device-XML-File\n";
+	print "   *\n";
+	print "   * modelID:         Important for identification of the device.\n";
+	print "   *                  \@See Device-XML-File /device/supported_types/type/parameter/const_value\n";
+	print "   *\n";
+	print "   * subType:         Identifier if device is a switch or a blind or a remote\n";
+	print "   * DevInfo:         Sometimes HM-Config-Files are referring on byte 23 for the amount of channels.\n";
+	print "   *                  Other bytes not known.\n";
+	print "   *                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.\n";
+	print "   */\n";
+	
+	print "   const uint8_t devIdnt[] PROGMEM = {\n";
+	print "      /* firmwareVersion 1 byte */  " .prnHexStr($dT{'firmwareVer'},1) ."\n";
+	print "      /* modelID         2 byte */  " .prnHexStr($dT{'modelID'},2) ."\n";
+	print "      /* subTypeID       1 byte */  " .prnHexStr($dT{'subtypeID'},1) ."\n";
+	print "      /* deviceInfo      3 byte */  " .prnHexStr($dT{'deviceInfo'},3) ."\n";
+	print "   };\n\n";
+
+}
+
+sub printChannelSliceTable {
+	my %dT = %{shift()}; my $cnt = 0;
+
+	#print "   //- channel slice address definition -------------------------------------------------------------------------------------\n";
+
+	print "   /* \n";
+	print "   * Register definitions\n";
+	print "   * The values are offset adresses in relation to the start adress defines in cnlTbl\n";
+	print "   * Register values can found in related Device-XML-File.\n";
+	print "      \n";
+	print "   * Spechial register list 0: 0x0A, 0x0B, 0x0C\n";
+	print "   * Spechial register list 1: 0x08\n";
+	print "   *  \n";
+	print "   * \@See Defines.h\n";
+	print "   *  \n";
+	print "   * \@See: cnlTbl\n";
+	print "   */ \n";
+	print "   const uint8_t cnlAddr[] PROGMEM = {\n";
+
+	foreach my $test (sort keys %dT) {
+		next    if ( !$cnlType{$test}{'regSet'} );  
+		next    if(!"@{$dT{$test}{'regSet'}}");	
+		print "      // channel: $dT{$test}{'cnl'}, list: $dT{$test}{'lst'} \n";
+		print "      " .sprintf( "0x%.2x," x @{$dT{$test}{'regSet'}}, @{$dT{$test}{'regSet'}} )."\n";
+		$cnt += scalar(@{$dT{$test}{'regSet'}});
+	}
+	print "   }; // $cnt byte\n\n"; 
+
+}
+
+sub printChannelDeviceListTable {
+	my %dT = %{shift()}; my $cnt = 0;
+
+	#print "   //- channel device list table --------------------------------------------------------------------------------------------\n";
+	print "   /* \n";
+	print "   * Channel - List translation table\n";
+	print "   * channel, list, startIndex, start address in EEprom, hidden\n";
+	print "   */\n";
+
+	print "   EE::s_cnlTbl cnlTbl[] = {\n";
+	print "      // cnl, lst, sIdx, sLen, pAddr,  hidden\n";
+
+	foreach my $test (sort keys %dT) {
+		print sprintf("      {  %.1d,   %.1d,   0x%.2x, %2d,   0x%.4x, %1d, },\n", $dT{$test}{'cnl'}, $dT{$test}{'lst'}, $dT{$test}{'slcIdx'}, $dT{$test}{'slcLen'}, $dT{$test}{'phyAddr'}, $dT{$test}{'hidden'} );
+		$cnt += 7;
+	}
+	print "   }; // $cnt byte\n\n";
+}
+
+sub printPeerDeviceListTable {
+	my %dT = %{shift()}; my $cnt = 0;
+
+	#print "//- peer device list table -----------------------------------------------------------------------------------------------\n";
+	print "   /* \n";
+	print "   * Peer-Device-List-Table \n";
+	print "   * channel, maximum allowed peers, start address in EEprom \n";
+	print "   */ \n";
+
+	print "   EE::s_peerTbl peerTbl[] = {\n";
+	print "      // cnl, pMax, pAddr;\n";
+	foreach my $test (sort keys %dT) {
+		next    if ( $dT{$test}{'lst'} != (3 || 4) );
+		#	{1, 6, 0x001a}              //  6 * 4 =  24 (0x18)
+		print sprintf("      { %.1d, %.1d, 0x%.4x, },\n", $dT{$test}{'cnl'}, $dT{$test}{'peers'}, $dT{$test}{'phyAddrPeers'} );
+		$cnt += 4;
+	}
+	print "   }; // $cnt byte\n\n";
+}
+
+sub printDevDeviceListTable {
+	my %dT = %{shift()}; my $cnt = 0;
+
+	my $nLsIt = scalar keys %dT;																	# get amount of list items
+
+	my $nCnlC = 0;																					# get amount of user channels
+	foreach my $test (sort keys %dT) {
+		$nCnlC += 1    if ( $dT{$test}{'lst'} == (3 || 4) );
+	}
+	
+	#print "//- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
+	print "   /* \n";
+	print "   * Device definition table \n";
+	print "   * Parameter: amount of user channel\(s\), amount of lists, \n";
+	print "   * pointer to device identification string and pointer to the channel table \n";
+	print "   */ \n";
+
+
+	print "   EE::s_devDef devDef = {\n";
+	print "      $nCnlC, $nLsIt, devIdnt, cnlAddr,\n";
+	print "   }; // 6 byte\n\n";
+}
+
+sub printModuleTable {
+	my %dT = %{shift()}; my $cnt = 0;
+
+	my $nCnlC = 0;																					# get amount of user channels
+	foreach my $test (sort keys %dT) {
+		$nCnlC += 1    if ( $dT{$test}{'lst'} == (3 || 4) );
+	}
+	print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
+	print "RG::s_modTable modTbl[$nCnlC];\n\n";
+}
+
 
 sub printStartFunctions {
 	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
@@ -477,102 +618,11 @@ sub printStartFunctions {
 	print "}\n\n";	
 }
 
-sub printDefaltTable {
-	my %dT = %{shift()};
 
-	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-	print "//- eeprom defaults table ------------------------------------------------------------------------------------------------\n";
-	print "uint16_t EEMEM eMagicByte;\n";
-	print "uint8_t  EEMEM eHMID[3]  = {" .prnHexStr($dT{'hmID'},3) ."};\n";
-	print "uint8_t  EEMEM eHMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."};\n";
-	print "uint8_t  EEMEM eHMKEY[16] = {" .prnHexStr($dT{'hmKEY'},16) ."};\n";
 
-	print "\n";
-	print "// if HMID and Serial are not set, then eeprom ones will be used\n";
-	print "uint8_t HMID[3] = {" .prnHexStr($dT{'hmID'},3) ."};\n";
-	print "uint8_t HMSR[10] = {" .prnASCIIStr($dT{'serial'}) ."};          // $dT{'serial'}\n";
-	print "uint8_t HMKEY[16] = {" .prnHexStr($dT{'hmKEY'},16) ."};\n";
-	print "\n";
-	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-	print "//- settings of HM device for AS class -----------------------------------------------------------------------------------\n";
-	print "const uint8_t devIdnt[] PROGMEM = {\n";
-	print "    /* Firmware version  1 byte */  " .prnHexStr($dT{'firmwareVer'},1) ." "x31 ."// don't know for what it is good for\n";
-	print "    /* Model ID          2 byte */  " .prnHexStr($dT{'modelID'},2) ." "x26 ."// model ID, describes HM hardware. Own devices should use high values due to HM starts from 0\n";
-	print "    /* Sub Type ID       1 byte */  " .prnHexStr($dT{'subtypeID'},1) ." "x31 ."// not needed for FHEM, it's something like a group ID\n";
-	print "    /* Device Info       3 byte */  " .prnHexStr($dT{'deviceInfo'},3) ." "x21 ."// describes device, not completely clear yet. includes amount of channels\n";
-	print "};  // 7 byte\n\n";
-}
 
-sub printChannelSliceTable {
-	my %dT = %{shift()}; my $cnt = 0;
 
-	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-	print "//- channel slice address definition -------------------------------------------------------------------------------------\n";
-	print "const uint8_t cnlAddr[] PROGMEM = {\n";
-	
-	foreach my $test (sort keys %dT) {
-		next    if ( !$cnlType{$test}{'regSet'} );  
-		next    if(!"@{$dT{$test}{'regSet'}}");	
-		print "    " .sprintf( "0x%.2x," x @{$dT{$test}{'regSet'}}, @{$dT{$test}{'regSet'}} )."\n";
-		$cnt += scalar(@{$dT{$test}{'regSet'}});
-	}
-	print "};  // $cnt byte\n\n"; 
-}
 
-sub printChannelDeviceListTable {
-	my %dT = %{shift()}; my $cnt = 0;
-
-	print "//- channel device list table --------------------------------------------------------------------------------------------\n";
-	print "EE::s_cnlTbl cnlTbl[] = {\n";
-	print "    // cnl, lst, sIdx, sLen, pAddr, hidden\n";
-	foreach my $test (sort keys %dT) {
-		print sprintf("    { %.1d, %.1d, 0x%.2x, %2d, 0x%.4x, %1d, },\n", $dT{$test}{'cnl'}, $dT{$test}{'lst'}, $dT{$test}{'slcIdx'}, $dT{$test}{'slcLen'}, $dT{$test}{'phyAddr'}, $dT{$test}{'hidden'} );
-		$cnt += 7;
-	}
-	print "};  // $cnt byte\n\n";
-}
-
-sub printPeerDeviceListTable {
-	my %dT = %{shift()}; my $cnt = 0;
-
-	print "//- peer device list table -----------------------------------------------------------------------------------------------\n";
-	print "EE::s_peerTbl peerTbl[] = {\n";
-	print "    // cnl, pMax, pAddr;\n";
-	foreach my $test (sort keys %dT) {
-		next    if ( $dT{$test}{'lst'} != (3 || 4) );
-		#	{1, 6, 0x001a}              //  6 * 4 =  24 (0x18)
-		print sprintf("    { %.1d, %.1d, 0x%.4x, },\n", $dT{$test}{'cnl'}, $dT{$test}{'peers'}, $dT{$test}{'phyAddrPeers'} );
-		$cnt += 4;
-	}
-	print "};  // $cnt byte\n\n";
-}
-
-sub printDevDeviceListTable {
-	my %dT = %{shift()}; my $cnt = 0;
-
-	my $nLsIt = scalar keys %dT;																	# get amount of list items
-
-	my $nCnlC = 0;																					# get amount of user channels
-	foreach my $test (sort keys %dT) {
-		$nCnlC += 1    if ( $dT{$test}{'lst'} == (3 || 4) );
-	}
-	
-	print "//- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
-	print "EE::s_devDef devDef = {\n";
-	print "    $nCnlC, $nLsIt, devIdnt, cnlAddr,\n";
-	print "};  // 6 byte\n\n";
-}
-
-sub printModuleTable {
-	my %dT = %{shift()}; my $cnt = 0;
-
-	my $nCnlC = 0;																					# get amount of user channels
-	foreach my $test (sort keys %dT) {
-		$nCnlC += 1    if ( $dT{$test}{'lst'} == (3 || 4) );
-	}
-	print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
-	print "RG::s_modTable modTbl[$nCnlC];\n\n";
-}
 
 
 
