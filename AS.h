@@ -110,6 +110,7 @@ class AS {
 	uint8_t  newHmKey[16];
 	uint8_t  newHmKeyIndex[];
 	uint16_t randomSeed = 0;
+	uint8_t  resetStatus = 0;
 
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
@@ -257,8 +258,6 @@ class waitTimer {
 	void     set(uint32_t ms);
 	uint32_t remain(void);
 };
-
-
 
 uint32_t byteTimeCvt(uint8_t tTime);
 uint32_t intTimeCvt(uint16_t iTime);
