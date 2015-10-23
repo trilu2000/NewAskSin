@@ -3,6 +3,7 @@
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																// device configuration file
+#include <AS.h>
 
 /**
  * @brief This is the Arduino Setup-Function

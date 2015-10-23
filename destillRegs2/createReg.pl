@@ -564,9 +564,16 @@ sub printModuleTable {
 	foreach my $test (sort keys %dT) {
 		$nCnlC += 1    if ( $dT{$test}{'lst'} == (3 || 4) );
 	}
-	print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
-	print "RG::s_modTable modTbl[$nCnlC];\n\n";
+	#print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
+	print "   /* \n";
+	print "   * module registrar \n";
+	print "   * size table to register and access channel modules \n";
+	print "   */ \n";
+
+	print "   RG::s_modTable modTbl[$nCnlC];\n\n";
 }
+
+
 
 
 sub printStartFunctions {
@@ -625,7 +632,7 @@ sub printStartFunctions {
 	print "   void firstTimeStart(void) {\n";
 	print "      /* \n";
 	print "      * place here everything which should be done on the first start or after a complete reset of the sketch\n";	
-	print "      * typical usecase are default values which should be written into the register or peer database\n\n";	
+	print "      * typical usecase are default values which should be written into the register or peer database\n";	
 	print "      */ \n\n";
 	
 	print "   }\n\n";	
