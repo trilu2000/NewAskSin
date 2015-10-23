@@ -715,7 +715,7 @@ sub getParamSet {
 
 	my ($section) = $xO->findnodes('/xmlSet/'.$sN.'/paramset[@'.$iT.'="'.$pN.'"]/parameter[@id="'.$iD.'"]');	# set pointer to parameter
 	$retObj{'id'} = $section->getAttribute('id');
-
+	
 	# get out the parameter
 	my ($physical) = $section->findnodes('./physical');														# search for the physical part and copy whole section
 	return %retObj = ()       if (!$physical); 
@@ -752,6 +752,74 @@ sub getParamSet {
 	$retObj{'index'}     = $index;
 	$retObj{'bit'}       = $startBit;
 	$retObj{'size'}      = $size;
+
+
+	# get out the default parameter
+	# <logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
+	# <logical type="float" min="0.0" max="1.0" default="0.4" unit="100%"/>
+
+	# <logical type="option">
+	#    <option id="CHARACTERISTIC_LINEAR"/>
+	#    <option id="CHARACTERISTIC_SQUARE" default="true"/>
+	# </logical>
+
+	my ($logical) = $section->findnodes('./logical');														# search for the physical part and copy whole section
+	my $log_type = $logical->getAttribute('type');
+	my $log_def = $logical->getAttribute('default') ? $logical->getAttribute('default') : 0;
+
+	my $log_min = $logical->getAttribute('min');
+	my $log_max = $logical->getAttribute('max');
+	my $newValue = 0;
+	
+	if ($log_type eq 'boolean') {
+		$newValue = ($log_def eq 'true') ? 1:0;
+		#print "boolean: default: $log_def, new: $newValue \n";
+
+	} elsif ($log_type eq 'integer') {
+		$newValue = $log_def;
+		#print "$log_def \n";
+
+	} elsif ($log_type eq 'float') {
+		my ($conversation) = $section->findnodes('./conversion');														# search for the physical part and copy whole section
+		my $conv = $conversation->getAttribute('type');
+
+		if ($conv eq 'float_integer_scale') {
+			my $log_factor = $conversation->getAttribute('factor') ? $conversation->getAttribute('factor'):0;
+			my $log_offset = $conversation->getAttribute('offset') ? $conversation->getAttribute('offset'):0;
+			
+			$newValue = ($log_def + $log_offset) * $log_factor;
+			#print "min: $log_min, max: $log_max, fact: $log_factor, offset: $log_offset, default: $log_def, new: $newValue \n";
+
+		} elsif ($conv eq 'float_configtime') {
+			$newValue = int(HM_encodeTime8($log_def));
+
+			#print "$retObj{'size'}  default: $log_def, new: $newValue \n";
+			#print "$logical \n\n";
+		}
+
+	} elsif ($log_type eq 'option') {
+		my $i = 0;
+		for my $item ( $logical->findnodes('./option') ) {
+			#print $item ."\n";
+			$newValue = $i    if ($item->getAttribute('default'));
+			$i++;
+		}
+		#print "$newValue\n";
+		
+	} else {
+		print "unknown: $log_type\n";
+
+	}
+
+	$retObj{'log_type'} = $log_type;
+	$retObj{'log_def'} = $newValue;
+
+
+
+	#print "id: $retObj{'id'}  default: $retObj{'ldefault'}   type: $retObj{'ltype'} \n ";
+
+
+
 
 	# some debug
 	#foreach my $test (keys %retObj) {
@@ -839,3 +907,20 @@ sub searchXMLFiles {
 	return @handover;
 }
 ## ----------------------------------------------------------------------------------------------------------
+
+sub HM_encodeTime8($) {#####################
+  my @culHmTimes8 = ( 0.1, 1, 5, 10, 60, 300, 600, 3600 );
+  my $v = shift;
+  return 0 if($v < 0.1);
+  for(my $i = 0; $i < @culHmTimes8; $i++) {
+    if($culHmTimes8[$i] * 32 > $v) {
+      for(my $j = 0; $j < 32; $j++) {
+        if($j*$culHmTimes8[$i] >= $v) {
+          return sprintf("%f", $i*32+$j);
+        }
+      }
+    }
+  }
+
+  return 255;
+}
