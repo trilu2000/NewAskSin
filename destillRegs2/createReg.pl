@@ -363,6 +363,8 @@ printDevDeviceListTable(\%cnlType);
 printModuleTable(\%cnlType);
 printStartFunctions();
 
+print "#endif\n";
+
 #print $cType{'battValue'};
 
 
@@ -531,6 +533,7 @@ sub printPeerDeviceListTable {
 	print "   }; // $cnt byte\n\n";
 }
 
+
 sub printDevDeviceListTable {
 	my %dT = %{shift()}; my $cnt = 0;
 
@@ -567,37 +570,45 @@ sub printModuleTable {
 
 
 sub printStartFunctions {
-	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-	print "//- first time and regular start functions -------------------------------------------------------------------------------\n\n";
+	#print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+	#print "//- first time and regular start functions -------------------------------------------------------------------------------\n\n";
 	
-	print "void everyTimeStart(void) {\n";
-	print "    // place here everything which should be done on each start or reset of the device\n";	
-	print "    // typical usecase are loading default values or user class configurations\n\n";	
+	print "   /** \n";
+	print "   * \@brief First time and regular start functions \n";
+	print "   */ \n";
 	
-	print "    // init the homematic framework\n";
+	
+	print "   void everyTimeStart(void) {\n";
+	print "      /* \n";
+	print "      * Place here everything which should be done on each start or reset of the device. \n";
+	print "      * Typical use case are loading default values or user class configurations. \n";
+	print "      */ \n\n";
 
-	print "    hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);"  ." "x11  ."// configure the config button, mode, pci byte and pci bit\n";
-	print "    hm.ld.init($cType{'statusLED'}, &hm);"  ." "x49  ."// set the led\n";
-	print "    hm.ld.set(welcome);"  ." "x49  ."// show something\n";
+	
+	print "      // init the homematic framework\n";
+
+	print "      hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);"  ." "x11  ."// configure the config button, mode, pci byte and pci bit\n";
+	print "      hm.ld.init($cType{'statusLED'}, &hm);"  ." "x49  ."// set the led\n";
+	print "      hm.ld.set(welcome);"  ." "x49  ."// show something\n";
 	
 	if ($cType{'battValue'} > 0 ) {
-		print "    hm.bt.set($cType{'battValue'}, $cType{'battChkDura'});"  ." "x(52-length($cType{'battChkDura'}))  ."// set battery check, internal, 2.7 reference, measurement each hour\n";
+		print "      hm.bt.set($cType{'battValue'}, $cType{'battChkDura'});"  ." "x(52-length($cType{'battChkDura'}))  ."// set battery check, internal, 2.7 reference, measurement each hour\n";
 	}
 
 	#if ($cType{'powerMode'} > 0 ) {
-		print "    hm.pw.setMode($cType{'powerMode'});"  ." "x51  ."// set power management mode\n";
+		print "      hm.pw.setMode($cType{'powerMode'});"  ." "x51  ."// set power management mode\n";
 	#}
 	
-	print "\n    // register user modules\n";
+	print "\n      // register user modules\n";
 	
 	foreach my $rLKey (sort keys %rL) {	
 		# get the respective list 3 or 4 for the channel
 		my ($xl) = (grep { ($cnlType{$_}{'cnl'} == $rLKey) && ($cnlType{$_}{'lst'} > 1) && ($cnlType{$_}{'lst'} < 5) } keys %cnlType);
-		my $xLine = "    $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
+		my $xLine = "      $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
 		print $xLine ." "x(72-length($xLine)) ."// register user module\n";
 
 		foreach (@{$rL{$rLKey}{'config_modul'}}) {
-			my $sLine = "    $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].$_;";
+			my $sLine = "      $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].$_;";
 			print $sLine ." "x(72-length($sLine)) ."// configure user module\n";
 		}
 		print "\n";
@@ -609,14 +620,20 @@ sub printStartFunctions {
 	#thsens.timing(0, 0, 0);																// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 	
 	
-	print "}\n\n";
+	print "   }\n\n";
 
-	print "void firstTimeStart(void) {\n";
-	print "    // place here everything which should be done on the first start or after a complete reset of the sketch\n";	
-	print "    // typical usecase are default values which should be written into the register or peer database\n\n";	
+	print "   void firstTimeStart(void) {\n";
+	print "      /* \n";
+	print "      * place here everything which should be done on the first start or after a complete reset of the sketch\n";	
+	print "      * typical usecase are default values which should be written into the register or peer database\n\n";	
+	print "      */ \n\n";
 	
-	print "}\n\n";	
+	print "   }\n\n";	
 }
+
+
+
+
 
 
 
