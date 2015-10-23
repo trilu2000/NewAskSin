@@ -25,10 +25,10 @@ class PW {
   protected:	//---------------------------------------------------------------------------------------------------------
 	class AS *pHM;							// pointer to main class for function calls
 
-	uint8_t pwrMode       :3;				// remember the level of power savings
-	uint8_t chkCCBurst    :1;
-	uint8_t comStat       :1;
-	uint8_t tmpCCBurst    :1;
+	uint8_t pwrMode;						// remember the level of power savings
+	uint8_t chkCCBurst;
+	uint8_t comStat;
+	uint8_t tmpCCBurst;
 	
   public:		//---------------------------------------------------------------------------------------------------------
 

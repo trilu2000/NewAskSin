@@ -61,17 +61,17 @@ class AS {
 
 	/** @brief Helper structure for keeping track of active config mode */
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
-		uint8_t  active; //   :1;				//< indicates status, 1 if config mode is active
+		uint8_t  active;					//< indicates status, 1 if config mode is active
 		uint8_t  cnl;						//< channel
 		uint8_t  lst;						//< list
 		uint8_t  idx;						//< peer index
 	} cFlag;
 
 	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
-		uint8_t active; //   :1;				// indicates status of poll routine, 1 is active
-		uint8_t peer; //     :1;				// is it a peer list message
-		uint8_t reg2; //     :1;				// or a register send
-		uint8_t reg3; //     :1;				// not implemented at the moment
+		uint8_t active;						// indicates status of poll routine, 1 is active
+		uint8_t peer;						// is it a peer list message
+		uint8_t reg2;						// or a register send
+		uint8_t reg3;						// not implemented at the moment
 		uint8_t totSlc;						// amount of necessary slices to send content
 		uint8_t curSlc;						// counter for slices which are already send
 		uint8_t cnl;						// indicates channel
@@ -96,9 +96,8 @@ class AS {
 	} stcPeer;
 
 	struct s_l4_0x01 {
-		uint8_t  peerNeedsBurst; //      :1;     // 0x01, s:0, e:1
-//		uint8_t                      :6;     //
-		uint8_t  expectAES; //           :1;     // 0x01, s:7, e:8
+		uint8_t  peerNeedsBurst;			// 0x01, s:0, e:1
+		uint8_t  expectAES;					// 0x01, s:7, e:8
 	} l4_0x01;
 
 	uint8_t pairActive;

@@ -30,8 +30,7 @@ class THSensor {
 
 	struct s_lstPeer {
 		// 0x01,
-		uint8_t  peerNeedsBurst      :1;     // 0x01, s:0, e:1
-		uint8_t                      :7;     //
+		uint8_t  peerNeedsBurst;     // 0x01, s:0, e:1
 	} lstPeer;
 	  
   
@@ -41,11 +40,11 @@ class THSensor {
 	void     (*fMeas)(void);																// pointer to measurement function in main sketch
 	uint8_t  *ptrVal;																		// pointer to byte which holds the measured value
 
-	uint8_t  mMode   :1;																	// 0 timer based, 1 level of changed based transmition
+	uint8_t  mMode;																			// 0 timer based, 1 level of changed based transmition
 	uint8_t  mLevelChange;																	// value change 
 	uint32_t mSendDelay;																	// delay for transmition or minimum delay while value changed
 	
-	uint8_t  sState  :1;																	// indicates if we are in measuring or transmition state
+	uint8_t  sState;																		// indicates if we are in measuring or transmition state
 	uint8_t  msgCnt;																		// message counter of sensor module
 	uint8_t  sensVal[2];																	// sensor value, byte 1 is message counter, byte 2 is sensor value
 	

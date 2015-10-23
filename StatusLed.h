@@ -13,10 +13,10 @@
 
 
 struct s_blinkPattern {							// struct for defining the blink pattern
-	uint8_t len     :3;							// length of pattern string
-	uint8_t dur     :3;							// how often the pattern has to be repeated, 0 for endless
-	uint8_t led0    :1;							// red
-	uint8_t led1    :1;							// green, if you like orange, set led0 and led1 to one
+	uint8_t len;								// length of pattern string
+	uint8_t dur;								// how often the pattern has to be repeated, 0 for endless
+	uint8_t led0;								// red
+	uint8_t led1;								// green, if you like orange, set led0 and led1 to one
 	uint8_t pat[6];								// the pattern it self, pattern starts always with the on time, followed by off time.
 };												// time is given in 10ms steps
 
@@ -70,7 +70,7 @@ class LD {
 	friend class AS;
   
   public:		//---------------------------------------------------------------------------------------------------------
-	uint8_t active     :1;						// something active
+	uint8_t active;								// something active
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
@@ -79,9 +79,9 @@ class LD {
 
 	const struct s_blinkPattern *blinkPtr;		// pointer to blink struct
 	
-	uint8_t bLeds      :2;						// 1 or 2 leds
-	uint8_t lCnt       :3;						// counter for positioning inside of blink string
-	uint8_t dCnt       :3;						// duration counter	
+	uint8_t bLeds;								// 1 or 2 leds
+	uint8_t lCnt;								// counter for positioning inside of blink string
+	uint8_t dCnt;								// duration counter
 	
   public:		//---------------------------------------------------------------------------------------------------------
 	void init(uint8_t leds, AS *ptrMain);

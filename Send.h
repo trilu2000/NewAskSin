@@ -19,14 +19,13 @@ class SN {
   private:		//---------------------------------------------------------------------------------------------------------
 
 	struct s_mFlg {
-		uint8_t WKUP     :1;				// 0x01: send initially to keep the device awake
-		uint8_t WKMEUP   :1;				// 0x02: awake - hurry up to send messages
-		uint8_t CFG      :1;				// 0x04: Device in Config mode
-		uint8_t	         :1;
-		uint8_t BURST    :1;				// 0x10: set if burst is required by device
-		uint8_t BIDI     :1;				// 0x20: response is expected
-		uint8_t RPTED    :1;				// 0x40: repeated (repeater operation)
-		uint8_t RPTEN    :1;				// 0x80: set in every message. Meaning?
+		uint8_t WKUP;						// 0x01: send initially to keep the device awake
+		uint8_t WKMEUP;						// 0x02: awake - hurry up to send messages
+		uint8_t CFG;						// 0x04: Device in Config mode
+		uint8_t BURST;						// 0x10: set if burst is required by device
+		uint8_t BIDI;						// 0x20: response is expected
+		uint8_t RPTED;						// 0x40: repeated (repeater operation)
+		uint8_t RPTEN;						// 0x80: set in every message. Meaning?
 	};
 
 	struct s_msgBody {
@@ -54,8 +53,8 @@ class SN {
 
 	uint8_t msgCnt;							// message counter for standard sends, while not answering something
 
-	uint8_t active   :1;					// is send module active, 1 indicates yes
-	uint8_t timeOut  :1;					// was last message a timeout
+	uint8_t active;							// is send module active, 1 indicates yes
+	uint8_t timeOut							// was last message a timeout
 	uint8_t msgToSign[32];					// store the last sent message for calculating AES signing response. Maximal we need the bytes 1 - 27 of the original message
 
   public:		//---------------------------------------------------------------------------------------------------------
