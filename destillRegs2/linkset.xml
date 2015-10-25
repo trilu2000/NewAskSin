@@ -186,33 +186,39 @@
 	</frames>
 
 	<paramset id="physical_parameters">
-		<parameter id="REDUCE_TEMP_LEVEL" operations="read,write"><logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
+		<parameter id="REDUCE_TEMP_LEVEL" operations="read,write">
+			<logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="1" index="52" size="1"/>
 		</parameter>
 
-		<parameter id="REDUCE_LEVEL" operations="read,write"><logical type="float" min="0.0" max="1.0" default="0.4" unit="100%"/>
+		<parameter id="REDUCE_LEVEL" operations="read,write">
+			<logical type="float" min="0.0" max="1.0" default="0.4" unit="100%"/>
 			<physical type="integer" interface="config" list="1" index="53" size="1"/>
 			<conversion type="float_integer_scale" factor="200"/>
 		</parameter>
 
-		<parameter id="OVERTEMP_LEVEL" operations="read,write"><logical type="integer" default="80" min="30" max="100" unit="&#176;C"/>
+		<parameter id="OVERTEMP_LEVEL" operations="read,write">
+			<logical type="integer" default="80" min="30" max="100" unit="&#176;C"/>
 			<physical type="integer" interface="config" list="1" index="50" size="1"/>
 		</parameter>
 
-		<parameter id="CHARACTERISTIC" operations="read,write"><logical type="option">
+		<parameter id="CHARACTERISTIC" operations="read,write">
+			<logical type="option">
 				<option id="CHARACTERISTIC_LINEAR"/>
 				<option id="CHARACTERISTIC_SQUARE" default="true"/>
-				</logical>
+			</logical>
 			<physical type="integer" interface="config" list="1" index="88" size="0.1"/>
 		</parameter>
 	</paramset>
 
 	<paramset id="general_parameters">
-		<parameter id="TRANSMIT_TRY_MAX" operations="read,write"><logical type="integer" min="0" max="10" default="6"/>
+		<parameter id="TRANSMIT_TRY_MAX" operations="read,write">
+			<logical type="integer" min="0" max="10" default="6"/>
 			<physical type="integer" interface="config" list="1" index="48" size="1"/>
 		</parameter>
 
-		<parameter id="POWERUP_ACTION" operations="read,write"><logical type="option">
+		<parameter id="POWERUP_ACTION" operations="read,write">
+			<logical type="option">
 				<option id="POWERUP_OFF" default="true"/>
 				<option id="POWERUP_ON"/>
 			</logical>
@@ -220,7 +226,8 @@
 			<physical type="integer" interface="config" list="1" index="86" size="0.1"/>
 		</parameter>
 
-		<parameter id="STATUSINFO_MINDELAY" operations="read,write"><logical type="float" min="0.5" max="15.5" default="2.0" unit="s">
+		<parameter id="STATUSINFO_MINDELAY" operations="read,write">
+			<logical type="float" min="0.5" max="15.5" default="2.0" unit="s">
 				<special_value id="NOT_USED" value="0.0"/>
 			</logical>
 
@@ -228,12 +235,14 @@
 				<conversion type="float_integer_scale" factor="2"/>
 		</parameter>
 
-		<parameter id="STATUSINFO_RANDOM" operations="read,write"><logical type="float" min="0.0" max="7.0" default="1.0" unit="s"/>
+		<parameter id="STATUSINFO_RANDOM" operations="read,write">
+			<logical type="float" min="0.0" max="7.0" default="1.0" unit="s"/>
 			<physical type="integer" interface="config" list="1" index="87.5" size="0.3"/>
 			<conversion type="float_integer_scale" factor="1"/>
 		</parameter>
 
-		<parameter id="LOGIC_COMBINATION" operations="read,write"><logical type="option">
+		<parameter id="LOGIC_COMBINATION" operations="read,write">
+			<logical type="option">
 				<option id="LOGIC_INACTIVE"/>
 				<option id="LOGIC_OR" default="true"/>
 				<option id="LOGIC_AND"/>

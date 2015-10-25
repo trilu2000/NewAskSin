@@ -363,6 +363,8 @@ printDevDeviceListTable(\%cnlType);
 printModuleTable(\%cnlType);
 printStartFunctions();
 
+print "#endif\n";
+
 #print $cType{'battValue'};
 
 
@@ -531,6 +533,7 @@ sub printPeerDeviceListTable {
 	print "   }; // $cnt byte\n\n";
 }
 
+
 sub printDevDeviceListTable {
 	my %dT = %{shift()}; my $cnt = 0;
 
@@ -561,43 +564,58 @@ sub printModuleTable {
 	foreach my $test (sort keys %dT) {
 		$nCnlC += 1    if ( $dT{$test}{'lst'} == (3 || 4) );
 	}
-	print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
-	print "RG::s_modTable modTbl[$nCnlC];\n\n";
+	#print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
+	print "   /* \n";
+	print "   * module registrar \n";
+	print "   * size table to register and access channel modules \n";
+	print "   */ \n";
+
+	print "   RG::s_modTable modTbl[$nCnlC];\n\n";
 }
 
 
-sub printStartFunctions {
-	print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-	print "//- first time and regular start functions -------------------------------------------------------------------------------\n\n";
-	
-	print "void everyTimeStart(void) {\n";
-	print "    // place here everything which should be done on each start or reset of the device\n";	
-	print "    // typical usecase are loading default values or user class configurations\n\n";	
-	
-	print "    // init the homematic framework\n";
 
-	print "    hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);"  ." "x11  ."// configure the config button, mode, pci byte and pci bit\n";
-	print "    hm.ld.init($cType{'statusLED'}, &hm);"  ." "x49  ."// set the led\n";
-	print "    hm.ld.set(welcome);"  ." "x49  ."// show something\n";
+
+sub printStartFunctions {
+	#print "//- ----------------------------------------------------------------------------------------------------------------------\n";
+	#print "//- first time and regular start functions -------------------------------------------------------------------------------\n\n";
+	
+	print "   /** \n";
+	print "   * \@brief First time and regular start functions \n";
+	print "   */ \n";
+	
+	
+	print "   void everyTimeStart(void) {\n";
+	print "      /* \n";
+	print "      * Place here everything which should be done on each start or reset of the device. \n";
+	print "      * Typical use case are loading default values or user class configurations. \n";
+	print "      */ \n\n";
+
+	
+	print "      // init the homematic framework\n";
+
+	print "      hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);"  ." "x11  ."// configure the config button, mode, pci byte and pci bit\n";
+	print "      hm.ld.init($cType{'statusLED'}, &hm);"  ." "x49  ."// set the led\n";
+	print "      hm.ld.set(welcome);"  ." "x49  ."// show something\n";
 	
 	if ($cType{'battValue'} > 0 ) {
-		print "    hm.bt.set($cType{'battValue'}, $cType{'battChkDura'});"  ." "x(52-length($cType{'battChkDura'}))  ."// set battery check, internal, 2.7 reference, measurement each hour\n";
+		print "      hm.bt.set($cType{'battValue'}, $cType{'battChkDura'});"  ." "x(52-length($cType{'battChkDura'}))  ."// set battery check, internal, 2.7 reference, measurement each hour\n";
 	}
 
 	#if ($cType{'powerMode'} > 0 ) {
-		print "    hm.pw.setMode($cType{'powerMode'});"  ." "x51  ."// set power management mode\n";
+		print "      hm.pw.setMode($cType{'powerMode'});"  ." "x51  ."// set power management mode\n";
 	#}
 	
-	print "\n    // register user modules\n";
+	print "\n      // register user modules\n";
 	
 	foreach my $rLKey (sort keys %rL) {	
 		# get the respective list 3 or 4 for the channel
 		my ($xl) = (grep { ($cnlType{$_}{'cnl'} == $rLKey) && ($cnlType{$_}{'lst'} > 1) && ($cnlType{$_}{'lst'} < 5) } keys %cnlType);
-		my $xLine = "    $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
+		my $xLine = "      $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
 		print $xLine ." "x(72-length($xLine)) ."// register user module\n";
 
 		foreach (@{$rL{$rLKey}{'config_modul'}}) {
-			my $sLine = "    $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].$_;";
+			my $sLine = "      $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].$_;";
 			print $sLine ." "x(72-length($sLine)) ."// configure user module\n";
 		}
 		print "\n";
@@ -609,14 +627,20 @@ sub printStartFunctions {
 	#thsens.timing(0, 0, 0);																// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 	
 	
-	print "}\n\n";
+	print "   }\n\n";
 
-	print "void firstTimeStart(void) {\n";
-	print "    // place here everything which should be done on the first start or after a complete reset of the sketch\n";	
-	print "    // typical usecase are default values which should be written into the register or peer database\n\n";	
+	print "   void firstTimeStart(void) {\n";
+	print "      /* \n";
+	print "      * place here everything which should be done on the first start or after a complete reset of the sketch\n";	
+	print "      * typical usecase are default values which should be written into the register or peer database\n";	
+	print "      */ \n\n";
 	
-	print "}\n\n";	
+	print "   }\n\n";	
 }
+
+
+
+
 
 
 
@@ -691,7 +715,7 @@ sub getParamSet {
 
 	my ($section) = $xO->findnodes('/xmlSet/'.$sN.'/paramset[@'.$iT.'="'.$pN.'"]/parameter[@id="'.$iD.'"]');	# set pointer to parameter
 	$retObj{'id'} = $section->getAttribute('id');
-
+	
 	# get out the parameter
 	my ($physical) = $section->findnodes('./physical');														# search for the physical part and copy whole section
 	return %retObj = ()       if (!$physical); 
@@ -728,6 +752,74 @@ sub getParamSet {
 	$retObj{'index'}     = $index;
 	$retObj{'bit'}       = $startBit;
 	$retObj{'size'}      = $size;
+
+
+	# get out the default parameter
+	# <logical type="integer" default="75" min="30" max="100" unit="&#176;C"/>
+	# <logical type="float" min="0.0" max="1.0" default="0.4" unit="100%"/>
+
+	# <logical type="option">
+	#    <option id="CHARACTERISTIC_LINEAR"/>
+	#    <option id="CHARACTERISTIC_SQUARE" default="true"/>
+	# </logical>
+
+	my ($logical) = $section->findnodes('./logical');														# search for the physical part and copy whole section
+	my $log_type = $logical->getAttribute('type');
+	my $log_def = $logical->getAttribute('default') ? $logical->getAttribute('default') : 0;
+
+	my $log_min = $logical->getAttribute('min');
+	my $log_max = $logical->getAttribute('max');
+	my $newValue = 0;
+	
+	if ($log_type eq 'boolean') {
+		$newValue = ($log_def eq 'true') ? 1:0;
+		#print "boolean: default: $log_def, new: $newValue \n";
+
+	} elsif ($log_type eq 'integer') {
+		$newValue = $log_def;
+		#print "$log_def \n";
+
+	} elsif ($log_type eq 'float') {
+		my ($conversation) = $section->findnodes('./conversion');														# search for the physical part and copy whole section
+		my $conv = $conversation->getAttribute('type');
+
+		if ($conv eq 'float_integer_scale') {
+			my $log_factor = $conversation->getAttribute('factor') ? $conversation->getAttribute('factor'):0;
+			my $log_offset = $conversation->getAttribute('offset') ? $conversation->getAttribute('offset'):0;
+			
+			$newValue = ($log_def + $log_offset) * $log_factor;
+			#print "min: $log_min, max: $log_max, fact: $log_factor, offset: $log_offset, default: $log_def, new: $newValue \n";
+
+		} elsif ($conv eq 'float_configtime') {
+			$newValue = int(HM_encodeTime8($log_def));
+
+			#print "$retObj{'size'}  default: $log_def, new: $newValue \n";
+			#print "$logical \n\n";
+		}
+
+	} elsif ($log_type eq 'option') {
+		my $i = 0;
+		for my $item ( $logical->findnodes('./option') ) {
+			#print $item ."\n";
+			$newValue = $i    if ($item->getAttribute('default'));
+			$i++;
+		}
+		#print "$newValue\n";
+		
+	} else {
+		print "unknown: $log_type\n";
+
+	}
+
+	$retObj{'log_type'} = $log_type;
+	$retObj{'log_def'} = $newValue;
+
+
+
+	#print "id: $retObj{'id'}  default: $retObj{'ldefault'}   type: $retObj{'ltype'} \n ";
+
+
+
 
 	# some debug
 	#foreach my $test (keys %retObj) {
@@ -815,3 +907,20 @@ sub searchXMLFiles {
 	return @handover;
 }
 ## ----------------------------------------------------------------------------------------------------------
+
+sub HM_encodeTime8($) {#####################
+  my @culHmTimes8 = ( 0.1, 1, 5, 10, 60, 300, 600, 3600 );
+  my $v = shift;
+  return 0 if($v < 0.1);
+  for(my $i = 0; $i < @culHmTimes8; $i++) {
+    if($culHmTimes8[$i] * 32 > $v) {
+      for(my $j = 0; $j < 32; $j++) {
+        if($j*$culHmTimes8[$i] >= $v) {
+          return sprintf("%f", $i*32+$j);
+        }
+      }
+    }
+  }
+
+  return 255;
+}
