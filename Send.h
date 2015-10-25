@@ -17,6 +17,8 @@ class SN {
 	friend class AS;
   
   private:		//---------------------------------------------------------------------------------------------------------
+	#define sndLen       this->buf[0]+1															// amount of bytes in the send buffer
+	#define reqACK       this->mBdy.mFlg.BIDI													// check if an ACK is requested
 
 	struct s_mFlg {
 		uint8_t WKUP     :1;				// 0x01: send initially to keep the device awake
@@ -55,7 +57,7 @@ class SN {
 	uint8_t msgCnt;							// message counter for standard sends, while not answering something
 
 	uint8_t active;							// is send module active, 1 indicates yes
-	uint8_t timeOut							// was last message a timeout
+	uint8_t timeOut;						// was last message a timeout
 	uint8_t msgToSign[32];					// store the last sent message for calculating AES signing response. Maximal we need the bytes 1 - 27 of the original message
 
   public:		//---------------------------------------------------------------------------------------------------------

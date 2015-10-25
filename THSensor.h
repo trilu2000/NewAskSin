@@ -32,8 +32,7 @@ class THSensor {
 		// 0x01,
 		uint8_t  peerNeedsBurst;     // 0x01, s:0, e:1
 	} lstPeer;
-	  
-  
+
   //- user defined functions ----------------------------------------------------------------------------------------------
   public://----------------------------------------------------------------------------------------------------------------
 	void     (*fInit)(void);																// pointer to init function in main sketch

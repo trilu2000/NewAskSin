@@ -10,10 +10,6 @@
 #include "Send.h"
 #include "AS.h"
 
-// private:		//---------------------------------------------------------------------------------------------------------
-#define sndLen       this->buf[0]+1															// amount of bytes in the send buffer
-#define reqACK       this->mBdy.mFlg.BIDI													// check if an ACK is requested
-
 waitTimer sndTmr;																			// send timer functionality
 
 SN::SN() {}

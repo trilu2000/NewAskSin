@@ -29,31 +29,31 @@ class RV {
 	};
 
 	struct s_msgBody {
-	  uint8_t       mLen;					// message length
-	  uint8_t       mCnt;					// counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	  struct s_mFlg mFlg;					// see structure of message flags
-	  uint8_t       mTyp;					// type of message
-	  uint8_t       reID[3];				// sender ID
-	  uint8_t       toID[3];				// receiver id, broadcast for 0
-	  uint8_t       by10;					// type of message
-	  uint8_t       by11;					// type of message
-	  uint8_t       pyLd[MaxDataLen-12];	// payload
+		uint8_t       mLen;					// message length
+		uint8_t       mCnt;					// counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+		struct s_mFlg mFlg;					// see structure of message flags
+		uint8_t       mTyp;					// type of message
+		uint8_t       reID[3];				// sender ID
+		uint8_t       toID[3];				// receiver id, broadcast for 0
+		uint8_t       by10;					// type of message
+		uint8_t       by11;					// type of message
+		uint8_t       pyLd[MaxDataLen-12];	// payload
 	};
 
 	public:		//---------------------------------------------------------------------------------------------------------
-		struct s_msgBody mBdy;					// structure for easier message creation
-		uint8_t peerId[4];						// hold for messages >= 3E the peerID with channel
-		uint8_t *buf;							// cast to byte array
+		struct s_msgBody mBdy;				// structure for easier message creation
+		uint8_t peerId[4];					// hold for messages >= 3E the peerID with channel
+		uint8_t *buf;						// cast to byte array
 
-		uint8_t prevBuf[27];					// store the last receive message to verify with AES signed data.
+		uint8_t prevBuf[27];				// store the last receive message to verify with AES signed data.
 
-		#define hasData		buf[0]?1:0			// check if something is in the buffer
+		#define hasData		buf[0]?1:0		// check if something is in the buffer
 
 	private:		//---------------------------------------------------------------------------------------------------------
 		#define bufLen      buf[0]+1
-		#define ackRq       mBdy.mFlg.BIDI		// check if an ACK is requested
+		#define ackRq       mBdy.mFlg.BIDI	// check if an ACK is requested
 
-	class AS *pHM;							// pointer to main class for function calls
+		class AS *pHM;						// pointer to main class for function calls
 
 	public:		//---------------------------------------------------------------------------------------------------------
 	protected:	//---------------------------------------------------------------------------------------------------------

@@ -2,7 +2,6 @@
 	#define _REGISTER_h
 
 	//- load library's --------------------------------------------------------------------------------------------------------
-	#include <AS.h>
 	#include "hardware.h"
 	#include <cmBlind.h>
 	#include "hmkey.h"
@@ -10,7 +9,7 @@
 	AS hm;																			// asksin framework
 	cmBlind cmBlind[1];																// create 1 instances of channel module
 	extern void initBlind(uint8_t channel);											// declare function to jump in
-	extern void switchBlind(uint8_t channel, uint8_t status);						// declare function to jump in
+	extern void blindUpdateState(uint8_t channel, uint8_t state);					// declare function to jump in
 
 	/*
 	 * HMID, Serial number, HM-Default-Key, Key-Index
@@ -59,7 +58,7 @@
 		0x02,0x0a,0x0b,0x0c,0x12,0x15,0x18,
 
 		// List1-Register
-		0x08,0x0b,0x0d,0x0f,0x10,0x30,0x57,
+		0x08,0x0b,0x0c,0x0d,0x0e,0x10,0x30,0x57,
 
 		// List3-Register
 		0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0f,0x11,0x1c,0x1d,0x1e,0x1f,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8f,0x91,0x9c,0x9d,0x9e,0x9f,
@@ -72,8 +71,8 @@
 	EE::s_cnlTbl cnlTbl[] = {
 		// cnl, lst, sIdx,  sLen, pAddr,  hidden
 		{  0,    0,   0x00, 7,    0x001F, 0, },
-		{  1,    1,   0x07, 7,    0x0026, 0, },
-		{  1,    3,   0x0E, 38,   0x0034, 0, },
+		{  1,    1,   0x07, 9,    0x0028, 0, },
+		{  1,    3,   0x10, 38,   0x0036, 0, },
 	};
 
 
@@ -122,7 +121,7 @@
 
 		// register user modules
 		cmBlind[0].regInHM(1, 3, &hm);												// register user module
-		cmBlind[0].config(&initBlind, &switchBlind);								// configure user module
+		cmBlind[0].config(&initBlind, &blindUpdateState);							// configure user module
 	}
 
 	/**
@@ -142,6 +141,9 @@
 		uint8_t Master_ID_A               :8;       // 0x0a, s:0, e:8
 		uint8_t Master_ID_B               :8;       // 0x0b, s:0, e:8
 		uint8_t Master_ID_C               :8;       // 0x0c, s:0, e:8
+		uint8_t CONF_BUTTON_TIME          :8;       // 0x15, s:0, e:8
+		uint8_t LOCAL_RESET_DISABLE       :1;       // 0x18, s:0, e:1
+		uint8_t                           :7;       // 0x18, s:1, l:8
 	};  // 4 byte
 
 	/**
@@ -153,6 +155,9 @@
 		uint8_t REFERENCE_RUNNING_TIME_BOTTOM_TOP :16;       // 0x0d, s:0, e:16
 		uint8_t CHANGE_OVER_DELAY         :8;       // 0x0f, s:0, e:8
 		uint8_t REFERENCE_RUN_COUNTER     :8;       // 0x10, s:0, e:8
+		uint8_t TRANSMIT_TRY_MAX          :8;       // 0x30, s:0, e:8
+		uint8_t STATUSINFO_MINDELAY       :5;       // 0x57, s:0, e:5
+		uint8_t STATUSINFO_RANDOM         :3;       // 0x57, s:5, e:8
 	};  // 4 byte
 
 	/**

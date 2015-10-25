@@ -242,17 +242,17 @@ class cmBlind {
 	} *l3;
 	
 	void (*fInit)(uint8_t);																	// pointer to init function in main sketch
-	void (*fSwitch)(uint8_t, uint8_t);														// pointer to switch function (PWM) in main sketch, first value is PWM level, second the characteristics
+	void (*fUpdateState)(uint8_t, uint8_t);													// pointer to updateState function in main sketch, first value is state level
 	
-	uint8_t   sendStat :2;																	// is there a status to be send, 1 indicates an ACK, 2 a status message 
+	uint8_t   sendStat;																		// is there a status to be send, 1 indicates an ACK, 2 a status message
 	uint16_t  msgDelay;
 	waitTimer msgTmr;																		// message timer for sending status
 
 	waitTimer delayTmr;																		// delay timer for on,off and delay time
 	uint16_t  rampTme, duraTme;																// time store for trigger 11
 
-	uint8_t   setStat;																		// status to set on the PWM channel
-	uint32_t  adjDlyPWM;																	// timer to follow in adjPWM function
+	uint8_t   setStat;																		// status to set
+	uint32_t  adjDlyPWM;																	// timer to follow in updateState function
 	uint16_t  characteristicStat;															// depends on list1 characteristic setting
 	waitTimer adjTmr;																		// timer for adjustment of PWM
 
@@ -267,7 +267,7 @@ class cmBlind {
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
 
-	void     config(void Init(uint8_t), void Switch(uint8_t, uint8_t));						// configures the module, jump addresses, etc
+	void     config(void Init(uint8_t), void updateState(uint8_t, uint8_t));				// configures the module, jump addresses, etc
 
 	void     trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime);				// messages coming from master
 	void     trigger40(uint8_t msgLng, uint8_t msgCnt);										// messages coming from switch
@@ -278,8 +278,8 @@ class cmBlind {
 	void     upDim(void);																	// up dim procedure
 	void     downDim(void);																	// down dim procedure
 
-	inline void     adjPWM(void);																	// adjusts PWM value in a regular manner
-	inline void     sendStatus(void);																// send status function
+	inline void     updateState(void);														// adjusts the actor state value
+	inline void     sendStatus(void);														// send status function
 	void     poll(void);																	// blind polling function
 	
   //- helpers defined functions -------------------------------------------------------------------------------------------

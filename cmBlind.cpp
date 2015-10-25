@@ -12,10 +12,10 @@
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
-void cmBlind::config(void Init(uint8_t), void Switch(uint8_t, uint8_t)) {
+void cmBlind::config(void Init(uint8_t), void updateState(uint8_t, uint8_t)) {
 
 	fInit = Init;
-	fSwitch = Switch;
+	fUpdateState = updateState;
 	
 	// set output pins
 	fInit(regCnl);
@@ -252,7 +252,7 @@ void cmBlind::downDim(void) {
 	adjDlyPWM = 1;																			// do the adjustment in 1ms steps
 }
 
-inline void cmBlind::adjPWM(void) {
+inline void cmBlind::updateState(void) {
 
 	// something to do?
 	if (setStat == modStat) return;															// nothing to do
@@ -260,21 +260,14 @@ inline void cmBlind::adjPWM(void) {
 	//dbg << "m" << modStat << " s" << setStat << '\n';
 	
 	// calculate next step
-	if (modStat > setStat) setStat++;														// do we have to go up
-	else setStat--;																			// or down
-	
-	// set value on PWM channel and timer for next adjustment
-	if (lstCnl.characteristic) {															// check if we should use quadratic approach
-
-		characteristicStat = setStat * setStat;												// recalculate the value
-		characteristicStat /= 200;															// divide it by 200
-		if ((setStat) && (!characteristicStat)) characteristicStat = 1;						// till 15 it is below 1
-		fSwitch(characteristicStat, lstCnl.characteristic);									// set accordingly
-
+	if (modStat > setStat) {
+		setStat++;																			// do we have to go up
 	} else {
-		fSwitch(setStat, lstCnl.characteristic);											// set accordingly
-
+		setStat--;																			// or down
 	}
+	
+	fUpdateState(regCnl, setStat);															// set accordingly
+
 	adjTmr.set(adjDlyPWM);																	// set timer for next action
 }
 
@@ -307,7 +300,7 @@ inline void cmBlind::sendStatus(void) {
 
 void cmBlind::poll(void) {
 	
-	adjPWM();																				// check if something is to be set on the PWM channel
+	updateState();																				// check if something is to be set on the PWM channel
 	sendStatus();																			// check if there is some status to send
 	
 	// check if something is to do on the blind
@@ -489,7 +482,9 @@ void cmBlind::configCngEvent(void) {
 	msgDelay = lstCnl.statusInfoMinDly * 500;
 	
 	srand(17);
-	if (lstCnl.statusInfoRandom) msgDelay += (rand()%(uint16_t)(lstCnl.statusInfoRandom*1000));
+	if (lstCnl.statusInfoRandom) {
+		msgDelay += (rand()%(uint16_t)(lstCnl.statusInfoRandom*1000));
+	}
 
 	if (!msgDelay) msgDelay = 2000;
 	//dbg << "md" << msgDelay << '\n';
