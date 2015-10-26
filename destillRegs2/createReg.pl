@@ -111,9 +111,9 @@ my %rL = usrRegs::usr_getHash('regList');
 
 ## ---------- channel 0, list 0 -----------------------
 # -- 0x0A - 0x0C mandatory for the master ID so add
-$cnlTypeA{'00 00 0x0a.0'}  = { 'idx' => '0x0a.0', 'cnl' => '0', 'list' => '0', 'id' => 'MASTER_ID_BYTE_1', 'type' => 'integer', 'interface' => 'config', 'index' => '10', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0' };
-$cnlTypeA{'00 00 0x0b.0'}  = { 'idx' => '0x0b.0', 'cnl' => '0', 'list' => '0', 'id' => 'MASTER_ID_BYTE_2', 'type' => 'integer', 'interface' => 'config', 'index' => '11', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0'  };
-$cnlTypeA{'00 00 0x0c.0'}  = { 'idx' => '0x0c.0', 'cnl' => '0', 'list' => '0', 'id' => 'MASTER_ID_BYTE_3', 'type' => 'integer', 'interface' => 'config', 'index' => '12', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0'  };
+$cnlTypeA{'00 00 0x0a.0'}  = { 'idx' => '0x0a.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_1', 'type' => 'integer', 'interface' => 'config', 'index' => '10', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0' };
+$cnlTypeA{'00 00 0x0b.0'}  = { 'idx' => '0x0b.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_2', 'type' => 'integer', 'interface' => 'config', 'index' => '11', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0'  };
+$cnlTypeA{'00 00 0x0c.0'}  = { 'idx' => '0x0c.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_3', 'type' => 'integer', 'interface' => 'config', 'index' => '12', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0'  };
 
 if ($numArr > 0) {																					# get the information from an existing file
 
@@ -159,7 +159,7 @@ if ($numArr > 0) {																					# get the information from an existing fi
 		#print "$rLKey  x: $rL{$rLKey}{'type'}  \n";															# some debug
 
 		# AES flag per channel
-		$cnlTypeA{sprintf("%.2d %.2d %s", $rLKey, 1, '0x08.0')}  = { 'idx' => '0x08.0', 'cnl' => $rLKey, 'list' => '1', 'id' => 'AES_FLAG', 'type' => 'integer', 'interface' => 'config', 'index' => '8', 'bit' => '0', 'size' => '1', 'log_type' => 'integer', 'log_def' => '0'  };
+		$cnlTypeA{sprintf("%.2d %.2d %s", $rLKey, 1, '0x08.0')}  = { 'idx' => '0x08.0', 'cnl' => $rLKey, 'lst' => '1', 'id' => 'AES_FLAG', 'type' => 'integer', 'interface' => 'config', 'index' => '8', 'bit' => '0', 'size' => '1', 'log_type' => 'integer', 'log_def' => '0'  };
 
 		# step through the referer list
 		foreach my $xPrms ($xO->findnodes('/xmlSet/'.$rL{$rLKey}{'type'}.'/channel/paramset/subset')) {	
@@ -182,14 +182,14 @@ if ($numArr > 0) {																					# get the information from an existing fi
 				# size > 8 checken - start with highest value and step down by 8 bit
 				for (my $i = $rO{'size'}; $i > 0; $i -= 8 ) {
 					#print " $i  $rO{'size'} $rO{'idx'} hab dich \n";
-					$cnlTypeA{sprintf("%.2d %.2d %s", $rLKey, $rO{'list'}, $rO{'idx'})}  = { 'cnl' => $rLKey, %rO };
+					$cnlTypeA{sprintf("%.2d %.2d %s", $rLKey, $rO{'lst'}, $rO{'idx'})}  = { 'cnl' => $rLKey, %rO };
 
 					
 					if ($rO{'size'} > 8 ) {
 						#print "rO: $rO{'log_def'}  rX: " .int($rO{'log_def'} & 0xff) ."  rN: " .int($rO{'log_def'} >> 8) ."\n";
 
-						$cnlTypeA{sprintf("%.2d %.2d %s", $rLKey, $rO{'list'}, $rO{'idx'})}{'size'} = 8;
-						$cnlTypeA{sprintf("%.2d %.2d %s", $rLKey, $rO{'list'}, $rO{'idx'})}{'log_def'} = int($rO{'log_def'} & 0xff);
+						$cnlTypeA{sprintf("%.2d %.2d %s", $rLKey, $rO{'lst'}, $rO{'idx'})}{'size'} = 8;
+						$cnlTypeA{sprintf("%.2d %.2d %s", $rLKey, $rO{'lst'}, $rO{'idx'})}{'log_def'} = int($rO{'log_def'} & 0xff);
 
 						$rO{'size'} -= 8;
 						$rO{'index'} += 1;
@@ -216,22 +216,22 @@ foreach my $test (sort keys %cnlTypeA) {														# some debug
 	
 
 
-	#print "idx: $test: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'list'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}  \n";
+	#print "idx: $test: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'lst'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}  \n";
 	#print "idx: $test: $cnlTypeA{$test}{'cnl'}  type: $cnlTypeA{$test}{'type'} index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'} lT: $cnlTypeA{$test}{'log_type'}  lD: $cnlTypeA{$test}{'log_def'} id: $cnlTypeA{$test}{'id'}  \n";
-	#print "cnl: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'list'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}   logType: $cnlTypeA{$test}{'log_type'}  logDef: $cnlTypeA{$test}{'log_def'}  \n"
+	#print "cnl: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'lst'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}   logType: $cnlTypeA{$test}{'log_type'}  logDef: $cnlTypeA{$test}{'log_def'}  \n"
 	
 
 	# push the defaults in an array
 	if($lastIdx == $cnlTypeA{$test}{'index'}) {
-		my $lastX = @{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'list'} ) }{ 'defSet'} } - 1;
-		my $lastV = @{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'list'} ) }{ 'defSet'} }[$lastX];
+		my $lastX = @{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'lst'} ) }{ 'defSet'} } - 1;
+		my $lastV = @{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'lst'} ) }{ 'defSet'} }[$lastX];
 		my $newV = $lastV + ($cnlTypeA{$test}{'log_def'} << $cnlTypeA{$test}{'bit'});
 		#print "length: $lastX  content: $lastV new: $newV \n";	
-		@{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'list'} ) }{ 'defSet'} }[$lastX] = $newV;
+		@{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'lst'} ) }{ 'defSet'} }[$lastX] = $newV;
 		
 	} else {
 		#print "push " .int($cnlTypeA{$test}{'log_def'} << $cnlTypeA{$test}{'bit'}) ."\n";
-		push @{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'list'} ) }{ 'defSet'} }, $cnlTypeA{$test}{'log_def'} << $cnlTypeA{$test}{'bit'};
+		push @{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'lst'} ) }{ 'defSet'} }, $cnlTypeA{$test}{'log_def'} << $cnlTypeA{$test}{'bit'};
 		
 	}
 	#print "idx: $test: $cnlTypeA{$test}{'cnl'}  type: $cnlTypeA{$test}{'type'} index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'} lT: $cnlTypeA{$test}{'log_type'}  lD: $cnlTypeA{$test}{'log_def'} id: $cnlTypeA{$test}{'id'}  \n\n";
@@ -240,9 +240,9 @@ foreach my $test (sort keys %cnlTypeA) {														# some debug
 
 	# push the register content into an array
 	next              if($lastIdx == $cnlTypeA{$test}{'index'});
-	push @{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'list'} ) }{ 'regSet'} }, $cnlTypeA{$test}{'index'};
-	$cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'list'} ) }{'cnl'} = $cnlTypeA{$test}{'cnl'};
-	$cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'list'} ) }{'lst'} = $cnlTypeA{$test}{'list'};
+	push @{ $cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'lst'} ) }{ 'regSet'} }, $cnlTypeA{$test}{'index'};
+	$cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'lst'} ) }{'cnl'} = $cnlTypeA{$test}{'cnl'};
+	$cnlType{ sprintf("%.2d %.2d", $cnlTypeA{$test}{'cnl'}, $cnlTypeA{$test}{'lst'} ) }{'lst'} = $cnlTypeA{$test}{'lst'};
 
 	$lastIdx = $cnlTypeA{$test}{'index'};
 	$lastCnl = $cnlTypeA{$test}{'cnl'};
@@ -252,13 +252,13 @@ foreach my $test (sort keys %cnlTypeA) {														# some debug
 
 #foreach my $test (sort keys %cnlType) { 														# some debug
 	#print "$test @{$cnlType{$test}{'regSet'}} \n"; 
-	#print "cnl: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'list'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}   logType: $cnlTypeA{$test}{'log_type'}  logDef: $cnlTypeA{$test}{'log_def'}  \n"
+	#print "cnl: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'lst'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}   logType: $cnlTypeA{$test}{'log_type'}  logDef: $cnlTypeA{$test}{'log_def'}  \n"
 #}
 
 	
 foreach my $test (sort keys %cnlTypeA) { 														# some debug
 	#print "$test: $rO{$test}  \n"; 
-	#print "cnl: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'list'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}   logType: $cnlTypeA{$test}{'log_type'}  logDef: $cnlTypeA{$test}{'log_def'}  \n"
+	#print "cnl: $cnlTypeA{$test}{'cnl'}  lst: $cnlTypeA{$test}{'lst'}   type: $cnlTypeA{$test}{'type'}  interface: $cnlTypeA{$test}{'interface'}  index: $cnlTypeA{$test}{'index'}  bit: $cnlTypeA{$test}{'bit'}  size: $cnlTypeA{$test}{'size'}  id: $cnlTypeA{$test}{'id'}   logType: $cnlTypeA{$test}{'log_type'}  logDef: $cnlTypeA{$test}{'log_def'}  \n"
 }
 
 
@@ -423,7 +423,7 @@ printChannelDeviceListTable(\%cnlType);
 printPeerDeviceListTable(\%cnlType);
 printDevDeviceListTable(\%cnlType);
 printModuleTable(\%cnlType);
-printStartFunctions(\%cnlType);
+printStartFunctions(\%cnlTypeA);
 
 print "#endif\n";
 
@@ -721,7 +721,7 @@ sub printStartFunctions {
 	#$retObj{'idx'}       = sprintf('0x%.2x.%s', $index, $startBit);
 	#$retObj{'type'}      = $physical->getAttribute('type');
 	#$retObj{'interface'} = $physical->getAttribute('interface');
-	#$retObj{'list'}      = $physical->getAttribute('list');
+	#$retObj{'lst'}      = $physical->getAttribute('lst');
 	#$retObj{'index'}     = $index;
 	#$retObj{'bit'}       = $startBit;
 	#$retObj{'size'}      = $size;
@@ -737,6 +737,18 @@ sub printStartFunctions {
 sub printInfo {
 	my %dT = %{shift()};
 
+	foreach my $test (sort keys %cnlTypeA) {
+		#next    if (!$cnlTypeA{$test}{'cnl'});
+		print "$test $cnlTypeA{$test}{'cnl'} $cnlTypeA{$test}{'lst'} $cnlTypeA{$test}{'index'} \n";
+
+		
+
+		#next    if ( !$cnlType{$test}{'defSet'} );  
+		#next    if(!"@{$dT{$test}{'defSet'}}");	
+		#print "      const uint8_t cnl$dT{$test}{'cnl'}lst$dT{$test}{'lst'}\[\] = { \n";
+		#print "         " .sprintf( "0x%.2x," x @{$dT{$test}{'defSet'}}, @{$dT{$test}{'defSet'}} )."\n";
+		#print "      };\n\n";
+	}
 
 }
 
@@ -847,7 +859,7 @@ sub getParamSet {
 	$retObj{'idx'}       = sprintf('0x%.2x.%s', $index, $startBit);
 	$retObj{'type'}      = $physical->getAttribute('type');
 	$retObj{'interface'} = $physical->getAttribute('interface');
-	$retObj{'list'}      = $physical->getAttribute('list');
+	$retObj{'lst'}       = $physical->getAttribute('list');
 	$retObj{'index'}     = $index;
 	$retObj{'bit'}       = $startBit;
 	$retObj{'size'}      = $size;
