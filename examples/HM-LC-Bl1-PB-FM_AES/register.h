@@ -75,7 +75,6 @@
 		{  1,    3,   0x10, 38,   0x0036, 0, },
 	};
 
-
 	/*
 	 * Peer-Device-List-Table
 	 * channel, maximum allowed peers, start address in EEprom

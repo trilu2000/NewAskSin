@@ -8,7 +8,7 @@
 
 #include <cmBlind.h>
 
-#define CM_BLIND_DBG
+//#define CM_BLIND_DBG
 
 /**
  * @brief Config the blind module
@@ -78,11 +78,12 @@ void cmBlind::trigger40(uint8_t keyLong, uint8_t msgCount) {
 	// some sanity
 	delayTmr.set(0);																// reset delay timer
 
-	uint16_t rTime = lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM;
+	uint16_t rTime = lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP;
+	dbg << F("REFERENCE_RUNNING_TIME_BOTTOM_TOP: ") << rTime << '\n';
+
+	rTime = lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM;
 	dbg << F("REFERENCE_RUNNING_TIME_TOP_BOTTOM: ") << rTime << '\n';
 
-	rTime = lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP;
-	dbg << F("REFERENCE_RUNNING_TIME_BOTTOM_TOP: ") << rTime << '\n';
 
 	// check for multi execute flag
 	if (keyLong && (!lstPeer.LONG_MULTIEXECUTE) && (fMsgCount == msgCount)) {

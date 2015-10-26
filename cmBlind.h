@@ -50,14 +50,15 @@ class cmBlind {
 	 */
 	struct s_lstCnl {
 		// 0x08, 0x0b, 0x0d, 0x0f, 0x10, 0x30, 0x57,
-		uint8_t AES_ACTIVE                        :8;       // 0x08, s:0, e:8
-		uint8_t REFERENCE_RUNNING_TIME_TOP_BOTTOM :16;      // 0x0b, s:0, e:16
-		uint8_t REFERENCE_RUNNING_TIME_BOTTOM_TOP :16;      // 0x0d, s:0, e:16
-		uint8_t CHANGE_OVER_DELAY                 :8;       // 0x0f, s:0, e:8
-		uint8_t REFERENCE_RUN_COUNTER             :8;       // 0x10, s:0, e:8
-		uint8_t TRANSMIT_TRY_MAX                  :8;       // 0x30, s:0, e:8
-		uint8_t STATUSINFO_MINDELAY               :5;       // 0x57, s:0, e:5
-		uint8_t STATUSINFO_RANDOM                 :3;       // 0x57, s:5, e:8
+		uint8_t  AES_ACTIVE                        :1;       // 0x08, s:0, e:1
+		uint8_t                                    :7;       // 0x08, s:1, e:8
+		uint16_t REFERENCE_RUNNING_TIME_TOP_BOTTOM :16;      // 0x0b, s:0, e:16
+		uint16_t REFERENCE_RUNNING_TIME_BOTTOM_TOP :16;      // 0x0d, s:0, e:16
+		uint8_t  CHANGE_OVER_DELAY                 :8;       // 0x0F, s:0, e:8
+		uint8_t  REFERENCE_RUN_COUNTER             :8;       // 0x10, s:0, e:8
+		uint8_t  TRANSMIT_TRY_MAX                  :8;       // 0x30, s:0, e:8
+		uint8_t  STATUSINFO_MINDELAY               :5;       // 0x57, s:0, e:5
+		uint8_t  STATUSINFO_RANDOM                 :3;       // 0x57, s:5, e:8
 	} lstCnl;
 
 	/*
