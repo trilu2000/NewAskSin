@@ -441,7 +441,7 @@ inline void cmBlind::setToggle(void) {
  */
 void cmBlind::configCngEvent(void) {
 	#ifdef CM_BLIND_DBG
-		dbg << F("CCE, lst1: ") << _HEX(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
+		dbg << F("Channel config changed, lst1: ") << _HEX(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
 
 	msgDelay = lstCnl.STATUSINFO_MINDELAY * 500;									// get message delay
@@ -539,7 +539,8 @@ void cmBlind::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 		cnl,
 		lst,
 		s_mod_dlgt(this,&cmBlind::hmEventCol),
-		(uint8_t*)&lstCnl,(uint8_t*)&lstPeer
+		(uint8_t*)&lstCnl,
+		(uint8_t*)&lstPeer
 	);
 
 	regCnl = cnl;																	// stores the channel we are responsible fore
