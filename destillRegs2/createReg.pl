@@ -701,53 +701,76 @@ sub printStartFunctions {
 	print "      * typical usecase are default values which should be written into the register or peer database\n";	
 	print "      */ \n\n";
 
-	foreach my $test (sort keys %dT) {
+	foreach my $test (sort keys %cnlType) {
+		#print "@{$cnlType{$test}{'defSet'}}\n";
 		next    if ( !$cnlType{$test}{'defSet'} );  
-		next    if(!"@{$dT{$test}{'defSet'}}");	
-		print "      const uint8_t cnl$dT{$test}{'cnl'}lst$dT{$test}{'lst'}\[\] = { \n";
-		print "         " .sprintf( "0x%.2x," x @{$dT{$test}{'defSet'}}, @{$dT{$test}{'defSet'}} )."\n";
+		next    if(!"@{$cnlType{$test}{'defSet'}}");	
+		print "      const uint8_t cnl$cnlType{$test}{'cnl'}lst$cnlType{$test}{'lst'}\[\] = { \n";
+		print "         " .sprintf( "0x%.2x," x @{$cnlType{$test}{'defSet'}}, @{$cnlType{$test}{'defSet'}} )."\n";
 		print "      };\n\n";
 	}
 
-	#foreach my $test (sort keys %dT) {
-	#	next    if ( !$cnlType{$test}{'regSet'} );  
-	#	next    if(!"@{$dT{$test}{'regSet'}}");	
-	#	print "      // channel: $dT{$test}{'cnl'}, list: $dT{$test}{'lst'} \n";
-	#	print "      " .sprintf( "0x%.2x," x @{$dT{$test}{'regSet'}}, @{$dT{$test}{'regSet'}} )."\n";
-	#	#$cnt += scalar(@{$dT{$test}{'regSet'}});
-	#}
-
-	#$retObj{'physical'}  = $physical;
-	#$retObj{'idx'}       = sprintf('0x%.2x.%s', $index, $startBit);
-	#$retObj{'type'}      = $physical->getAttribute('type');
-	#$retObj{'interface'} = $physical->getAttribute('interface');
-	#$retObj{'lst'}      = $physical->getAttribute('lst');
-	#$retObj{'index'}     = $index;
-	#$retObj{'bit'}       = $startBit;
-	#$retObj{'size'}      = $size;
-	#foreach my $test (sort keys %dT) {
-	#	print $dT{$test}{'idx'} ."\n";
-	#}
-
-	
 	print "   }\n\n";	
 }
 
 
 sub printInfo {
-	my %dT = %{shift()};
+	my $xCnl = 255; my $xLst = 255; my $xCng = 0; my $i = 0;
+	my $lastIndex = 0; my $lastBitEnd = 8;
+		
+	#$cnlTypeA{'00 00 0x0a.0'}  = { 'idx' => '0x0a.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_1', 'type' => 'integer', 'interface' => 'config', 'index' => '10', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0' };
 
 	foreach my $test (sort keys %cnlTypeA) {
-		#next    if (!$cnlTypeA{$test}{'cnl'});
-		print "$test $cnlTypeA{$test}{'cnl'} $cnlTypeA{$test}{'lst'} $cnlTypeA{$test}{'index'} \n";
+		$xCng = ( ($cnlTypeA{$test}{'cnl'} != $xCnl) || ($cnlTypeA{$test}{'lst'} != $xLst) )?1:0;
+		
+		# check if we need to fill some bits upfront of the new record
+		if ( ($lastIndex == $cnlTypeA{$test}{'index'}) && ($lastBitEnd < $cnlTypeA{$test}{'bit'}) ) {
+			print " "x6 ."uint8_t" ." "x38 .":" .($cnlTypeA{$test}{'bit'} - $lastBitEnd) .";";
+			print " "x4 ."// " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{'index'}, $lastBitEnd) ."\n";
+		} 		
+
+		# check if we need to fill some bits after the last record
+		if ( ($lastIndex != $cnlTypeA{$test}{'index'}) && ($lastBitEnd < 8) ) {
+			print " "x6 ."uint8_t" ." "x38 .":" .(8 - $lastBitEnd) .";";
+			print " "x4 ."// " .sprintf("0x%.2x.%d", $lastIndex, $lastBitEnd) ."\n";
+		} 		
+
+		# channel/list has changed, double check if an open struct exists
+		print " "x3 ."}; \n\n"					if ( $xCng && $i > 0);
+
+		# channel or list has changed, print the header
+		print " "x3 ."struct s_cnl$cnlTypeA{$test}{'cnl'}lst$cnlTypeA{$test}{'lst'} { \n"		if ( $xCng );
+
+
+		# print the single line content
+		my $lineText = "uint8_t $cnlTypeA{$test}{'id'}";
+		print " "x6 .$lineText ." "x(45-length($lineText)) .":" .$cnlTypeA{$test}{'size'} .";";
+		print " "x4 ."// $cnlTypeA{$test}{'idx'}, " .sprintf("0x%.2x", $cnlTypeA{$test}{'log_def'}) ."\n";
 
 		
+		
+		# check for last key to close the struct
+		#print "$i, " .keys(%cnlTypeA) ."\n";
+		if ( keys(%cnlTypeA) == $i+1 ) {
+			if ( ($cnlTypeA{$test}{'bit'} + $cnlTypeA{$test}{'size'}) < 8 ) {
+				print " "x6 ."uint8_t" ." "x38 .":" .(8 - ($cnlTypeA{$test}{'bit'} + $cnlTypeA{$test}{'size'}) ) .";";
+				print " "x4 ."// " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{'index'}, $cnlTypeA{$test}{'bit'}) ."\n";
+			}
+			
+			print " "x3 ."}; \n\n\n";
 
-		#next    if ( !$cnlType{$test}{'defSet'} );  
-		#next    if(!"@{$dT{$test}{'defSet'}}");	
-		#print "      const uint8_t cnl$dT{$test}{'cnl'}lst$dT{$test}{'lst'}\[\] = { \n";
+		}
+		
+
+		# some sanity
+		$lastIndex = $cnlTypeA{$test}{'index'};
+		$lastBitEnd = $cnlTypeA{$test}{'bit'} + $cnlTypeA{$test}{'size'};
+
+		$xCnl = $cnlTypeA{$test}{'cnl'};
+		$xLst = $cnlTypeA{$test}{'lst'};
+		$i += 1;
+
 		#print "         " .sprintf( "0x%.2x," x @{$dT{$test}{'defSet'}}, @{$dT{$test}{'defSet'}} )."\n";
-		#print "      };\n\n";
 	}
 
 }
