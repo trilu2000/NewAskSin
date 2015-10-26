@@ -6,196 +6,153 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define BL_DBG																			// debug message flag
 #include <cmBlind.h>
 
-//-------------------------------------------------------------------------------------------------------------------------
-//- user defined functions -
-//-------------------------------------------------------------------------------------------------------------------------
-void cmBlind::config(void Init(uint8_t), void updateState(uint8_t, uint8_t)) {
+#define CM_BLIND_DBG
 
-	fInit = Init;
+/**
+ * @brief Config the blind module
+ *
+ * @param init(uint8_t):                 pointer to user init function
+ * @param updateState(uint8_t, uint8_t): pointer to user updateState function
+ */
+void cmBlind::config(void init(uint8_t), void updateState(uint8_t, uint8_t)) {
+
+	fInit = init;
 	fUpdateState = updateState;
 	
 	// set output pins
 	fInit(regCnl);
 
-	// some basic settings for start
-	curStat = nxtStat = 6;																	// set module status to off
-	modStat = 0x00;
+	// some basic settings for start: set module status to off
+	curState = AS_CM_JT_OFF;
+	nxtState = AS_CM_JT_OFF;
+	modState = 0x00;
 	
 	// send the initial status info
-	sendStat = 2;
+	stateToSend = AS_CM_STATETOSEND_STATE;
 	msgTmr.set(msgDelay);
 }
 
-void cmBlind::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
-	
+/**
+ * @brief Process set events from master (central unit).
+ *
+ * @param setValue:     the new module value
+ * @param rampTime:     pointer to ramp time
+ * @param durationTime: pointer to duration time
+ */
+void cmBlind::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *durationTime) {
+	modState = (setValue > 200) ? 200 : setValue;									// setValue max 200
+
 	// some sanity
-	activeOffDlyBlink = 0;																	// got a new key press, off delay blink is not needed
-	delayTmr.set(0);																		// also delay timer is not needed any more
+	delayTmr.set(0);																// also delay timer is not needed any more
 
-	// m> 10 88 B0 11 63 19 63 01 02 04 02 01 C8 00 00 7D 00
-	// m> 0E 86 B0 11 63 19 63 01 02 04 02 01 C8 00 00
-	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];				// if ramp time is given, bring it in the right format
-	else rampTme = 0;																		// otherwise empty variable
-
-	if (duraTime) duraTme = (uint16_t)duraTime[0]<<8 | (uint16_t)duraTime[1];				// duration time if given
-	else duraTme = 0;																		// or clear value
-
-	// set value in modStat and ramp time if given
-	if (setValue > 200) setValue = 200;
-	modStat = setValue;
-
-	adjDlyPWM = intTimeCvt(rampTme);														// get the ramp on time
-	delayTmr.set(adjDlyPWM);																// set the ramp time to poll delay, otherwise we will every time end here
-	adjDlyPWM /= 200;																		// break down the ramp time to smaller slices for adjusting PWM
-
-	if ((duraTme) && (setValue)) {															// duration time makes only sense if the led is on, default after duration is led off
-		delayTmr.set(0);
-		delayTmr.set(intTimeCvt(rampTme) + intTimeCvt(duraTme));							// poll routine needed when ramp and duration time is finished
-
+	if (durationTime) {
+		modDurationTime = (uint16_t)durationTime[0]<<8 | (uint16_t)durationTime[1];	// duration time if given
 	} else {
-		rampTme = duraTme = 0;																// times not needed any more
-
+		modDurationTime = 0;														// or clear value
 	}
-	dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
+
+	adjDlyPWM = intTimeCvt(modRampTime);											// get the ramp on time
+	delayTmr.set(adjDlyPWM);														// set the ramp time to poll delay, otherwise we will every time end here
+	adjDlyPWM /= 200;																// break down the ramp time to smaller slices for adjusting PWM
+
+
+	// TODO: Check if we need for blind actor
+	if (modDurationTime && modState) {												// duration time makes only sense if state is > 0
+		delayTmr.set(0);
+		delayTmr.set(intTimeCvt(modRampTime) + intTimeCvt(modDurationTime));		// poll routine needed when ramp and duration time is finished
+	} else {
+		modRampTime = modDurationTime = 0;											// times not needed any more
+	}
+//	dbg << F("RL:trigger11, val:") << modState << F(", rampT:") << intTimeCvt(modRampTime) << F(", duraT:") << intTimeCvt(modDurationTime) << '\n';
 }
 
-void cmBlind::trigger40(uint8_t msgLng, uint8_t msgCnt) {
+/**
+ * @brief Process events from remote push buttons.
+ *
+ * @param keyLong:  1 for key pressed long
+ * @param msgCount: the key counter. increments on each key release
+ */
+void cmBlind::trigger40(uint8_t keyLong, uint8_t msgCount) {
 	// some sanity
-	activeOffDlyBlink = 0;																	// got a new key press, off delay blink is not needed
-	delayTmr.set(0);																		// also delay timer is not needed any more
-	
+	delayTmr.set(0);																// reset delay timer
+
+	uint16_t rTime = lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM;
+	dbg << F("REFERENCE_RUNNING_TIME_TOP_BOTTOM: ") << rTime << '\n';
+
+	rTime = lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP;
+	dbg << F("REFERENCE_RUNNING_TIME_BOTTOM_TOP: ") << rTime << '\n';
+
 	// check for multi execute flag
-	if (( msgLng) && (!lstPeer.lgMultiExec) && (cnt == msgCnt)) return;						// trigger was long, but we have no multi execute
-	cnt = msgCnt;																			// remember message counter
-
-	// set short or long
-	l3 = (msgLng)?(s_l3*)&lstPeer+1 :(s_l3*)&lstPeer;
-
-
-	// check against action type	
-	if        (l3->actionType == 0) {		// off
-
-	} else if (l3->actionType == 1) {		// jmpToTarget
-
-		// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-		if      (curStat == 1) nxtStat = l3->jtDlyOn;										// delay on
-		else if (curStat == 2) nxtStat = l3->jtRampOn;										// ramp on
-		else if (curStat == 3) nxtStat = l3->jtOn;											// on
-		else if (curStat == 4) nxtStat = l3->jtDlyOff;										// delay off
-		else if (curStat == 5) nxtStat = l3->jtRampOff;										// ramp off
-		else if (curStat == 6) nxtStat = l3->jtOff;											// currently off
-		delayTmr.set(0);																	// set timer to 0 for avoiding delays
-
-	} else if (l3->actionType == 2) {		// toogleToCounter
-		l3->actionType = 0;
-
-		if (msgCnt%2) {
-			modStat = 200;
-			adjDlyPWM = byteTimeCvt(l3->rampOnTime) / 200;
-			
-		} else {
-			modStat = 0;
-			adjDlyPWM = byteTimeCvt(l3->rampOffTime) / 200;
-			
-		}
-		
-	} else if (l3->actionType == 3) {		// toogleInversToCounter
-		l3->actionType = 0;
-
-		if (msgCnt%2) {
-			modStat = 0;
-			adjDlyPWM = byteTimeCvt(l3->rampOffTime) / 200;
-			
-			} else {
-			modStat = 200;
-			adjDlyPWM = byteTimeCvt(l3->rampOnTime) / 200;
-			
-		}
-
-
-	} else if (l3->actionType == 4) {		// upDim
-		upDim();
-
-		if ((l3->onTime) && (l3->onTime != 255)) {											// check onTimer, if set then set jump table accordingly
-			delayTmr.set(byteTimeCvt(l3->onTime) );											// set the timer
-		} else l3->actionType = 0;
-
-
-	} else if (l3->actionType == 5) {		// downDim
-		downDim();
-		l3->actionType = 0;
-
-		
-	} else if (l3->actionType == 6) {		// toogleDim
-		toggleDim();																		// jump into toggle dim function, direction is given there
-		l3->actionType = 0;																	// no further action required
-
-
-	} else if (l3->actionType == 7) {		// toogleDimToCounter
-		// check for even or odd, if even set onMinLvl 
-		if (msgCnt % 2) {																	// odd - blind on
-
-			if (modStat < l3->onMinLevel) {													// minimum level already set?
-				modStat = l3->onMinLevel;													// if not, set to minimum level
-				adjDlyPWM = byteTimeCvt(l3->rampOnTime);									// take rampTime in consideration
-				adjDlyPWM /= (modStat - l3->onMinLevel);									// divide adjustment time in small slices
-			}																				// to dim smooth
-
-		} else {																			// even - blind off
-			
-			if (modStat > l3->offLevel) {													// check if blind is already off
-				modStat = l3->offLevel;														// if not, set to off level
-				adjDlyPWM = byteTimeCvt(l3->rampOffTime);									// take rampOff Time in consideration
-				adjDlyPWM /= (modStat - l3->offLevel);										// divide it to small slices to dim smoothly
-			}
-			
-		}
-
-		
-	} else if (l3->actionType == 8) {		// toogleDimInversToCounter
-		// same as 7, but changed order
-		if (msgCnt % 2) {																	// odd - blind off
-
-			if (modStat > l3->offLevel) {													// see action type 7, even
-				modStat = l3->offLevel;
-				adjDlyPWM = byteTimeCvt(l3->rampOffTime);
-				adjDlyPWM /= (modStat - l3->offLevel);
-			}
-
-		} else {																			// even - blind on
-			
-			if (modStat < l3->onMinLevel) {													// see action type 7, odd
-				modStat = l3->onMinLevel;
-				adjDlyPWM = byteTimeCvt(l3->rampOnTime);
-				adjDlyPWM /= (modStat - l3->onMinLevel);
-			}
-			
-		}
-
+	if (keyLong && (!lstPeer.LONG_MULTIEXECUTE) && (fMsgCount == msgCount)) {
+		return;																		// trigger was long, but we have no multi execute
 	}
 
-	//showStruct();																			// some debug messages
-//	dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << '\n';	// some debug again
+	fMsgCount = msgCount;															// remember message counter
+
+	l3 = (keyLong) ? ((s_l3*)&lstPeer + 1) : ((s_l3*)&lstPeer);						// set short or long
+
+	/*
+	 * check against action type
+	 */
+	if        (l3->ACTION_TYPE == AS_CM_ACTIONTYPE_INACTIVE) {
+		// do nothing
+
+	} else if (l3->ACTION_TYPE == AS_CM_ACTIONTYPE_JUMP_TO_TARGET) {
+		nxtState = stateMachine_setNextState(curState);
+		delayTmr.set(0);															// set timer to 0 for avoiding delays
+
+	} else if (l3->ACTION_TYPE == AS_CM_ACTIONTYPE_TOGGLE_TO_COUNTER) {
+		l3->ACTION_TYPE = AS_CM_ACTIONTYPE_INACTIVE;
+
+		if (msgCount%2 == 1) {
+			modState = 200;
+			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM) / 200;
+		} else {
+			modState = 0;
+			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP) / 200;
+		}
+		
+	} else if (l3->ACTION_TYPE == AS_CM_ACTIONTYPE_TOGGLE_INVERSE_TO_COUNTER) {
+		l3->ACTION_TYPE = AS_CM_ACTIONTYPE_INACTIVE;
+
+		if (msgCount%2 == 1) {
+			modState = 0;
+			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP) / 200;
+		} else {
+			modState = 200;
+			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM) / 200;
+			
+		}
+	}
+
+	#ifdef CM_BLIND_DBG
+		debugActionType(l3->ACTION_TYPE);
+		dbg << F(", curState: ");
+		debugState(curState);
+		dbg << F(", nxtState: ");
+		debugState(nxtState);
+		dbg << '\n';
+	#endif
 }
 
-void cmBlind::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
-	uint8_t isLng = (msgBLL & 0x40)?1:0;													// is it a long message?
+/**
+ * @brief Process events from sensor devices.
+ *
+ * TODO: make ready
+ *
+ * @param msgLong:  1 for a long key message
+ * @param msgCount: the key counter. increments on each key release
+ */
+void cmBlind::trigger41(uint8_t msgLong, uint8_t msgCount, uint8_t msgVal) {
+	uint8_t isLng = (msgLong & 0x40) ? 1 : 0;												// is it a long message?
 	uint8_t ctTbl;
 
 	// set short or long
 	l3 = (isLng)?(s_l3*)&lstPeer+1 :(s_l3*)&lstPeer;										// set pointer to the right part of the list3, short or long
 
-	
-	// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-	if      (curStat == 1) ctTbl = l3->ctDlyOn;												// delay on
-	else if (curStat == 2) ctTbl = l3->ctRampOn;											// ramp on
-	else if (curStat == 3) ctTbl = l3->ctOn;												// on
-	else if (curStat == 4) ctTbl = l3->ctDlyOff;											// delay off
-	else if (curStat == 5) ctTbl = l3->ctRampOff;											// ramp off
-	else if (curStat == 6) ctTbl = l3->ctOff;												// currently off
+	ctTbl = stateMachine_setNextState(curState);
 	
 	// X GE COND_VALUE_LO                         - geLo -  > low           - 0
 	// X GE COND_VALUE_HI                         - geHi -  > high          - 1
@@ -204,355 +161,395 @@ void cmBlind::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 	// COND_VALUE_LO LE X LT COND_VALUE_HIGH      - betW -  low <> high     - 4
 	// X LT COND_VALUE_LO OR X GE COND_VALUE_HIGH - outS -  < low or > high - 5
 
-	//dbg << "curStat: " << curStat  << ", isLng: " << isLng << ", val: " << msgVal  << ", cond: " << ctTbl << '\n';
+	//dbg << "curState: " << curState  << ", isLng: " << isLng << ", val: " << msgVal  << ", cond: " << ctTbl << '\n';
 
-	if      (ctTbl == 0) if (msgVal > l3->ctValLo) trigger40(isLng, msgCnt);
-	else if (ctTbl == 1) if (msgVal > l3->ctValHi) trigger40(isLng, msgCnt);
-	else if (ctTbl == 2) if (msgVal < l3->ctValLo) trigger40(isLng, msgCnt);
-	else if (ctTbl == 3) if (msgVal < l3->ctValHi) trigger40(isLng, msgCnt);
-	else if (ctTbl == 4) if ((msgVal > l3->ctValLo) && (msgVal < l3->ctValHi)) trigger40(isLng, msgCnt);
-	else if (ctTbl == 5) if ((msgVal < l3->ctValLo) && (msgVal > l3->ctValHi)) trigger40(isLng, msgCnt);
+	if ( ((ctTbl == AS_CM_JT_NONE) && (msgVal > l3->COND_VALUE_LO)) ||
+	     ((ctTbl == AS_CM_JT_ONDELAY) && (msgVal > l3->COND_VALUE_HI)) ||
+	     ((ctTbl == AS_CM_JT_RAMPON) and (msgVal < l3->COND_VALUE_LO)) ||
+	     ((ctTbl == AS_CM_JT_ON) && (msgVal < l3->COND_VALUE_HI)) ||
+	     ((ctTbl == AS_CM_JT_OFFDELAY) && (msgVal > l3->COND_VALUE_LO) && (msgVal < l3->COND_VALUE_HI)) ||
+	     ((ctTbl == AS_CM_JT_RAMPOFF) && (msgVal < l3->COND_VALUE_LO) && (msgVal > l3->COND_VALUE_HI)) ) {
 
-}
-
-inline void cmBlind::toggleDim(void) {
-	dbg << F("toggleDim") << '\n';
-
-	if (modStat == 0)   directionDim = 1;													// remember the direction , down or up
-	if (modStat == 200) directionDim = 0;
-	
-	if (directionDim) upDim();																// jump into the right function based on the direction
-	else downDim();
-}
-void cmBlind::upDim(void) {
-	dbg << F("upDim") << '\n';
-
-	// calculate the value
-	if (modStat >= 200) return;																// reached or above max value, nothing to do
-	modStat += l3->dimStep;																	// increase by dim steps
-	if (modStat > 200) modStat = 200;														// more then 100%, go back to 100%
-	curStat = 3;																			// blind is on, important for on button setting
-	
-	// new value will be set by polling function, time for increase has to be set manually
-	adjDlyPWM = 1;																			// do the adjustment in 1ms steps
-}
-
-void cmBlind::downDim(void) {
-	dbg << F("downDim") << '\n';
-
-	// calculate the value
-	if (modStat == 0) return;																// blind already off
-	if (modStat <= l3->dimStep) {															// blind value smaller then dim step
-		modStat = l3->dimStep;																// set to minimum dim step
-		curStat = 6;																		// set status to off, important for one button settings
+		trigger40(isLng, msgCount);
 	}
-	modStat -= l3->dimStep;																	// lower the value
-	
-	// new value will be set by polling function, time for increase has to be set manually
-	adjDlyPWM = 1;																			// do the adjustment in 1ms steps
+}
+
+/**
+ * @brief set next state in state machine.
+ *
+ * TODO: Maybe we can do this over a jump table
+ *
+ * @param curState:   reference to curState
+ * @return            the nextState
+ */
+uint8_t cmBlind::stateMachine_setNextState(uint8_t curState) {
+	uint8_t nextState;
+
+	// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
+	if      (curState == AS_CM_JT_ONDELAY) {
+		nextState = l3->JT_ONDELAY;
+
+	} else if (curState == AS_CM_JT_REFON) {
+		nextState = l3->JT_REFON;
+
+	} else if (curState == AS_CM_JT_RAMPON) {
+		nextState = l3->JT_RAMPON;
+
+	} else if (curState == AS_CM_JT_ON) {
+		nextState = l3->JT_ON;
+
+	} else if (curState == AS_CM_JT_OFFDELAY) {
+		nextState = l3->JT_OFFDELAY;
+
+	} else if (curState == AS_CM_JT_REFOFF) {
+		nextState = l3->JT_REFOFF;
+
+	} else if (curState == AS_CM_JT_RAMPOFF) {
+		nextState = l3->JT_RAMPOFF;
+
+	} else if (curState == AS_CM_JT_OFF) {
+		nextState = l3->JT_OFF;
+	}
+
+	return nextState;
 }
 
 inline void cmBlind::updateState(void) {
 
 	// something to do?
-	if (setStat == modStat) return;															// nothing to do
-	if (!adjTmr.done()) return;																// timer not done, wait until then
-	//dbg << "m" << modStat << " s" << setStat << '\n';
+	if (setState == modState) return;												// nothing to do
+
+	if (!adjTmr.done()) return;														// timer not done, wait until then
+	//dbg << "m" << modState << " s" << setState << '\n';
 	
 	// calculate next step
-	if (modStat > setStat) {
-		setStat++;																			// do we have to go up
+	if (modState > setState) {
+		setState++;																	// do we have to go up
 	} else {
-		setStat--;																			// or down
+		setState--;																	// or down
 	}
 	
-	fUpdateState(regCnl, setStat);															// set accordingly
+	fUpdateState(regCnl, setState);													// set accordingly
 
-	adjTmr.set(adjDlyPWM);																	// set timer for next action
+	adjTmr.set(adjDlyPWM);															// set timer for next action
 }
 
-inline void cmBlind::sendStatus(void) {
+/**
+ * @brief Send module state in dependency of modState, setState and delayTmr
+ *
+ * TODO: make ready
+ */
+inline void cmBlind::sendState(void) {
+	uint8_t  extState = AS_CM_EXTSTATE_NONE;										// extended state (down, up, running)
 
-	if (!sendStat) return;																	// nothing to do
-	if (!msgTmr.done()) return;																// not the right time
+	if (stateToSend == AS_CM_STATETOSEND_NONE) return;									// nothing to do
+	if (!msgTmr.done()) return;														// not the right time
 		
-	// prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT �0x80�
-	if      (modStat == setStat) modDUL  = 0;
-	else if (modStat <  setStat) modDUL  = 0x10;
-	else if (modStat >  setStat) modDUL  = 0x20;
-	if (!delayTmr.done() )       modDUL |= 0x40;
+	if (modState < setState) {
+		extState  = AS_CM_EXTSTATE_UP;
+
+	} else if (modState >  setState) {
+		extState  = AS_CM_EXTSTATE_DOWN;
+	}
+
+	if (!delayTmr.done()) {															// set running bit if timer running
+		extState |= AS_CM_EXTSTATE_RUNNING;
+	}
 		
-	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);					// send ACK
-	else if (sendStat == 2) hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);			// send status
+	if (stateToSend == AS_CM_STATETOSEND_ACK) {											// Check which type has to be send
+		hm->sendACK_STATUS(regCnl, modState, extState);								// send ACK
+	} else if (stateToSend == AS_CM_STATETOSEND_STATE) {
+		hm->sendINFO_ACTUATOR_STATUS(regCnl, modState, extState);					// send status
+	}
 
 	// check if it is a stable status, otherwise schedule next info message
-	if (modDUL >= 0x40) {																	// status is currently changing
-		sendStat = 2;																		// send next time a info status message
-		msgTmr.set(delayTmr.remain()+5);
+	if (extState >= AS_CM_EXTSTATE_RUNNING) {										// status is currently changing
+		stateToSend = AS_CM_STATETOSEND_STATE;											// send next time a info status message
+		msgTmr.set(delayTmr.remain() + 5);
 
-	} else if (modDUL) {
-		sendStat = 2;																		// send next time a info status message
+	} else if (extState > AS_CM_STATETOSEND_NONE) {
+		stateToSend = AS_CM_STATETOSEND_STATE;											// send next time a info status message
 		msgTmr.set(msgDelay);
 
-	} else sendStat = 0;																	// no need for next time
+	} else {
+		stateToSend = AS_CM_STATETOSEND_NONE;											// no need for next time
+	}
 }
 
 void cmBlind::poll(void) {
-	
-	updateState();																				// check if something is to be set on the PWM channel
-	sendStatus();																			// check if there is some status to send
-	
-	// check if something is to do on the blind
-	if (!delayTmr.done() ) return;															// timer not done, wait until then
+	updateState();																	// check if something is to be set on the PWM channel
+	sendState();																	// check if there is some status to send
 
 
-	// upDim, check if onTimer was running
-	if (l3->actionType == 4)  {
-		modStat = l3->offLevel;
-		adjDlyPWM = 1;																		// do the adjustment in 1ms steps
-		l3->actionType = 0;																	// no further action required
-	}
+	/*
+	 * Here we process the state machine
+	 */
+
+	// check if something is to do
+	if (!delayTmr.done() ) return;													// timer not done, wait until then
 
 	// trigger11, check if onTimer was running
-	if (duraTme)  {
-//		modStat = 0;
-		adjDlyPWM = intTimeCvt(rampTme);													// get the ramp on time
-		adjDlyPWM /= 200;																	// break down the ramp time to smaller slices for adjusting PWM
-		rampTme = duraTme = 0;																// no further action required
+	if (modDurationTime)  {
+		modState = 0;
+		adjDlyPWM = intTimeCvt(modRampTime);										// get the ramp on time
+		adjDlyPWM /= 200;															// break down the ramp time to smaller slices for adjusting PWM
+		modRampTime = modDurationTime = 0;											// no further action required
 	}
 	
 	// - jump table section, only
-	if (l3->actionType != 1) return;														// only valid for jump table
-	if (curStat == nxtStat) return;															// no status change expected
-	activeOffDlyBlink = 0;	
+	if (l3->ACTION_TYPE != AS_CM_ACTIONTYPE_JUMP_TO_TARGET) return;					// only valid for jump table
+	if (curState == nxtState) return;												// no status change expected
 
-	// check the different status changes, {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-	if        (nxtStat == 1) {		// dlyOn
-		#ifdef BL_DBG
-		dbg << F("dlyOn\n");
+	if        (nxtState == AS_CM_JT_ONDELAY) {
+		#ifdef CM_BLIND_DBG
+			dbg << F("ONDELAY\n");
 		#endif 
 		
-		curStat = nxtStat;																	// remember current status
-		nxtStat = l3->jtDlyOn;																// get next status from jump table
+		curState = nxtState;														// remember current status
+		nxtState = l3->JT_ONDELAY;													// get next status from jump table
 		
-		if (l3->onDly) {																	// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(l3->onDly));											// activate the timer and set next status
+		if (l3->ONDELAY_TIME) {														// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->ONDELAY_TIME));							// activate the timer and set next status
 		}
-		
 
-	} else if (nxtStat == 2) {		// rampOn
-		#ifdef BL_DBG
-		dbg << F("rampOn\n");
+	} else if (nxtState == AS_CM_JT_REFON) {
+		#ifdef CM_BLIND_DBG
+			dbg << F("REFON\n");
+		#endif
+
+		curState = nxtState;														// remember current status
+		nxtState = l3->JT_REFON;													// get next status from jump table
+
+	} else if (nxtState == AS_CM_JT_RAMPON) {
+		#ifdef CM_BLIND_DBG
+			dbg << F("RAMPON\n");
 		#endif
 		
 		// check modStat against onLevel, if not compare, set the right values
-		if (modStat != l3->onLevel)	{														// modStat not set, so first time
-			modStat	= l3->onLevel;															// set module status accordingly settings
-			adjDlyPWM = byteTimeCvt(l3->rampOnTime);										// get the ramp on time
-			delayTmr.set(adjDlyPWM);														// set the ramp time to poll delay, otherwise we will every time end here
-			adjDlyPWM /= 200;																// break down the ramp time to smaller slices for adjusting PWM
+		if (modState != l3->ON_LEVEL)	{											// modStat not set, so first time
+			modState	= l3->ON_LEVEL;												// set module status accordingly settings
+			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM);		// get the ramp on time
+			delayTmr.set(adjDlyPWM);												// set the ramp time to poll delay, otherwise we will every time end here
+			adjDlyPWM /= 200;														// break down the ramp time to smaller slices for adjusting PWM
 		}
 		
 		// check if ramp on is done, set next status
-		if (modStat == setStat) {															// ramp on is done
-			curStat = nxtStat;																// set current status accordingly
-			nxtStat = l3->jtRampOn;															// set next status accordingly the jump table
+		if (modState == setState) {													// ramp on is done
+			curState = nxtState;													// set current status accordingly
+			nxtState = l3->JT_RAMPON;												// set next status accordingly the jump table
 		}
 
-		
-	} else if (nxtStat == 3) {		// on
-		#ifdef BL_DBG
-		dbg << F("on\n");
+	} else if (nxtState == AS_CM_JT_ON) {
+		#ifdef CM_BLIND_DBG
+			dbg << F("ON\n");
 		#endif
 		
-		curStat = nxtStat;																	// remember current status, when timer not set, we stay here for ever
+		curState = nxtState;														// remember current status, when timer not set, we stay here for ever
 		
-		if ((l3->onTime) && (l3->onTime != 255)) {											// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(l3->onTime));											// activate the timer and set next status
+		if ((l3->ON_TIME) && (l3->ON_TIME != 255)) {								// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->ON_TIME));									// activate the timer and set next status
 
-			// nxtStat = l3->jtOn; seems to be wrong here, because original device goes to rampOff and stays in off, so refill jumptable
-			nxtStat = 5;																	// go to ramp off
-			l3->jtRampOff = 6;																// jump from rampOff to off
-			l3->jtOff = 6;																	// stay in off mode
-		} //else nxtStat = l3->jtOn;														// not sure in which scenario it is needed
-
-
-	} else if (nxtStat == 4) {		// dlyOff
-		#ifdef BL_DBG
-		dbg << F("dlyOff\n");
-		#endif
-
-		curStat = nxtStat;																	// remember current status
-		nxtStat = l3->jtDlyOff;																// get jump table for next status
-
-		if (l3->offDly) {																	// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(l3->offDly));											// activate the timer and set next status
-			if (l3->offDlyBlink) activeOffDlyBlink = 1;
+			// TODO: jump over off delay?
+			nxtState = AS_CM_JT_RAMPOFF;											// go to ramp off
+			l3->JT_RAMPOFF = AS_CM_JT_OFF;											// jump from rampOff to off
+			l3->JT_OFF = AS_CM_JT_OFF;												// stay in off mode
 		}
 
+	} else if (nxtState == AS_CM_JT_OFFDELAY) {
+		#ifdef CM_BLIND_DBG
+			dbg << F("OFFDELAY\n");
+		#endif
 
-	} else if (nxtStat == 5) {		// rampOff
-		#ifdef BL_DBG
-		dbg << F("rampOff\n");
+		curState = nxtState;														// remember current state
+		nxtState = l3->JT_OFFDELAY;													// get jump table for next state
+
+		if (l3->OFFDELAY_TIME) {													// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->OFFDELAY_TIME));							// activate the timer and set next status
+		}
+
+	} else if (nxtState == AS_CM_JT_REFOFF) {
+		#ifdef CM_BLIND_DBG
+			dbg << F("REFOFF\n");
+		#endif
+
+		curState = nxtState;														// remember current state
+		nxtState = l3->JT_REFOFF;													// get jump table for next state
+
+	} else if (nxtState == AS_CM_JT_RAMPOFF) {
+		#ifdef CM_BLIND_DBG
+			dbg << F("RAMPOFF\n");
 		#endif
 		
 		// check modStat against offLevel, if not similar, set the right values
-		if (modStat != l3->offLevel) {														// check for first time and set the correct values
-			modStat	= l3->offLevel;															// set the PWM to the right value
-			adjDlyPWM = byteTimeCvt(l3->rampOffTime);										// get the ramp off time
-			delayTmr.set(adjDlyPWM);														// set ramp off time to the poll timer, other wise we will check every ms again
-			adjDlyPWM /= 200;																// split PWN timer to slices for smooth dimming
+		if (modState != l3->OFF_LEVEL) {											// check for first time and set the correct values
+			modState	= l3->OFF_LEVEL;											// set the PWM to the right value
+			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP);		// get the ramp off time
+			delayTmr.set(adjDlyPWM);												// set ramp off time to the poll timer, other wise we will check every ms again
+			adjDlyPWM /= 200;														// split PWN timer to slices for smooth dimming
 		}
 		
 		// check if ramp on is done, set next status
-		if (modStat == setStat) {															// check if ramp off is done
-			curStat = nxtStat;																// remember the current status
-			nxtStat = l3->jtRampOff;														// get the next status from jump table
+		if (modState == setState) {													// check if ramp off is done
+			curState = nxtState;													// remember the current status
+			nxtState = l3->JT_RAMPOFF;												// get the next status from jump table
 		}
 
 
-	} else if (nxtStat == 6) {		// off
-		#ifdef BL_DBG
-		dbg << F("off\n");
+	} else if (nxtState == AS_CM_JT_OFF) {
+		#ifdef CM_BLIND_DBG
+			dbg << F("OFF\n");
 		#endif
 
-		curStat = nxtStat;																	// remember the current status
-		//nxtStat = l3->jtOff;																// get the next status from jump table
+		curState = nxtState;														// remember the current status
+		nxtState = l3->JT_ON;														// get the next status from jump table
 
-		if ((l3->offTime) && (l3->offTime != 255)) {										// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(l3->offTime));											// activate the timer and set next status
-			// refill jumptable
-
+		if ((l3->OFF_TIME) && (l3->OFF_TIME != 255)) {								// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->OFF_TIME));								// activate the timer and set next status
 		}
-
 	}
 
 }
 
-  //- helpers defined functions -------------------------------------------------------------------------------------------
-inline void cmBlind::showStruct(void) {
-
-	dbg << "\nctRampOn " << l3->ctRampOn << ", ctRampOff " << l3->ctRampOff << ", ctDlyOn " << l3->ctDlyOn << \
-	        ", ctDlyOff " << l3->ctDlyOff << ", ctOn " << l3->ctOn << ", ctOff " << l3->ctOff << \
-			", ctValLo " << l3->ctValLo << ", ctValHi " << l3->ctValHi << '\n' << '\n';
-	 
-	dbg << "onDly " << l3->onDly << ", onTime " << l3->onTime << ", offDly " << l3->offDly << ", offTime " << l3->offTime << \
-	       ", actionType " << l3->actionType << ", lgMultiExec " << l3->lgMultiExec << \
-		   ", offTimeMode " << l3->offTimeMode << ", onTimeMode " << l3->onTimeMode << '\n' << '\n'; 
-
-	dbg << "jtOn " << l3->jtOn << ", jtOff " << l3->jtOff << ", jtDlyOn " << l3->jtDlyOn << ", jtDlyOff " << l3->jtDlyOff << \
-	       ", jtRampOn " << l3->jtRampOn << ", jtRampOff " << l3->jtRampOff << '\n' << '\n';
-	
-	dbg << "offDlyBlink " << l3->offDlyBlink << ", onLvlPrio " << l3->onLvlPrio << ", onDlyMode " << l3->onDlyMode << ", offLevel " << l3->offLevel << \
-	       ", onMinLevel " << l3->onMinLevel << ", onLevel " << l3->onLevel << '\n' << '\n';
-
-	dbg << "rampSstep " << l3->rampSstep << ", rampOnTime " << l3->rampOnTime << ", rampOffTime " << l3->rampOffTime << '\n' << '\n';
-
-	dbg << "dimMinLvl " << l3->dimMinLvl << ", dimMaxLvl " << l3->dimMaxLvl << ", dimStep " << l3->dimStep << \
-	       ", offDlyNewTime " << l3->offDlyNewTime << ", offDlyOldTime " << l3->offDlyOldTime << '\n' << '\n';
-
-	dbg << '\n';
-}
 
 
-//-------------------------------------------------------------------------------------------------------------------------
-//- mandatory functions for every new module to communicate within HM protocol stack -
-//-------------------------------------------------------------------------------------------------------------------------
+/************************************************************************************
+ * mandatory functions for every new module to communicate within HM protocol stack *
+ ************************************************************************************/
+
+/**
+ * @brief SetToggle will be called by config button in mode 2 by a short key press.
+ *        Here we can toggle the status of the actor.
+ *
+ * TODO: Should check against internal device kay config
+ */
 inline void cmBlind::setToggle(void) {
-	// setToggle will be addressed by config button in mode 2 by a short key press
-	// here we can toggle the status of the actor
-	#ifdef BL_DBG
-	dbg << F("RL\n");
+	#ifdef CM_BLIND_DBG
+		dbg << F("TOGGLE_BLIND\n");
 	#endif
 
 	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
-	if (curStat == 3) nxtStat = 4;															// currently on, next status should be off
-	else nxtStat = 1;																		// currently off, next status should be on
-	//onDly   = 0; onTime  = 255; offDly  = 0; offTime = 255;								// set timers
+	if (curState == AS_CM_JT_ON) {												// currently on, next status should be off
+		nxtState = AS_CM_JT_OFF;
+
+	} else if (nxtState == AS_CM_JT_OFF) {										// currently off, next status should be on
+		nxtState = AS_CM_JT_ON;
+	}
 }
 
+/**
+ * @brief it's only for information purpose if channel config was changed (List0/1 or List3/4)
+ */
 void cmBlind::configCngEvent(void) {
-	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
-	#ifdef BL_DBG
-	dbg << F("CCE, lst1: ") << pHex(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
+	#ifdef CM_BLIND_DBG
+		dbg << F("CCE, lst1: ") << _HEX(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
 
-	// get message delay
-	msgDelay = lstCnl.statusInfoMinDly * 500;
-	
-	srand(17);
-	if (lstCnl.statusInfoRandom) {
-		msgDelay += (rand()%(uint16_t)(lstCnl.statusInfoRandom*1000));
+	msgDelay = lstCnl.STATUSINFO_MINDELAY * 500;									// get message delay
+
+	if (lstCnl.STATUSINFO_RANDOM) {
+		// maybe we outsource this call to external module
+		hm->initPseudoRandomNumberGenerator();
+		msgDelay += (rand()%(uint16_t)(lstCnl.STATUSINFO_RANDOM * 1000));
 	}
 
-	if (!msgDelay) msgDelay = 2000;
-	//dbg << "md" << msgDelay << '\n';
+	if (!msgDelay) {
+		msgDelay = 2000;
+	}
 }
 
+/**
+ * @brief We received a message from master to set a new value.
+ *        Typical you will find three bytes in data:
+ *           1st byte = value;
+ *           2nd and 3rd byte = ramp time;
+ *           4th and 5th byte = on duration time;
+ *
+ *        after setting the new value we have to send an enhanced ACK:
+ *           <- 0E E7 80 02 1F B7 4A 63 19 63 01 01 C8 00 54
+ */
 void cmBlind::pairSetEvent(uint8_t *data, uint8_t len) {
-	// we received a message from master to set a new value, typical you will find three bytes in data
-	// 1st byte = value; 2nd and 3rd byte = ramp time; 4th and 5th byte = duration time;
-	// after setting the new value we have to send an enhanced ACK (<- 0E E7 80 02 1F B7 4A 63 19 63 01 01 C8 00 54)
-	#ifdef BL_DBG
-	dbg << F("PSE, value:") << pHexB(data[0]);
-	if (len > 1) { dbg << F(", rampTime: ") << pHex((data+1), 2); };
-	if (len > 3) { dbg << F(", duraTime: ") << pHex((data+3), 2); };
-	dbg << '\n';
+	#ifdef CM_BLIND_DBG
+		dbg << F("PSE, value:") << _HEXB(data[0]);
+		if (len > 1) { dbg << F(", modRampTime: ") << _HEX((data+1), 2); };
+		if (len > 3) { dbg << F(", modDurationTime: ") << _HEX((data+3), 2); };
+		dbg << '\n';
 	#endif
 
-	trigger11(data[0], (len > 1)?data+1:NULL, (len > 3)?data+3:NULL);
+	trigger11(data[0], ((len > 1) ? data+1 : NULL), ((len > 3) ? data+3 : NULL));
 
-	// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
-	//hm->sendACK_STATUS(regCnl, data[0], modDUL);
-	sendStat = 1;																			// ACK should be send
-	msgTmr.set(100);																		// give some time
+	stateToSend = AS_CM_STATETOSEND_ACK;											// ACK should be send
+	msgTmr.set(100);																// give some time
 }
 
+/**
+ * @brief We received a status request.
+ *        Appropriate answer is an InfoActuatorStatus message
+ */
 inline void cmBlind::pairStatusReq(void) {
-	// we received a status request, appropriate answer is an InfoActuatorStatus message
-	#ifdef BL_DBG
-	dbg << F("PSR\n");
+	#ifdef CM_BLIND_DBG
+		dbg << F("statusRequest\n");
 	#endif
 	
-	// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
-	//hm->sendACK_STATUS(regCnl, data[0], modDUL);
-	sendStat = 2;																			// ACK should be send
-	msgTmr.set(0);																			// immediately
+	stateToSend = AS_CM_STATETOSEND_STATE;											// ACK should be send
+	msgTmr.set(0);																	// immediately
 }
 
+/**
+ * @brief We received a peer event.
+ *       In type you will find the type of peer event.
+ *          0x3E = switch
+ *          0x40 = remote
+ *          0x41 = sensor
+ *
+ *       Appropriate answer is an ACK
+ */
 void cmBlind::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
-	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
-	// appropriate answer is an ACK
-	#ifdef BL_DBG
-	dbg << F("PME, type: ")  << pHexB(type) << F(", data: ")  << pHex(data, len) << '\n';
+	#ifdef CM_BLIND_DBG
+		dbg << F("peer message type: ")  << _HEXB(type) << F(", data: ")  << _HEX(data, len) << '\n';
 	#endif
 	
-	if (type == 0x40) trigger40((data[0] & 0x40)?1:0, data[1]);								// filter out the long message bit
-	if (type == 0x41) trigger41((data[0] & 0x7F), data[1], data[2]);
+	if ( (type == 0x40) || (type == 0x41) ) {
+		if (type == 0x40) {
+			trigger40( ((data[0] & 0x40) ? 1 : 0), data[1]);							// filter out the long message bit
 
-	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
-		// status will send via dimPoll function, therefor we have to indicate that an ACK has to be send
-		//hm->sendACK_STATUS(regCnl, modStat, modDUL);
-		sendStat = 1;																		// ACK should be send
-		msgTmr.set(100);																	// immediately
+		} else if (type == 0x41) {
+			trigger41( (data[0] & 0x7F), data[1], data[2]);
+		}
+
+		stateToSend = AS_CM_STATETOSEND_ACK;										// ACK should be send
+		msgTmr.set(100);															// immediately
 
 	} else {
 		hm->sendACK();
-
 	}
 }
 
-//-------------------------------------------------------------------------------------------------------------------------
-//- predefined, no reason to touch -
-//-------------------------------------------------------------------------------------------------------------------------
+
+
+/**********************************
+ * predefined, no reason to touch *
+ **********************************/
+
+/**
+ * @brief Register module in HM
+ */
 void cmBlind::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
-	hm = instPtr;																			// set pointer to the HM module
-	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&cmBlind::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
-	regCnl = cnl;																			// stores the channel we are responsible fore
+	hm = instPtr;																	// set pointer to the HM module
+	hm->rg.regInAS(
+		cnl,
+		lst,
+		s_mod_dlgt(this,&cmBlind::hmEventCol),
+		(uint8_t*)&lstCnl,(uint8_t*)&lstPeer
+	);
+
+	regCnl = cnl;																	// stores the channel we are responsible fore
 }
+
+/**
+ * @brief HM event controller
+ */
 void cmBlind::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
-	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
+//	dbg << "hmEventCol >>>>>>> by3:" << by3 << " by10:" << by10 << " d:" << _HEX(data, len) << '\n'; _delay_ms(100);
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
 	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
 	else if ((by3 == 0x00) && (by10 == 0x02)) firstStart();
@@ -563,12 +560,17 @@ void cmBlind::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data,
 	else if  (by3 >= 0x3E)                    peerMsgEvent(by3, data, len);
 	else return;
 }
+
+/**
+ * @brief We received an peer add event, which means, there was a peer added in this respective channel.
+ *           1st byte and 2nd byte shows the peer channel,
+ *           3rd and 4th byte gives the peer index
+ *
+ *        No need for sending an answer, but we could set default data to the respective list3/4
+ */
 void cmBlind::peerAddEvent(uint8_t *data, uint8_t len) {
-	// we received an peer add event, which means, there was a peer added in this respective channel
-	// 1st byte and 2nd byte shows the peer channel, 3rd and 4th byte gives the peer index
-	// no need for sending an answer, but we could set default data to the respective list3/4
-	#ifdef BL_DBG
-	dbg << F("peerAddEvent: pCnl1: ") << pHexB(data[0]) << F(", pCnl2: ") << pHexB(data[1]) << F(", pIdx1: ") << pHexB(data[2]) << F(", pIdx2: ") << pHexB(data[3]) << '\n';
+	#ifdef CM_BLIND_DBG
+		dbg << F("peerAddEvent: peerCh1: ") << _HEXB(data[0]) << F(", peerCh2: ") << _HEXB(data[1]) << F(", peerIndex1: ") << _HEXB(data[2]) << F(", peerIndex2: ") << _HEXB(data[3]) << '\n';
 	#endif
 	
 	if ((data[0]) && (data[1])) {															// dual peer add
@@ -579,13 +581,15 @@ void cmBlind::peerAddEvent(uint8_t *data, uint8_t len) {
 			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
 			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
 		}
+
 	} else {																				// single peer add
 		if (data[0]) hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
 		if (data[1]) hm->ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
 }
+
 inline void cmBlind::firstStart(void) {
-	//#ifdef BL_DBG
-	dbg << F("firstStart\n");
-	//#endif
+	#ifdef CM_BLIND_DBG
+		dbg << F("firstStart\n");
+	#endif
 }

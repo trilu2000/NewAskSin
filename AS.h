@@ -156,6 +156,8 @@ class AS {
 	void processMessageAction();
 	void deviceReset(void);
 
+	void initPseudoRandomNumberGenerator();
+
   private:		//---------------------------------------------------------------------------------------------------------
 
 	inline void processMessageSwitchEvent();
@@ -203,7 +205,6 @@ class AS {
 
 	void sendSignRequest(void);
 
-	void initPseudoRandomNumberGenerator();
 	inline void initRandomSeed();
 	
   protected:	//---------------------------------------------------------------------------------------------------------

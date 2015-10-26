@@ -4,6 +4,7 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #ifndef _DEFINES_H
+	#define _DEFINES_H
 
 	// Register list0 values
 	#define AS_REG_L0_INTERNAL_KEYS_VISIBLE               0x02
