@@ -176,7 +176,9 @@ class cmBlind {
 
 	waitTimer delayTmr;																		// delay timer for on,off and delay time
 	uint16_t  modRampTime;
-	uint16_t  modDurationTime;																// time store for trigger 11
+
+	uint16_t  modReferenceTimeTopBottom;
+	uint16_t  modReferenceTimeBottomTop;
 
 	uint8_t   setState;																		// status to set
 	uint32_t  adjDlyPWM;																	// timer to follow in updateState function

@@ -47,11 +47,11 @@ void cmBlind::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *durationTi
 	// some sanity
 	delayTmr.set(0);																// also delay timer is not needed any more
 
-	if (durationTime) {
-		modDurationTime = (uint16_t)durationTime[0]<<8 | (uint16_t)durationTime[1];	// duration time if given
-	} else {
-		modDurationTime = 0;														// or clear value
-	}
+//	if (durationTime) {
+//		modDurationTime = (uint16_t)durationTime[0]<<8 | (uint16_t)durationTime[1];	// duration time if given
+//	} else {
+//		modDurationTime = 0;														// or clear value
+//	}
 
 	adjDlyPWM = intTimeCvt(modRampTime);											// get the ramp on time
 	delayTmr.set(adjDlyPWM);														// set the ramp time to poll delay, otherwise we will every time end here
@@ -59,12 +59,12 @@ void cmBlind::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *durationTi
 
 
 	// TODO: Check if we need for blind actor
-	if (modDurationTime && modState) {												// duration time makes only sense if state is > 0
-		delayTmr.set(0);
-		delayTmr.set(intTimeCvt(modRampTime) + intTimeCvt(modDurationTime));		// poll routine needed when ramp and duration time is finished
-	} else {
-		modRampTime = modDurationTime = 0;											// times not needed any more
-	}
+//	if (modDurationTime && modState) {												// duration time makes only sense if state is > 0
+//		delayTmr.set(0);
+//		delayTmr.set(intTimeCvt(modRampTime) + intTimeCvt(modDurationTime));		// poll routine needed when ramp and duration time is finished
+//	} else {
+//		modRampTime = modDurationTime = 0;											// times not needed any more
+//	}
 //	dbg << F("RL:trigger11, val:") << modState << F(", rampT:") << intTimeCvt(modRampTime) << F(", duraT:") << intTimeCvt(modDurationTime) << '\n';
 }
 
@@ -78,11 +78,8 @@ void cmBlind::trigger40(uint8_t keyLong, uint8_t msgCount) {
 	// some sanity
 	delayTmr.set(0);																// reset delay timer
 
-	uint16_t rTime = lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP;
-	dbg << F("REFERENCE_RUNNING_TIME_BOTTOM_TOP: ") << rTime << '\n';
-
-	rTime = lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM;
-	dbg << F("REFERENCE_RUNNING_TIME_TOP_BOTTOM: ") << rTime << '\n';
+	dbg << F("REFERENCE_RUNNING_TIME_BOTTOM_TOP: ") << modReferenceTimeBottomTop << '\n';
+	dbg << F("REFERENCE_RUNNING_TIME_TOP_BOTTOM: ") << modReferenceTimeTopBottom << '\n';
 
 
 	// check for multi execute flag
@@ -109,10 +106,10 @@ void cmBlind::trigger40(uint8_t keyLong, uint8_t msgCount) {
 
 		if (msgCount%2 == 1) {
 			modState = 200;
-			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM) / 200;
+			adjDlyPWM = modReferenceTimeTopBottom / 200;
 		} else {
 			modState = 0;
-			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP) / 200;
+			adjDlyPWM = modReferenceTimeBottomTop / 200;
 		}
 		
 	} else if (l3->ACTION_TYPE == AS_CM_ACTIONTYPE_TOGGLE_INVERSE_TO_COUNTER) {
@@ -120,10 +117,10 @@ void cmBlind::trigger40(uint8_t keyLong, uint8_t msgCount) {
 
 		if (msgCount%2 == 1) {
 			modState = 0;
-			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP) / 200;
+			adjDlyPWM = modReferenceTimeBottomTop / 200;
 		} else {
 			modState = 200;
-			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM) / 200;
+			adjDlyPWM = modReferenceTimeTopBottom / 200;
 			
 		}
 	}
@@ -290,12 +287,12 @@ void cmBlind::poll(void) {
 	if (!delayTmr.done() ) return;													// timer not done, wait until then
 
 	// trigger11, check if onTimer was running
-	if (modDurationTime)  {
+//	if (modDurationTime)  {
 		modState = 0;
 		adjDlyPWM = intTimeCvt(modRampTime);										// get the ramp on time
 		adjDlyPWM /= 200;															// break down the ramp time to smaller slices for adjusting PWM
-		modRampTime = modDurationTime = 0;											// no further action required
-	}
+//		modRampTime = modDurationTime = 0;											// no further action required
+//	}
 	
 	// - jump table section, only
 	if (l3->ACTION_TYPE != AS_CM_ACTIONTYPE_JUMP_TO_TARGET) return;					// only valid for jump table
@@ -329,7 +326,7 @@ void cmBlind::poll(void) {
 		// check modStat against onLevel, if not compare, set the right values
 		if (modState != l3->ON_LEVEL)	{											// modStat not set, so first time
 			modState	= l3->ON_LEVEL;												// set module status accordingly settings
-			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM);		// get the ramp on time
+			adjDlyPWM = modReferenceTimeTopBottom;									// get the ramp on time
 			delayTmr.set(adjDlyPWM);												// set the ramp time to poll delay, otherwise we will every time end here
 			adjDlyPWM /= 200;														// break down the ramp time to smaller slices for adjusting PWM
 		}
@@ -384,7 +381,7 @@ void cmBlind::poll(void) {
 		// check modStat against offLevel, if not similar, set the right values
 		if (modState != l3->OFF_LEVEL) {											// check for first time and set the correct values
 			modState	= l3->OFF_LEVEL;											// set the PWM to the right value
-			adjDlyPWM = byteTimeCvt(lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP);		// get the ramp off time
+			adjDlyPWM = modReferenceTimeBottomTop;									// get the ramp off time
 			delayTmr.set(adjDlyPWM);												// set ramp off time to the poll timer, other wise we will check every ms again
 			adjDlyPWM /= 200;														// split PWN timer to slices for smooth dimming
 		}
@@ -444,6 +441,9 @@ void cmBlind::configCngEvent(void) {
 	#ifdef CM_BLIND_DBG
 		dbg << F("Channel config changed, lst1: ") << _HEX(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
+
+	modReferenceTimeTopBottom = GET_2_BYTE_VALUE(lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM);
+	modReferenceTimeBottomTop = GET_2_BYTE_VALUE(lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP);
 
 	msgDelay = lstCnl.STATUSINFO_MINDELAY * 500;									// get message delay
 

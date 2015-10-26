@@ -8,6 +8,8 @@
 
 	#include "HAL.h"
 
+	#define GET_2_BYTE_VALUE(n) ( ((uint16_t)n >> 8) | ((uint16_t)n << 8) )			// macro for changing byte order for ARV little endian
+
 	#define AS_CM_JT_NONE                                 0
 	#define AS_CM_JT_ONDELAY                              1
 	#define AS_CM_JT_REFON                                2
