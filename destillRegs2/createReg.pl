@@ -831,7 +831,7 @@ sub randString {
 
 ## -- read paramset in XML by giving filehandle, sectionname, paramset name and id -----------------------------------------------------
 sub getParamSet {
-	my $xO = shift;																							# xml object
+	my $xFileHandle = shift;																							# xml object
 	my $sN = shift;																							# section name
 	my $iT = shift;
 	my $pN = shift;																							# parameter set name
@@ -847,7 +847,7 @@ sub getParamSet {
 	#	<conversion type="float_integer_scale" factor="10"/>
 	#</parameter>
 
-	my ($section) = $xO->findnodes('/xmlSet/'.$sN.'/paramset[@'.$iT.'="'.$pN.'"]/parameter[@id="'.$iD.'"]');	# set pointer to parameter
+	my ($section) = $xFileHandle->findnodes('/xmlSet/'.$sN.'/paramset[@'.$iT.'="'.$pN.'"]/parameter[@id="'.$iD.'"]');	# set pointer to parameter
 	$retObj{'id'} = $section->getAttribute('id');
 	
 	# get out the parameter
