@@ -13,50 +13,53 @@
 // private:		//---------------------------------------------------------------------------------------------------------
 waitTimer pwrTmr;																			// power timer functionality
 
-
 PW::PW() {
-} 
+}
+
+/**
+ * @brief Initialize the power module
+ */
 void PW::init(AS *ptrMain) {
 	#ifdef PW_DBG																			// only if ee debug is set
-	dbgStart();																				// serial setup
-	dbg << F("PW.\n");																		// ...and some information
+		dbgStart();																			// serial setup
+		dbg << F("PW.\n");																	// ...and some information
 	#endif
 
 	pHM = ptrMain;																			// pointer to main class
-	pwrMode = 0;																			// set default
+	pwrMode = POWER_MODE_NO_SLEEP;															// set default
 }
+
+/**
+ * @brief Set power mode
+ */
 void PW::setMode(uint8_t mode) {
 	pwrMode = mode;
 
 	#ifdef PW_DBG																			// only if pw debug is set
-	dbg << F("PowerMode: ") << pwrMode << '\n';												// ...and some information
+		dbg << F("PowerMode: ") << pwrMode << '\n';											// ...and some information
 	#endif
 
 	initWakeupPin();
 	setSleepMode();
-	stayAwake(2000);																		// startup means stay awake for next 20 seconds
+	stayAwake(2000);																		// startup means stay awake for next 2 seconds
 }
+
+/**
+ * @brief Stay awake for specific time
+ *
+ * @param time in milliseconds for stay awake
+ */
 void PW::stayAwake(uint16_t time) {
 	if (time < pwrTmr.remain()) return;														// set new timeout only if we have to add something
 	pwrTmr.set(time);
 }
+
+/**
+ * @brief Check against active flag of various modules
+ */
 void PW::poll(void) {
-	// check against active flag of various modules
-	// on mode 0 there is nothing to do, maybe set idle mode to save some energy
-	//
-	// mode 1 means - check every 250ms if there is a transmition signal, if yes, wait
-	// 50ms and check again - if it is still active, then wakeup the device for some time, 
-	// if not, then sleep again
-	//
-	// mode 2 means - sleep for 250ms, wake up - check if something is to do, otherwise sleep again
-	// communication module could stay idle, communication will start with transmition
-	//
-	// mode 3 means - sleep for 8000ms, wake up - check if something is to do, otherwise sleep again
-	// communication module could stay idle, communication will start with transmition
-	//
-	// mode 4 means - sleep for ever until an interrupt get raised
 	
-	if (pwrMode == 0) return;																// no power savings, there for we can exit
+	if (pwrMode == POWER_MODE_NO_SLEEP) return;												// no power savings, there for we can exit
 	if (!pwrTmr.done()) return;																// timer active, jump out
 	if (checkWakeupPin()) return;															// wakeup pin active
 	
@@ -70,18 +73,17 @@ void PW::poll(void) {
 	#endif
 
 
-	if (pwrMode == 1) {									// check communication on power mode 1
+	if (pwrMode == POWER_MODE_WAKEUP_ONRADIO) {												// check communication on power mode 1
 
 		tmpCCBurst = pHM->cc.detectBurst();
-
-		if ((tmpCCBurst) && (!chkCCBurst)) {			// burst detected for the first time
+		if ((tmpCCBurst) && (!chkCCBurst)) {												// burst detected for the first time
 			chkCCBurst = 1;																	// set the flag
 			
 			#ifdef PW_DBG																	// only if pw debug is set
 			dbg << '1';																		// ...and some information
 			#endif
 
-		} else if ((tmpCCBurst) && (chkCCBurst)) {		// burst detected for the second time
+		} else if ((tmpCCBurst) && (chkCCBurst)) {											// burst detected for the second time
 			chkCCBurst = 0;																	// reset the flag
 			stayAwake(500);																	// stay awake for some time to check if we receive a valid message
 
@@ -91,7 +93,7 @@ void PW::poll(void) {
 
 			return;																			// we don't want proceed further, jump out
 			
-		} else if ((!tmpCCBurst) && (chkCCBurst)) {		// secondary test was negative, reset the flag
+		} else if ((!tmpCCBurst) && (chkCCBurst)) {											// secondary test was negative, reset the flag
 			chkCCBurst = 0;																	// reset the flag
 
 			#ifdef PW_DBG																	// only if pw debug is set
@@ -106,18 +108,23 @@ void PW::poll(void) {
 
 	// start the respective watchdog timers
 	cli();
-	if ((pwrMode == 1) && (!chkCCBurst)) startWDG250ms();
-	if ((pwrMode == 1) && (chkCCBurst)) startWDG32ms();
-	if (pwrMode == 2) startWDG250ms();
-	if (pwrMode == 3) startWDG8000ms();
+	if      ((pwrMode == POWER_MODE_WAKEUP_ONRADIO) && (!chkCCBurst)) startWDG250ms();
+	else if ((pwrMode == POWER_MODE_WAKEUP_ONRADIO) && (chkCCBurst))  startWDG32ms();
+	else if  (pwrMode == POWER_MODE_WAKEUP_32MS)                      startWDG32ms();
+	else if  (pwrMode == POWER_MODE_WAKEUP_250MS)                     startWDG250ms();
+	else if  (pwrMode == POWER_MODE_WAKEUP_8000MS)                    startWDG8000ms();
 	sei();
 
 
 	setSleep();																				// call sleep function in HAL
-	// wake up will be here
-	// ---------------------
-	//
-	if (pwrMode != 4) stopWDG();															// stop the watchdog
+
+	/*************************
+	 * Wake up at this point *
+	 *************************/
+	if (pwrMode != POWER_MODE_WAKEUP_EXT_INT) {
+		stopWDG();																			// stop the watchdog
+	}
+
 	stayAwake(6);																			// stay awake for a very short time to get things done
 	
 	#ifdef PW_DBG																			// only if pw debug is set

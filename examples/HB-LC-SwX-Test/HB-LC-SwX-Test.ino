@@ -75,7 +75,7 @@ void setup() {
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(0);																		// set power management mode
+	hm.pw.setMode(POWER_MODE_NO_SLEEP);														// set power management mode
 
 	hm.bt.set(27, 1800000);		// 1800000 = 0,5h											// set battery check
 

@@ -335,7 +335,7 @@ void cmDimmer::dimPoll(void) {
 
 
 	// upDim, check if onTimer was running
-	if (l3->actionType == 4)  {
+	if (l3->actionType == 4)  {		// updim
 		modStat = l3->offLevel;
 		adjDlyPWM = 1;																		// do the adjustment in 1ms steps
 		l3->actionType = 0;																	// no further action required

@@ -70,7 +70,7 @@ void setup() {
 	hm.ld.init(2, &hm);																		// set the led
 	hm.ld.set(welcome);																		// show something
 	
-	hm.pw.setMode(1);																		// set power management mode
+	hm.pw.setMode(POWER_MODE_WAKEUP_ONRADIO);												// set power management mode
 	hm.bt.set(27, 600000);		// 3600000 = 10min.											// set battery check, internal, 2.7 reference, measurement each hour
 
 	thsens.regInHM(1, 4, &hm);																// register sensor module on channel 1, with a list4 and introduce asksin instance

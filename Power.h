@@ -11,12 +11,30 @@
 
 #include "HAL.h"
 
-// - power modes to implement -----------
-// 0 - 19.9ma; no power management
-// 1 - wake up every 250ms, check for wakeup signal on air and stay awake accordingly, timer gets updated every 250ms
-// 2 - deep sleep, wakeup every 250ms, not able to receive anything while sleeping, timer gets updated every 256ms
-// 3 - 0.04ma; deep sleep, wakeup every 8 seconds, not able to receive anything while sleeping, timer gets updated every 8192ms
-// 4 - 0.00ma; deep sleep, wakeup only on interrupt
+/*
+ * POWER_MODE_NO_SLEEP:       There is nothing to do. Devices active all time. No power savings.
+ *                            Todo: maybe set idle mode to save some energy
+ *
+ * POWER_MODE_WAKEUP_ONRADIO: Check every 250ms if there is a transmission signal
+ *                            If signal recognized, wait 50ms and check again - if it is still active
+ *                            Then wake up the device for some time. If no signal recognized, continue sleeping
+ *                            Todo: wake on radio should do the CC1101 and wake up the MC over interrupt
+ *
+ * POWER_MODE_WAKEUP_250MS:   Sleep for 250ms, wake up - check if something is to do, otherwise continue sleeping
+ *                            Communication module stays idle.
+ *
+ * POWER_MODE_WAKEUP_8000MS:  Sleep for 8000ms, wake up - check if something is to do, otherwise continue sleeping
+ *                            Communication module stays idle.
+ *
+ * POWER_MODE_WAKEUP_EXT_INT: Sleep for ever until an external interrupt was triggered.
+ */
+#define POWER_MODE_NO_SLEEP       0
+#define POWER_MODE_WAKEUP_ONRADIO 1
+#define POWER_MODE_WAKEUP_32MS    2
+#define POWER_MODE_WAKEUP_64MS    3
+#define POWER_MODE_WAKEUP_250MS   4
+#define POWER_MODE_WAKEUP_8000MS  5
+#define POWER_MODE_WAKEUP_EXT_INT 6
 
 class PW {
 	friend class AS;
