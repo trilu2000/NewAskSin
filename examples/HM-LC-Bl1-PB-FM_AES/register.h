@@ -2,6 +2,7 @@
 	#define _REGISTER_h
 
 	//- load library's --------------------------------------------------------------------------------------------------------
+	#include <AS.h>
 	#include "hardware.h"
 	#include <cmBlind.h>
 	#include "hmkey.h"
