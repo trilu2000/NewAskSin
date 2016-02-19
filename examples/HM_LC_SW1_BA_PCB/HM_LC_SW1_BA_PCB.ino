@@ -1,8 +1,8 @@
 #define SER_DBG																				// serial debug messages
 
 //- load library's --------------------------------------------------------------------------------------------------------
-#include <AS.h>																				// ask sin framework
 #include "register.h"																		// configuration sheet
+#include <AS.h>																				// ask sin framework
 
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
