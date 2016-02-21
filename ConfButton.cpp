@@ -99,7 +99,6 @@ void CB::poll(void) {
 		
 	} else if ((btn == 1) && (btnTmr.done() )) {	// button is not pressed for a longer time, check if the double flags timed out
 		//if (armFlg) dbg << "r\n";
-		if (dblLng) pHM->ld.set(nothing);
 		armFlg = lstSht = lstLng = lngRpt = dblLng = 0;
 
 	}

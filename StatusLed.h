@@ -60,8 +60,8 @@ enum ledStat {nothing, pairing, pair_suc, pair_err, send, ack, noack, bat_low, d
 		{6, 1, 0, 1, {10, 10, 50, 10, 50, 100} },
 	};
 	const struct s_blinkPattern sKeyLong[2] = {		// 10; key long indicator
-		{2, 0, 1, 0, {20, 20, } },
-		{2, 0, 1, 0, {20, 20, } },
+		{2, 6, 1, 0, {20, 20, } },
+		{2, 6, 1, 0, {20, 20, } },
 	};
 
 
