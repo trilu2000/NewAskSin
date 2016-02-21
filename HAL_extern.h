@@ -87,7 +87,7 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin) {
 	uint8_t prev = pcInt[port].prev & _BV(pin);
 
 	if ((cur == prev) || ( (getMillis() - pcInt[port].time) < DEBOUNCE )) {		// old and new bit is similar, or DEBOUNCE time is running
-		return (pcInt[port].cur & _BV(pin)) ? 1 : 0;
+		return (pcInt[port].prev & _BV(pin)) ? 1 : 0;
 	}
 
 	//if ( (getMillis() - pcInt[port].time) < DEBOUNCE ) {
@@ -96,15 +96,8 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin) {
 
 	// detect rising or falling edge
 	//dbg << pcInt[port].cur << ' ' << pcInt[port].prev << ' ';
-	if (cur) {																	// pin is 1
-		pcInt[port].prev |= _BV(pin);											// set bit bit in prev
-		//dbg << "y3\n";
-		return 3;
-	} else {																	// pin is 0
-		//dbg << "y2\n";
-		pcInt[port].prev &= ~_BV(pin);											// clear bit in prev
-		return 2;
-	}
+	pcInt[port].prev = cur;														// remind current button state for further checks
+	return cur ? 3 : 2;															// cur high? then rising (3) otherwise falling (2)
 }
 
 
@@ -135,19 +128,16 @@ void    initConfKey(void) {
 
 //- -----------------------------------------------------------------------------------------------------------------------
 ISR (PCINT0_vect) {
-	pcInt[0].prev = pcInt[0].cur;
 	pcInt[0].cur = PINB;
 	pcInt[0].time = getMillis();
 	//dbg << "i1:" << PINB  << "\n";
 }
 ISR (PCINT1_vect) {
-	pcInt[1].prev = pcInt[1].cur;
 	pcInt[1].cur = PINC;
 	pcInt[1].time = getMillis();
 	//dbg << "i2:" << PINC << "\n";
 }
 ISR (PCINT2_vect) {
-	pcInt[2].prev = pcInt[2].cur;
 	pcInt[2].cur = PIND;
 	pcInt[2].time = getMillis();
 	//dbg << "i3:" << PIND  << "\n";
