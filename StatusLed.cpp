@@ -27,9 +27,12 @@ void    LD::init(uint8_t leds, AS *ptrMain) {
 	pHM = ptrMain;
 	bLeds = leds;
 }
+
 void    LD::set(ledStat stat) {
 	if (!bLeds) return;																		// no led available, skip...
-	//dbg << "stat: " << stat << '\n';
+	#ifdef LD_DBG
+	dbg << "stat: " << stat << '\n';
+	#endif
 
 	ledRed(0);																				// new program starts, so switch leds off
 	ledGrn(0);
@@ -76,12 +79,16 @@ void	LD::poll(void) {
 	ledTmr.set(blinkPtr->pat[lCnt]*10);														// set the timer for next check up
 	if ((blinkPtr->led0) && (blinkPtr->pat[lCnt])) {
 		ledRed((lCnt % 2)^1);																	// set the led
-		//dbg << "lCnt:" << lCnt << " led0: " << ((lCnt % 2)^1) << '\n';
+		#ifdef LD_DBG
+		dbg << "lCnt:" << lCnt << " led0: " << ((lCnt % 2)^1) << '\n';
+		#endif
 	}
 	
 	if ((blinkPtr->led1) && (blinkPtr->pat[lCnt])) {
 		ledGrn((lCnt % 2)^1);
-		//dbg << "lCnt:" << lCnt  << " led1: " << ((lCnt % 2)^1) << '\n';
+		#ifdef LD_DBG
+		dbg << "lCnt:" << lCnt  << " led1: " << ((lCnt % 2)^1) << '\n';
+		#endif
 	}
 	lCnt++;																					// increase the pointer for the blink string
 
@@ -89,14 +96,17 @@ void	LD::poll(void) {
 	if (lCnt >= blinkPtr->len) {															// we are through the pattern 
 		if (blinkPtr->dur == 0) {															// we are in an endless loop
 			lCnt = 0;
-			//dbg << "lCnt 0\n";
+			#ifdef LD_DBG
+			dbg << "lCnt 0\n";
+			#endif
 		} else if (dCnt < blinkPtr->dur) {													// duration is not done
 			lCnt = 0;
 			dCnt++;
-			//dbg << "lCnt 0, dCnt++\n";
+			#ifdef LD_DBG
+			dbg << "lCnt 0, dCnt++\n";
+			#endif
 		} else {
 			set(nothing);
-
 		}
 	}
 }
