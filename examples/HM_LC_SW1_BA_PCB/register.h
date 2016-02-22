@@ -9,7 +9,7 @@
 	//- stage modules --------------------------------------------------------------------------------------------------------
 	AS hm;                                                                  // asksin framework
 
-	cmSwitch cmSwitch[1];                                                 // create instances of channel module
+	cmSwitch cmSwitch[1];													// create instances of channel module
 	extern void initRly(uint8_t channel);                                   // declare function to jump in
 	extern void switchRly(uint8_t channel, uint8_t status);                 // declare function to jump in
 
@@ -18,7 +18,7 @@
 	*/
 	const uint8_t HMSerialData[] PROGMEM = {
 		/* HMID */            0x01, 0x02, 0x06,
-		/* Serial number */   'H', 'B', 'b', 'l', 'i', 'n', 'd', '0', '0', '1',		// HBblind001
+		/* Serial number */   'H', 'B', 's', 'w', 'i', 't', 'c', 'h', '0', '1',		// HBblind001
 		/* Default-Key */     HM_DEVICE_AES_KEY,
 		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
 	};
@@ -68,9 +68,9 @@
 	*/
 	EE::s_cnlTbl cnlTbl[] = {
 		// cnl, lst, sIdx,  sLen, pAddr,  hidden
-		{ 0, 0, 0x00,  6, 0x000f, 0, },
+		{ 0, 0, 0x00,  6, 0x001f, 0, },
 		{ 1, 1, 0x00,  0, 0x0000, 0, },
-		{ 1, 3, 0x06, 22, 0x0015, 0, },
+		{ 1, 3, 0x06, 22, 0x0025, 0, },
 	};  // 21 byte
 
 	/*
