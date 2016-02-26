@@ -118,7 +118,7 @@
 	#define regPCINT(MASK,PORT)   (MASK  |= _BV(PORT))
 
 	extern void    initPCINT(void);
-	extern uint8_t chkPCINT(uint8_t port, uint8_t pin);
+	extern uint8_t chkPCINT(uint8_t port, uint8_t pin, uint8_t debounce);
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 

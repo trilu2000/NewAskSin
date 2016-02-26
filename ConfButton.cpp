@@ -38,7 +38,7 @@ void CB::poll(void) {
 	if (!scn) return;																		// mode not set, nothing to do
 	
 	// 0 for button is pressed, 1 for released, 2 for falling and 3 for rising edge
-	btn = chkPCINT(pciByte, pciBit);														// check input pin
+	btn = chkPCINT(pciByte, pciBit, 1);														// check input pin, do debouncing
 
 	if (btn == 2) {																			// button was just pressed
 		//dbg << "armed \n";
