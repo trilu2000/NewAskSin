@@ -96,8 +96,15 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin) {
 
 	// detect rising or falling edge
 	//dbg << pcInt[port].cur << ' ' << pcInt[port].prev << ' ';
-	pcInt[port].prev = cur;														// remind current button state for further checks
-	return cur ? 3 : 2;															// cur high? then rising (3) otherwise falling (2)
+	if (cur) {																	// pin is 1
+		pcInt[port].prev |= _BV(pin);											// set bit bit in prev
+		//dbg << "y3\n";
+		return 3;
+	} else {																	// pin is 0
+		//dbg << "y2\n";
+		pcInt[port].prev &= ~_BV(pin);											// clear bit in prev
+		return 2;
+	}
 }
 
 
