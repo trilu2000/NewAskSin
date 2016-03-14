@@ -16,7 +16,7 @@ uint8_t ccSendByte(uint8_t data) {
 	return SPDR;
 }
 uint8_t ccGetGDO0() {
-	uint8_t x = chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT);
+	uint8_t x = chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT, 0);							// check PCINT without debouncing
 	//if (x>1) dbg << "x:" << x << '\n';
 
 	if (x == 2 ) return 1;														// falling edge detected
@@ -80,13 +80,13 @@ void    initPCINT(void) {
 	memset((uint8_t*)pcInt, 0x00, sizeof(pcInt));
 	//dbg << "a: " << pcInt[2].cur << '\n';
 }
-uint8_t chkPCINT(uint8_t port, uint8_t pin) {
+uint8_t chkPCINT(uint8_t port, uint8_t pin, uint8_t debounce) {
 	// returns pin status while no interrupt had happened for the pin, 2 for falling and 3 for rising edge
 
 	uint8_t cur  = pcInt[port].cur  & _BV(pin);
 	uint8_t prev = pcInt[port].prev & _BV(pin);
 
-	if ((cur == prev) || ( (getMillis() - pcInt[port].time) < DEBOUNCE )) {		// old and new bit is similar, or DEBOUNCE time is running
+	if ((cur == prev) || (debounce && ((getMillis() - pcInt[port].time) < DEBOUNCE ))) {		// old and new bit is similar, or DEBOUNCE time is running
 		return (pcInt[port].prev & _BV(pin)) ? 1 : 0;
 	}
 
@@ -96,8 +96,15 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin) {
 
 	// detect rising or falling edge
 	//dbg << pcInt[port].cur << ' ' << pcInt[port].prev << ' ';
-	pcInt[port].prev = cur;														// remind current button state for further checks
-	return cur ? 3 : 2;															// cur high? then rising (3) otherwise falling (2)
+	if (cur) {																	// pin is 1
+		pcInt[port].prev |= _BV(pin);											// set bit bit in prev
+		//dbg << "y3\n";
+		return 3;
+	} else {																	// pin is 0
+		//dbg << "y2\n";
+		pcInt[port].prev &= ~_BV(pin);											// clear bit in prev
+		return 2;
+	}
 }
 
 

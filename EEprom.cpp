@@ -129,7 +129,7 @@ void     EE::init(void) {
 	uint16_t eepromCRC = 0, flashCRC = 0;												// define variable for storing crc
 	uint8_t  *p = (uint8_t*)cnlTbl;														// cast devDef to char
 
-	for (uint8_t i = 0; i < (devDef.lstNbr*6); i++) {									// step through all bytes of the channel table, one line has 6 byte
+	for (uint8_t i = 0; i < (devDef.lstNbr*sizeof(s_cnlTbl)); i++) {					// step through all bytes of the channel table
 		flashCRC = crc16(flashCRC, p[i]);												// calculate the 16bit checksum for the table
 	}
 	getEEPromBlock(0,2,(void*)&eepromCRC);												// get magic byte from eeprom
