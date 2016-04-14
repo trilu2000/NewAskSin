@@ -268,15 +268,13 @@ void AS::sendNACK_TARGET_INVALID(void) {
  */
 void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) {
 	sn.mBdy.mLen = 0x0E;
-	uint8_t cnt;
+	uint8_t cnt = sn.msgCnt++;
 
 	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) {
 		cnt = rv.mBdy.mCnt;
-	} else {
-		cnt = sn.msgCnt++;
 	}
 
-	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
+	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 	sn.mBdy.by10      = AS_INFO_ACTUATOR_STATUS;
 	sn.mBdy.by11      = channel;
 	sn.mBdy.pyLd[0]   = state;
@@ -395,7 +393,7 @@ void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
 void AS::sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *payload, uint8_t pLen) {
 	if (pLen>16) {
 		#ifdef AS_DBG
-			dbg << "AS::send_generic_event("<<cnl<<","<<burst<<",0x"<<_HEX(&mTyp,1)<<","<<len<<",...): payload exceeds maximum length of 16\n";
+			dbg << "AS::sendGenericEvent(" << channel << "," << burst << ",0x" << _HEX(&mType,1) << "," << pLen << ",...): payload exceeds max len of 16\n";
 		#endif
 		pLen = 16;
 	}
@@ -619,7 +617,7 @@ void AS::processMessage(void) {
 			processMessageConfigStatusRequest(by10);
 
 		} else {
-			processMessageConfigAESProtected(by10);
+			processMessageConfigAESProtected();
 		}
 
 	} else if (rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) {
@@ -702,22 +700,22 @@ void AS::processMessage(void) {
 			// memcmp returns 0 if compare true
 			 if (!memcmp(rv.buf+16, rv.prevBuf+1, 10)) {										// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
 				#ifdef AES_DBG
-					dbg << F("Signature check success\n");
+					dbg << F("Signature check OK\n");
 				#endif
 
-				sendAckAES(authAck);																// send AES-Ack
+				sendAckAES(authAck);															// send AES-Ack
 
 				if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
 					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
-						processMessageConfig(rv.mBdy.by10 - 1);
+						processMessageConfig();
 					} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
 						processMessageAction();
 					}
 
 				} else if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE2) {
-					setEEPromBlock(15, 16, newHmKey);													// store HMKEY
+					setEEPromBlock(15, 16, newHmKey);											// store HMKEY
 					getEEPromBlock(15, 16, HMKEY);
-					setEEPromBlock(14, 1, newHmKeyIndex);												// store used key index
+					setEEPromBlock(14, 1, newHmKeyIndex);										// store used key index
 					hmKeyIndex[0] = newHmKeyIndex[0];
 					#ifdef AES_DBG
 						dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << '\n';
@@ -728,27 +726,28 @@ void AS::processMessage(void) {
 
 			 } else {
 				#ifdef AES_DBG
-					 dbg << F("Signature check failed\n");
+					 dbg << F("Signature check FAIL\n");
 				#endif
 			}
 
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {										// AES Key Exchange
+		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {									// AES Key Exchange
 			processMessageKeyExchange();
 
 	#endif
 
-	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {													// action message
+	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {												// action message
 		#ifdef SUPPORT_AES
 
 			uint8_t aesActiveForReset = 0;
-			if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {							// device reset requested
-				aesActiveForReset = checkAnyChannelForAES();										// check if AES activated for any channel			}
+			if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {						// device reset requested
+				aesActiveForReset = checkAnyChannelForAES();									// check if AES activated for any channel			}
 			}
 
 			// check if AES for the channel active or aesActiveForReset @see above
 			if (ee.getRegAddr(rv.mBdy.by11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
-				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
+				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);										// remember this message
 				sendSignRequest();
+
 			} else {
 		#endif
 
@@ -864,7 +863,7 @@ void AS::processMessage(void) {
 		aes128_dec(rv.buf+10, &ctx);															// decrypt payload width HMKEY first time
 
 		#ifdef AES_DBG
-			dbg << F("decrypted buffer: ") << _HEX(rv.buf+10, 16) << '\n';
+			dbg << F("decrypted buf: ") << _HEX(rv.buf+10, 16) << '\n';
 		#endif
 
 		if (rv.buf[10] == 0x01) {																// the decrypted data must start with 0x01
@@ -1025,7 +1024,7 @@ inline void AS::processMessageConfigPeerListReq(void) {
 	// answer will send from sendsList(void)
 }
 
-inline void AS::processMessageConfigAESProtected(uint8_t by10) {
+inline void AS::processMessageConfigAESProtected() {
 	#ifdef SUPPORT_AES
 		uint8_t aesActive = checkAnyChannelForAES();											// check if AES activated for any channel
 		if (aesActive == 1) {
@@ -1034,7 +1033,9 @@ inline void AS::processMessageConfigAESProtected(uint8_t by10) {
 
 		} else {
 	#endif
-			processMessageConfig(by10);
+			uint8_t ackOk = processMessageConfig();
+			checkSendACK(ackOk);																// send appropriate answer
+
 	#ifdef SUPPORT_AES
 		}
 	#endif
@@ -1044,11 +1045,11 @@ inline void AS::processMessageConfigAESProtected(uint8_t by10) {
  * @brief Process all configuration messages with write actions.
  *        TODO: respect AES signing
  */
-void AS::processMessageConfig(uint8_t by10) {
+uint8_t AS::processMessageConfig() {
 	uint8_t ackOk = 1;
 
 	if (rv.mBdy.by11 == AS_CONFIG_PEER_ADD) {													// CONFIG_PEER_ADD
-		ackOk = configPeerAdd(by10);
+		ackOk = configPeerAdd(rv.mBdy.by10 -1);
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE) {											// CONFIG_PEER_REMOVE
 		ackOk = configPeerRemove();
@@ -1064,7 +1065,7 @@ void AS::processMessageConfig(uint8_t by10) {
 
 	}
 
-	checkSendACK(ackOk);																			// send appropriate answer
+	return ackOk;
 }
 
 /**

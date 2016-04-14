@@ -102,7 +102,7 @@ class AS {
 
 	uint8_t pairActive;
 
-	uint8_t keyPartIndex = 0xFF;
+	uint8_t keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 
 	uint8_t  signingRequestData[6];
 	uint8_t  tempHmKey[16];
@@ -167,13 +167,13 @@ class AS {
 	inline void processMessageKeyExchange(void);
 	uint8_t checkAnyChannelForAES(void);
 
-	void processMessageConfig(uint8_t by10);
+	uint8_t processMessageConfig();
 	inline void processMessageConfigStatusRequest(uint8_t by10);
 	inline void processMessageConfigPairSerial(void);
 	inline void processMessageConfigSerialReq(void);
 	inline void processMessageConfigParamReq(void);
 	inline void processMessageConfigPeerListReq(void);
-	inline void processMessageConfigAESProtected(uint8_t by10);
+	inline void processMessageConfigAESProtected();
 
 	inline void actionSwitchEvent();
 	inline uint8_t configPeerAdd(uint8_t by10);

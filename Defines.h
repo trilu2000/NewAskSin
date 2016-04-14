@@ -25,18 +25,18 @@
 
 // Byte 3: message types
 	#define AS_MESSAGE_DEVINFO                            0x00
-	#define AS_MESSAGE_CONFIG                             0x01
-	#define AS_MESSAGE_RESPONSE                           0x02
-	#define AS_MESSAGE_RESPONSE_AES                       0x03
-	#define AS_MESSAGE_KEY_EXCHANGE                       0x04
+	#define AS_MESSAGE_CONFIG                             0x01					// signed answer needed on request
+	#define AS_MESSAGE_RESPONSE                           0x02					// signed answer needed if byte 10 = AS_RESPONSE_AES_CHALLANGE
+	#define AS_MESSAGE_RESPONSE_AES                       0x03					// signed answer needed
+	#define AS_MESSAGE_KEY_EXCHANGE                       0x04					// signed answer needed
 	#define AS_MESSAGE_INFO                               0x10
-	#define AS_MESSAGE_ACTION                             0x11
+	#define AS_MESSAGE_ACTION                             0x11					// signed answer needed on request
 	#define AS_MESSAGE_HAVE_DATA                          0x12
-	#define AS_MESSAGE_SWITCH_EVENT                       0x3E
-	#define AS_MESSAGE_TIMESTAMP                          0x3F
-	#define AS_MESSAGE_REMOTE_EVENT                       0x40
-	#define AS_MESSAGE_SENSOR_EVENT                       0x41
-	#define AS_MESSAGE_SENSOR_DATA                        0x53
+	#define AS_MESSAGE_SWITCH_EVENT                       0x3E					// signed answer needed on request
+	#define AS_MESSAGE_TIMESTAMP                          0x3F					// signed answer needed on request
+	#define AS_MESSAGE_REMOTE_EVENT                       0x40					// signed answer needed on request
+	#define AS_MESSAGE_SENSOR_EVENT                       0x41					// signed answer needed on request
+	#define AS_MESSAGE_SENSOR_DATA                        0x53					// signed answer needed on request
 	#define AS_MESSAGE_CLIMATE_EVENT                      0x58
 	#define AS_MESSAGE_WEATHER_EVENT                      0x70
 

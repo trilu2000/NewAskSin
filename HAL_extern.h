@@ -80,9 +80,15 @@ void    initPCINT(void) {
 	memset((uint8_t*)pcInt, 0x00, sizeof(pcInt));
 	//dbg << "a: " << pcInt[2].cur << '\n';
 }
-uint8_t chkPCINT(uint8_t port, uint8_t pin, uint8_t debounce) {
-	// returns pin status while no interrupt had happened for the pin, 2 for falling and 3 for rising edge
 
+/**
+ * @brief Returns pin status while no interrupt had happened for the pin.
+ *        2 for falling and 3 for rising edge
+ *
+ * @param port
+ * @param pin
+ */
+uint8_t chkPCINT(uint8_t port, uint8_t pin, uint8_t debounce) {
 	uint8_t cur  = pcInt[port].cur  & _BV(pin);
 	uint8_t prev = pcInt[port].prev & _BV(pin);
 

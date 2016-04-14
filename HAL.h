@@ -56,8 +56,8 @@
 	#define _pgmB(x) pgm_read_byte(&x)											// short hand for PROGMEM read
 	#define _pgmW(x) pgm_read_word(&x)
 
-	#define pinOutput(PORT,PIN)  ((PORT) |=  _BV(PIN))							// pin functions
-	#define pinInput(PORT,PIN)   ((PORT) &= ~_BV(PIN))
+	#define pinOutput(DDR,PIN)   ((DDR) |=  _BV(PIN))							// pin functions
+	#define pinInput(DDR,PIN)    ((DDR) &= ~_BV(PIN))
 	#define setPinHigh(PORT,PIN) ((PORT) |=  _BV(PIN))
 	#define setPinLow(PORT,PIN)  ((PORT) &= ~_BV(PIN))
 	#define setPinCng(PORT,PIN)  ((PORT) ^= _BV(PIN))
