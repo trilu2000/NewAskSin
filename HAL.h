@@ -23,7 +23,6 @@
 
 	#include "Print.h"
 
-
 	//- MCU dependent HAL definitions -----------------------------------------------------------------------------------------
 	#if defined(__AVR_ATmega328P__)
 		#include "HAL_atmega328P.h"
@@ -33,6 +32,12 @@
 		#error "No HAL definition for current MCU available!"
 	#endif
 	//- -----------------------------------------------------------------------------------------------------------------------
+
+	struct  s_pcINT {
+		uint8_t cur;
+		uint8_t prev;
+		uint32_t time;
+	} static volatile pcInt[3];
 
 	static uint16_t wdtSleep_TIME;
 
