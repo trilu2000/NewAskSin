@@ -706,10 +706,23 @@ void AS::processMessage(void) {
 				sendAckAES(authAck);															// send AES-Ack
 
 				if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
+					memcpy(rv.buf, rv.prevBuf, rv.prevBuf[0]+1);								// restore the last received message for processing from saved buffer
+
 					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
 						processMessageConfig();
+
 					} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
-						processMessageAction();
+						processMessageAction11();
+
+					} else if (rv.mBdy.mTyp >= AS_MESSAGE_SWITCH_EVENT) {
+						// restore last digit of peerid
+						rv.peerId[3] = (rv.buf[10] & 0x3f);										// mask out long and battery low
+
+						uint8_t pIdx;
+						uint8_t cnl = getChannelFromPeerDB(&pIdx);
+						if (cnl > 0) {
+							processMessageAction3E(cnl, pIdx);
+						}
 					}
 
 				} else if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE2) {
@@ -728,6 +741,9 @@ void AS::processMessage(void) {
 				#ifdef AES_DBG
 					 dbg << F("Signature check FAIL\n");
 				#endif
+
+				// ToDo: Check if needed.
+				sendNACK();
 			}
 
 		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {									// AES Key Exchange
@@ -751,21 +767,21 @@ void AS::processMessage(void) {
 			} else {
 		#endif
 
-			processMessageAction();
-			if (rv.ackRq) {
-				if (ee.getRegListIdx(1,3) == 0xFF) {
-					sendACK();
-				} else {
-					uint8_t channel = rv.mBdy.by11;
-					if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {
-						channel = 1;
-					}
-					sendACK_STATUS(channel, 0, 0);
-					if (resetStatus == 1) {
-						resetStatus = 2;
+				processMessageAction11();
+				if (rv.ackRq) {
+					if (ee.getRegListIdx(1,3) == 0xFF) {
+						sendACK();
+					} else {
+						uint8_t channel = rv.mBdy.by11;
+						if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {
+							channel = 1;
+						}
+						sendACK_STATUS(channel, 0, 0);
+						if (resetStatus == 1) {
+							resetStatus = 2;
+						}
 					}
 				}
-			}
 
 		#ifdef SUPPORT_AES
 			}
@@ -792,46 +808,62 @@ void AS::processMessage(void) {
 		 * 				CHANNEL  => "08,2",
 		 * 				COUNTER  => "10,2", } },
 		 */
-		uint8_t cnl = 0;
+
 		uint8_t pIdx;
-		uint8_t tmp;
-
-		// check if we have the peer in the database to get the channel
-		if ((rv.mBdy.mTyp == AS_MESSAGE_SWITCH_EVENT) && (rv.mBdy.mLen == 0x0F)) {
-			tmp = rv.buf[13];																// save byte13, because we will replace it
-			rv.buf[13] = rv.buf[14];														// copy the channel byte to the peer
-			cnl = ee.isPeerValid(rv.buf+10);												// check with the right part of the string
-			if (cnl) {
-				pIdx = ee.getIdxByPeer(cnl, rv.buf+10);										// get the index of the respective peer in the channel store
-			}
-			rv.buf[13] = tmp;																// get it back
-
-		} else {
-			cnl = ee.isPeerValid(rv.peerId);
-			if (cnl) pIdx = ee.getIdxByPeer(cnl, rv.peerId);								// get the index of the respective peer in the channel store
-
-		}
+		uint8_t cnl = getChannelFromPeerDB(&pIdx);
 
 		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rv.mBdy.mTyp) << " by10: " << _HEXB(rv.mBdy.by10)  << " by11: " << _HEXB(rv.mBdy.by11) << " data: " << _HEX((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
 
 		if (cnl > 0) {
-			// check if a module is registered and send the information, otherwise report an empty status
-			if (modTbl[cnl-1].cnl) {
+			#ifdef SUPPORT_AES
+				// check if AES for the channel active or aesActiveForReset @see above
+				if (ee.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
+					memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);										// remember this message
+					sendSignRequest();
 
-				//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
-				ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);			// get list3 or list4 loaded into the user module
+				} else {
+			#endif
 
-				// call the user module
-				modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
+					processMessageAction3E(cnl, pIdx);
 
-			} else {
-				sendACK();
-
-			}
+			#ifdef SUPPORT_AES
+				}
+			#endif
 		}
 
 	}
 
+}
+
+/*
+ * @brief get peered channel from peer db.
+ *
+ * @param pIdx must be a variable to receive the peer index
+ *
+ * @return channel number
+ */
+uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
+	uint8_t cnl = 0;
+	uint8_t tmp;
+
+	// check if we have the peer in the database to get the channel
+	if ((rv.mBdy.mTyp == AS_MESSAGE_SWITCH_EVENT) && (rv.mBdy.mLen == 0x0F)) {
+		tmp = rv.buf[13];																	// save byte13, because we will replace it
+		rv.buf[13] = rv.buf[14];															// copy the channel byte to the peer
+		cnl = ee.isPeerValid(rv.buf+10);													// check with the right part of the string
+		if (cnl) {
+			*pIdx = ee.getIdxByPeer(cnl, rv.buf+10);											// get the index of the respective peer in the channel store
+		}
+		rv.buf[13] = tmp;																	// get it back
+
+	} else {
+		cnl = ee.isPeerValid(rv.peerId);
+		if (cnl) {
+			*pIdx = ee.getIdxByPeer(cnl, rv.peerId);									// get the index of the respective peer in the channel store
+		}
+	}
+
+	return cnl;
 }
 
 #ifdef SUPPORT_AES
@@ -1179,10 +1211,9 @@ inline void AS::configEnd() {
 }
 
 /**
- * @brief Process all action messages
- *        TODO: respect AES signing
+ * @brief Process all action (11) messages
  */
-void AS::processMessageAction() {
+void AS::processMessageAction11() {
 	if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {							// RESET
 		/*
 		 * Message description:
@@ -1202,6 +1233,25 @@ void AS::processMessageAction() {
 		if (modTbl[rv.mBdy.by11-1].cnl) {
 			modTbl[rv.mBdy.by11-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
 		}
+	}
+}
+
+/**
+ * @brief Process all action (3E, 3F, 40, 41, ...) messages
+ */
+void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
+	// check if a module is registered and send the information, otherwise report an empty status
+	if (modTbl[cnl-1].cnl) {
+
+		//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
+		ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);		// get list3 or list4 loaded into the user module
+
+		// call the user module
+		modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
+
+	} else {
+		sendACK();
+
 	}
 }
 
