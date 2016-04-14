@@ -2,15 +2,16 @@
 	#define _REGISTER_h
 
 	//- load library's --------------------------------------------------------------------------------------------------------
-	#include <AS.h>
 	#include "hardware.h"
-	#include <cmBlind.h>
+	#include "cmMyBlind.h"
 	#include "hmkey.h"
 
 	AS hm;																			// asksin framework
-	cmBlind cmBlind[1];																// create 1 instances of channel module
+	cmMyBlind cmMyBlind[1];															// create 1 instances of channel module
 	extern void initBlind(uint8_t channel);											// declare function to jump in
-	extern void blindUpdateState(uint8_t channel, uint8_t state);					// declare function to jump in
+	extern void blindUpdateState(uint8_t channel, uint8_t state, uint32_t rrttb);	// declare function to jump in
+
+	uint8_t  initialPos = 200;														// initial position of blind
 
 	/*
 	 * HMID, Serial number, HM-Default-Key, Key-Index
@@ -18,6 +19,7 @@
 	const uint8_t HMSerialData[] PROGMEM = {
 		/* HMID */            0x01, 0x02, 0x06,
 		/* Serial number */   'H', 'B', 'b', 'l', 'i', 'n', 'd', '0', '0', '1',		// HBblind001
+
 		/* Default-Key */     HM_DEVICE_AES_KEY,
 		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
 	};
@@ -37,7 +39,7 @@
 	 */
 	const uint8_t devIdnt[] PROGMEM = {
 		/* firmwareVersion 1 byte */  0x24,
-		/* modelID         2 byte */  0x00, 0x53,			// HM-LC-Bl1-PB-FM
+		/* modelID         2 byte */  0x00, 0x53,									// HM-LC-Bl1-PB-FM
 		/* subTypeID       1 byte */  0x30,
 		/* deviceInfo      3 byte */  0x01, 0x01, 0x00,
 	};
@@ -111,7 +113,7 @@
 		 */
 
 		// init the homematic framework
-		hm.confButton.config(1, CONFIG_KEY_PCIE, CONFIG_KEY_INT);					// configure the config button, mode, pci byte and pci bit
+		hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);					// configure the config button, mode, pci byte and pci bit
 
 		hm.ld.init(2, &hm);															// configure the led
 		hm.ld.set(welcome);															// show a "hello" at the led
@@ -120,8 +122,8 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);											// set power management mode
 
 		// register user modules
-		cmBlind[0].regInHM(1, 3, &hm);												// register user module
-		cmBlind[0].config(&initBlind, &blindUpdateState);							// configure user module
+		cmMyBlind[0].regInHM(1, 3, &hm);											// register user module
+		cmMyBlind[0].config(&initBlind, &blindUpdateState, initialPos);				// configure user module
 	}
 
 	/**

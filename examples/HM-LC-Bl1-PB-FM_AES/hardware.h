@@ -11,16 +11,19 @@
 #ifndef _HARDWARE_h
 	#define _HARDWARE_h
 
-	#define DEBOUNCE                   5										// input debounce time in ms - 5 seems to be a good value
+	#define DEBOUNCE                   10										// input debounce time in ms - 5 seems to be a good value
+	#define USE_OWN_ISR_PCINT1_vect    1
 
 	#if defined(__AVR_ATmega328P__)
+		#define ADDRESS_SECTION_START   0x7FF0									// Start address of device data in address section at and of bootloader
+
 		//- cc1100 hardware CS and GDO0 definitions -------------------------------------------------------------------
 		#define CC_CS_DDR              DDRB										// SPI chip select definition
 		#define CC_CS_PORT             PORTB
 		#define CC_CS_PIN              PORTB2
 
 		#define CC_GDO0_DDR            DDRD										// GDO0 pin, signals received data
-		#define CC_GDO0_PIN            PORTB2
+		#define CC_GDO0_PIN            PORTD2
 
 		#define CC_GDO0_PCICR          PCICR									// GDO0 interrupt register
 		#define CC_GDO0_PCIE           PCIE2
@@ -34,7 +37,7 @@
 
 		#define LED_GRN_DDR            DDRD
 		#define LED_GRN_PORT           PORTD
-		#define LED_GRN_PIN            PORTD4
+		#define LED_GRN_PIN            PORTD5
 
 		#define LED_ACTIVE_LOW         0										// leds connected to GND = 0, VCC = 1
 
@@ -56,6 +59,21 @@
 		#define BATT_MEASURE_DDR       DDRC										// define battery measure pin, where ADC gets the measurement
 		#define BATT_MEASURE_PORT      PORTC
 		#define BATT_MEASURE_PIN       PORTC1
+
+		#define SW_IMPULSE_DDR         DDRC										// Data direction register for impulse switch
+		#define SW_IMPULSE_PORT        PORTC									// Port for for impulse switch
+		#define SW_IMPULSE_PIN         PINC3									// (PCINT11) Pin for for impulse switch
+		#define SW_IMPULSE_PCIE        PCIE1									// pin change interrupt enable register for impulse switch
+		#define SW_IMPULSE_PCMSK       PCMSK1									// Pin change mask register for impulse switch
+		#define SW_IMPULSE_INT         PCINT11									// Pin change interrupt
+
+		#define SW_END_DDR             DDRC										// Data direction register for end switch
+		#define SW_END_PORT            PORTC									// Port for end switch
+		#define SW_END_PIN             PINC2									// (PCINT10) Pin for end switch
+		#define SW_END_PCICR           PCICR									// Pin change interrupt control register for end switch
+		#define SW_END_PCIE            PCIE1									// Pin change interrupt enable register for end switch
+		#define SW_END_PCMSK           PCMSK1									// Pin change mask register for end switch
+		#define SW_END_INT             PCINT10									// Pin change interrupt
 	#endif
 
 #endif
