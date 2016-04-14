@@ -111,12 +111,12 @@ void PW::poll(void) {
 	if      ((pwrMode == POWER_MODE_WAKEUP_ONRADIO) && (!chkCCBurst)) startWDG250ms();
 	else if ((pwrMode == POWER_MODE_WAKEUP_ONRADIO) && (chkCCBurst))  startWDG32ms();
 	else if  (pwrMode == POWER_MODE_WAKEUP_32MS)                      startWDG32ms();
+//	else if  (pwrMode == POWER_MODE_WAKEUP_64MS)                      startWDG64ms();
 	else if  (pwrMode == POWER_MODE_WAKEUP_250MS)                     startWDG250ms();
 	else if  (pwrMode == POWER_MODE_WAKEUP_8000MS)                    startWDG8000ms();
 
 	// todo: move sei() to setSleep() before sleep_cpu();
 	sei();
-
 
 	setSleep();																				// call sleep function in HAL
 
