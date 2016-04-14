@@ -146,6 +146,7 @@
 
 	//- power management functions --------------------------------------------------------------------------------------------
 	extern void    startWDG32ms(void);
+	extern void    startWDG64ms(void);
 	extern void    startWDG250ms(void);
 	extern void    startWDG8000ms(void);
 	extern void    setSleep(void);

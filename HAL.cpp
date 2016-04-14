@@ -33,6 +33,11 @@ void    startWDG32ms(void) {
 	WDTCSR = (1<<WDIE) | (1<<WDP0);
 	wdtSleep_TIME = 32;
 }
+void    startWDG64ms(void) {
+	WDTCSR |= (1<<WDCE) | (1<<WDE);
+	WDTCSR = (1<<WDIE) | (1<<WDP1);
+	wdtSleep_TIME = 64;
+}
 void    startWDG250ms(void) {
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = (1<<WDIE) | (1<<WDP2);
