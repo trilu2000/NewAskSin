@@ -114,7 +114,7 @@ void AS::poll(void) {
 	// check if we could go to standby
 	pw.poll();																				// poll the power management
 
-	if (resetStatus > 1) {
+	if (resetStatus) {
 		deviceReset();
 	}
 }
@@ -757,7 +757,7 @@ void AS::processMessage(void) {
 				aesActiveForReset = checkAnyChannelForAES();									// check if AES activated for any channel			}
 			}
 
-			// check if AES for the channel active or aesActiveForReset @see above
+			// check if AES for the current channel active or aesActiveForReset @see above
 			if (ee.getRegAddr(rv.mBdy.by11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
 				sendSignRequest(1);
 
@@ -774,9 +774,6 @@ void AS::processMessage(void) {
 							channel = 1;
 						}
 						sendACK_STATUS(channel, 0, 0);
-						if (resetStatus == 1) {
-							resetStatus = 2;
-						}
 					}
 				}
 
@@ -813,7 +810,7 @@ void AS::processMessage(void) {
 
 		if (cnl > 0) {
 			#ifdef SUPPORT_AES
-				// check if AES for the channel active or aesActiveForReset @see above
+				// check if AES for the current channel active
 				if (ee.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
 					sendSignRequest(1);
 
