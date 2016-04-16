@@ -318,8 +318,6 @@ inline uint8_t  EE::isPairValid (uint8_t *reID) {
 	return (!memcmp(reID, MAID, 3));
 }
 inline uint8_t  EE::isBroadCast(uint8_t *toID) {
-	//uint8_t zero[3] = {0,0,0};
-	//return mycmp(toID, zero, 3);
 	return isEmpty(toID, 3);
 }
 uint8_t  EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {

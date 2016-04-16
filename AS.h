@@ -206,7 +206,7 @@ class AS {
 	void makeTmpKey(uint8_t *challenge);
 	void payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc);
 
-	void sendSignRequest(void);
+	void sendSignRequest(uint8_t rememberBuffer);
 
 	inline void initRandomSeed();
 	

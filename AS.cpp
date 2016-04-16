@@ -759,9 +759,7 @@ void AS::processMessage(void) {
 
 			// check if AES for the channel active or aesActiveForReset @see above
 			if (ee.getRegAddr(rv.mBdy.by11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
-				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);										// remember this message
-				rv.prevBufUsed = 1;
-				sendSignRequest();
+				sendSignRequest(1);
 
 			} else {
 		#endif
@@ -817,9 +815,7 @@ void AS::processMessage(void) {
 			#ifdef SUPPORT_AES
 				// check if AES for the channel active or aesActiveForReset @see above
 				if (ee.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
-					memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);										// remember this message
-					rv.prevBufUsed = 1;
-					sendSignRequest();
+					sendSignRequest(1);
 
 				} else {
 			#endif
@@ -911,7 +907,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << '\n';
 			#endif
 
-			sendSignRequest();
+			sendSignRequest(0);
 
 		} else {
 			keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
@@ -1061,9 +1057,7 @@ inline void AS::processMessageConfigAESProtected() {
 	#ifdef SUPPORT_AES
 		uint8_t aesActive = checkAnyChannelForAES();											// check if AES activated for any channel
 		if (aesActive == 1) {
-			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
-			rv.prevBufUsed = 1;
-			sendSignRequest();
+			sendSignRequest(1);
 
 		} else {
 	#endif
@@ -1561,13 +1555,20 @@ void AS::encode(uint8_t *buf) {
 	/**
 	 * @brief Send sign request to receiver
 	 *
+	 * @param rememberBuffer   set to 1 to force remember the current message for later processing
+	 *
 	 * Message description:
 	 *             Sender__ Receiver SigningRequest Challenge         KeyIndex
 	 * 11 24 80 02 1F B7 4A 63 19 63 04             XX XX XX XX XX XX 00
 	 *
 	 * The Challenge consists 6 random bytes.
 	 */
-	void AS::sendSignRequest(void) {
+	void AS::sendSignRequest(uint8_t rememberBuffer) {
+		if (rememberBuffer) {
+			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);										// remember the message from buffer
+			rv.prevBufUsed = 1;
+		}
+
 		sn.mBdy.mLen      = 0x11;
 		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;										// AES Challenge
