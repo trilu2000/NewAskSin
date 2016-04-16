@@ -31,16 +31,21 @@ void	RV::poll(void) {
 
 	if (this->bufLen > 10) {																// create search string for peer
 		memcpy(this->peerId, this->mBdy.reID, 3);
-		this->peerId[3] = (this->buf[10] & 0x3f);											// mask out long and battery low
+
+		uint8_t buf10 = this->buf[10];
+		if (this->prevBufUsed) {
+			buf10 = this->prevBuf[10];														// only if AES active, we must get buf[10] from prevBuf[10]
+		}
+		this->peerId[3] = (buf10 & 0x3f);													// mask out long and battery low
 	}
-	
+
 	uint8_t bIntend = pHM->ee.getIntend(this->mBdy.reID,this->mBdy.toID, this->peerId);		// get the intend of the message
 
 	// some debugs
 	#ifdef RV_DBG																			// only if AS debug is set
 		dbg << (char)bIntend << F("> ") << _HEX(this->buf, this->bufLen) << ' ' << _TIME << '\n';
 	#endif
-	
+
 	#ifdef RV_DBG_EX																		// only if extended AS debug is set
 		pHM->explainMessage(this->buf);
 	#endif

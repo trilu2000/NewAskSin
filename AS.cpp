@@ -707,6 +707,7 @@ void AS::processMessage(void) {
 
 				if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
 					memcpy(rv.buf, rv.prevBuf, rv.prevBuf[0]+1);								// restore the last received message for processing from saved buffer
+					rv.prevBufUsed = 0;
 
 					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
 						processMessageConfig();
@@ -715,9 +716,6 @@ void AS::processMessage(void) {
 						processMessageAction11();
 
 					} else if (rv.mBdy.mTyp >= AS_MESSAGE_SWITCH_EVENT) {
-						// restore last digit of peerid
-						rv.peerId[3] = (rv.buf[10] & 0x3f);										// mask out long and battery low
-
 						uint8_t pIdx;
 						uint8_t cnl = getChannelFromPeerDB(&pIdx);
 						if (cnl > 0) {
@@ -762,6 +760,7 @@ void AS::processMessage(void) {
 			// check if AES for the channel active or aesActiveForReset @see above
 			if (ee.getRegAddr(rv.mBdy.by11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
 				memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);										// remember this message
+				rv.prevBufUsed = 1;
 				sendSignRequest();
 
 			} else {
@@ -819,6 +818,7 @@ void AS::processMessage(void) {
 				// check if AES for the channel active or aesActiveForReset @see above
 				if (ee.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
 					memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);										// remember this message
+					rv.prevBufUsed = 1;
 					sendSignRequest();
 
 				} else {
@@ -890,6 +890,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	 */
 	inline void AS::processMessageKeyExchange(void) {
 		memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);												// remember this message
+//		rv.prevBufUsed = 1;																		// ToDo: check if we need this here
 
 		aes128_init(HMKEY, &ctx);																// load HMKEY
 		aes128_dec(rv.buf+10, &ctx);															// decrypt payload width HMKEY first time
@@ -1061,6 +1062,7 @@ inline void AS::processMessageConfigAESProtected() {
 		uint8_t aesActive = checkAnyChannelForAES();											// check if AES activated for any channel
 		if (aesActive == 1) {
 			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember this message
+			rv.prevBufUsed = 1;
 			sendSignRequest();
 
 		} else {
