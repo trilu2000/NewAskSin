@@ -163,7 +163,7 @@ void   cmMyBlind::stateMachine_poll(uint8_t keyCode, uint8_t keyCount, uint8_t s
 		return;
 	}
 
-	//	#ifdef CM_BLIND_DBG
+	#ifdef CM_BLIND_DBG
 		debugActionType(l3->ACTION_TYPE);
 		dbg << F(", curState: ");
 		debugState(curState);
@@ -171,7 +171,7 @@ void   cmMyBlind::stateMachine_poll(uint8_t keyCode, uint8_t keyCount, uint8_t s
 		debugState(nxtState);
 
 		dbg << '\n';
-	//	#endif
+	#endif
 
 	curState = nxtState;																	// remember the current status
 	curStateCount = 0;
@@ -360,7 +360,9 @@ uint8_t cmMyBlind::stateMachine_setNextState(uint8_t curState) {
 		nextState = l3->JT_RAMPOFF;
 	}
 
-	dbg << "curState: " << curState  << ", nextState: " << nextState << '\n';
+	#ifdef CM_BLIND_DBG
+		dbg << "curState: " << curState  << ", nextState: " << nextState << '\n';
+	#endif
 
 	return nextState;
 }
@@ -377,7 +379,9 @@ inline void cmMyBlind::updateState(void) {
 //	}
 
 	if (motorValue != motorValueOld) {
-		dbg << F("motorState: ") << motorState << F(", motorValue: ") << motorValue << '\n';
+		#ifdef CM_BLIND_DBG
+			dbg << F("motorState: ") << motorState << F(", motorValue: ") << motorValue << '\n';
+		#endif
 		//	fUpdateState(regCnl, setState);															// set accordingly
 		motorValueOld = motorValue;
 	}
@@ -494,15 +498,17 @@ inline void cmMyBlind::setToggle(void) {
  * @brief it's only for information purpose if channel config was changed (List0/1 or List3/4)
  */
 void cmMyBlind::configCngEvent(void) {
-//	#ifdef CM_BLIND_DBG
+	#ifdef CM_BLIND_DBG
 		dbg << F("Channel config changed, lst1: ") << _HEX(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
-//	#endif
+	#endif
 
 	modReferenceTimeTopBottom = (uint32_t)GET_2_BYTE_VALUE(lstCnl.REFERENCE_RUNNING_TIME_TOP_BOTTOM) * 100;
 	modReferenceTimeBottomTop = (uint32_t)GET_2_BYTE_VALUE(lstCnl.REFERENCE_RUNNING_TIME_BOTTOM_TOP) * 100;
 
-	dbg << F("modReferenceTimeTopBottom: ") << modReferenceTimeTopBottom << '\n';
-	dbg << F("modReferenceTimeBottomTop: ") << modReferenceTimeBottomTop << '\n';
+	#ifdef CM_BLIND_DBG
+		dbg << F("modReferenceTimeTopBottom: ") << modReferenceTimeTopBottom << '\n';
+		dbg << F("modReferenceTimeBottomTop: ") << modReferenceTimeBottomTop << '\n';
+	#endif
 
 	msgDelay = lstCnl.STATUSINFO_MINDELAY * 500;									// get message delay
 

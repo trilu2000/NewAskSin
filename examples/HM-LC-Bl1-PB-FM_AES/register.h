@@ -6,12 +6,18 @@
 	#include "cmMyBlind.h"
 	#include "hmkey.h"
 
+	#define EEVARS_EEPROM_ADDR    0x03FB
+
+	struct s_eeVars {
+		uint8_t initialPos;														// initialPos:         byte 1020 in eeprom
+		uint8_t motorLastDirection;												// motorLastDirection: byte 1021 in eeprom
+		int16_t travelCount;													// travelCount:        bytes 1022-1023 in eeprom
+	} eeVars;
+
 	AS hm;																			// asksin framework
 	cmMyBlind cmMyBlind[1];															// create 1 instances of channel module
 	extern void initBlind(uint8_t channel);											// declare function to jump in
 	extern void blindUpdateState(uint8_t channel, uint8_t state, uint32_t rrttb);	// declare function to jump in
-
-	uint8_t  initialPos = 200;														// initial position of blind
 
 	/*
 	 * HMID, Serial number, HM-Default-Key, Key-Index
@@ -123,7 +129,7 @@
 
 		// register user modules
 		cmMyBlind[0].regInHM(1, 3, &hm);											// register user module
-		cmMyBlind[0].config(&initBlind, &blindUpdateState, initialPos);				// configure user module
+		cmMyBlind[0].config(&initBlind, &blindUpdateState, eeVars.initialPos);		// configure user module
 	}
 
 	/**

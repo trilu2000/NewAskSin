@@ -61,7 +61,7 @@
 		#define BATT_MEASURE_PIN       PORTC1
 
 		#define SW_IMPULSE_DDR         DDRC										// Data direction register for impulse switch
-		#define SW_IMPULSE_PORT        PORTC									// Port for for impulse switch
+		#define SW_IMPULSE_PORT        PORTC									// Port for impulse switch
 		#define SW_IMPULSE_PIN         PINC3									// (PCINT11) Pin for for impulse switch
 		#define SW_IMPULSE_PCIE        PCIE1									// pin change interrupt enable register for impulse switch
 		#define SW_IMPULSE_PCMSK       PCMSK1									// Pin change mask register for impulse switch
@@ -74,6 +74,14 @@
 		#define SW_END_PCIE            PCIE1									// Pin change interrupt enable register for end switch
 		#define SW_END_PCMSK           PCMSK1									// Pin change mask register for end switch
 		#define SW_END_INT             PCINT10									// Pin change interrupt
+
+		#define MOTOR_CTRL1_DDR        DDRC										// Data direction register for MOTOR_CTRL1
+		#define MOTOR_CTRL1_PORT       PORTC									// Port for MOTOR_CTRL1
+		#define MOTOR_CTRL1_PIN        PINC1									// Pin for MOTOR_CTRL1
+
+		#define MOTOR_CTRL2_DDR        DDRC										// Data direction register for MOTOR_CTRL2
+		#define MOTOR_CTRL2_PORT       PORTC									// Port for MOTOR_CTRL2
+		#define MOTOR_CTRL2_PIN        PINC0									// Pin for MOTOR_CTRL2
 	#endif
 
 #endif
