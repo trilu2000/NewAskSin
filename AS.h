@@ -155,7 +155,7 @@ class AS {
 	void processMessageConfigAction(uint8_t by10, uint8_t cnl1);
 	void processMessageAction11();
 	void processMessageAction3E(uint8_t cnl, uint8_t pIdx);
-	void deviceReset(void);
+	void deviceReset(uint8_t clearEeprom);
 
 	uint8_t getChannelFromPeerDB(uint8_t *pIdx);
 

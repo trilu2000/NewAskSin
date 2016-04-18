@@ -6,6 +6,9 @@
 #ifndef _DEFINES_H
 	#define _DEFINES_H
 
+	#define AS_RESET                                      1
+	#define AS_RESET_CLEAR_EEPROM                         2
+
 	// Register list0 values
 	#define AS_REG_L0_INTERNAL_KEYS_VISIBLE               0x02
 	#define AS_REG_L0_HMKEY_1                             0x0A
@@ -76,6 +79,7 @@
 	#define AS_ACTION_LEDALL                              0x81
 	#define AS_ACTION_LEVEL                               0x81
 	#define AS_ACTION_SLEEPMODE                           0x82
+	#define AS_ACTION_ENTER_BOOTLOADER                    0xCA
 
 	#define AS_BUTTON_BYTE_KEY_BITS                       0b00111111
 	#define AS_BUTTON_BYTE_LONGPRESS_BIT                  0b01000000

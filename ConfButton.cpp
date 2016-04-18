@@ -145,7 +145,7 @@ void CB::outSignal(uint8_t mode) {
 		uint8_t localResDis = pHM->ee.getRegAddr(0,0,0,0x18);								// get register address
 		//dbg << "x:" << localResDis <<'\n';
 		if (!localResDis) {																	// if local reset is not disabled, reset
-			pHM->deviceReset();
+			pHM->deviceReset(AS_RESET_CLEAR_EEPROM);
 		}
 	}
 }

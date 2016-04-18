@@ -83,6 +83,10 @@ void AS::poll(void) {
 	if (rv.hasData) rv.poll();																// check if there is something in the received buffer
 	if (sn.active) sn.poll();																// check if there is something to send
 
+	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
+		deviceReset(resetStatus);
+	}
+
 	// handle the slice send functions
 	if (stcSlice.active) {
 		sendSliceList();																	// poll the slice list send function
@@ -113,10 +117,6 @@ void AS::poll(void) {
 		
 	// check if we could go to standby
 	pw.poll();																				// poll the power management
-
-	if (resetStatus) {
-		deviceReset();
-	}
 }
 
 /**
@@ -765,8 +765,8 @@ void AS::processMessage(void) {
 		#endif
 
 				processMessageAction11();
-				if (rv.ackRq) {
-					if (ee.getRegListIdx(1,3) == 0xFF) {
+				if (rv.ackRq || resetStatus == AS_RESET) {
+					if (ee.getRegListIdx(1,3) == 0xFF || resetStatus == AS_RESET) {
 						sendACK();
 					} else {
 						uint8_t channel = rv.mBdy.by11;
@@ -1213,7 +1213,17 @@ void AS::processMessageAction11() {
 		 *             Sender__ Receiver
 		 * 0B 1C B0 11 63 19 63 1F B7 4A 04 00
 		 */
-		resetStatus = 1;																	// schedule a device reset
+		resetStatus = AS_RESET_CLEAR_EEPROM;												// schedule a device reset with clear eeprom
+
+	} else if (rv.mBdy.by10 == AS_ACTION_ENTER_BOOTLOADER) {								// We should enter the Bootloader
+		dbg << "AS_ACTION_ENTER_BOOTLOADER\n";
+		/*
+		 * Message description:
+		 *             Sender__ Receiver
+		 * 0B 1C B0 11 63 19 63 1F B7 4A CA
+		 */
+		resetStatus = AS_RESET;																// schedule a device reset without eeprom
+		rv.ackRq = 1;
 
 	} else {
 		/*
@@ -1253,14 +1263,16 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
  *        Set all register to default 0x00, reset HMKEY, reset device via watchdog,
  *        and so on.
  */
-void AS::deviceReset(void) {
-	ee.clearPeers();
-	ee.clearRegs();
-	ee.getMasterID();
+void AS::deviceReset(uint8_t clearEeprom) {
+	if (clearEeprom == AS_RESET_CLEAR_EEPROM) {
+		ee.clearPeers();
+		ee.clearRegs();
+		ee.getMasterID();
 
-	#ifdef SUPPORT_AES
-		ee.initHMKEY();
-	#endif
+		#ifdef SUPPORT_AES
+			ee.initHMKEY();
+		#endif
+	}
 
 	#ifdef WDT_RESET_ON_RESET
 		wdt_enable(WDTO_15MS);														// configure the watchdog so the reset sould trigger in 15ms
@@ -1514,6 +1526,9 @@ void AS::encode(uint8_t *buf) {
 
 		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_SLEEPMODE)) {
 			dbg << F("SLEEPMODE; cnl: ") << _HEXB(buf[11]) << F(", mode: ") << _HEXB(buf[12]);
+
+		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_ENTER_BOOTLOADER)) {
+			dbg << F("ENTER_BOOTLOADER;");
 
 		} else if ((buf[3] == AS_MESSAGE_HAVE_DATA)) {
 			dbg << F("HAVE_DATA");
