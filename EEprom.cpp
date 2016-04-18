@@ -137,7 +137,7 @@ uint8_t  EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
 }
 
 uint32_t EE::getHMID(void) {
-	uint8_t a[3];
+	uint8_t a[4];
 	a[0] = HMID[2];
 	a[1] = HMID[1];
 	a[2] = HMID[0];

@@ -1187,7 +1187,7 @@ inline void AS::configEnd() {
 
 		if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {											// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 			uint8_t maIdFlag = 0;
-			for (uint8_t i = 0; i < (rv.buf[0]+1-11); i+=2) {
+			for (uint8_t i = 0; i < (rv.buf[0]+1-12); i+=2) {
 				if (rv.buf[12+i] == 0x0A) maIdFlag = 1;
 				#ifdef AS_DBG
 					dbg << "x" << i << " :" << _HEXB(rv.buf[12+i]) << '\n';
