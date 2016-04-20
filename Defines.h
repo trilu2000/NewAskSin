@@ -13,7 +13,7 @@
 	#define AS_REG_L0_INTERNAL_KEYS_VISIBLE               0x02
 	#define AS_REG_L0_HMKEY_1                             0x0A
 	#define AS_REG_L0_HMKEY_2                             0x0B
-	#define AS_REG_L0_HMKEY_2                             0x0C
+	#define AS_REG_L0_HMKEY_3                             0x0C
 	#define AS_REG_L0_CONF_BUTTON_TIME                    0x15
 	#define AS_REG_L0_LOCAL_RESET_DISABLE                 0x18
 
