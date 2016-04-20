@@ -96,8 +96,9 @@ class AS {
 	} stcPeer;
 
 	struct s_l4_0x01 {
-		uint8_t  peerNeedsBurst;			// 0x01, s:0, e:1
-		uint8_t  expectAES;					// 0x01, s:7, e:8
+		uint8_t  peerNeedsBurst:1;			// 0x01, s:0, e:1
+		uint8_t  :6;
+		uint8_t  expectAES:1;				// 0x01, s:7, e:8
 	} l4_0x01;
 
 	uint8_t pairActive;
