@@ -78,6 +78,7 @@ void    initPCINT(void) {
  *
  * @param port
  * @param pin
+ * @param debounce: when true (1) then wait DEBOUNCE time before returning new status
  */
 uint8_t chkPCINT(uint8_t port, uint8_t pin, uint8_t debounce) {
 	uint8_t cur  = pcInt[port].cur  & _BV(pin);
@@ -134,7 +135,7 @@ void    initConfKey(void) {
 
 #ifndef USE_OWN_ISR_PCINT0_vect
 	ISR (PCINT0_vect) {
-		pcInt[0].prev = pcInt[0].cur;
+	//	pcInt[0].prev = pcInt[0].cur;
 		pcInt[0].cur = PINB;
 		pcInt[0].time = getMillis();
 	//	dbg << "i1:" << PINB  << "\n";
@@ -143,7 +144,7 @@ void    initConfKey(void) {
 
 #ifndef USE_OWN_ISR_PCINT1_vect
 	ISR (PCINT1_vect) {
-		pcInt[1].prev = pcInt[1].cur;
+	//	pcInt[1].prev = pcInt[1].cur;
 		pcInt[1].cur = PINC;
 		pcInt[1].time = getMillis();
 
@@ -153,7 +154,7 @@ void    initConfKey(void) {
 
 #ifndef USE_OWN_ISR_PCINT2_vect
 	ISR (PCINT2_vect) {
-		pcInt[2].prev = pcInt[2].cur;
+	//	pcInt[2].prev = pcInt[2].cur;
 		pcInt[2].cur = PIND;
 		pcInt[2].time = getMillis();
 	//	dbg << "i3:" << PIND  << "\n";
