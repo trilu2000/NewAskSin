@@ -4,22 +4,23 @@
 	//- load libraries -------------------------------------------------------------------------------------------------------
 	#include <AS.h>
 	#include "hardware.h"                                                   // hardware definition
-	#include <cmSwitch.h>
+	#include <cmKey.h>
 	#include "hmkey.h"
 
 	//- stage modules --------------------------------------------------------------------------------------------------------
 	AS hm;                                                                  // asksin framework
+	cmKey cmKey[6];                                                      // create instances of channel module
 
-	cmSwitch cmSwitch[1];													// create instances of channel module
-	extern void initRly(uint8_t channel);                                   // declare function to jump in
-	extern void switchRly(uint8_t channel, uint8_t status);                 // declare function to jump in
+	//cmSwitch cmSwitch[1];													// create instances of channel module
+	//extern void initRly(uint8_t channel);                                   // declare function to jump in
+	//extern void switchRly(uint8_t channel, uint8_t status);                 // declare function to jump in
 
 	/*
 	* HMID, Serial number, HM-Default-Key, Key-Index
 	*/
 	const uint8_t HMSerialData[] PROGMEM = {
-		/* HMID */            0x01, 0x02, 0x06,
-		/* Serial number */   'H', 'B', 's', 'w', 'i', 't', 'c', 'h', '0', '1',		// HBswitch01
+		/* HMID */            0x01, 0x02, 0x08,
+		/* Serial number */   'H', 'B', 'r', 'e', 'm', 'o', 't', 'e', '0', '1',		// HBremote01
 		/* Default-Key */     HM_DEVICE_AES_KEY,
 		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
 	};
@@ -38,10 +39,10 @@
 	*                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
 	*/
 	const uint8_t devIdnt[] PROGMEM = {
-		/* firmwareVersion 1 byte */  0x10,
-		/* modelID         2 byte */  0x00,0x6c,
-		/* subTypeID       1 byte */  0x00,
-		/* deviceInfo      3 byte */  0x41, 0x01, 0x00,
+		/* firmwareVersion 1 byte */  0x11,
+		/* modelID         2 byte */  0x00,0xa9,
+		/* subTypeID       1 byte */  0x40,
+		/* deviceInfo      3 byte */  0x06, 0x00, 0x00,
 	};
 
 	/*
@@ -58,10 +59,12 @@
 	*/
 	const uint8_t cnlAddr[] PROGMEM = {
 		// List0-Register
-		0x02,0x0a,0x0b,0x0c,0x12,0x18,
+		0x01,0x02,0x0a,0x0b,0x0c,0x18,
+		// List1-Register
+		0x04,0x08,0x09,
 		// List3-Register
-		0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,
-	};  // 28 byte
+		0x01,
+	};  // 10 byte
 
 	/*
 	* Channel - List translation table
@@ -69,10 +72,20 @@
 	*/
 	EE::s_cnlTbl cnlTbl[] = {
 		// cnl, lst, sIdx,  sLen, pAddr,  hidden
-		{ 0, 0, 0x00,  6, 0x001f, 0, },
-		{ 1, 1, 0x00,  0, 0x0000, 0, },
-		{ 1, 3, 0x06, 22, 0x0025, 0, },
-	};  // 21 byte
+		{ 0,   0,   0x00,  6,   0x0020, 0, },
+		{ 1,   1,   0x06,  3,   0x0026, 0, },
+		{ 1,   4,   0x09,  1,   0x0029, 0, },
+		{ 2,   1,   0x06,  3,   0x002f, 0, },
+		{ 2,   4,   0x09,  1,   0x0032, 0, },
+		{ 3,   1,   0x06,  3,   0x0038, 0, },
+		{ 3,   4,   0x09,  1,   0x003b, 0, },
+		{ 4,   1,   0x06,  3,   0x0041, 0, },
+		{ 4,   4,   0x09,  1,   0x0044, 0, },
+		{ 5,   1,   0x06,  3,   0x004a, 0, },
+		{ 5,   4,   0x09,  1,   0x004d, 0, },
+		{ 6,   1,   0x06,  3,   0x0053, 0, },
+		{ 6,   4,   0x09,  1,   0x0056, 0, },
+	}; // 91 byte
 
 	/*
 	* Peer-Device-List-Table
@@ -89,8 +102,8 @@
 	* TODO: Describe
 	*/
 	EE::s_devDef devDef = {
-		1, 3, devIdnt, cnlAddr,
-	};
+		6, 13, devIdnt, cnlAddr,
+	}; // 6 byte
 
 	/*
 	* module registrar
@@ -119,8 +132,8 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);                                 // set power management mode
 
 		// register user modules
-		cmSwitch[0].regInHM(1, 3, &hm);                                    // register user module
-		cmSwitch[0].config(&initRly, &switchRly);                          // configure user module
+		//cmSwitch[0].regInHM(1, 3, &hm);                                    // register user module
+		//cmSwitch[0].config(&initRly, &switchRly);                          // configure user module
 
 	}
 

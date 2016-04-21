@@ -20,7 +20,7 @@ my %confType = (
     hmID        => '',                                     # empty to get it automatically generated - otherwise 6 HEX digits (3 byte)
     hmKEY       => '0102030405060708090a0b0c0d0e0f10',     # 32 HEX digits (16 byte) HM AES Key 
 	
-    modelID     => '0f06',                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
+    modelID     => '0fA9',                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
     firmwareVer => '11',                                   # firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
 
@@ -33,7 +33,7 @@ my %confType = (
     subtypeID   => '30',                                   # depending on type of device / see above
     deviceInfo  => '010100',                               # not complete clear yes, but 3 bytes HEX needed - referer to count_from_sysinfo="23.0:1.0"
 	
-    burstRx     => 0,                                      # device needs a burst signal to wakeup
+    burstRx     => 1,                                      # device needs a burst signal to wakeup
     localResDis => 1,                                      # local reset disable 
     intKeysVis  => 1,                                      # internal keys visible
 
@@ -67,11 +67,17 @@ my %confType = (
 #$regList{2}     = {type => "xmlDimmer", peers => 1, hidden => 0, linked => 0     };
 #$regList{3}     = {type => "xmlDimmer", peers => 1, hidden => 0, linked => 0     };
 #$regList{3}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
+$regList{1}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 0     };
+$regList{2}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 0     };
+$regList{3}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 0     };
+$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 0     };
+$regList{5}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 0     };
+$regList{6}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 0     };
 
-$regList{1}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
-$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
-$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
-$regList{4}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
+#$regList{1}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
+#$regList{2}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
+#$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
+#$regList{4}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => 0     };
 #$regList{2}     = {type => "xmlDimmer", peers => 6, hidden => 0, linked => 0     };
 #$regList{3}     = {type => "xmlSwitch", peers => 6, hidden => 0, linked => {3,4} };
 #$regList{4}     = {type => "xmlKey",    peers => 6, hidden => 0, linked => 2     };
