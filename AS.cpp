@@ -1183,7 +1183,7 @@ inline void AS::configEnd() {
  */
  inline void AS::configWriteIndex(void) {
 	if ((cFlag.active) && (cFlag.cnl == rv.mBdy.by10)) {									// check if we are in config mode and if the channel fit
-		ee.setListArray(cFlag.cnl, cFlag.lst, cFlag.idx, rv.buf[0]+1-11, rv.buf+12);		// write the string to EEprom
+		ee.setListArray(cFlag.cnl, cFlag.lst, cFlag.idx, rv.buf[0]-11, rv.buf+12);			// write the string to EEprom
 
 		if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {											// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 			uint8_t maIdFlag = 0;
