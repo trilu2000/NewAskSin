@@ -1,28 +1,22 @@
 #ifndef _REGISTER_h
 	#define _REGISTER_h
 
-	//- load libraries -------------------------------------------------------------------------------------------------------
-	#include <AS.h>
-	#include "hardware.h"                                                   // hardware definition
-	#include <cmKey.h>
+	#include <AS.h>                                                       // the asksin framework
+	#include "hardware.h"                                                 // hardware definition
+	#include <cmRemote.h>
 	#include "hmkey.h"
 
-	//- stage modules --------------------------------------------------------------------------------------------------------
-	AS hm;                                                                  // asksin framework
-	cmKey cmKey[6];                                                      // create instances of channel module
-
-	//cmSwitch cmSwitch[1];													// create instances of channel module
-	//extern void initRly(uint8_t channel);                                   // declare function to jump in
-	//extern void switchRly(uint8_t channel, uint8_t status);                 // declare function to jump in
+	AS hm;                                                               // asksin framework
+	cmRemote cmRemote[6];                                                // create instances of channel module
 
 	/*
 	* HMID, Serial number, HM-Default-Key, Key-Index
 	*/
 	const uint8_t HMSerialData[] PROGMEM = {
-		/* HMID */            0x01, 0x02, 0x08,
-		/* Serial number */   'H', 'B', 'r', 'e', 'm', 'o', 't', 'e', '0', '1',		// HBremote01
+		/* HMID */            0x5d,0xa8,0x79,
+		/* Serial number */   'H','B','r','e','m','o','t','e','0','1',   // HBremote01
 		/* Default-Key */     HM_DEVICE_AES_KEY,
-		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
+		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX
 	};
 
 	/*
@@ -58,11 +52,11 @@
 	* @See: cnlTbl
 	*/
 	const uint8_t cnlAddr[] PROGMEM = {
-		// List0-Register
+		// channel: 0, list: 0 
 		0x01,0x02,0x0a,0x0b,0x0c,0x18,
-		// List1-Register
+		// channel: 1, list: 1 
 		0x04,0x08,0x09,
-		// List3-Register
+		// channel: 1, list: 4 
 		0x01,
 	};  // 10 byte
 
@@ -71,7 +65,7 @@
 	* channel, list, startIndex, start address in EEprom, hidden
 	*/
 	EE::s_cnlTbl cnlTbl[] = {
-		// cnl, lst, sIdx,  sLen, pAddr,  hidden
+		// cnl, lst, sIdx, sLen, pAddr,  hidden
 		{ 0,   0,   0x00,  6,   0x0020, 0, },
 		{ 1,   1,   0x06,  3,   0x0026, 0, },
 		{ 1,   4,   0x09,  1,   0x0029, 0, },
@@ -92,25 +86,29 @@
 	* channel, maximum allowed peers, start address in EEprom
 	*/
 	EE::s_peerTbl peerTbl[] = {
-		// cnl, peerMax, pAddr;
-		{ 1, 6, 0x0099, },
-	};
-	
+		// cnl, pMax, pAddr;
+		{ 1, 6, 0x005c, },
+		{ 2, 6, 0x0074, },
+		{ 3, 6, 0x008c, },
+		{ 4, 6, 0x00a4, },
+		{ 5, 6, 0x00bc, },
+		{ 6, 6, 0x00d4, },
+	}; // 24 byte
+
 	/*
-	* handover to AskSin lib
-	*
-	* TODO: Describe
+	* Device definition table
+	* Parameter: amount of user channel(s), amount of lists,
+	* pointer to device identification string and pointer to the channel table
 	*/
 	EE::s_devDef devDef = {
 		6, 13, devIdnt, cnlAddr,
 	}; // 6 byte
 
-	/*
-	* module registrar
-	*
-	* TODO: Describe
-	*/
-	RG::s_modTable modTbl[1];
+   /*
+   * module registrar
+   * size table to register and access channel modules
+   */
+	RG::s_modTable modTbl[6];
 
 
 	/**
@@ -125,15 +123,19 @@
 		*/
 
 		// init the homematic framework
-		hm.confButton.config(2, CONFIG_KEY_PCIE, CONFIG_KEY_INT);           // configure the config button, mode, pci byte and pci bit
+		hm.confButton.config(1, CONFIG_KEY_PCIE, CONFIG_KEY_INT);           // configure the config button, mode, pci byte and pci bit
 		hm.ld.init(2, &hm);                                                 // set the led
 		hm.ld.set(welcome);                                                 // show something
 		hm.bt.set(30, 3600000);                                             // set battery check, internal, 2.7 reference, measurement each hour
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);                                 // set power management mode
 
 		// register user modules
-		//cmSwitch[0].regInHM(1, 3, &hm);                                    // register user module
-		//cmSwitch[0].config(&initRly, &switchRly);                          // configure user module
+		cmRemote[0].regInHM(3, 4, &hm);                                     // register user module
+		cmRemote[1].regInHM(1, 4, &hm);                                     // register user module
+		cmRemote[2].regInHM(6, 4, &hm);                                     // register user module
+		cmRemote[3].regInHM(2, 4, &hm);                                     // register user module
+		cmRemote[4].regInHM(4, 4, &hm);                                     // register user module
+		cmRemote[5].regInHM(5, 4, &hm);                                     // register user module
 
 	}
 
@@ -145,5 +147,38 @@
 	* of eeprom variables, or setting a default link in the peer table for 2 channels
 	*/
 	void firstTimeStart(void) {
+		/*
+		* place here everything which should be done on the first start or after a complete reset of the sketch
+		* typical usecase are default values which should be written into the register or peer database
+		*/
+
+		const uint8_t cnl0lst0[] = {
+			0x80,0x00,0x00,0x00,0x69,0x00,
+		};
+
+		const uint8_t cnl1lst1[] = {
+			0x10,0x00,0x00,
+		};
+
+		const uint8_t cnl2lst1[] = {
+			0x10,0x00,0x00,
+		};
+
+		const uint8_t cnl3lst1[] = {
+			0x10,0x00,0x00,
+		};
+
+		const uint8_t cnl4lst1[] = {
+			0x10,0x00,0x00,
+		};
+
+		const uint8_t cnl5lst1[] = {
+			0x10,0x00,0x00,
+		};
+
+		const uint8_t cnl6lst1[] = {
+			0x10,0x00,0x00,
+		};
+
 	}
 #endif

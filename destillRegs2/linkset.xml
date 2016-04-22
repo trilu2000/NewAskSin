@@ -1917,10 +1917,10 @@
 
 
 <?ignore ---------------------------------------------------------------------------- ?>
-<?ignore -- key channel ------------------------------------------------------------- ?>
+<?ignore -- remote channel ---------------------------------------------------------- ?>
 <?ignore ---------------------------------------------------------------------------- ?>
 
-<xmlKey>
+<xmlRemote>
 	<channel autoregister="true" index="1" type="KEY" count_from_sysinfo="23.0:1.0" pair_function="BA" function="A" paired="true" aes_default="false">
 		<link_roles>
 			<source name="SWITCH"/>
@@ -2052,7 +2052,7 @@
 
 		<enforce id="EXPECT_AES" value="$PEER.AES"/>
 	</paramset>
-</xmlKey>
+</xmlRemote>
 
 
 

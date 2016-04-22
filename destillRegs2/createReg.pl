@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use XML::LibXML;
-
+use Data::Dumper::Simple;
 
 ## --------------import constants----------------------------------------------------------------------------
 use devDefinition;
@@ -325,7 +325,7 @@ foreach my $test (sort keys %cnlType) {
 
 # -- cleanup the channel array, find dublicates and reshape the addressing - fix the peers physical address, while phyAddr is at max from earlier function
 foreach my $test (sort keys %cnlType) {
-	if ( $cnlType{$test}{'lst'} == (3 || 4) ) {
+	if ( $cnlType{$test}{'lst'} == 3 || $cnlType{$test}{'lst'} == 4 ) {
 		$cnlType{$test}{'phyAddrPeers'} = $phyAddr;
 		$phyAddr += $cnlType{$test}{'peers'} * 4;
 		#print "xxx\n";
@@ -346,6 +346,8 @@ foreach my $test (sort keys %cnlType) {
 		}
 	}	
 }
+
+#print Dumper( %cnlType);
 
 # -- prepare the reglist object with the details of the user module, which library to load and so on
 	# step through the modules definition, find dublicates by sort and comparsion with the former statement 
@@ -580,6 +582,8 @@ sub printChannelDeviceListTable {
 
 sub printPeerDeviceListTable {
 	my %dT = %{shift()}; my $cnt = 0;
+	
+	#print Dumper(%dT);
 
 	#print "//- peer device list table -----------------------------------------------------------------------------------------------\n";
 	print "   /* \n";
@@ -590,7 +594,7 @@ sub printPeerDeviceListTable {
 	print "   EE::s_peerTbl peerTbl[] = {\n";
 	print "      // cnl, pMax, pAddr;\n";
 	foreach my $test (sort keys %dT) {
-		next    if ( $dT{$test}{'lst'} != (3 || 4) );
+		next    if ( $dT{$test}{'lst'} != 3 && $dT{$test}{'lst'} != 4 );
 		#	{1, 6, 0x001a}              //  6 * 4 =  24 (0x18)
 		print sprintf("      { %.1d, %.1d, 0x%.4x, },\n", $dT{$test}{'cnl'}, $dT{$test}{'peers'}, $dT{$test}{'phyAddrPeers'} );
 		$cnt += 4;
@@ -606,7 +610,7 @@ sub printDevDeviceListTable {
 
 	my $nCnlC = 0;																					# get amount of user channels
 	foreach my $test (sort keys %dT) {
-		$nCnlC += 1    if ( $dT{$test}{'lst'} == (3 || 4) );
+		$nCnlC += 1    if ( $dT{$test}{'lst'} == 3 || $dT{$test}{'lst'} == 4 );
 	}
 	
 	#print "//- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
@@ -627,7 +631,7 @@ sub printModuleTable {
 
 	my $nCnlC = 0;																					# get amount of user channels
 	foreach my $test (sort keys %dT) {
-		$nCnlC += 1    if ( $dT{$test}{'lst'} == (3 || 4) );
+		$nCnlC += 1    if ( $dT{$test}{'lst'} == 3 || $dT{$test}{'lst'} == 4 );
 	}
 	#print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
 	print "   /* \n";
