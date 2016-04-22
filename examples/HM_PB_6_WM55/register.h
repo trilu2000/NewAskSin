@@ -130,12 +130,12 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);                                 // set power management mode
 
 		// register user modules
-		cmRemote[0].regInHM(3, 4, &hm);                                     // register user module
-		cmRemote[1].regInHM(1, 4, &hm);                                     // register user module
-		cmRemote[2].regInHM(6, 4, &hm);                                     // register user module
-		cmRemote[3].regInHM(2, 4, &hm);                                     // register user module
-		cmRemote[4].regInHM(4, 4, &hm);                                     // register user module
-		cmRemote[5].regInHM(5, 4, &hm);                                     // register user module
+		cmRemote[0].regInHM(1, 4, &hm);                                     // register user module
+		cmRemote[1].regInHM(2, 4, &hm);                                     // register user module
+		cmRemote[2].regInHM(3, 4, &hm);                                     // register user module
+		cmRemote[3].regInHM(4, 4, &hm);                                     // register user module
+		cmRemote[4].regInHM(5, 4, &hm);                                     // register user module
+		cmRemote[5].regInHM(6, 4, &hm);                                     // register user module
 
 	}
 

@@ -144,7 +144,7 @@ class AS {
 	void sendHAVE_DATA(void);
 	void sendSWITCH(void);
 	void sendTimeStamp(void);
-	void sendREMOTE(uint8_t channel, uint8_t burst, uint8_t *payload);
+	void sendREMOTE(uint8_t channel, uint8_t *payload);
 	void sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload);
 	void sendSensorData(void);
 	void sendClimateEvent(void);

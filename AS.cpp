@@ -339,8 +339,9 @@ void AS::sendTimeStamp(void) {
  * @param burst
  * @param payload: pointer to payload
  */
-void AS::sendREMOTE(uint8_t channel, uint8_t burst, uint8_t *payload) {
-	sendEvent(channel, burst, AS_MESSAGE_REMOTE_EVENT, payload, 2);
+void AS::sendREMOTE(uint8_t channel, uint8_t *payload) {
+	// burst flag is not needed, has to come out of list4, as well as AES flag
+	sendEvent(channel, 0, AS_MESSAGE_REMOTE_EVENT, payload, 2);
 }
 
 /**

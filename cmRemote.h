@@ -18,9 +18,9 @@ const uint8_t peerSingle[] = {
 	0x00, 
 };
 
-
 class cmRemote {
   //- user code here ------------------------------------------------------------------------------------------------------
+
   public://----------------------------------------------------------------------------------------------------------------
   protected://-------------------------------------------------------------------------------------------------------------
   private://---------------------------------------------------------------------------------------------------------------
@@ -45,7 +45,14 @@ class cmRemote {
 
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
-	
+	struct s_buttonInfo {
+		uint8_t channel      :6;															// set in regInHM function, will not change at runtime
+		uint8_t longpress    :1;															// will be set in buttonAction function
+		uint8_t lowbat       :1;															// placeholder here, will be set in as module
+		uint8_t counter      :8;															// will be increased in buttonAction function
+	} buttonInfo;																			// holds the details for the send event message
+
+	void    buttonAction(uint8_t);                                                          // send message according given event
 
 
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------

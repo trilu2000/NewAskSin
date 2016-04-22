@@ -12,6 +12,40 @@
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
+void cmRemote::buttonAction(uint8_t bEvent) {
+	// possible events of this function:
+	//   0 - short key press
+	//   1 - double short key press
+	//   2 - long key press
+	//   3 - repeated long key press
+	//   4 - end of long key press
+	//   5 - double long key press
+	//   6 - time out for a double long
+	//
+	// 255 - key press, for stay awake issues
+
+	hm->pw.stayAwake(1000);																	// overcome the problem of not getting a long repeated key press
+	if (bEvent == 255) return;																// was only a wake up message
+
+	#ifdef RM_DBG																			// some debug message
+	dbg << F("RM buttonAction, cnl: ") << regCnl << ", s:" << bEvent << '\n';
+	#endif
+
+	// at the moment this channel module will only work for channel > 0 while key for maintanance channel need
+	// some special functionality, like link to toogle and pairing
+
+	if ((bEvent >= 2) && (bEvent <= 6)) buttonInfo.longpress = 1;							// set the long key flag if requested
+	else buttonInfo.longpress = 0;
+	
+	if ((bEvent == 0) || (bEvent == 1)) hm->sendREMOTE(regCnl, (uint8_t*)buttonInfo);							// short key or double short key press detected
+	if ((bEvent == 2) || (bEvent == 3)) hm->sendREMOTE(regCnl, 0);							// long or repeated long key press detected
+	if (bEvent == 4) hm->sendREMOTE(regCnl, 0);												// end of long or repeated long key press detected
+
+	// not sure if there is a need for a call back function
+	//if (callBack) callBack(regCnl, bEvent);												// call the callback function
+
+	buttonInfo.counter++;																	// increase the button counter
+}
 
 
 
@@ -84,12 +118,13 @@ void cmRemote::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	hm = instPtr;																			// set pointer to the HM module
 	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&cmRemote::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
+	buttonInfo.channel = cnl;																// remembers the channel number
 }
 
 void cmRemote::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 
 	#ifdef RM_DBG																			// some debug message
-	dbg << F("RM hmEventCol, by3: ") << by3 << F(" , by10: ") << by10 << F(" , data: ") << pHex(data, len) << '\n'; _delay_ms(100);
+	dbg << F("RM hmEventCol, by3: ") << by3 << F(" , by10: ") << by10 << F(" , data: ") << _HEX(data, len) << '\n'; _delay_ms(100);
 	#endif
 
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
