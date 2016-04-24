@@ -1506,6 +1506,11 @@ void AS::encode(uint8_t *buf) {
 			dbg << F("INFO_ACTUATOR_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", na: ") << _HEXB(buf[13]);
 			if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
 
+		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_RT_STATUS)) {
+			dbg << F("INFO_RT_STATUS; dstTmp: ") << (buf[11]>>3) << F(".") << ((buf[11]>>2)&1)*5 << F(", Tmp: ") << (((buf[11]&3)<<8)+buf[12])/10 << F(".") << (((buf[11]&3)<<8)+buf[12])%10;
+			dbg << F(", bat: ") << ((buf[13]&0x1f)+15)/10 << F(".") << ((buf[13]&0x1f)+15)%10;
+			dbg << F(", err: ") << _HEXB(buf[13]>>5) << F(", valve: ") << _HEXB(buf[14]) << F(", ctrlMode: ") << _HEXB(buf[15]);
+
 		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_SET)) {
 			dbg << F("SET; cnl: ") << _HEXB(buf[11]) << F(", value: ") << _HEXB(buf[12]) << F(", rampTime: ") << _HEX((buf+13),2) << F(", duration: ") << _HEX((buf+15),2);
 
