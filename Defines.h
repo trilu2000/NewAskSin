@@ -70,6 +70,7 @@
 	#define AS_INFO_PARAM_RESPONSE_SEQ                    0x03
 	#define AS_INFO_PARAMETER_CHANGE                      0x04
 	#define AS_INFO_ACTUATOR_STATUS                       0x06
+	#define AS_INFO_RT_STATUS                             0x0A
 
 	// Byte 10: action values
 	#define AS_ACTION_SET                                 0x02
