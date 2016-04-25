@@ -26,7 +26,17 @@
 	#define AS_REG_L1_CHANGE_OVER_DELAY                   0x0F
 	#define AS_REG_L1_REFERENCE_RUN_COUNTER               0x10
 
-// Byte 3: message types
+	// Byte 2: communication bit field
+	#define AS_WAKEUP                                     0x01
+	#define AS_WAKE_ME_UP                                 0x02
+	#define AS_BROADCAST                                  0x04
+//	#define AS_UNKNOWN                                    0x08
+	#define AS_BURST                                      0x10
+	#define AS_ACK_REQ                                    0x20
+	#define AS_REPEATED_MSG                               0x40
+	#define AS_MESSAGE_TO_MASTER                          0x80
+
+	// Byte 3: message types
 	#define AS_MESSAGE_DEVINFO                            0x00
 	#define AS_MESSAGE_CONFIG                             0x01					// signed answer needed on request
 	#define AS_MESSAGE_RESPONSE                           0x02					// signed answer needed if byte 10 = AS_RESPONSE_AES_CHALLANGE

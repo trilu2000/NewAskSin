@@ -15,12 +15,12 @@
 void cmRemote::buttonAction(uint8_t bEvent) {
 	// possible events of this function:
 	//   0 - short key press
-	//   1 - double short key press
+	//   1 - double short key press      - not needed yet
 	//   2 - long key press
 	//   3 - repeated long key press
-	//   4 - end of long key press
-	//   5 - double long key press
-	//   6 - time out for a double long
+	//   4 - end of long key press       - not needed yet
+	//   5 - double long key press       - not needed yet
+	//   6 - time out for a double long  - not needed yet
 	//
 	// 255 - key press, for stay awake issues
 
@@ -34,12 +34,11 @@ void cmRemote::buttonAction(uint8_t bEvent) {
 	// at the moment this channel module will only work for channel > 0 while key for maintanance channel need
 	// some special functionality, like link to toogle and pairing
 
-	if ((bEvent >= 2) && (bEvent <= 6)) buttonInfo.longpress = 1;							// set the long key flag if requested
-	else buttonInfo.longpress = 0;
+	if ((bEvent >= 2) && (bEvent <= 3)) buttonInfo.longpress = 1;							// set the long key flag if requested
+	else buttonInfo.longpress = 0;															// otherwise it is a short
 	
-	if ((bEvent == 0) || (bEvent == 1)) hm->sendREMOTE(regCnl, (uint8_t*)buttonInfo);							// short key or double short key press detected
-	if ((bEvent == 2) || (bEvent == 3)) hm->sendREMOTE(regCnl, 0);							// long or repeated long key press detected
-	if (bEvent == 4) hm->sendREMOTE(regCnl, 0);												// end of long or repeated long key press detected
+	if (bEvent == 3) hm->sendREMOTE(regCnl, (uint8_t*)&buttonInfo);							// send the message
+	else hm->sendREMOTE(regCnl, (uint8_t*)&buttonInfo, AS_ACK_REQ);
 
 	// not sure if there is a need for a call back function
 	//if (callBack) callBack(regCnl, bEvent);												// call the callback function

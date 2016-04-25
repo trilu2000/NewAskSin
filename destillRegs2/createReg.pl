@@ -721,13 +721,14 @@ sub printStartFunctions {
 sub printInfo {
 	my $xCnl = 255; my $xLst = 255; my $xCng = 0; my $i = 0;
 	my $lastIndex = 0; my $lastBitEnd = 8;
-		
+	#print Dumper(%cnlTypeA);	
+	
 	#$cnlTypeA{'00 00 0x0a.0'}  = { 'idx' => '0x0a.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_1', 'type' => 'integer', 'interface' => 'config', 'index' => '10', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0' };
 
 	foreach my $test (sort keys %cnlTypeA) {
 		$xCng = ( ($cnlTypeA{$test}{'cnl'} != $xCnl) || ($cnlTypeA{$test}{'lst'} != $xLst) )?1:0;
 		
-		# check if we need to fill some bits upfront of the new record
+		# check if we need to fill some bits upfront of the new record, if we are still in the same struct
 		if ( ($lastIndex == $cnlTypeA{$test}{'index'}) && ($lastBitEnd < $cnlTypeA{$test}{'bit'}) ) {
 			print " "x6 ."uint8_t" ." "x38 .":" .($cnlTypeA{$test}{'bit'} - $lastBitEnd) .";";
 			print " "x4 ."// " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{'index'}, $lastBitEnd) ."\n";
@@ -742,9 +743,14 @@ sub printInfo {
 		# channel/list has changed, double check if an open struct exists
 		print " "x3 ."}; \n\n"					if ( $xCng && $i > 0);
 
-		# channel or list has changed, print the header
-		print " "x3 ."struct s_cnl$cnlTypeA{$test}{'cnl'}lst$cnlTypeA{$test}{'lst'} { \n"		if ( $xCng );
+		# channel or list has changed, print the header and fill the first bits upfront if neccasary
+		if ( $xCng ) {
+			print " "x3 ."struct s_cnl$cnlTypeA{$test}{'cnl'}lst$cnlTypeA{$test}{'lst'} { \n";
+			#print Dumper($cnlTypeA{$test});
 
+			print " "x6 ."uint8_t" ." "x38 .":" .(8 - $cnlTypeA{$test}{bit}) .";" if ($cnlTypeA{$test}{bit} > 0);
+			print " "x4 ."// " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{index}, 0) ."\n" if ($cnlTypeA{$test}{bit} > 0);
+		}
 
 		# print the single line content
 		my $lineText = "uint8_t $cnlTypeA{$test}{'id'}";

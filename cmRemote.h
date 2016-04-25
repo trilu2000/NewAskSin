@@ -26,19 +26,20 @@ class cmRemote {
   private://---------------------------------------------------------------------------------------------------------------
 
 	struct s_lstCnl {
-		// 0x01, 0x02, 0x0a, 0x0b, 0x0c, 0x18,
-		uint8_t LONG_PRESS_TIME            :4;      // 0x04.4, 0x01
-		uint8_t AES_FLAG                   :1;      // 0x08.0, 0x00
-		uint8_t                            :7;      // 0x08.1
-		uint8_t DBL_PRESS_TIME             :4;      // 0x09.0, 0x00
-		uint8_t                            :4;      // 0x09.4
+		// 0x04:0x10, 0x08:0x00, 0x09:0x00,
+		uint8_t                            :4;    // 0x04.0
+		uint8_t LONG_PRESS_TIME            :4;    // 0x04.4, 0x01
+		uint8_t AES_FLAG                   :1;    // 0x08.0, 0x00
+		uint8_t                            :7;    // 0x08.1
+		uint8_t DBL_PRESS_TIME             :4;    // 0x09.0, 0x00
+		uint8_t                            :4;    // 0x09.4
 	} lstCnl;
 
 	struct s_lstPeer {
 		// 0x01,
-		uint8_t PEER_NEEDS_BURST           :1;      // 0x01.0, 0x00
-		uint8_t                            :6;      // 0x01.1
-		uint8_t EXPECT_AES                 :1;      // 0x01.7, 0x00
+		uint8_t PEER_NEEDS_BURST           :1;    // 0x01.0, 0x00
+		uint8_t                            :6;    // 0x01.1
+		uint8_t EXPECT_AES                 :1;    // 0x01.7, 0x00
 	} lstPeer;
 
 
@@ -56,8 +57,6 @@ class cmRemote {
 
 
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
-	uint8_t modStat;																		// module status byte, needed for list3 modules to answer status requests
-	uint8_t modDUL;																			// module down up low battery byte
 	uint8_t regCnl;																			// holds the channel for the module
 
 	AS      *hm;																			// pointer to HM class instance

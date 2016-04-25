@@ -339,7 +339,7 @@ void AS::sendTimeStamp(void) {
  * @param burst
  * @param payload: pointer to payload
  */
-void AS::sendREMOTE(uint8_t channel, uint8_t *payload) {
+void AS::sendREMOTE(uint8_t channel, uint8_t *payload, uint8_t msg_flag) {
 	// burst flag is not needed, has to come out of list4, as well as AES flag
 	sendEvent(channel, 0, AS_MESSAGE_REMOTE_EVENT, payload, 2);
 }
@@ -362,7 +362,7 @@ void AS::sendREMOTE(uint8_t channel, uint8_t *payload) {
  * @param payload: pointer to payload
  */
 void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
-	sendEvent(channel, burst, AS_MESSAGE_SENSOR_EVENT, payload, 3);
+	sendEvent(channel, AS_MESSAGE_SENSOR_EVENT, burst, payload, 3);
 }
 
 /**
@@ -383,30 +383,30 @@ void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
  * predefined special send methods.
  *
  * @param channel The channel
- * @param burst   Set to 1 for burst mode, or 0
- * @param mType   Message type
- * @param pLen    Length of payload in bytes, not more than 16
- * @param payload pointer to payload
- *
+ * @param msg_type    Message type
+ * @param msg_flag    Set to 1 for burst mode, or 0
+ * @param payload     Pointer to payload
+ * @param pyl_len     Length of payload in bytes, not more than 16
  * @attention The payload length may not exceed 16 bytes. If a greater value
  * for len is given, it is limited to 16 to prevent HM-CFG-LAN (v0.961) to crash.
  */
-void AS::sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *payload, uint8_t pLen) {
-	if (pLen>16) {
+void AS::sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *payload, uint8_t pyl_len) {
+	if (pyl_len>16) {
 		#ifdef AS_DBG
-			dbg << "AS::sendGenericEvent(" << channel << "," << burst << ",0x" << _HEX(&mType,1) << "," << pLen << ",...): payload exceeds max len of 16\n";
+		dbg << "AS::sendGenericEvent(" << channel << "," << msg_flag << ",0x" << _HEX(&mType,1) << "," << pLen << ",...): payload exceeds max len of 16\n";
 		#endif
-		pLen = 16;
+		pyl_len = 16;
 	}
 
-	stcPeer.pL     = payload;
-	stcPeer.lenPL  = pLen + 1;
-	stcPeer.cnl    = channel;
-	stcPeer.burst  = burst;
-	stcPeer.bidi   = (~payload[0] & AS_BUTTON_BYTE_LONGPRESS_BIT) ? 0 : 1;		// depends on long-key-press-bit (long didn't need ACK)	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
-	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
-	stcPeer.mTyp   = mType;
-	stcPeer.active = 1;
+	stcPeer.payload   = payload;
+	stcPeer.pyl_len   = pyl_len + 1;
+	stcPeer.cnl     = channel;
+	stcPeer.burst   = (msg_flag & AS_BURST) ? 1 : 0;								// not sure if it can be different for a whole peer list and has to come out of list4 of the respective channel
+	stcPeer.bidi    = (msg_flag & AS_ACK_REQ) ? 1 : 0;
+	//stcPeer.bidi   = (~payload[0] & AS_BUTTON_BYTE_LONGPRESS_BIT) ? 0 : 1;		// depends on long-key-press-bit (long didn't need ACK)	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
+	//stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
+	stcPeer.msg_type = msg_type;
+	stcPeer.active   = 1;
 }
 
 void AS::sendSensorData(void) {
@@ -487,10 +487,10 @@ inline void AS::sendPeerMsg(void) {
 	if (sn.active) return;																	// check if send function has a free slot, otherwise return
 	
 	// first run, prepare amount of slots
-	if (!stcPeer.maxIdx) {
-		stcPeer.maxIdx = ee.getPeerSlots(stcPeer.cnl);										// get amount of messages of peer channel
+	if (!stcPeer.max_idx) {
+		stcPeer.max_idx = ee.getPeerSlots(stcPeer.cnl);										// get amount of messages of peer channel
 	
-		if (stcPeer.maxIdx == ee.countFreeSlots(stcPeer.cnl) ) {							// check if at least one peer exist in db, otherwise send to master and stop function
+		if (stcPeer.max_idx == ee.countFreeSlots(stcPeer.cnl) ) {							// check if at least one peer exist in db, otherwise send to master and stop function
 			preparePeerMessage(MAID, maxRetries);
 			sn.msgCnt++;																	// increase the send message counter
 			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));									// clean out and return
@@ -499,7 +499,7 @@ inline void AS::sendPeerMsg(void) {
 	}
 	
 	// all slots of channel processed, start next round or end processing
-	if (stcPeer.curIdx >= stcPeer.maxIdx) {													// check if all peer slots are done
+	if (stcPeer.cur_idx >= stcPeer.max_idx) {												// check if all peer slots are done
 		stcPeer.rnd++;																		// increase the round counter
 		
 		if ((stcPeer.rnd >= maxRetries) || (isEmpty(stcPeer.slt,8))) {						// all rounds done or all peers reached
@@ -509,38 +509,38 @@ inline void AS::sendPeerMsg(void) {
 			
 		} else {																			// start next round
 			//dbg << "next round\n";
-			stcPeer.curIdx = 0;
+			stcPeer.cur_idx = 0;
 
 		}
 		return;
 
-	} else if ((stcPeer.curIdx) && (!sn.timeOut)) {											// peer index is >0, first round done and no timeout
-		uint8_t idx = stcPeer.curIdx-1;
+	} else if ((stcPeer.cur_idx) && (!sn.timeOut)) {										// peer index is >0, first round done and no timeout
+		uint8_t idx = stcPeer.cur_idx-1;
 		stcPeer.slt[idx >> 3] &=  ~(1 << (idx & 0x07));										// clear bit, because message got an ACK
 	}
 	
 	// set respective bit to check if ACK was received
 	if (!stcPeer.rnd) {
-		stcPeer.slt[stcPeer.curIdx >> 3] |= (1<<(stcPeer.curIdx & 0x07));					// set bit in slt table										// clear bit in slt and increase counter
+		stcPeer.slt[stcPeer.cur_idx >> 3] |= (1<<(stcPeer.cur_idx & 0x07));					// set bit in slt table										// clear bit in slt and increase counter
 	}
 
 
 	// exit while bit is not set
-	if (!stcPeer.slt[stcPeer.curIdx >> 3] & (1<<(stcPeer.curIdx & 0x07))) {
-		stcPeer.curIdx++;																	// increase counter for next time
+	if (!stcPeer.slt[stcPeer.cur_idx >> 3] & (1<<(stcPeer.cur_idx & 0x07))) {
+		stcPeer.cur_idx++;																	// increase counter for next time
 		return;
 	}
 
 	uint8_t tPeer[4];																		// get the respective peer
-	ee.getPeerByIdx(stcPeer.cnl, stcPeer.curIdx, tPeer);
+	ee.getPeerByIdx(stcPeer.cnl, stcPeer.cur_idx, tPeer);
 	
 	#ifdef AS_DBG
 		dbg << "a: " << stcPeer.curIdx << " m " << stcPeer.maxIdx << '\n';
 	#endif
 
 	if (isEmpty(tPeer,4)) {																	// if peer is 0, set done bit in slt and skip
-		stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// remember empty peer in slt table										// clear bit in slt and increase counter
-		stcPeer.curIdx++;																	// increase counter for next time
+		stcPeer.slt[stcPeer.cur_idx >> 3] &=  ~(1<<(stcPeer.cur_idx & 0x07));				// remember empty peer in slt table										// clear bit in slt and increase counter
+		stcPeer.cur_idx++;																	// increase counter for next time
 		return;																				// wait for next round
 	}
 
@@ -552,15 +552,15 @@ inline void AS::sendPeerMsg(void) {
 	// expectAES       =>{a=>  1.7,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"expect AES"        ,lit=>{off=>0,on=>1}},
 	// fillLvlUpThr    =>{a=>  4.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level upper threshold"},
 	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
-	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.cnl, 4, stcPeer.curIdx, 0x01);
+	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.cnl, 4, stcPeer.cur_idx, 0x01);
 	
 	preparePeerMessage(tPeer, 1);
 	
 	if (!sn.mBdy.mFlg.BIDI) {
-		stcPeer.slt[stcPeer.curIdx >> 3] &=  ~(1<<(stcPeer.curIdx & 0x07));					// clear bit, because it is a message without need to be repeated
+		stcPeer.slt[stcPeer.cur_idx >> 3] &=  ~(1<<(stcPeer.cur_idx & 0x07));				// clear bit, because it is a message without need to be repeated
 	}
 
-	stcPeer.curIdx++;																		// increase counter for next time
+	stcPeer.cur_idx++;																		// increase counter for next time
 }
 
 void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retr) {
@@ -577,17 +577,17 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retr) {
 	// LONG   = bit 6
 	// LOWBAT = bit 7
 
-	sn.mBdy.mLen       = stcPeer.lenPL + 9;													// set message length
+	sn.mBdy.mLen       = stcPeer.pyl_len + 9;													// set message length
 	sn.mBdy.mFlg.CFG   = 1;
 	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;														// message flag
 	sn.mBdy.mFlg.BURST = l4_0x01.peerNeedsBurst;
 	sn.mBdy.by10       = stcPeer.cnl;
 	sn.mBdy.by10      |= (bt.getStatus() << 7);												// battery bit
-	memcpy(sn.buf+11, stcPeer.pL, stcPeer.lenPL);											// payload
+	memcpy(sn.buf+11, stcPeer.payload, stcPeer.pyl_len);											// payload
 	
 	sn.maxRetr = retr;																		// send only one time
 
-	prepareToSend(sn.msgCnt, stcPeer.mTyp, xPeer);
+	prepareToSend(sn.msgCnt, stcPeer.msg_type, xPeer);
 }
 
 /**

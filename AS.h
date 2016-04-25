@@ -82,16 +82,16 @@ class AS {
 	} stcSlice;
 
 	struct s_stcPeer {
-		uint8_t active; //   :1;				// indicates status of poll routine, 1 is active
-		uint8_t rnd; //      :3;				// send retries
-		uint8_t burst; //    :1;				// burst flag for send function
-		uint8_t bidi; //     :1;				// ack required
-		uint8_t mTyp;						// message type to build the right message
-		uint8_t *pL;						// pointer to payload
-		uint8_t lenPL;						// length of payload
+		uint8_t active; //   :1;			// indicates status of poll routine, 1 is active
+		uint8_t rnd; //      :3;			// send retries
+		uint8_t burst; //    :1;			// burst flag for send function
+		uint8_t bidi; //     :1;			// ack required
+		uint8_t msg_type;					// message type to build the right message
+		uint8_t *payload;					// pointer to payload
+		uint8_t pyl_len;					// length of payload
 		uint8_t cnl;						// which channel is the sender
-		uint8_t curIdx;						// current peer slots
-		uint8_t maxIdx;						// amount of peer slots
+		uint8_t cur_idx;					// current peer slots
+		uint8_t max_idx;					// amount of peer slots
 		uint8_t slt[8];						// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
 	} stcPeer;
 
@@ -144,13 +144,13 @@ class AS {
 	void sendHAVE_DATA(void);
 	void sendSWITCH(void);
 	void sendTimeStamp(void);
-	void sendREMOTE(uint8_t channel, uint8_t *payload);
+	void sendREMOTE(uint8_t channel, uint8_t *payload, uint8_t msg_flag = 0);
 	void sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload);
 	void sendSensorData(void);
 	void sendClimateEvent(void);
 	void sendSetTeamTemp(void);
 	void sendWeatherEvent(void);
-	void sendEvent(uint8_t channel, uint8_t burst, uint8_t mType, uint8_t *payload, uint8_t pLen);
+	void sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *payload, uint8_t pyl_len);
 
 	void processMessageConfigAction(uint8_t by10, uint8_t cnl1);
 	void processMessageAction11();
