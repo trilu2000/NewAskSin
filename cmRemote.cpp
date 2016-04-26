@@ -15,12 +15,12 @@
 void cmRemote::buttonAction(uint8_t bEvent) {
 	// possible events of this function:
 	//   0 - short key press
-	//   1 - double short key press      - not needed yet
+	//   1 - double short key press        - not needed yet
 	//   2 - long key press
 	//   3 - repeated long key press
-	//   4 - end of long key press       - not needed yet
-	//   5 - double long key press       - not needed yet
-	//   6 - time out for a double long  - not needed yet
+	//   4 - end of long key press         - not needed yet
+	//   5 - double long key press         - not needed yet
+	//   6 - end of double long key press  - not needed yet
 	//
 	// 255 - key press, for stay awake issues
 
@@ -100,7 +100,140 @@ void cmRemote::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 }
 
 void cmRemote::poll(void) {
+	// possible events of this function:
+	//   0 - short key press
+	//   1 - double short key press        - not needed yet
+	//   2 - long key press
+	//   3 - repeated long key press
+	//   4 - end of long key press         - not needed yet
+	//   5 - double long key press         - not needed yet
+	//   6 - end of double long key press  - not needed yet
+	//
+	// 255 - key press, for stay awake issues
 
+
+	// this flag is set to 0 if stat_curr and stat_last are set to key released and all timers are done
+	// it will be set to 1 from outside this function if there is a change on stat_curr done
+	if (check_repeat.poll == 0) return;															// check if we have to poll
+
+	// we use several timer in this function, they are set by lstCnl.LONG_PRESS_TIME, lstCnl.DBL_PRESS_TIME, timers are used to detect a 
+	// double short (if this timer is set, we should send out the double short message only, short key press are not signalized 
+	// long key press or double long
+	// some time between two longs to detect a double long
+	// some time between repeated long messages
+	
+	//	dbg << "cFlag: " << cFlag << ", cTime: " << cTime << ", cStat: " << cStat << ", lStat: " << lStat << ", dblLo: " << dblLo << ", lngKeyTme: " << lngKeyTme << ", kTime: " << kTime << ", millis(): " << millis() << '\n';
+
+
+
+	if ((stat_curr == 1) && (stat_last == 1)) {													// could be only a timeout
+		// button is released and was released before, so it could be only a timeout for a
+		// double short key press (1) or double long key press (5) to recognize if the button was pressed again in the given time  
+		
+		if ((dblLo) && (kTime + toLoDbl <= millis())) {									// timeout for double long reached
+			dblLo = 0;																	// no need for check against
+																						//Serial.println("dbl lo to");
+			buttonAction(6);															// raise timeout for double long
+		}
+		if ((check_repeat.dbl_short) && (kTime + toShDbl <= millis())) {									// timeout for double short reached
+			dbl_short = 0;																		// no need for check against
+																						//Serial.println("dbl sh to");
+		}
+
+		if ((dblLo == 0) && (check_repeat.dbl_short == 0)) cFlag = 0;									// no need for checking again
+		if (dblLo) cTime = millis() + toLoDbl;											// set the next check time
+		if (check_repeat.dbl_short) cTime = millis() + toShDbl;									// set the next check time
+
+
+	} else if ((stat_curr == 1) && (stat_last == 0)) {											// key release
+		// coming from a short or long key press, end of long key press by checking against rptLo
+		// could be a short, signal it and start the timer to detect a double short
+		// could be a double short, nothing to do any more
+		// could be the end of a long, double long or repeated long
+
+		if ((!check_repeat.dbl_short) && (!check_repeat.rpt_long)) {							// no short or repeated long was set before, so we have detected a short keypress
+
+			#ifdef RM_DBG																		// some debug message
+				dbg << F("CR double short\n");													// ...and some information
+			#endif
+			
+			buttonAction(0);																	// send a short key press
+			check_repeat.dbl_short = 1;															// the next one could be a double short, so the the respective flag
+			detect_dbl_short.set(lstCnl.DBL_PRESS_TIME);										// set the respective timer to detect a double short keypress
+
+
+		} else if (check_repeat.dbl_short) {													// double short was set while last key press was detected as short
+
+			#ifdef RM_DBG																		// some debug message
+				dbg << F("CR double short\n");													// ...and some information
+			#endif
+
+			buttonAction(1);																	// send double short key press as message
+			(uint8_t*)&check_repeat = 0;														// detect a double short, cleanup all repeat variables
+
+
+		} else if ((check_repeat.rpt_long) && (!check_repeat.dbl_long)) {						// coming from a long key press or a repeated long, next could be a double long
+
+			#ifdef RM_DBG																		// some debug message
+				dbg << F("CR end of long\n");													// ...and some information
+			#endif
+			
+			buttonAction(4);																	// send end of long key press
+			check_repeat.rpt_long = 0;															// key was released, so could not be repeated any more
+			check_repeat.dbl_long = 1;															// but it could be the start of a double long, so set the dbl_long flag
+			detect_dbl_long.set(TIMEOUT_DBL_LONG);												// set the timer to detect a double long
+
+
+		} else if ((check_repeat.rpt_long) && (check_repeat.dbl_long)) {						// we are coming from a double long key press, signaling was done while key was pressed
+
+			#ifdef RM_DBG																		// some debug message
+				dbg << F("CR end of a double long\n");											// ...and some information
+			#endif
+
+			buttonAction(6);																	// send end of double long key press
+			(uint8_t*)&check_repeat = 0;														// detect end of double long, cleanup all repeat variables
+
+		}
+
+
+
+	} else if ((stat_curr == 0) && (stat_last == 1)) {											// detect a key press
+		// key is pressed just now, set timer to detect a long key press
+
+		detect_long.set(lstCnl.LONG_PRESS_TIME);												// set next timeout
+		buttonAction(255);																		// prevent from sleep
+
+
+	} else if ((stat_curr == 0) && (stat_last == 0)) {											// key is still pressed
+		// set next check time while long key press or a repeated long key press could happening
+		// if it is a long key press, check against dblLo for detecting a double long key press
+
+		if (rptLo) {																	// repeated long detect
+			dblLo = 0;																	// could not be a double any more
+			cTime = millis() + 300; //lngKeyTme;										// set next timeout
+									//Serial.println("rpt lo");
+			buttonAction(3);															// repeated long key press
+
+		}
+		else if (dblLo) {																// long was set last time, should be a double now
+			rptLo = 0;																	// could not be a repeated any more
+			dblLo = 0;																	// could not be a double any more
+			cFlag = 0;																	// no need for jump in again
+																						//Serial.println("dbl lo");
+			buttonAction(5);															// double long key press
+
+		}
+		else {																		// first long detect
+			dblLo = 1;																	// next time it could be a double
+			rptLo = 1;																	// or a repeated long
+			cTime = millis() + lngKeyTme;												// set next timeout
+																						//Serial.println("lo");
+			buttonAction(2);															// long key press
+
+		}
+	}
+
+	stat_last = stat_curr;																	// remember last key state
 
 }
 

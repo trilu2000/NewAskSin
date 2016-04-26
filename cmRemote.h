@@ -12,6 +12,10 @@
 #include "AS.h"
 #include "HAL.h"
 
+#define TIMEOUT_DBL_LONG        5000
+#define TIMEOUT_REPEATED_LONG   300
+
+
 // default settings for list4
 const uint8_t peerSingle[] = {
 	// Default actor single: 01:00 
@@ -20,7 +24,7 @@ const uint8_t peerSingle[] = {
 
 class cmRemote {
   //- user code here ------------------------------------------------------------------------------------------------------
-
+	
   public://----------------------------------------------------------------------------------------------------------------
   protected://-------------------------------------------------------------------------------------------------------------
   private://---------------------------------------------------------------------------------------------------------------
@@ -42,10 +46,26 @@ class cmRemote {
 		uint8_t EXPECT_AES                 :1;    // 0x01.7, 0x00
 	} lstPeer;
 
+	waitTimer detect_dbl_short;
+	waitTimer detect_dbl_long;
+	waitTimer detect_long;
+	waitTimer detect_repeated_long;
+
+	uint8_t stat_curr;																			// variable to store current status in polling function
+	uint8_t stat_last;																			// same, to remember on last status
+
+	struct s_check_repeat {
+		uint8_t poll                       :1;													// if this is set to 1, poll function should be entered
+		uint8_t dbl_short                  :1;													// if the last key press was a short to detect a double short
+		uint8_t dbl_long                   :1;													// if the last keypress was a long to detect a double long
+		uint8_t rpt_long                   :1;													// if the key is still pressed for a certain time to detect repeat status over a timer
+		uint8_t                            :4;
+	} check_repeat;
 
 
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
+	
 	struct s_buttonInfo {
 		uint8_t channel      :6;															// set in regInHM function, will not change at runtime
 		uint8_t longpress    :1;															// will be set in buttonAction function
