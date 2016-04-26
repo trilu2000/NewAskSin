@@ -27,11 +27,11 @@
 #ifdef SUPPORT_AES
 	#include "aes.h"
 
-	aes128_ctx_t ctx; 																		// the context where the round keys are stored
+	aes128_ctx_t ctx; 																			// the context where the round keys are stored
 #endif
 
-waitTimer cnfTmr;																			// config timer functionality
-waitTimer pairTmr;																			// pair timer functionality
+waitTimer cnfTmr;																				// config timer functionality
+waitTimer pairTmr;																				// pair timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
@@ -41,47 +41,47 @@ AS::AS() {
  * @brief Initialize the AskSin Module
  */
 void AS::init(void) {
-	#ifdef AS_DBG																			// only if cc debug is set
-		dbgStart();																			// serial setup
-		dbg << F("AS.\n");																	// ...and some information
+	#ifdef AS_DBG																				// only if cc debug is set
+		dbgStart();																				// serial setup
+		dbg << F("AS.\n");																		// ...and some information
 	#endif
 
-	initLeds();																				// initialize the leds
-	initConfKey();																			// initialize the port for getting config key interrupts
+	initLeds();																					// initialize the leds
+	initConfKey();																				// initialize the port for getting config key interrupts
 
-	ee.init();																				// eeprom init
-	cc.init();																				// init the rf module
+	ee.init();																					// eeprom init
+	cc.init();																					// init the rf module
 
-	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
-	memcpy_P(HMSR, HMSerialData+3, 10);														// set HMSerial from pgmspace
+	memcpy_P(HMID, HMSerialData+0, 3);															// set HMID from pgmspace
+	memcpy_P(HMSR, HMSerialData+3, 10);															// set HMSerial from pgmspace
 
-	sn.init(this);																			// send module
-	rv.init(this);																			// receive module
-	rg.init(this);																			// module registrar
-	confButton.init(this);																	// config button
-	pw.init(this);																			// power management
-	bt.init(this);																			// battery check
+	sn.init(this);																				// send module
+	rv.init(this);																				// receive module
+	rg.init(this);																				// module registrar
+	confButton.init(this);																		// config button
+	pw.init(this);																				// power management
+	bt.init(this);																				// battery check
 	
-	initMillis();																			// start the millis counter
+	initMillis();																				// start the millis counter
 
 	initRandomSeed();
 
 	// everything is setuped, enable RF functionality
-	enableGDO0Int();																		// enable interrupt to get a signal while receiving data
+	enableGDO0Int();																			// enable interrupt to get a signal while receiving data
 }
 
 /**
  * @brief Cyclic poll all related functions
  */
 void AS::poll(void) {
-	if (ccGetGDO0()) {																		// check if something was received
-		cc.rcvData(rv.buf);																	// copy the data into the receiver module
-		if (rv.hasData) decode(rv.buf);														// decode the string
+	if (ccGetGDO0()) {																			// check if something was received
+		cc.rcvData(rv.buf);																		// copy the data into the receiver module
+		if (rv.hasData) decode(rv.buf);															// decode the string
 	}
 
 	// handle send and receive buffer
-	if (rv.hasData) rv.poll();																// check if there is something in the received buffer
-	if (sn.active) sn.poll();																// check if there is something to send
+	if (rv.hasData) rv.poll();																	// check if there is something in the received buffer
+	if (sn.active) sn.poll();																	// check if there is something to send
 
 	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
 		deviceReset(resetStatus);
@@ -89,16 +89,16 @@ void AS::poll(void) {
 
 	// handle the slice send functions
 	if (stcSlice.active) {
-		sendSliceList();																	// poll the slice list send function
+		sendSliceList();																		// poll the slice list send function
 	}
 
 	if (stcPeer.active) {
-		sendPeerMsg();																		// poll the peer message sender
+		sendPeerMsg();																			// poll the peer message sender
 	}
 	
 	// time out the config flag
-	if (cFlag.active) {																		// check only if we are still in config mode
-		if (cnfTmr.done()) cFlag.active = 0;												// when timer is done, set config flag to inactive
+	if (cFlag.active) {																			// check only if we are still in config mode
+		if (cnfTmr.done()) cFlag.active = 0;													// when timer is done, set config flag to inactive
 	}
 
 	// time out the pairing timer
@@ -110,13 +110,13 @@ void AS::poll(void) {
 	}
 
 	// regular polls
-	rg.poll();																				// poll the channel module handler
-	confButton.poll();																		// poll the config button
-	ld.poll();																				// poll the led's
-	bt.poll();																				// poll the battery check
+	rg.poll();																					// poll the channel module handler
+	confButton.poll();																			// poll the config button
+	ld.poll();																					// poll the led's
+	bt.poll();																					// poll the battery check
 		
 	// check if we could go to standby
-	pw.poll();																				// poll the power management
+	pw.poll();																					// poll the power management
 }
 
 /**
@@ -129,7 +129,7 @@ void AS::poll(void) {
 void AS::sendDEVICE_INFO(void) {
 	uint8_t msgCount;
 	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {
-		msgCount = rv.mBdy.mLen;															// send counter - is it an answer or a initial message
+		msgCount = rv.mBdy.mLen;																// send counter - is it an answer or a initial message
 	} else {
 		msgCount = sn.msgCnt++;
 	}
@@ -144,9 +144,9 @@ void AS::sendDEVICE_INFO(void) {
 
 	prepareToSend(msgCount, AS_MESSAGE_DEVINFO, MAID);
 
-	pairActive = 1;																			// set pairing flag
-	pairTmr.set(20000);																		// set pairing time
-	ld.set(pairing);																		// and visualize the status
+	pairActive = 1;																				// set pairing flag
+	pairTmr.set(20000);																			// set pairing time
+	ld.set(pairing);																			// and visualize the status
 }
 
 /**
@@ -170,7 +170,7 @@ void AS::checkSendACK(uint8_t ackOk) {
  * 0A 24 80 02 1F B7 4A 63 19 63 00
  */
 void AS::sendACK(void) {
-	if (rv.mBdy.mFlg.BIDI) {															// prevent answer for requests from a user class on repeated key press
+	if (rv.mBdy.mFlg.BIDI) {																	// prevent answer for requests from a user class on repeated key press
 		sn.mBdy.mLen = 0x0A;
 		sn.mBdy.mFlg.CFG = 0;
 		sn.mBdy.mFlg.BIDI = 0;
@@ -228,7 +228,7 @@ inline void AS::sendNACK(void) {
  * @param action
  */
 void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
-	if (rv.mBdy.mFlg.BIDI) {																// prevent answer for requests from a user class on repeated key press
+	if (rv.mBdy.mFlg.BIDI) {																	// prevent answer for requests from a user class on repeated key press
 		sn.mBdy.mLen      = 0x0E;
 		sn.mBdy.mFlg.BIDI = 0;
 		sn.mBdy.by10      = 0x01;
@@ -390,23 +390,23 @@ void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
  * @attention The payload length may not exceed 16 bytes. If a greater value
  * for len is given, it is limited to 16 to prevent HM-CFG-LAN (v0.961) to crash.
  */
-void AS::sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *payload, uint8_t pyl_len) {
-	if (pyl_len>16) {
+void AS::sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload) {
+	if (len_payload>16) {
 		#ifdef AS_DBG
-		dbg << "AS::sendGenericEvent(" << channel << "," << msg_flag << ",0x" << _HEX(&mType,1) << "," << pLen << ",...): payload exceeds max len of 16\n";
+		dbg << "AS::sendGenericEvent(" << channel << "," << msg_flag << ",0x" << _HEX(&msg_type,1) << "," << len_payload << ",...): payload exceeds max len of 16\n";
 		#endif
-		pyl_len = 16;
+		len_payload = 16;
 	}
 
-	stcPeer.payload   = payload;
-	stcPeer.pyl_len   = pyl_len + 1;
-	stcPeer.cnl     = channel;
-	stcPeer.burst   = (msg_flag & AS_BURST) ? 1 : 0;								// not sure if it can be different for a whole peer list and has to come out of list4 of the respective channel
-	stcPeer.bidi    = (msg_flag & AS_ACK_REQ) ? 1 : 0;
-	//stcPeer.bidi   = (~payload[0] & AS_BUTTON_BYTE_LONGPRESS_BIT) ? 0 : 1;		// depends on long-key-press-bit (long didn't need ACK)	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
-	//stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
-	stcPeer.msg_type = msg_type;
-	stcPeer.active   = 1;
+	stcPeer.ptr_payload = ptr_payload;
+	stcPeer.len_payload = len_payload + 1;
+	stcPeer.channel     = channel;
+	stcPeer.burst       = (msg_flag & AS_BURST) ? 1 : 0;										// not sure if it can be different for a whole peer list and has to come out of list4 of the respective channel
+	stcPeer.bidi        = (msg_flag & AS_ACK_REQ) ? 1 : 0;
+	//stcPeer.bidi        = (~payload[0] & AS_BUTTON_BYTE_LONGPRESS_BIT) ? 0 : 1;				// depends on long-key-press-bit (long didn't need ACK)	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
+	//stcPeer.bidi        = (isEmpty(MAID,3)) ? 0 : 1;
+	stcPeer.msg_type    = msg_type;
+	stcPeer.active      = 1;
 }
 
 void AS::sendSensorData(void) {
@@ -454,116 +454,114 @@ void AS::sendWeatherEvent(void) {
 inline void AS::sendSliceList(void) {
 	uint8_t cnt;
 
-	if (sn.active) return;																	// check if send function has a free slot, otherwise return
+	if (sn.active) return;																		// check if send function has a free slot, otherwise return
 
 	if        (stcSlice.peer) {			// INFO_PEER_LIST
-		cnt = ee.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, sn.buf+11);					// get the slice and the amount of bytes
-		sendINFO_PEER_LIST(cnt);															// create the body
-		stcSlice.curSlc++;																	// increase slice counter
-		//dbg << "peer slc: " << _HEX(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
+		cnt = ee.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, sn.buf+11);						// get the slice and the amount of bytes
+		sendINFO_PEER_LIST(cnt);																// create the body
+		stcSlice.curSlc++;																		// increase slice counter
+		//dbg << "peer slc: " << _HEX(sn.buf,sn.buf[0]+1) << '\n';								// write to send buffer
 
 	} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
 		cnt = ee.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, sn.buf+11); // get the slice and the amount of bytes
 		//dbg << "cnt: " << cnt << '\n';
 		sendINFO_PARAM_RESPONSE_PAIRS(cnt);
-		stcSlice.curSlc++;																	// increase slice counter
-		//dbg << "reg2 slc: " << _HEX(sn.buf,sn.buf[0]+1) << '\n';							// write to send buffer
+		stcSlice.curSlc++;																		// increase slice counter
+		//dbg << "reg2 slc: " << _HEX(sn.buf,sn.buf[0]+1) << '\n';								// write to send buffer
 		
-	} else if (stcSlice.reg3) {																// INFO_PARAM_RESPONSE_SEQ
+	} else if (stcSlice.reg3) {																	// INFO_PARAM_RESPONSE_SEQ
 
 	}
 
-	if (stcSlice.curSlc == stcSlice.totSlc) {												// if everything is send, we could empty the struct
-		memset((void*)&stcSlice, 0, 10);													// by memset
+	if (stcSlice.curSlc == stcSlice.totSlc) {													// if everything is send, we could empty the struct
+		memset((void*)&stcSlice, 0, 10);														// by memset
 		//dbg << "end: " << stcSlice.active << stcSlice.peer << stcSlice.reg2 << stcSlice.reg3 << '\n';
 	}
 }
 
 inline void AS::sendPeerMsg(void) {
-	uint8_t maxRetries;
+	uint8_t retries_max;
 
-	maxRetries = (stcPeer.bidi) ? 3 : 1;
+	retries_max = (stcPeer.bidi) ? 3 : 1;
 	
-	if (sn.active) return;																	// check if send function has a free slot, otherwise return
+	if (sn.active) return;																		// check if send function has a free slot, otherwise return
 	
 	// first run, prepare amount of slots
-	if (!stcPeer.max_idx) {
-		stcPeer.max_idx = ee.getPeerSlots(stcPeer.cnl);										// get amount of messages of peer channel
+	if (!stcPeer.idx_max) {
+		stcPeer.idx_max = ee.getPeerSlots(stcPeer.channel);										// get amount of messages of peer channel
 	
-		if (stcPeer.max_idx == ee.countFreeSlots(stcPeer.cnl) ) {							// check if at least one peer exist in db, otherwise send to master and stop function
-			preparePeerMessage(MAID, maxRetries);
-			sn.msgCnt++;																	// increase the send message counter
-			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));									// clean out and return
+		if (stcPeer.idx_max == ee.countFreeSlots(stcPeer.channel) ) {							// check if at least one peer exist in db, otherwise send to master and stop function
+			preparePeerMessage(MAID, retries_max);
+			sn.msgCnt++;																		// increase the send message counter
+			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
 			return;
 		}
 	}
 	
 	// all slots of channel processed, start next round or end processing
-	if (stcPeer.cur_idx >= stcPeer.max_idx) {												// check if all peer slots are done
-		stcPeer.rnd++;																		// increase the round counter
+	if (stcPeer.idx_cur >= stcPeer.idx_max) {													// check if all peer slots are done
+		stcPeer.retries++;																		// increase the round counter
 		
-		if ((stcPeer.rnd >= maxRetries) || (isEmpty(stcPeer.slt,8))) {						// all rounds done or all peers reached
+		if ((stcPeer.retries >= retries_max) || (isEmpty(stcPeer.slot,8))) {					// all rounds done or all peers reached
 			//dbg << "through\n";
-			sn.msgCnt++;																	// increase the send message counter
-			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));									// clean out and return
+			sn.msgCnt++;																		// increase the send message counter
+			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
 			
-		} else {																			// start next round
+		} else {																				// start next round
 			//dbg << "next round\n";
-			stcPeer.cur_idx = 0;
+			stcPeer.idx_cur = 0;
 
 		}
 		return;
 
-	} else if ((stcPeer.cur_idx) && (!sn.timeOut)) {										// peer index is >0, first round done and no timeout
-		uint8_t idx = stcPeer.cur_idx-1;
-		stcPeer.slt[idx >> 3] &=  ~(1 << (idx & 0x07));										// clear bit, because message got an ACK
+	} else if ((stcPeer.idx_cur) && (!sn.timeOut)) {											// peer index is >0, first round done and no timeout
+		uint8_t idx = stcPeer.idx_cur -1;
+		stcPeer.slot[idx >> 3] &=  ~(1 << (idx & 0x07));										// clear bit, because message got an ACK
 	}
 	
 	// set respective bit to check if ACK was received
-	if (!stcPeer.rnd) {
-		stcPeer.slt[stcPeer.cur_idx >> 3] |= (1<<(stcPeer.cur_idx & 0x07));					// set bit in slt table										// clear bit in slt and increase counter
+	if (!stcPeer.retries) {
+		stcPeer.slot[stcPeer.idx_cur >> 3] |= (1<<(stcPeer.idx_cur & 0x07));					// set bit in slt table										// clear bit in slt and increase counter
 	}
 
 
 	// exit while bit is not set
-	if (!stcPeer.slt[stcPeer.cur_idx >> 3] & (1<<(stcPeer.cur_idx & 0x07))) {
-		stcPeer.cur_idx++;																	// increase counter for next time
+	if (!stcPeer.slot[stcPeer.idx_cur >> 3] & (1<<(stcPeer.idx_cur & 0x07))) {
+		stcPeer.idx_cur++;																		// increase counter for next time
 		return;
 	}
 
-	uint8_t tPeer[4];																		// get the respective peer
-	ee.getPeerByIdx(stcPeer.cnl, stcPeer.cur_idx, tPeer);
+	uint8_t tmp_peer[4];																		// get the respective peer address
+	ee.getPeerByIdx(stcPeer.channel, stcPeer.idx_cur, tmp_peer);
 	
 	#ifdef AS_DBG
-		dbg << "a: " << stcPeer.curIdx << " m " << stcPeer.maxIdx << '\n';
+		dbg << "a: " << stcPeer.idx_cur << " m " << stcPeer.idx_max << '\n';
 	#endif
 
-	if (isEmpty(tPeer,4)) {																	// if peer is 0, set done bit in slt and skip
-		stcPeer.slt[stcPeer.cur_idx >> 3] &=  ~(1<<(stcPeer.cur_idx & 0x07));				// remember empty peer in slt table										// clear bit in slt and increase counter
-		stcPeer.cur_idx++;																	// increase counter for next time
-		return;																				// wait for next round
+	if (isEmpty(tmp_peer,4)) {																	// if peer is 0, set done bit in slt and skip
+		stcPeer.slot[stcPeer.idx_cur >> 3] &=  ~(1<<(stcPeer.idx_cur & 0x07));					// remember empty peer in slot table										// clear bit in slt and increase counter
+		stcPeer.idx_cur++;																		// increase counter for next time
+		return;																					// wait for next round
 	}
 
 	// if we are here, there is something to send
-	//dbg << "cnl:" << stcPeer.cnl << " cIdx:" << stcPeer.curIdx << " mIdx:" << stcPeer.maxIdx << " slt:" << _HEX(stcPeer.slt,8) << '\n';
+	//dbg << "cnl:" << stcPeer.channel << " cIdx:" << stcPeer.idx_cur << " mIdx:" << stcPeer.idx_max << " slt:" << _HEX(stcPeer.slot,8) << '\n';
 	
-	// todo: get the respective list4 entries and take care while sending the message
+	// get the respective list4 entries and take care while sending the message
 	// peerNeedsBurst  =>{a=>  1.0,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"peer expects burst",lit=>{off=>0,on=>1}},
 	// expectAES       =>{a=>  1.7,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"expect AES"        ,lit=>{off=>0,on=>1}},
-	// fillLvlUpThr    =>{a=>  4.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level upper threshold"},
-	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
-	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.cnl, 4, stcPeer.cur_idx, 0x01);
+	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.channel, 4, stcPeer.idx_cur, 0x01);
 	
-	preparePeerMessage(tPeer, 1);
+	preparePeerMessage(tmp_peer, 1);
 	
 	if (!sn.mBdy.mFlg.BIDI) {
-		stcPeer.slt[stcPeer.cur_idx >> 3] &=  ~(1<<(stcPeer.cur_idx & 0x07));				// clear bit, because it is a message without need to be repeated
+		stcPeer.slot[stcPeer.idx_cur >> 3] &=  ~(1<<(stcPeer.idx_cur & 0x07));					// clear bit, because it is a message without need to be repeated
 	}
 
-	stcPeer.cur_idx++;																		// increase counter for next time
+	stcPeer.idx_cur++;																			// increase counter for next time
 }
 
-void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retr) {
+void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
 
 	// description --------------------------------------------------------
 	//    len  cnt  flg  typ  reID      toID      pl
@@ -577,15 +575,15 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retr) {
 	// LONG   = bit 6
 	// LOWBAT = bit 7
 
-	sn.mBdy.mLen       = stcPeer.pyl_len + 9;													// set message length
+	sn.mBdy.mLen       = stcPeer.len_payload + 9;												// set message length
 	sn.mBdy.mFlg.CFG   = 1;
-	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;														// message flag
+	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;															// message flag
 	sn.mBdy.mFlg.BURST = l4_0x01.peerNeedsBurst;
-	sn.mBdy.by10       = stcPeer.cnl;
-	sn.mBdy.by10      |= (bt.getStatus() << 7);												// battery bit
-	memcpy(sn.buf+11, stcPeer.payload, stcPeer.pyl_len);											// payload
+	sn.mBdy.by10       = stcPeer.channel;
+	sn.mBdy.by10      |= (bt.getStatus() << 7);													// battery bit
+	memcpy(sn.buf+11, stcPeer.ptr_payload, stcPeer.len_payload);								// payload
 	
-	sn.maxRetr = retr;																		// send only one time
+	sn.maxRetr = retries;																		// send only one time
 
 	prepareToSend(sn.msgCnt, stcPeer.msg_type, xPeer);
 }
@@ -782,7 +780,7 @@ void AS::processMessage(void) {
 			}
 		#endif
 
-	} else if  (rv.mBdy.mTyp == AS_MESSAGE_HAVE_DATA) {																// HAVE_DATA
+	} else if  (rv.mBdy.mTyp == AS_MESSAGE_HAVE_DATA) {											// HAVE_DATA
 		// TODO: Make ready
 
 	} else if  (rv.mBdy.mTyp >= AS_MESSAGE_SWITCH_EVENT) {
@@ -842,18 +840,18 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 
 	// check if we have the peer in the database to get the channel
 	if ((rv.mBdy.mTyp == AS_MESSAGE_SWITCH_EVENT) && (rv.mBdy.mLen == 0x0F)) {
-		tmp = rv.buf[13];																	// save byte13, because we will replace it
-		rv.buf[13] = rv.buf[14];															// copy the channel byte to the peer
-		cnl = ee.isPeerValid(rv.buf+10);													// check with the right part of the string
+		tmp = rv.buf[13];																		// save byte13, because we will replace it
+		rv.buf[13] = rv.buf[14];																// copy the channel byte to the peer
+		cnl = ee.isPeerValid(rv.buf+10);														// check with the right part of the string
 		if (cnl) {
 			*pIdx = ee.getIdxByPeer(cnl, rv.buf+10);											// get the index of the respective peer in the channel store
 		}
-		rv.buf[13] = tmp;																	// get it back
+		rv.buf[13] = tmp;																		// get it back
 
 	} else {
 		cnl = ee.isPeerValid(rv.peerId);
 		if (cnl) {
-			*pIdx = ee.getIdxByPeer(cnl, rv.peerId);									// get the index of the respective peer in the channel store
+			*pIdx = ee.getIdxByPeer(cnl, rv.peerId);											// get the index of the respective peer in the channel store
 		}
 	}
 
@@ -866,7 +864,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	 */
 	uint8_t AS::checkAnyChannelForAES(void) {
 		uint8_t i;
-		for (i = 1; i <= devDef.cnlNbr; i++) {												// check if AES activated for any channel
+		for (i = 1; i <= devDef.cnlNbr; i++) {													// check if AES activated for any channel
 			if (ee.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
 				return 1;
 			}
@@ -932,30 +930,30 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	inline void AS::processMessageResponseAES_Challenge(void) {
 		uint8_t i;
 
-		sn.cleanUp();																		// cleanup send module data;
+		sn.cleanUp();																			// cleanup send module data;
 		initPseudoRandomNumberGenerator();
 
 		uint8_t challenge[6];
-		memcpy(challenge, rv.buf+11, 6);													// get challenge
+		memcpy(challenge, rv.buf+11, 6);														// get challenge
 
-		makeTmpKey(challenge);																// Build the temporarily key from challenge
+		makeTmpKey(challenge);																	// Build the temporarily key from challenge
 
 		// Prepare the payload for encryption.
-		uint8_t msgLen = sn.msgToSign[5];													// the message length stored at byte 5
+		uint8_t msgLen = sn.msgToSign[5];														// the message length stored at byte 5
 		for (i = 0; i < 32; i++) {
 			if (i < 6) {
-				sn.msgToSign[i] = (uint8_t)rand();											// fill the first 6 bytes with random data
+				sn.msgToSign[i] = (uint8_t)rand();												// fill the first 6 bytes with random data
 			} else if (i > msgLen + 5 ) {
-				sn.msgToSign[i] = 0x00;														// the unused message bytes padded with 0x00
+				sn.msgToSign[i] = 0x00;															// the unused message bytes padded with 0x00
 			}
 		}
 
-		aes128_enc(sn.msgToSign, &ctx);														// encrypt the message first time
+		aes128_enc(sn.msgToSign, &ctx);															// encrypt the message first time
 		for (i = 0; i < 16; i++) {
-			sn.msgToSign[i] ^= sn.msgToSign[i+16];											// xor encrypted payload with IV (the bytes 11-27)
+			sn.msgToSign[i] ^= sn.msgToSign[i+16];												// xor encrypted payload with IV (the bytes 11-27)
 		}
 
-		aes128_enc(sn.msgToSign, &ctx);														// encrypt payload again
+		aes128_enc(sn.msgToSign, &ctx);															// encrypt payload again
 		sn.mBdy.mLen = 0x19;
 	}
 #endif
@@ -984,7 +982,7 @@ inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
  * 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
  */
 inline void AS::processMessageConfigPairSerial(void) {
-	if (!memcmp(rv.buf+12, HMSR, 10)) {														// compare serial and send device info
+	if (!memcmp(rv.buf+12, HMSR, 10)) {															// compare serial and send device info
 		sendDEVICE_INFO();
 	}
 }
@@ -1009,18 +1007,18 @@ inline void AS::processMessageConfigSerialReq(void) {
  * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
  */
 inline void AS::processMessageConfigParamReq(void) {
-	if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {										// only list 3 and list 4 needs an peer id and idx
-		stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);							// get peer index
+	if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {											// only list 3 and list 4 needs an peer id and idx
+		stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);								// get peer index
 	} else {
-		stcSlice.idx = 0;																	// otherwise peer index is 0
+		stcSlice.idx = 0;																		// otherwise peer index is 0
 	}
 
-	stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);							// how many slices are need
-	stcSlice.mCnt = rv.mBdy.mCnt;															// remember the message count
+	stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);								// how many slices are need
+	stcSlice.mCnt = rv.mBdy.mCnt;																// remember the message count
 	memcpy(stcSlice.toID, rv.mBdy.reID, 3);
-	stcSlice.cnl = rv.mBdy.by10;															// send input to the send peer function
-	stcSlice.lst = rv.buf[16];																// send input to the send peer function
-	stcSlice.reg2 = 1;																		// set the type of answer
+	stcSlice.cnl = rv.mBdy.by10;																// send input to the send peer function
+	stcSlice.lst = rv.buf[16];																	// send input to the send peer function
+	stcSlice.reg2 = 1;																			// set the type of answer
 
 	#ifdef AS_DBG
 		dbg << "cnl: " << rv.mBdy.by10 << " s: " << stcSlice.idx << '\n';
@@ -1028,9 +1026,9 @@ inline void AS::processMessageConfigParamReq(void) {
 	#endif
 
 	if ((stcSlice.idx != 0xFF) && (stcSlice.totSlc > 0)) {
-		stcSlice.active = 1;																// only send register content if something is to send															// start the send function
+		stcSlice.active = 1;																	// only send register content if something is to send															// start the send function
 	} else {
-		memset((void*)&stcSlice, 0, 10);													// otherwise empty variable
+		memset((void*)&stcSlice, 0, 10);														// otherwise empty variable
 	}
 }
 
@@ -1102,8 +1100,8 @@ uint8_t AS::processMessageConfig() {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 01        01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerAdd(uint8_t by10) {
-	ee.remPeer(rv.mBdy.by10, rv.buf+12);															// first call remPeer to avoid doubles
-	uint8_t ackOk = ee.addPeer(rv.mBdy.by10, rv.buf+12);											// send to addPeer function
+	ee.remPeer(rv.mBdy.by10, rv.buf+12);														// first call remPeer to avoid doubles
+	uint8_t ackOk = ee.addPeer(rv.mBdy.by10, rv.buf+12);										// send to addPeer function
 
 	// let module registrations know of the change
 	if ((ackOk) && (modTbl[by10].cnl)) {
@@ -1132,17 +1130,17 @@ inline uint8_t AS::configPeerRemove() {
  * 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
  */
 inline void AS::configStart() {
-	cFlag.cnl = rv.mBdy.by10;																// fill structure to remember where to write
-	cFlag.lst = rv.buf[16];
-	if ((cFlag.lst == 3) || (cFlag.lst == 4)) {
-		cFlag.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf + 12);
+	cFlag.channel = rv.mBdy.by10;																// fill structure to remember where to write
+	cFlag.list = rv.buf[16];
+	if ((cFlag.list == 3) || (cFlag.list == 4)) {
+		cFlag.idx_peer = ee.getIdxByPeer(rv.mBdy.by10, rv.buf + 12);
 	} else {
-		cFlag.idx = 0;
+		cFlag.idx_peer = 0;
 	}
 
-	if (cFlag.idx != 0xFF) {
-		cFlag.active = 1;																	// set active if there is no error on index
-		cnfTmr.set(20000);																	// set timeout time, will be checked in poll function
+	if (cFlag.idx_peer != 0xFF) {
+		cFlag.active = 1;																		// set active if there is no error on index
+		cnfTmr.set(20000);																		// set timeout time, will be checked in poll function
 		// TODO: set message id flag to config in send module
 	}
 }
@@ -1155,23 +1153,23 @@ inline void AS::configStart() {
  * 10 04 A0 01 63 19 63 01 02 04 01 06
  */
 inline void AS::configEnd() {
-	uint8_t cnl1 = cFlag.cnl - 1;
+	uint8_t cnl1 = cFlag.channel - 1;
 
-	cFlag.active = 0;																		// set inactive
-	if ((cFlag.cnl == 0) && (cFlag.idx == 0)) {
+	cFlag.active = 0;																			// set inactive
+	if ((cFlag.channel == 0) && (cFlag.idx_peer == 0)) {
 		ee.getMasterID();
 	}
 	// remove message id flag to config in send module
 
-	if ((cFlag.cnl > 0) && (modTbl[cnl1].cnl)) {
+	if ((cFlag.channel > 0) && (modTbl[cnl1].cnl)) {
 		/*
 		 * Check if a new list1 was written and reload.
 		 * No need for reload list3/4 because they will be loaded on an peer event.
 		 */
-		if (cFlag.lst == 1) {
-			ee.getList(cFlag.cnl, 1, cFlag.idx, modTbl[cnl1].lstCnl); 						// load list1 in the respective buffer
+		if (cFlag.list == 1) {
+			ee.getList(cFlag.channel, 1, cFlag.idx_peer, modTbl[cnl1].lstCnl); 					// load list1 in the respective buffer
 		}
-		modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);											// inform the module of the change
+		modTbl[cnl1].mDlgt(0x01, 0, 0x06, NULL, 0);												// inform the module of the change
 	}
 }
 
@@ -1183,10 +1181,10 @@ inline void AS::configEnd() {
  * 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
  */
  inline void AS::configWriteIndex(void) {
-	if ((cFlag.active) && (cFlag.cnl == rv.mBdy.by10)) {									// check if we are in config mode and if the channel fit
-		ee.setListArray(cFlag.cnl, cFlag.lst, cFlag.idx, rv.buf[0]+1-11, rv.buf+12);		// write the string to EEprom
+	if ((cFlag.active) && (cFlag.channel == rv.mBdy.by10)) {									// check if we are in config mode and if the channel fit
+		ee.setListArray(cFlag.channel, cFlag.list, cFlag.idx_peer, rv.buf[0]+1-11, rv.buf+12);	// write the string to EEprom
 
-		if ((cFlag.cnl == 0) && (cFlag.lst == 0)) {											// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
+		if ((cFlag.channel == 0) && (cFlag.list == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 			uint8_t maIdFlag = 0;
 			for (uint8_t i = 0; i < (rv.buf[0]+1-12); i+=2) {
 				if (rv.buf[12+i] == 0x0A) maIdFlag = 1;
@@ -1208,22 +1206,22 @@ inline void AS::configEnd() {
  * @brief Process all action (11) messages
  */
 void AS::processMessageAction11() {
-	if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {							// RESET
+	if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {								// RESET
 		/*
 		 * Message description:
 		 *             Sender__ Receiver
 		 * 0B 1C B0 11 63 19 63 1F B7 4A 04 00
 		 */
-		resetStatus = AS_RESET_CLEAR_EEPROM;												// schedule a device reset with clear eeprom
+		resetStatus = AS_RESET_CLEAR_EEPROM;													// schedule a device reset with clear eeprom
 
-	} else if (rv.mBdy.by10 == AS_ACTION_ENTER_BOOTLOADER) {								// We should enter the Bootloader
+	} else if (rv.mBdy.by10 == AS_ACTION_ENTER_BOOTLOADER) {									// We should enter the Bootloader
 		dbg << "AS_ACTION_ENTER_BOOTLOADER\n";
 		/*
 		 * Message description:
 		 *             Sender__ Receiver
 		 * 0B 1C B0 11 63 19 63 1F B7 4A CA
 		 */
-		resetStatus = AS_RESET;																// schedule a device reset without eeprom
+		resetStatus = AS_RESET;																	// schedule a device reset without eeprom
 		rv.ackRq = 1;
 
 	} else {
@@ -1248,7 +1246,7 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
 	if (modTbl[cnl-1].cnl) {
 
 		//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
-		ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);		// get list3 or list4 loaded into the user module
+		ee.getList(cnl, modTbl[cnl-1].lst, pIdx, modTbl[cnl-1].lstPeer);						// get list3 or list4 loaded into the user module
 
 		// call the user module
 		modTbl[cnl-1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
@@ -1276,7 +1274,7 @@ void AS::deviceReset(uint8_t clearEeprom) {
 	}
 
 	#ifdef WDT_RESET_ON_RESET
-		wdt_enable(WDTO_15MS);														// configure the watchdog so the reset sould trigger in 15ms
+		wdt_enable(WDTO_15MS);																	// configure the watchdog so the reset sould trigger in 15ms
 	#else
 		ld.set(welcome);
 	#endif
@@ -1308,7 +1306,7 @@ inline void AS::sendINFO_SERIAL(void) {
 inline void AS::sendINFO_PEER_LIST(uint8_t length) {
 	sn.mBdy.mLen = length + 10;
 	sn.mBdy.mFlg.BIDI = 1;
-	sn.mBdy.by10 = AS_INFO_PEER_LIST;																	//stcSlice.cnl;
+	sn.mBdy.by10 = AS_INFO_PEER_LIST;															//stcSlice.cnl;
 	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
 
@@ -1346,7 +1344,7 @@ void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
 	sn.mBdy.reID[2] = HMID[2];
 	memcpy(sn.mBdy.toID, receiverAddr, 3);
 
-	sn.active = 1;																			// remember to fire the message
+	sn.active = 1;																				// remember to fire the message
 }
 
 void AS::sendINFO_PARAM_RESPONSE_SEQ(uint8_t len) {
@@ -1412,14 +1410,14 @@ void AS::encode(uint8_t *buf) {
 	buf[i] ^= buf2;
 }
 
-#ifdef RV_DBG_EX																			// only if extended AS debug is set
+#ifdef RV_DBG_EX																				// only if extended AS debug is set
 	/**
 	 * @brief Debuging: Explain the Messages
 	 *
 	 * @param buf   pointer to buffer
 	 */
 	void AS::explainMessage(uint8_t *buf) {
-		dbg << F("   ");																	// save some byte and send 3 blanks once, instead of having it in every if
+		dbg << F("   ");																		// save some byte and send 3 blanks once, instead of having it in every if
 
 		if        ((buf[3] == AS_MESSAGE_DEVINFO)) {
 			dbg << F("DEVICE_INFO; fw: ") << _HEX((buf+10),1) << F(", type: ") << _HEX((buf+11),2) << F(", serial: ") << _HEX((buf+13),10) << '\n';
@@ -1578,21 +1576,21 @@ void AS::encode(uint8_t *buf) {
 	 */
 	void AS::sendSignRequest(uint8_t rememberBuffer) {
 		if (rememberBuffer) {
-			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);										// remember the message from buffer
+			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember the message from buffer
 			rv.prevBufUsed = 1;
 		}
 
 		sn.mBdy.mLen      = 0x11;
 		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
-		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;										// AES Challenge
+		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;											// AES Challenge
 
 		initPseudoRandomNumberGenerator();
 
 		uint8_t i = 0;
-		for (i = 0; i < 6; i++) {															// random bytes to the payload
+		for (i = 0; i < 6; i++) {																// random bytes to the payload
 			sn.buf[11 + i] = (uint8_t)rand();
 		}
-		sn.buf[17] = hmKeyIndex[0];															// the 7th byte is the key index
+		sn.buf[17] = hmKeyIndex[0];																// the 7th byte is the key index
 
 		/*
 		 * Here we make a temporarily key with the challenge and the HMKEY.
@@ -1618,7 +1616,7 @@ void AS::encode(uint8_t *buf) {
 			this->tempHmKey[i] = (i<6) ? (HMKEY[i] ^ challenge[i]) : HMKEY[i];
 		}
 
-		aes128_init(this->tempHmKey, &ctx);											// generating the round keys from the 128 bit key
+		aes128_init(this->tempHmKey, &ctx);														// generating the round keys from the 128 bit key
 	}
 
 #endif
@@ -1655,10 +1653,10 @@ inline void AS::initRandomSeed() {
  *         If the timer was never set(), return value is 1
  */
 uint8_t  waitTimer::done(void) {
-	if (!armed) return 1;																	// not armed, so nothing to do
-	if ( (getMillis() - startTime) < checkTime ) return 0;									// not ready yet
+	if (!armed) return 1;																		// not armed, so nothing to do
+	if ( (getMillis() - startTime) < checkTime ) return 0;										// not ready yet
 
-	checkTime = armed = 0;																	// if we are here, timeout was happened, next loop status 1 will indicated
+	checkTime = armed = 0;																		// if we are here, timeout was happened, next loop status 1 will indicated
 	return 1;
 }
 

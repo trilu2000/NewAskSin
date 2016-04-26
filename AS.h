@@ -44,27 +44,26 @@ class AS {
 	friend class PW;
 
   public:		//---------------------------------------------------------------------------------------------------------
-	EE ee;			///< eeprom module
-	SN sn;			///< send module
-	RG rg;			///< user module registrar
+	EE ee;				///< eeprom module
+	SN sn;				///< send module
+	RG rg;				///< user module registrar
 	CB confButton;		///< config button
-	LD ld;			///< status led
-	PW pw;			///< power management
-	CC cc;			///< load communication module
-	BT bt;
+	LD ld;				///< status led
+	PW pw;				///< power management
+	CC cc;				///< load communication module
+	BT bt;				///< battery status
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 
-	//CC cc;		///< load communication module
-	RV rv;			///< receive module
+	RV rv;				///< receive module
 
 	/** @brief Helper structure for keeping track of active config mode */
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
 		uint8_t  active;					//< indicates status, 1 if config mode is active
-		uint8_t  cnl;						//< channel
-		uint8_t  lst;						//< list
-		uint8_t  idx;						//< peer index
+		uint8_t  channel;					//< channel
+		uint8_t  list;						//< list
+		uint8_t  idx_peer;					//< peer index
 	} cFlag;
 
 	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
@@ -83,16 +82,16 @@ class AS {
 
 	struct s_stcPeer {
 		uint8_t active; //   :1;			// indicates status of poll routine, 1 is active
-		uint8_t rnd; //      :3;			// send retries
+		uint8_t retries; //    :3;			// send retries
 		uint8_t burst; //    :1;			// burst flag for send function
 		uint8_t bidi; //     :1;			// ack required
 		uint8_t msg_type;					// message type to build the right message
-		uint8_t *payload;					// pointer to payload
-		uint8_t pyl_len;					// length of payload
-		uint8_t cnl;						// which channel is the sender
-		uint8_t cur_idx;					// current peer slots
-		uint8_t max_idx;					// amount of peer slots
-		uint8_t slt[8];						// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
+		uint8_t *ptr_payload;				// pointer to payload
+		uint8_t len_payload;				// length of payload
+		uint8_t channel;					// which channel is the sender
+		uint8_t idx_cur;					// current peer slots
+		uint8_t idx_max;					// amount of peer slots
+		uint8_t slot[8];					// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
 	} stcPeer;
 
 	struct s_l4_0x01 {
@@ -144,13 +143,13 @@ class AS {
 	void sendHAVE_DATA(void);
 	void sendSWITCH(void);
 	void sendTimeStamp(void);
-	void sendREMOTE(uint8_t channel, uint8_t *payload, uint8_t msg_flag = 0);
+	void sendREMOTE(uint8_t channel, uint8_t *ptr_payload, uint8_t msg_flag = 0);
 	void sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload);
 	void sendSensorData(void);
 	void sendClimateEvent(void);
 	void sendSetTeamTemp(void);
 	void sendWeatherEvent(void);
-	void sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *payload, uint8_t pyl_len);
+	void sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload);
 
 	void processMessageConfigAction(uint8_t by10, uint8_t cnl1);
 	void processMessageAction11();
