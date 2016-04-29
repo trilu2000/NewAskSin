@@ -525,7 +525,7 @@ inline void AS::sendPeerMsg(void) {
 
 
 	// exit while bit is not set
-	if (!stcPeer.slt[stcPeer.curIdx >> 3] & (1<<(stcPeer.curIdx & 0x07))) {
+	if (!(stcPeer.slt[stcPeer.curIdx >> 3] & (1<<(stcPeer.curIdx & 0x07)))) {
 		stcPeer.curIdx++;																	// increase counter for next time
 		return;
 	}
