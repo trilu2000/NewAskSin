@@ -48,6 +48,7 @@
 #ifndef FASTDELEGATE_H
 #define FASTDELEGATE_H
 
+#include <string.h>
 //#include <memory.h> // to allow <,> comparisons
 
 ////////////////////////////////////////////////////////////////////////////////

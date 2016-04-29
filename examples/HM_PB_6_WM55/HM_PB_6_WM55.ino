@@ -41,6 +41,8 @@ void setup() {
 	#ifdef SER_DBG
 		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");	// some debug
 	#endif
+	
+	dbg << sizeof(modTbl) << "\n";
 }
 
 void loop() {
