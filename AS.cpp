@@ -580,13 +580,18 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retr) {
 	sn.mBdy.mFlg.CFG   = 1;
 	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;														// message flag
 	sn.mBdy.mFlg.BURST = l4_0x01.peerNeedsBurst;
-	sn.mBdy.by10       = stcPeer.cnl;
-	sn.mBdy.by10      |= (bt.getStatus() << 7);												// battery bit
-	memcpy(sn.buf+11, stcPeer.pL, stcPeer.lenPL);											// payload
 	
-	sn.maxRetr = retr;																		// send only one time
-
 	prepareToSend(sn.msgCnt, stcPeer.mTyp, xPeer);
+
+	if (sn.mBdy.mTyp == 0x41) {
+		sn.mBdy.by10 = stcPeer.cnl;
+		sn.mBdy.by10 |= (bt.getStatus() << 7);												// battery bit
+		memcpy(sn.buf+11, stcPeer.pL, stcPeer.lenPL);										// payload
+		sn.mBdy.mLen++;
+	} else {
+		memcpy(sn.buf+10, stcPeer.pL, stcPeer.lenPL);										// payload
+	}
+	sn.maxRetr = retr;																		// send only one time
 }
 
 /**
