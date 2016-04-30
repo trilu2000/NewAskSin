@@ -551,7 +551,9 @@ inline void AS::sendPeerMsg(void) {
 	// expectAES       =>{a=>  1.7,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"expect AES"        ,lit=>{off=>0,on=>1}},
 	// fillLvlUpThr    =>{a=>  4.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level upper threshold"},
 	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
-	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.cnl, 4, stcPeer.curIdx, 0x01);
+	l4_0x01.ui = ee.getRegAddr(stcPeer.cnl, 4, stcPeer.curIdx, 0x01);
+	//dbg << F("s_l4_0x01=") << _HEXB(l4_0x01.ui) << F("\n");
+	//l4_0x01.ui = 0;		// disable burst - hardcoded
 	
 	preparePeerMessage(tPeer, 1);
 	
@@ -579,7 +581,7 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retr) {
 	sn.mBdy.mLen       = stcPeer.lenPL + 9;													// set message length
 	sn.mBdy.mFlg.CFG   = 1;
 	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;														// message flag
-	sn.mBdy.mFlg.BURST = l4_0x01.peerNeedsBurst;
+	sn.mBdy.mFlg.BURST = l4_0x01.s.peerNeedsBurst;
 	
 	prepareToSend(sn.msgCnt, stcPeer.mTyp, xPeer);
 
