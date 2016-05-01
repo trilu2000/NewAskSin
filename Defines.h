@@ -13,7 +13,7 @@
 	#define AS_REG_L0_INTERNAL_KEYS_VISIBLE               0x02
 	#define AS_REG_L0_HMKEY_1                             0x0A
 	#define AS_REG_L0_HMKEY_2                             0x0B
-	#define AS_REG_L0_HMKEY_2                             0x0C
+	//#define AS_REG_L0_HMKEY_2                             0x0C
 	#define AS_REG_L0_CONF_BUTTON_TIME                    0x15
 	#define AS_REG_L0_LOCAL_RESET_DISABLE                 0x18
 
@@ -41,6 +41,9 @@
 	#define AS_MESSAGE_SENSOR_EVENT                       0x41					// signed answer needed on request
 	#define AS_MESSAGE_SENSOR_DATA                        0x53					// signed answer needed on request
 	#define AS_MESSAGE_CLIMATE_EVENT                      0x58
+   	#define AS_MESSAGE_CLIMATECTRL_EVENT                  0x5A
+    	#define AS_MESSAGE_POWER_EVENT                        0x5E
+	#define AS_MESSAGE_POWER_EVENT_CYCLIC                 0x5F
 	#define AS_MESSAGE_WEATHER_EVENT                      0x70
 
 	// Byte 11: config values

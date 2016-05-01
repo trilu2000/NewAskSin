@@ -284,6 +284,42 @@ void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) 
 	prepareToSend(cnt, AS_MESSAGE_INFO, MAID);
 }
 
+void AS::sendINFO_POWER_EVENT(uint8_t *data) {
+	sn.mBdy.mLen = 15; // 15, 16 works somehow but 12 + 6 = 18
+	uint8_t cnt;
+
+	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) {
+		cnt = rv.mBdy.mCnt;
+	} else {
+		cnt = sn.msgCnt++;
+	}
+	#ifdef AS_DBG
+		Serial << F("sendINFO_POWER_EVENT cnt: ");
+		Serial.print(cnt, DEC);
+	#endif
+
+	//char* myBytes = reinterpret_cast<char*>(sn.mBdy.pyLd);
+
+
+	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
+	//sn.mBdy.by10      = AS_MESSAGE_POWER_EVENT_CYCLIC;
+
+	// set payload
+	sn.mBdy.by10      = data[0];
+	sn.mBdy.by11      = data[1]; // first byte of payload
+	for (uint8_t i = 2; i < 6; i++){
+		//dbg << "AS::sendINFO_POWER_EVENT BYTES: ("<< i <<" " << _HEXB(myBytes[i]) << " = " <<_HEXB(sn.mBdy.pyLd[i]) << "\n";
+		sn.mBdy.pyLd[i-2] = data[i];
+	}
+	//sn.mBdy.pyLd[0]   = state;
+	//sn.mBdy.pyLd[1]   = flag; // | (bt.getStatus() << 7);
+	//sn.mBdy.pyLd[2]   = cc.rssi;
+	#ifdef AS_DBG
+		Serial << F(" BIDI: ") << sn.mBdy.mFlg.BIDI << "\n";
+	#endif
+	prepareToSend(cnt, AS_MESSAGE_POWER_EVENT_CYCLIC, MAID);
+}
+
 void AS::sendINFO_TEMP(void) {
 	//TODO: make ready
 
@@ -1552,11 +1588,15 @@ void AS::encode(uint8_t *buf) {
 		} else if ((buf[3] == AS_MESSAGE_CLIMATE_EVENT)) {
 			dbg << F("CLIMATE_EVENT; cmd: ") << _HEXB(buf[10]) << F(", valvePos: ") << _HEXB(buf[11]);
 
+		} else if ((buf[3] == AS_MESSAGE_CLIMATECTRL_EVENT)) {
+					dbg << F("CLIMATE_EVENT; cmd: ???");  //<< _HEXB(buf[10]) << F(", valvePos: ") << _HEXB(buf[11]);
+
 		} else if ((buf[3] == AS_MESSAGE_WEATHER_EVENT)) {
-			dbg << F("WEATHER_EVENT; temp: ") << _HEX((buf+10),2) << F(", hum: ") << _HEXB(buf[12]);
+			dbg << F("WEATHER_EVENT; temp: ") << _HEX(buf+10,2) << F(", hum: ") << _HEXB(buf[12]);
+
 
 		} else {
-			dbg << F("Unknown Message, please report!");
+			dbg << F("Unknown Message, please report! MsgType: ") << _HEXB(buf[3]) << _HEXB(buf[10]);
 		}
 		dbg << F("\n\n");
 	}
