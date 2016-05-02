@@ -1,0 +1,31 @@
+
+{"base_config":{
+    "serial":       "HBremote01",
+    "hmID":         "",
+    "hmKEY":        "0102030405060708090a0b0c0d0e0f10",
+	
+    "modelID":      "00A9",
+    "firmwareVer":  "11"
+    },
+
+ "extended_config":{
+    "name":          "Test128", 
+    "description":   "das ist ein test",
+
+    "subtypeID":     "40",
+    "deviceInfo":    "060000",
+	
+    "burstRx":       1,
+    "localResDis":   1,
+    "intKeysVis":    1,
+
+    "confKeyMode":   1,
+
+    "statusLED":     2,
+
+    "battValue":     30,
+    "battVisib":     0,
+    "battChkDura":   3600000,
+
+    "powerMode":     0
+}}

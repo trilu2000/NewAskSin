@@ -2,13 +2,222 @@ use strict;
 use warnings;
 use XML::LibXML;
 use Data::Dumper::Simple;
+use JSON::XS;
+use Time::HiRes;
+ 
+my $DEBUG=1;
+my $CONFIG_FROM_PERL_FILE=1;
+my $CONFIG_FROM_JSON_FILE=0;
+my $CONFIG_FROM_JSON_HANDLE=0;
 
-## --------------import constants----------------------------------------------------------------------------
+my $AUTO_FIRMWARE_FROM_XML_FILE=1;
+
+use subs qw(DEBUG);
+use Time::HiRes qw(time);
+
+## ------------- import constants ---------------------------------------------------------------------------
 use devDefinition;
-
 my %cType             =usrRegs::usr_getHash("configType");
 
 
+
+## ------------- reading config and generating device header ------------------------------------------------
+DEBUG "Debug enabled";
+DEBUG "Config comes from " ,($CONFIG_FROM_PERL_FILE)?"CONFIG_FROM_PERL_FILE":"" ,($CONFIG_FROM_JSON_FILE)?"CONFIG_FROM_JSON_FILE":"",($CONFIG_FROM_JSON_HANDLE)?"CONFIG_FROM_JSON_HANDLE":"","\n";
+
+
+my $deviceConfig;
+if ($CONFIG_FROM_PERL_FILE) {
+  
+	$deviceConfig = usrRegs::get_perl_config();										# get content from perl config file
+	
+} elsif ($CONFIG_FROM_JSON_FILE) {
+  
+	my $deviceConfig = load_file_by_name("config.json");							# get content from a json config file
+	$deviceConfig = decode_json($deviceConfig);										# decode a json config stored in a variable
+	
+} elsif ($CONFIG_FROM_JSON_HANDLE) {
+
+	## todo: get content from handle
+	
+}
+
+if (length($deviceConfig) == 0) {													# check if we have some config, otherwise exit
+	DEBUG "read input - " ,length($deviceConfig), " bytes\n";
+	exit 1;
+}
+
+
+## ---------- checking basic informations -------------------------------------------------------------------
+# serial - check content, only A-Z, a-z, 0-9 allowed 
+my $ret = checkString($deviceConfig->{'base_config'}{'serial'}, 'A', 10);
+if ($ret != 0) {
+	DEBUG "generating new serial...";
+	$cType{'serial'} = randString('D',7);
+}
+
+# hm id check 
+if (length($deviceConfig->{'base_config'}{'hmID'}) == 0) {
+	DEBUG "generating new hm ID...";
+	$deviceConfig->{'base_config'}{'hmID'} = sprintf("%04x%02x", rand(0xFFFF), rand(0xFF) );
+}
+
+# model id is mandatory, if 0 then exit
+if (length($deviceConfig->{'base_config'}{'modelID'}) == 0) {
+	DEBUG "model ID empty, exit...";
+	exit 1;
+}
+
+# check if we will find a version in the hm config directory
+my $startTime = time;
+my @fileList = searchXMLFiles($deviceConfig->{'base_config'}{'modelID'});
+for my $href ( @fileList ) {													# some debug
+    DEBUG "Was searching for the modelID ", $deviceConfig->{'base_config'}{'modelID'}, " and found something in the hm config files";
+    DEBUG sprintf("modelID: %.4x, FW: %.2x, File: %-25s", $href->{'modelID'}, $href->{'firmwareVer'},$href->{'file'});
+	DEBUG "Search took ", sprintf("%.2f", time - $startTime), " seconds";
+}
+
+## -- firmware version check 
+# if we found something we have to check the firmware, in some cases hm uses more than one version in a file
+# there are two options, automatic choose, which is default, or you can enable manual choose while enabled per flag
+
+my $numArr= scalar @fileList;
+
+if      (($numArr > 1) && (!$AUTO_FIRMWARE_FROM_XML_FILE)) {
+	## get some info on console and let user choose for firmware version
+	print "\nthere is more then one device with the given model ID available, please select one...\n";
+
+	# lets choose one line
+	for(my $i=0; $i < $numArr; $i++) {
+		my $href = $fileList[$i];
+    	print sprintf("%d    modelID: %.4x, FW: %.2x, File: %-25s\n", $i, $href->{'modelID'}, $href->{'firmwareVer'},$href->{'file'});
+	}
+
+	print "please select a line by number and press return <default 0>: ";
+
+	my $cnlCnt = 0;
+	chomp ($cnlCnt = <STDIN>);
+	if ($cnlCnt eq '') {
+		$cnlCnt = 0;
+	}
+
+	if ($cnlCnt > $numArr) {
+		print "out of range, exit!\n";
+		exit 1;
+	}
+	
+	$deviceConfig->{'base_config'}{'firmwareVer'} = $fileList[$cnlCnt]{'firmwareVer'};	
+	$deviceConfig->{'base_config'}{'configFile'} = $fileList[$cnlCnt]{'file'};
+
+
+} elsif (($numArr > 1) && ($AUTO_FIRMWARE_FROM_XML_FILE)) {
+	## choose the highest number of firmware version while no console available
+	
+	# step through the array and check if the firmware version number temp stored is higher than the current one
+	$deviceConfig->{'base_config'}{'firmwareVer'} = $fileList[0]{'firmwareVer'};	
+	$deviceConfig->{'base_config'}{'configFile'} = $fileList[0]{'file'};
+	
+	for(my $i=1; $i < $numArr; $i++) {
+		if ($fileList[$i]{'firmwareVer'} > $deviceConfig->{'base_config'}{'firmwareVer'}) {
+			$deviceConfig->{'base_config'}{'firmwareVer'} = $fileList[$i]{'firmwareVer'};	
+			$deviceConfig->{'base_config'}{'configFile'} = $fileList[$i]{'file'};
+		}
+	}
+	
+
+} elsif ($numArr == 1) {
+
+	$deviceConfig->{'base_config'}{'firmwareVer'} = $fileList[0]{'firmwareVer'};
+	$deviceConfig->{'base_config'}{'configFile'} = $fileList[0]{'file'};
+	
+} 
+
+
+## -- generating channel address table 
+my %regTable;
+# -- open file and store handle
+my $xmlParser = XML::LibXML->new();													# create the xml object
+
+# -- 0x0A - 0x0C mandatory for the master ID so add
+$regTable{'00 00 0x0a.0'}  = { 'idx' => '0x0a.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_1', 'type' => 'integer', 'interface' => 'config', 'index' => '10', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0' };
+$regTable{'00 00 0x0b.0'}  = { 'idx' => '0x0b.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_2', 'type' => 'integer', 'interface' => 'config', 'index' => '11', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0'  };
+$regTable{'00 00 0x0c.0'}  = { 'idx' => '0x0c.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_3', 'type' => 'integer', 'interface' => 'config', 'index' => '12', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0'  };
+
+if ($deviceConfig->{'base_config'}{'configFile'}) {
+	## different ways on getting information, if the modelID refers to a xml config file, we will get the required information out there
+	DEBUG "reading config from: ", $deviceConfig->{'base_config'}{'configFile'};
+
+	# - we start to fill the extended config information
+	
+	# - now getting the master channel information
+	my $xmlDoc    = $xmlParser->parse_file($deviceConfig->{'base_config'}{'configFile'});# open the file
+	my $xmlObj    = XML::LibXML::XPathContext->new( $xmlDoc->documentElement() );	# create parser object
+	
+	# - finde the respective node and list the paramsets
+	foreach my $xmlNode ( $xmlObj->findnodes('/device/paramset') ) {	
+		my $xml_type  = $xmlNode->getAttribute('type');
+		if ( $xml_type ne 'MASTER') {next;};
+		DEBUG "$xml_type";
+
+		foreach my $xmlParam ( $xmlNode->findnodes('./parameter')) {
+			my $xml_id = $xmlParam->getAttribute('id');
+			#my $xml_type  = $xmlNode->getAttribute('type');
+			DEBUG "   $xml_id";
+			
+		}
+	}
+	
+	# - now the channel specific ones
+	
+} else {
+	## otherwise we take the extended config and the linkset.xml file
+	
+}
+
+
+
+#DEBUG Dumper(%regTable);
+
+exit;
+
+
+
+
+my %deviceProperties ;
+
+## some checkups on config file
+
+
+
+##	/*
+##	* HMID, Serial number, HM-Default-Key, Key-Index
+##	*/
+##	const uint8_t HMSerialData[] PROGMEM = {
+##		/* HMID */            0x5d,0xa8,0x79,
+##		/* Serial number */   'H','B','r','e','m','o','t','e','0','1',   ## HBremote01
+##		/* Default-Key */     HM_DEVICE_AES_KEY,
+##		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX
+##	};
+
+##	/*
+##	* Settings of HM device
+##	* firmwareVersion: The firmware version reported by the device
+##	*                  Sometimes this value is important for select the related device-XML-File
+##	*
+##	* modelID:         Important for identification of the device.
+##	*                  @See Device-XML-File /device/supported_types/type/parameter/const_value
+##	*
+##	* subType:         Identifier if device is a switch or a blind or a remote
+##	* DevInfo:         Sometimes HM-Config-Files are referring on byte 23 for the amount of channels.
+##	*                  Other bytes not known.
+##	*                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
+##	*/
+##	const uint8_t devIdnt[] PROGMEM = {
+##		/* firmwareVersion 1 byte */  0x11,
+##		/* modelID         2 byte */  0x00,0xa9,
+##		/* subTypeID       1 byte */  0x40,
+##		/* deviceInfo      3 byte */  0x06, 0x00, 0x00,
+##	};
 
 
 ## ----------------------------------------------------------------------------------------------------------
@@ -16,7 +225,7 @@ my %cType             =usrRegs::usr_getHash("configType");
 
 ## ---------- serial check -----------------------
 # serial - check content, only A-Z, a-z, 0-9 allowed 
-my $ret = checkString($cType{'serial'}, 'A', 10);
+$ret = checkString($cType{'serial'}, 'A', 10);
 if ($ret != 0) {
 	print "generating new serial...\n";
 	$cType{'serial'} = randString('D',7);
@@ -37,16 +246,16 @@ if (length($cType{'modelID'}) == 0) {
 }
 
 # check if we will find a version in the hm config directory
-my @fileList          =searchXMLFiles($cType{'modelID'});
-#for my $href ( @fileList ) {													# some debug
-#    print sprintf("modelID: %.4x, FW: %.2x, File: %-25s\n", $href->{'modelID'}, $href->{'firmwareVer'},$href->{'file'});
-#}
+ @fileList          =searchXMLFiles($cType{'modelID'});
+for my $href ( @fileList ) {													# some debug
+    print sprintf("modelID: %.4x, FW: %.2x, File: %-25s\n", $href->{'modelID'}, $href->{'firmwareVer'},$href->{'file'});
+}
 
 
 ## ---------- firmware version check -------------
 # found more than one file, lets choose
 # if we found one file take over the firmware
-my $numArr= scalar @fileList;
+ $numArr= scalar @fileList;
 
 if      ($numArr > 1) {
 	print "\nthere is more then one device with the given model ID available, please select one...\n";
@@ -170,7 +379,7 @@ if ($numArr > 0) {																					# get the information from an existing fi
 			my @xa = $xO->findnodes('/xmlSet/'.$rL{$rLKey}{'type'}.'/paramset[@id="'.$secName.'"]/parameter/@id');
 			#print "  @xa\n";																		# some debug
 
-			# now, as we have a list in the array, step through the array and get the registers
+			## now, as we have a list in the array, step through the array and get the registers
 			foreach my $xName (@xa) {
 				$xName =~ s/id="|\"|\s//g;															# filter the string
 				#print "$xName\n";																	# some debug
@@ -375,7 +584,7 @@ foreach my $test (sort keys %cnlType) {
 	}
 	
 	# correct the max index size, sort for lib name and sort for max idx size, remember the biggest value and write it to the remaining ones
-	my $xmlParser = XML::LibXML->new();																# create the xml object
+	$xmlParser = XML::LibXML->new();																# create the xml object
 	my $xmlDoc    = $xmlParser->parse_file("linkset.xml");											# open the file
 	my $xO        = XML::LibXML::XPathContext->new( $xmlDoc->documentElement() );					# create parser object
 
@@ -414,22 +623,22 @@ foreach my $test (sort keys %cnlType) {
 
 ## ----------------------------------------------------------------------------------------------------------
 ## ---------- print register.h ------------------------------------------------------------------------------
-print "\n\n\n";
-print "#ifndef _REGISTER_h\n";
-print "   #define _REGISTER_h\n\n";
+##print "\n\n\n";
+##print "#ifndef _REGISTER_h\n";
+##print "   #define _REGISTER_h\n\n";
 
-printLoadLibs();
-printDefaltTable(\%cType);
-printChannelSliceTable(\%cnlType);
-printChannelDeviceListTable(\%cnlType);
-printPeerDeviceListTable(\%cnlType);
-printDevDeviceListTable(\%cnlType);
-printModuleTable(\%cnlType);
-printStartFunctions(\%cnlTypeA);
+##printLoadLibs();
+##printDefaltTable(\%cType);
+##printChannelSliceTable(\%cnlType);
+##printChannelDeviceListTable(\%cnlType);
+##printPeerDeviceListTable(\%cnlType);
+##printDevDeviceListTable(\%cnlType);
+##printModuleTable(\%cnlType);
+##printStartFunctions(\%cnlTypeA);
 
-print "#endif\n";
+##print "#endif\n";
 
-printInfo(\%cnlType);
+##printInfo(\%cnlType);
 
 
 #print $cType{'battValue'};
@@ -442,26 +651,11 @@ printInfo(\%cnlType);
 
 
 ## ----------------------------------------------------------------------------------------------------------
-## -- print out functions -----------------------------------------------------------------------------------
-sub prnHexStr {
-	my $in = shift;
-	my $len = shift;
-	$in = $in ."0"x(($len*2) - length($in));
-		
-	#$in = sprintf("%.".$len."x", $in);
-	$in =~ s/(..)/0x$&,/g;
-	return $in;
-}
-sub prnASCIIStr {
-	my $in = shift;
-	$in =~ s/(.)/'$&',/g;
-	return $in;
-}
 
 sub printLoadLibs {
-	#print "   //- load libraries -------------------------------------------------------------------------------------------------------\n";
-	print "   #include <AS.h>                                                       // the asksin framework\n";
-	print "   #include \"hardware.h\"                                                 // hardware definition\n";
+	#print "   ##- load libraries -------------------------------------------------------------------------------------------------------\n";
+	print "   #include <AS.h>                                                       ## the asksin framework\n";
+	print "   #include \"hardware.h\"                                                 ## hardware definition\n";
 
 	my $oldLibName ="";
 	foreach my $rLKey (sort { $rL{$a}{'libName'} cmp $rL{$b}{'libName'} }  keys %rL) {	
@@ -473,8 +667,8 @@ sub printLoadLibs {
 	print "\n";
 
 
-	#print "   //- stage modules --------------------------------------------------------------------------------------------------------\n";
-	print "   AS hm;                                                               // asksin framework\n";
+	#print "   ##- stage modules --------------------------------------------------------------------------------------------------------\n";
+	print "   AS hm;                                                               ## asksin framework\n";
 
 	$oldRLKey = "";	
 	foreach my $rLKey (sort { $rL{$a}{'type'} cmp $rL{$b}{'type'} } keys %rL) {	
@@ -482,10 +676,10 @@ sub printLoadLibs {
 
 		##print "\n";
 		my $xLine = "   $rL{$rLKey}{'modName'} $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'maxIdxSize'}];";
-		print $xLine ." "x(72-length($xLine)) ."// create instances of channel module\n";
+		print $xLine ." "x(72-length($xLine)) ."## create instances of channel module\n";
 		foreach (@{$rL{$rLKey}{'stage_modul'}}) {
 			my $sLine = "   " .$_ .";";
-			print $sLine ." "x(72-length($sLine)) ."// declare function to jump in\n";
+			print $sLine ." "x(72-length($sLine)) ."## declare function to jump in\n";
 		}
 		$oldRLKey = $rL{$rLKey}{'type'};
 	}
@@ -496,14 +690,14 @@ sub printLoadLibs {
 sub printDefaltTable {
 	my %dT = %{shift()};
 	
-	#print "   //- eeprom defaults table ------------------------------------------------------------------------------------------------\n";
+	#print "   ##- eeprom defaults table ------------------------------------------------------------------------------------------------\n";
 	print "   /*\n";
 	print "   * HMID, Serial number, HM-Default-Key, Key-Index\n";
 	print "   */\n";
 
 	print "   const uint8_t HMSerialData[] PROGMEM = {\n";
 	print "      /* HMID */            " .prnHexStr($dT{'hmID'},3) ."\n";
-	print "      /* Serial number */   " .prnASCIIStr($dT{'serial'}) ."    // $dT{'serial'}\n";
+	print "      /* Serial number */   " .prnASCIIStr($dT{'serial'}) ."    ## $dT{'serial'}\n";
 	print "      /* Default-Key */     HM_DEVICE_AES_KEY,\n";
 	print "      /* Key-Index */       HM_DEVICE_AES_KEY_INDEX\n";
 	print "   };\n\n";
@@ -534,7 +728,7 @@ sub printDefaltTable {
 sub printChannelSliceTable {
 	my %dT = %{shift()}; my $cnt = 0;
 
-	#print "   //- channel slice address definition -------------------------------------------------------------------------------------\n";
+	#print "   ##- channel slice address definition -------------------------------------------------------------------------------------\n";
 
 	print "   /* \n";
 	print "   * Register definitions\n";
@@ -553,31 +747,31 @@ sub printChannelSliceTable {
 	foreach my $test (sort keys %dT) {
 		next    if ( !$cnlType{$test}{'regSet'} );  
 		next    if(!"@{$dT{$test}{'regSet'}}");	
-		print "      // channel: $dT{$test}{'cnl'}, list: $dT{$test}{'lst'} \n";
+		print "      ## channel: $dT{$test}{'cnl'}, list: $dT{$test}{'lst'} \n";
 		print "      " .sprintf( "0x%.2x," x @{$dT{$test}{'regSet'}}, @{$dT{$test}{'regSet'}} )."\n";
 		$cnt += scalar(@{$dT{$test}{'regSet'}});
 	}
-	print "   }; // $cnt byte\n\n"; 
+	print "   }; ## $cnt byte\n\n"; 
 
 }
 
 sub printChannelDeviceListTable {
 	my %dT = %{shift()}; my $cnt = 0;
 
-	#print "   //- channel device list table --------------------------------------------------------------------------------------------\n";
+	#print "   ##- channel device list table --------------------------------------------------------------------------------------------\n";
 	print "   /* \n";
 	print "   * Channel - List translation table\n";
 	print "   * channel, list, startIndex, start address in EEprom, hidden\n";
 	print "   */\n";
 
 	print "   EE::s_cnlTbl cnlTbl[] = {\n";
-	print "      // cnl, lst, sIdx, sLen, pAddr,  hidden\n";
+	print "      ## cnl, lst, sIdx, sLen, pAddr,  hidden\n";
 
 	foreach my $test (sort keys %dT) {
 		print sprintf("      {  %.1d,   %.1d,   0x%.2x, %2d,   0x%.4x, %1d, },\n", $dT{$test}{'cnl'}, $dT{$test}{'lst'}, $dT{$test}{'slcIdx'}, $dT{$test}{'slcLen'}, $dT{$test}{'phyAddr'}, $dT{$test}{'hidden'} );
 		$cnt += 7;
 	}
-	print "   }; // $cnt byte\n\n";
+	print "   }; ## $cnt byte\n\n";
 }
 
 sub printPeerDeviceListTable {
@@ -585,21 +779,21 @@ sub printPeerDeviceListTable {
 	
 	#print Dumper(%dT);
 
-	#print "//- peer device list table -----------------------------------------------------------------------------------------------\n";
+	#print "##- peer device list table -----------------------------------------------------------------------------------------------\n";
 	print "   /* \n";
 	print "   * Peer-Device-List-Table \n";
 	print "   * channel, maximum allowed peers, start address in EEprom \n";
 	print "   */ \n";
 
 	print "   EE::s_peerTbl peerTbl[] = {\n";
-	print "      // cnl, pMax, pAddr;\n";
+	print "      ## cnl, pMax, pAddr;\n";
 	foreach my $test (sort keys %dT) {
 		next    if ( $dT{$test}{'lst'} != 3 && $dT{$test}{'lst'} != 4 );
-		#	{1, 6, 0x001a}              //  6 * 4 =  24 (0x18)
+		#	{1, 6, 0x001a}              ##  6 * 4 =  24 (0x18)
 		print sprintf("      { %.1d, %.1d, 0x%.4x, },\n", $dT{$test}{'cnl'}, $dT{$test}{'peers'}, $dT{$test}{'phyAddrPeers'} );
 		$cnt += 4;
 	}
-	print "   }; // $cnt byte\n\n";
+	print "   }; ## $cnt byte\n\n";
 }
 
 
@@ -613,7 +807,7 @@ sub printDevDeviceListTable {
 		$nCnlC += 1    if ( $dT{$test}{'lst'} == 3 || $dT{$test}{'lst'} == 4 );
 	}
 	
-	#print "//- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
+	#print "##- handover to AskSin lib -----------------------------------------------------------------------------------------------\n";
 	print "   /* \n";
 	print "   * Device definition table \n";
 	print "   * Parameter: amount of user channel\(s\), amount of lists, \n";
@@ -623,7 +817,7 @@ sub printDevDeviceListTable {
 
 	print "   EE::s_devDef devDef = {\n";
 	print "      $nCnlC, $nLsIt, devIdnt, cnlAddr,\n";
-	print "   }; // 6 byte\n\n";
+	print "   }; ## 6 byte\n\n";
 }
 
 sub printModuleTable {
@@ -633,7 +827,7 @@ sub printModuleTable {
 	foreach my $test (sort keys %dT) {
 		$nCnlC += 1    if ( $dT{$test}{'lst'} == 3 || $dT{$test}{'lst'} == 4 );
 	}
-	#print "//- module registrar -----------------------------------------------------------------------------------------------------\n";
+	#print "##- module registrar -----------------------------------------------------------------------------------------------------\n";
 	print "   /* \n";
 	print "   * module registrar \n";
 	print "   * size table to register and access channel modules \n";
@@ -647,8 +841,8 @@ sub printModuleTable {
 
 sub printStartFunctions {
 	my %dT = %{shift()};
-	#print "//- ----------------------------------------------------------------------------------------------------------------------\n";
-	#print "//- first time and regular start functions -------------------------------------------------------------------------------\n\n";
+	#print "##- ----------------------------------------------------------------------------------------------------------------------\n";
+	#print "##- first time and regular start functions -------------------------------------------------------------------------------\n\n";
 	
 	print "   /** \n";
 	print "   * \@brief First time and regular start functions \n";
@@ -662,39 +856,39 @@ sub printStartFunctions {
 	print "      */ \n\n";
 
 	
-	print "      // init the homematic framework\n";
+	print "      ## init the homematic framework\n";
 
-	print "      hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);"  ." "x11  ."// configure the config button, mode, pci byte and pci bit\n";
-	print "      hm.ld.init($cType{'statusLED'}, &hm);"  ." "x49  ."// set the led\n";
-	print "      hm.ld.set(welcome);"  ." "x49  ."// show something\n";
+	print "      hm.confButton.config($cType{'confKeyMode'}, CONFIG_KEY_PCIE, CONFIG_KEY_INT);"  ." "x11  ."## configure the config button, mode, pci byte and pci bit\n";
+	print "      hm.ld.init($cType{'statusLED'}, &hm);"  ." "x49  ."## set the led\n";
+	print "      hm.ld.set(welcome);"  ." "x49  ."## show something\n";
 	
 	if ($cType{'battValue'} > 0 ) {
-		print "      hm.bt.set($cType{'battValue'}, $cType{'battChkDura'});"  ." "x(52-length($cType{'battChkDura'}))  ."// set battery check, internal, 2.7 reference, measurement each hour\n";
+		print "      hm.bt.set($cType{'battValue'}, $cType{'battChkDura'});"  ." "x(52-length($cType{'battChkDura'}))  ."## set battery check, internal, 2.7 reference, measurement each hour\n";
 	}
 
 	#if ($cType{'powerMode'} > 0 ) {
-		print "      hm.pw.setMode($cType{'powerMode'});"  ." "x51  ."// set power management mode\n";
+		print "      hm.pw.setMode($cType{'powerMode'});"  ." "x51  ."## set power management mode\n";
 	#}
 	
-	print "\n      // register user modules\n";
+	print "\n      ## register user modules\n";
 	
 	foreach my $rLKey (sort keys %rL) {	
 		# get the respective list 3 or 4 for the channel
 		my ($xl) = (grep { ($cnlType{$_}{'cnl'} == $rLKey) && ($cnlType{$_}{'lst'} > 1) && ($cnlType{$_}{'lst'} < 5) } keys %cnlType);
 		my $xLine = "      $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].regInHM($rLKey, $cnlType{$xl}{'lst'}, &hm);";
-		print $xLine ." "x(72-length($xLine)) ."// register user module\n";
+		print $xLine ." "x(72-length($xLine)) ."## register user module\n";
 
 		foreach (@{$rL{$rLKey}{'config_modul'}}) {
 			my $sLine = "      $rL{$rLKey}{'modName'}\[$rL{$rLKey}{'modIdx'}].$_;";
-			print $sLine ." "x(72-length($sLine)) ."// configure user module\n";
+			print $sLine ." "x(72-length($sLine)) ."## configure user module\n";
 		}
 		print "\n";
 	}
 	
-	#print "    // don't forget to set somewhere the .config of the respective user class!\n";	
+	#print "    ## don't forget to set somewhere the .config of the respective user class!\n";	
 	
-	#thsens.config(&initTH1, &measureTH1, &thVal);											// configure the user class and handover addresses to respective functions and variables
-	#thsens.timing(0, 0, 0);																// mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
+	#thsens.config(&initTH1, &measureTH1, &thVal);											## configure the user class and handover addresses to respective functions and variables
+	#thsens.timing(0, 0, 0);																## mode 0 transmit based on timing or 1 on level change; level change value; while in mode 1 timing value will stay as minimum delay on level change
 	
 	
 	print "   }\n\n";
@@ -731,13 +925,13 @@ sub printInfo {
 		# check if we need to fill some bits upfront of the new record, if we are still in the same struct
 		if ( ($lastIndex == $cnlTypeA{$test}{'index'}) && ($lastBitEnd < $cnlTypeA{$test}{'bit'}) ) {
 			print " "x6 ."uint8_t" ." "x38 .":" .($cnlTypeA{$test}{'bit'} - $lastBitEnd) .";";
-			print " "x4 ."// " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{'index'}, $lastBitEnd) ."\n";
+			print " "x4 ."## " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{'index'}, $lastBitEnd) ."\n";
 		} 		
 
 		# check if we need to fill some bits after the last record
 		if ( ($lastIndex != $cnlTypeA{$test}{'index'}) && ($lastBitEnd < 8) ) {
 			print " "x6 ."uint8_t" ." "x38 .":" .(8 - $lastBitEnd) .";";
-			print " "x4 ."// " .sprintf("0x%.2x.%d", $lastIndex, $lastBitEnd) ."\n";
+			print " "x4 ."## " .sprintf("0x%.2x.%d", $lastIndex, $lastBitEnd) ."\n";
 		} 		
 
 		# channel/list has changed, double check if an open struct exists
@@ -749,13 +943,13 @@ sub printInfo {
 			#print Dumper($cnlTypeA{$test});
 
 			print " "x6 ."uint8_t" ." "x38 .":" .(8 - $cnlTypeA{$test}{bit}) .";" if ($cnlTypeA{$test}{bit} > 0);
-			print " "x4 ."// " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{index}, 0) ."\n" if ($cnlTypeA{$test}{bit} > 0);
+			print " "x4 ."## " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{index}, 0) ."\n" if ($cnlTypeA{$test}{bit} > 0);
 		}
 
 		# print the single line content
 		my $lineText = "uint8_t $cnlTypeA{$test}{'id'}";
 		print " "x6 .$lineText ." "x(45-length($lineText)) .":" .$cnlTypeA{$test}{'size'} .";";
-		print " "x4 ."// $cnlTypeA{$test}{'idx'}, " .sprintf("0x%.2x", $cnlTypeA{$test}{'log_def'}) ."\n";
+		print " "x4 ."## $cnlTypeA{$test}{'idx'}, " .sprintf("0x%.2x", $cnlTypeA{$test}{'log_def'}) ."\n";
 
 		
 		
@@ -764,7 +958,7 @@ sub printInfo {
 		if ( keys(%cnlTypeA) == $i+1 ) {
 			if ( ($cnlTypeA{$test}{'bit'} + $cnlTypeA{$test}{'size'}) < 8 ) {
 				print " "x6 ."uint8_t" ." "x38 .":" .(8 - ($cnlTypeA{$test}{'bit'} + $cnlTypeA{$test}{'size'}) ) .";";
-				print " "x4 ."// " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{'index'}, $cnlTypeA{$test}{'bit'}) ."\n";
+				print " "x4 ."## " .sprintf("0x%.2x.%d", $cnlTypeA{$test}{'index'}, $cnlTypeA{$test}{'bit'}) ."\n";
 			}
 			
 			print " "x3 ."}; \n\n\n";
@@ -980,10 +1174,7 @@ sub searchXMLFiles {
 	my @handover; my $dir = 'devicetypes';																	# directory with the HM device files
 	my $hn = shift;
 	
-	print "parameter: $hn\n";
-	
 	opendir(DIR, $dir) or die $!;																			# open the directory
-
 
 	while (my $file = readdir(DIR)) {																		# step through the files
 		
@@ -1067,4 +1258,37 @@ sub HM_encodeTime8($) {#####################
   }
 
   return 255;
+}
+
+## -- print out functions -----------------------------------------------------------------------------------
+sub prnHexStr {
+	my $in = shift;
+	my $len = shift;
+	$in = $in ."0"x(($len*2) - length($in));
+		
+	#$in = sprintf("%.".$len."x", $in);
+	$in =~ s/(..)/0x$&,/g;
+	return $in;
+}
+sub prnASCIIStr {
+	my $in = shift;
+	$in =~ s/(.)/'$&',/g;
+	return $in;
+}
+
+## -- file functions ----------------------------------------------------------------------------------------
+sub load_file_by_name {
+    my $file  = shift;
+
+    open( my $fh, $file ) or die $!;
+    my $content = do { local $/; <$fh> };
+    close $fh;
+	return $content;
+}
+
+## -- debug function ----------------------------------------------------------------------------------------
+sub DEBUG {
+	#my $content  = shift;
+	if (!$DEBUG) {return;}
+	print join("",@_) ."\n";
 }

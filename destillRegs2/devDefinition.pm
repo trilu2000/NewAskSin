@@ -1,5 +1,6 @@
 ## -- definitions -------------------------------------------------------------------------------------------
-use strict; package usrRegs; my %regList;
+my %regList;
+ 
 
 ## -- Sub Type ID information -------------------------------------------------------------------------------
 ##  "0x01" => "AlarmControl"      "0x41" => "sensor"          "0x70" => "THSensor"
@@ -9,6 +10,40 @@ use strict; package usrRegs; my %regList;
 ##  "0x30" => "blindActuator"     "0x51" => "powerMeter"      "0xC1" => "winMatic"
 ##  "0x39" => "ClimateControl"    "0x58" => "thermostat"      "0xC3" => "tipTronic"
 ##  "0x40" => "remote"            "0x60" => "KFM100"          "0xCD" => "smokeDetector"
+
+my $base_config = {
+    "serial"=>       "HBremote01",
+    "hmID"=>         "",
+    "hmKEY"=>        "0102030405060708090a0b0c0d0e0f10",
+	
+    "modelID"=>      "00A9",
+    "deviceInfo"=>   "060000",
+
+    "firmwareVer"=>  "11",
+
+
+};
+
+my $extended_config = {
+    "name"=>         "Test128", 
+    "description"=>  "das ist ein test",
+
+    "subtypeID"=>    "40",
+	
+    "localResDis"=>  1,
+    "intKeysVis"=>   1,
+
+    "confKeyMode"=>  1,
+
+    "statusLED"=>    2,
+
+    "battValue"=>    30,
+    "battVisib"=>    0,
+    "battChkDura"=>  3600000,
+
+    "powerMode"=>    0,
+    "burstRx"=>      1,
+};
 
 
 ## -- device config -----------------------------------------------------------------------------------------
@@ -20,7 +55,7 @@ my %confType = (
     hmID        => '',                                     # empty to get it automatically generated - otherwise 6 HEX digits (3 byte)
     hmKEY       => '0102030405060708090a0b0c0d0e0f10',     # 32 HEX digits (16 byte) HM AES Key 
 	
-    modelID     => '0fA9',                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
+    modelID     => '00A9',                                 # if model id is known, details will taken from HM config xml files, 4 HEX digits
     firmwareVer => '11',                                   # firmware version, 2 HEX digits - important if you took a model id where more then one device exists
 
 
@@ -48,7 +83,7 @@ my %confType = (
     battVisib   => 0,                                      # battery flag visible in registers of channel 0
     battChkDura => 3600000,	                               # the time between two measurements, value in milli seconds
 
-	  powerMode   => 0,                                      # there are 5 power modes available, which could be choosed to get the best ratio between power consumption and availablity
+	powerMode   => 0,                                      # there are 5 power modes available, which could be choosed to get the best ratio between power consumption and availablity
                                                            # 0, now power saving - 19.9ma
                                                            # 1, wake up every 250ms, check for wakeup signal on air and stay awake accordingly, timer gets updated every 256ms
                                                            # 2, deep sleep, wakeup every 250ms, not able to receive anything while sleeping, timer gets updated every 256ms
@@ -90,6 +125,13 @@ $regList{6}     = {type => "xmlRemote", peers => 6, hidden => 0, linked => 0    
 
 
 ## -- helpers -----------------------------------------------------------------------------------------------
+package usrRegs;
+
+sub get_perl_config {
+  #my $x = %base_conf;
+  return my $x = {base_config=>$base_config,extended_config=>$extended_config};
+}
+
 sub usr_getHash($){
   my $hn = shift;
   return %regList    if($hn eq "regList"      );

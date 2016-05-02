@@ -26,7 +26,7 @@ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg);
 
 #elif defined __AVR_ATmega32U4__ || defined __AVR_ATmega16U4__
 #define PCINT_PCIE_SIZE 3																		// amount of Pin Change Interrupt Enable channels
-#define PCINT06 &PCMSK0,&PCICR,PCIE0,PCINT6,DDRB,&PORTB,PORTB6
+#define PCINT06 &PCMSK0,&PCICR,PCIE0,PCINT6,DDRB,&PORTB,&PINB,PORTB6
 
 
 #elif defined __AVR_ATmega1284P__ || defined __AVR_ATmega1284__ || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644__)
@@ -65,7 +65,7 @@ struct s_pcint_table {
 extern s_pcint_table pcint_table[];
 
 struct  s_pcint_vector_byte {
-	uint8_t cur;
+	volatile uint8_t *PINR;																		// pointer to the port where pin status can be read
 	uint8_t prev;
 	uint8_t mask;
 	uint32_t time;
@@ -75,8 +75,8 @@ extern volatile s_pcint_vector_byte pcint_vector_byte[];										// size of the
 
 //- function to register interrupt
 void    pcint_init(void);
-uint8_t pcinit_register(volatile uint8_t *pcint_MASK, volatile uint8_t *pcint_ICR, uint8_t pcint_PCIE, uint8_t pcint_PCIPIN, uint8_t pcint_DDR, volatile uint8_t *pcint_PORT, uint8_t pcint_PIN, uint8_t bool_Config, s_pcint_dlgt pcint_CallBack);
-
+uint8_t pcinit_register(volatile uint8_t *pcint_MASK, volatile uint8_t *pcint_ICR, uint8_t pcint_PCIE, uint8_t pcint_PCIPIN, uint8_t pcint_DDR, volatile uint8_t *pcint_PORT, volatile uint8_t *pcint_PINR, uint8_t pcint_PIN, uint8_t bool_Config, s_pcint_dlgt pcint_CallBack);
+void    pcint_process(uint8_t vector);
 //- function to deregister interrupt
 
 

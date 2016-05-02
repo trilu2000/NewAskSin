@@ -12,7 +12,7 @@ void pcint_init(void) {
 	memset((uint8_t*)pcint_vector_byte, 0x00, sizeof(pcint_vector_byte));						// clean the vector struct array
 }
 
-uint8_t pcinit_register(volatile uint8_t *pcint_MASK, volatile uint8_t *pcint_ICR, uint8_t pcint_IE, uint8_t pcint_IPIN, uint8_t pcint_DDR, volatile uint8_t *pcint_PORT, uint8_t pcint_PIN, uint8_t bool_Config, s_pcint_dlgt pcint_CallBack) {
+uint8_t pcinit_register(volatile uint8_t *pcint_MASK, volatile uint8_t *pcint_ICR, uint8_t pcint_IE, uint8_t pcint_IPIN, uint8_t pcint_DDR, volatile uint8_t *pcint_PORT, volatile uint8_t *pcint_PINR, uint8_t pcint_PIN, uint8_t bool_Config, s_pcint_dlgt pcint_CallBack) {
 
 	// prepare pcint_table
 	if (pcint_table_usage >= PCINT_SLOTS) return 0;												// slot table is full
@@ -25,7 +25,9 @@ uint8_t pcinit_register(volatile uint8_t *pcint_MASK, volatile uint8_t *pcint_IC
 	pcint_table_usage++;																		// slot was filled, increase the counter
 
 	// prepare the interrupt mask and set or delete the bit in the previous vector byte to detect the first pin change
+	pcint_vector_byte[pcint_IE].PINR = pcint_PINR;												// store the pointer to the port
 	pcint_vector_byte[pcint_IE].mask |= (1 << pcint_IPIN);										// add the interrupt pin to the mask
+
 	if (bool_Config) pcint_vector_byte[pcint_IE].prev |= (1 << pcint_IPIN);						// pin is default high, next state will be low, so bit has to be set
 	else pcint_vector_byte[pcint_IE].prev &= (1 << pcint_IPIN);
 
@@ -43,36 +45,42 @@ uint8_t pcinit_register(volatile uint8_t *pcint_MASK, volatile uint8_t *pcint_IC
 }
 
 
-
-
-ISR(PCINT0_vect) {
+void pcint_process(uint8_t vector) {
 	uint8_t pcint_byte;
 
-	// cleanout the port byte and check if something has changed
-	pcint_vector_byte[0].cur = PINB & pcint_vector_byte[0].mask;								// mask out all bits we like to doublecheck;															// read out the current port byte
-	if (pcint_vector_byte[0].cur == pcint_vector_byte[0].prev) return;							// nothing to do
+	// is something to do?
+	if (!pcint_table_usage) return;																// nothing in our table, leave the function
 
-	// calculate the byte which was raising the interrupt
-	pcint_byte = pcint_vector_byte[0].cur ^ pcint_vector_byte[0].prev;							// get the interrupt pin
-	dbg << "i0:" << pcint_byte << ", i0c:" << pcint_vector_byte[0].cur << ", i0p:" << pcint_vector_byte[0].prev << "\n";	// some debug...
+	// cleanout the port byte and check if something has changed
+	//????pcint_byte = *pcint_vector_byte[vector].PINR & pcint_vector_byte[vector].mask;				// mask out all bits we like to doublecheck;
+	if (pcint_byte == pcint_vector_byte[vector].prev) return;									// if there is no change, we have nothing to do
+
+																								// calculate the byte which was raising the interrupt
+	//pcint_byte = pcint_vector_byte[vector].cur ^ pcint_vector_byte[vector].prev;				// get the interrupt pin
+	dbg << "i0:" << "" << ", i0c:" << pcint_byte << ", i0p:" << pcint_vector_byte[vector].prev << "\n";	// some debug...
 
 	// step throug  the table and search for the respective entry, check if enabled and then if we callback or debounce
-																															 
-	pcint_vector_byte[0].time = millis() + PCINT_DEBOUNCE_TIME;									// save the time for debouncing
 
-	pcint_vector_byte[0].prev = pcint_vector_byte[0].cur;										// save the current port byte to identify if it was a raising or falling edge
+	pcint_vector_byte[vector].time = millis();													// save the time for debouncing
+
+	pcint_vector_byte[vector].prev = pcint_byte;												// save the current port byte to identify if it was a raising or falling edge
+
+}
+
+ISR(PCINT0_vect) {
+	pcint_process(0);
 }
 
 ISR(PCINT1_vect) {
-	pcint_vector_byte[1].prev = pcint_vector_byte[1].cur;
-	pcint_vector_byte[1].cur = PINC;
-	pcint_vector_byte[1].time = millis();
-	dbg << "i2:" << PINC << "\n";
+	//pcint_vector_byte[1].prev = pcint_vector_byte[1].cur;
+	//pcint_vector_byte[1].cur = PINC;
+	//pcint_vector_byte[1].time = millis();
+	//dbg << "i2:" << PINC << "\n";
 }
 
 ISR(PCINT2_vect) {
-	pcint_vector_byte[2].prev = pcint_vector_byte[2].cur;
-	pcint_vector_byte[2].cur = PIND;
-	pcint_vector_byte[2].time = millis();
-	dbg << "i3:" << PIND << "\n";
+	//pcint_vector_byte[2].prev = pcint_vector_byte[2].cur;
+	//pcint_vector_byte[2].cur = PIND;
+	//pcint_vector_byte[2].time = millis();
+	//dbg << "i3:" << PIND << "\n";
 }
