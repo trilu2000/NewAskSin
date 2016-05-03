@@ -71,6 +71,7 @@
 
 
 	//- timer functions -------------------------------------------------------------------------------------------------------
+	#define HAS_OWN_MILLIS_TIMER
 	typedef uint32_t tMillis;
 	extern void    initMillis(void);
 	extern tMillis getMillis(void);
@@ -79,8 +80,10 @@
 
 	//- some macros for debugging ---------------------------------------------------------------------------------------------
 	// http://aeroquad.googlecode.com/svn/branches/pyjamasam/WIFIReceiver/Streaming.h
-	#define dbg Serial
-	template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; }
+	#ifndef dbg
+		#define dbg Serial
+		template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; }
+	#endif
 
 	#define hiHexB(x)  char((x>>4)>9?(x>>4)+55:(x>>4)+48)
 	#define loHexB(x)  char((x&0xF)>9?(x&0xF)+55:(x&0xF)+48)
