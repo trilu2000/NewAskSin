@@ -526,7 +526,7 @@ inline void AS::sendPeerMsg(void) {
 
 
 	// exit while bit is not set
-	if (!stcPeer.slot[stcPeer.idx_cur >> 3] & (1<<(stcPeer.idx_cur & 0x07))) {
+	if (!(stcPeer.slot[stcPeer.idx_cur >> 3] & (1<<(stcPeer.idx_cur & 0x07)))) {
 		stcPeer.idx_cur++;																		// increase counter for next time
 		return;
 	}
@@ -550,7 +550,11 @@ inline void AS::sendPeerMsg(void) {
 	// get the respective list4 entries and take care while sending the message
 	// peerNeedsBurst  =>{a=>  1.0,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"peer expects burst",lit=>{off=>0,on=>1}},
 	// expectAES       =>{a=>  1.7,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"expect AES"        ,lit=>{off=>0,on=>1}},
-	l4_0x01 = *(s_l4_0x01*)ee.getRegAddr(stcPeer.channel, 4, stcPeer.idx_cur, 0x01);
+	l4_0x01.ui = ee.getRegAddr(stcPeer.channel, 4, stcPeer.idx_cur, 0x01);
+	// fillLvlUpThr    =>{a=>  4.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level upper threshold"},
+	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
+	//dbg << F("s_l4_0x01=") << _HEXB(l4_0x01.ui) << F("\n");
+	//l4_0x01.ui = 0;		// disable burst - hardcoded
 	
 	preparePeerMessage(tmp_peer, 1);
 	
@@ -578,14 +582,19 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
 	sn.mBdy.mLen       = stcPeer.len_payload + 9;												// set message length
 	sn.mBdy.mFlg.CFG   = 1;
 	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;															// message flag
-	sn.mBdy.mFlg.BURST = l4_0x01.peerNeedsBurst;
-	sn.mBdy.by10       = stcPeer.channel;
-	sn.mBdy.by10      |= (bt.getStatus() << 7);													// battery bit
-	memcpy(sn.buf+11, stcPeer.ptr_payload, stcPeer.len_payload);								// payload
+	sn.mBdy.mFlg.BURST = l4_0x01.s.peerNeedsBurst;
 	
-	sn.maxRetr = retries;																		// send only one time
-
 	prepareToSend(sn.msgCnt, stcPeer.msg_type, xPeer);
+
+	if (sn.mBdy.mTyp == 0x41) {
+		sn.mBdy.by10 = stcPeer.channel;
+		sn.mBdy.by10 |= (bt.getStatus() << 7);													// battery bit
+		memcpy(sn.buf+11, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
+		sn.mBdy.mLen++;
+	} else {
+		memcpy(sn.buf+10, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
+	}
+	sn.maxRetr = retries;																		// send only one time
 }
 
 /**
@@ -1182,7 +1191,7 @@ inline void AS::configEnd() {
  */
  inline void AS::configWriteIndex(void) {
 	if ((cFlag.active) && (cFlag.channel == rv.mBdy.by10)) {									// check if we are in config mode and if the channel fit
-		ee.setListArray(cFlag.channel, cFlag.list, cFlag.idx_peer, rv.buf[0]+1-11, rv.buf+12);	// write the string to EEprom
+		ee.setListArray(cFlag.channel, cFlag.list, cFlag.idx_peer, rv.buf[0]-11, rv.buf+12);			// write the string to EEprom
 
 		if ((cFlag.channel == 0) && (cFlag.list == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 			uint8_t maIdFlag = 0;
@@ -1504,6 +1513,11 @@ void AS::encode(uint8_t *buf) {
 		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_ACTUATOR_STATUS)) {
 			dbg << F("INFO_ACTUATOR_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", na: ") << _HEXB(buf[13]);
 			if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
+
+		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_RT_STATUS)) {
+			dbg << F("INFO_RT_STATUS; dstTmp: ") << (buf[11]>>3) << F(".") << ((buf[11]>>2)&1)*5 << F(", Tmp: ") << (((buf[11]&3)<<8)+buf[12])/10 << F(".") << (((buf[11]&3)<<8)+buf[12])%10;
+			dbg << F(", bat: ") << ((buf[13]&0x1f)+15)/10 << F(".") << ((buf[13]&0x1f)+15)%10;
+			dbg << F(", err: ") << _HEXB(buf[13]>>5) << F(", valve: ") << _HEXB(buf[14]) << F(", ctrlMode: ") << _HEXB(buf[15]);
 
 		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_SET)) {
 			dbg << F("SET; cnl: ") << _HEXB(buf[11]) << F(", value: ") << _HEXB(buf[12]) << F(", rampTime: ") << _HEX((buf+13),2) << F(", duration: ") << _HEX((buf+15),2);

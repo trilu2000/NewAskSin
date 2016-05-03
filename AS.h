@@ -94,9 +94,13 @@ class AS {
 		uint8_t slot[8];					// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
 	} stcPeer;
 
-	struct s_l4_0x01 {
-		uint8_t  peerNeedsBurst;			// 0x01, s:0, e:1
-		uint8_t  expectAES;					// 0x01, s:7, e:8
+	union {
+		struct s_l4_0x01 {
+			uint8_t  peerNeedsBurst:1;			// 0x01, s:0, e:1
+			uint8_t  :6;
+			uint8_t  expectAES:1;				// 0x01, s:7, e:8
+		} s;
+		uint8_t	ui;
 	} l4_0x01;
 
 	uint8_t pairActive;
