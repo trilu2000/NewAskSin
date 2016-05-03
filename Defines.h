@@ -13,7 +13,7 @@
 	#define AS_REG_L0_INTERNAL_KEYS_VISIBLE               0x02
 	#define AS_REG_L0_HMKEY_1                             0x0A
 	#define AS_REG_L0_HMKEY_2                             0x0B
-	#define AS_REG_L0_HMKEY_2                             0x0C
+	#define AS_REG_L0_HMKEY_3                             0x0C
 	#define AS_REG_L0_CONF_BUTTON_TIME                    0x15
 	#define AS_REG_L0_LOCAL_RESET_DISABLE                 0x18
 
@@ -80,6 +80,7 @@
 	#define AS_INFO_PARAM_RESPONSE_SEQ                    0x03
 	#define AS_INFO_PARAMETER_CHANGE                      0x04
 	#define AS_INFO_ACTUATOR_STATUS                       0x06
+	#define AS_INFO_RT_STATUS                             0x0A
 
 	// Byte 10: action values
 	#define AS_ACTION_SET                                 0x02

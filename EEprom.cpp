@@ -372,10 +372,10 @@ uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
 		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 
-		if (!memcmp(lPeer, peer, 4)) {
+		//dbg << i << ": " << _HEX(lPeer,4) << ", s: " << _HEX(peer, 4) << '\n';
+		if (!memcmp(lPeer, peer, 3)) {
 			return i;																	// if result matches then return slot index
 		}
-		//dbg << i << ": " << _HEX(lPeer,4) << ", s: " << _HEX(peer, 4) << '\n';
 	}
 	return 0xff;
 }
