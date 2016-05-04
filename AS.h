@@ -9,7 +9,7 @@
 #ifndef _NAS_H
 #define _NAS_H
 
-#include <Defines.h>
+#include "Defines.h"
 #include "HAL.h"
 #include "CC1101.h"
 #include "EEprom.h"
@@ -143,6 +143,7 @@ class AS {
 	inline void sendNACK(void);
 	void sendNACK_TARGET_INVALID(void);
 	void sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag);
+	void sendINFO_POWER_EVENT(uint8_t *data);
 	void sendINFO_TEMP(void);
 	void sendHAVE_DATA(void);
 	void sendSWITCH(void);
