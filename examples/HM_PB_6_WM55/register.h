@@ -6,8 +6,9 @@
 	#include <cmRemote.h>
 	#include "hmkey.h"
 
+
 	AS hm;                                                               // asksin framework
-	cmRemote cmRemote[6];                                                // create instances of channel module
+	cmRemote cm_Remote[6];                                               // create instances of channel module
 
 	/*
 	* HMID, Serial number, HM-Default-Key, Key-Index
@@ -130,12 +131,12 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);                                 // set power management mode
 
 		// register user modules
-		cmRemote[0].regInHM(1, 4, &hm);                                     // register user module
-		cmRemote[1].regInHM(2, 4, &hm);                                     // register user module
-		cmRemote[2].regInHM(3, 4, &hm);                                     // register user module
-		cmRemote[3].regInHM(4, 4, &hm);                                     // register user module
-		cmRemote[4].regInHM(5, 4, &hm);                                     // register user module
-		cmRemote[5].regInHM(6, 4, &hm);                                     // register user module
+		cm_Remote[0].regInHM(1, 4, &hm);                                    // register user module
+		cm_Remote[1].regInHM(2, 4, &hm);                                    // register user module
+		cm_Remote[2].regInHM(3, 4, &hm);                                    // register user module
+		cm_Remote[3].regInHM(4, 4, &hm);                                    // register user module
+		cm_Remote[4].regInHM(5, 4, &hm);                                    // register user module
+		cm_Remote[5].regInHM(6, 4, &hm);                                    // register user module
 
 	}
 

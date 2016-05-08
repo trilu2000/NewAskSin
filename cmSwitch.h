@@ -111,7 +111,8 @@ class cmSwitch {
 
   public://----------------------------------------------------------------------------------------------------------------
   //- user defined functions ----------------------------------------------------------------------------------------------
-	
+	cmSwitch();
+
 	void (*fInit)(uint8_t);																	// pointer to init function in main sketch
 	void (*fSwitch)(uint8_t,uint8_t);														// pointer to switch function in main sketch
 

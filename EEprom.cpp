@@ -123,7 +123,7 @@ uint8_t  EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
 	uint16_t eIdx = cnlTbl[sIdx].pAddr + (cnlTbl[sIdx].sLen * idx);
 
 	for (i = 0; i < cnlTbl[sIdx].sLen; i++) {											// search for the right address in cnlAddr
-		if (_pgmB(devDef.cnlAddr[cnlTbl[sIdx].sIdx] + i) == addr) {						// if byte fits
+		if (_PGM_BYTE(devDef.cnlAddr[cnlTbl[sIdx].sIdx] + i) == addr) {					// if byte fits
 			getEEPromBlock(eIdx + i, 1, (void*)&retByte);								// get the respective byte from eeprom
 			return retByte;																// and exit
 		}
@@ -550,7 +550,7 @@ uint8_t  EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, u
 	//dbg << slc << ", sO:" << slcOffset << ", rB:" << remByte << ", sIdx:" << pHexB(sIdx) << ", eIdx:" << pHexB(eIdx) << '\n';
 
 	for (uint8_t i = 0; i < remByte; i++) {												// count through the remaining bytes
-		*buf++ = _pgmB(devDef.cnlAddr[i+sIdx+slcOffset]);								// add the register address
+		*buf++ = _PGM_BYTE(devDef.cnlAddr[i+sIdx+slcOffset]);							// add the register address
 		getEEPromBlock(i+eIdx+slcOffset, 1, buf++);										// add the eeprom content
 		//dbg << (i+eIdx+slcOffset) << '\n';
 	}
@@ -621,7 +621,7 @@ uint8_t  EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, ui
 
 	for (uint8_t i = 0; i < len; i+=2) {												// step through the input array
 		for (uint8_t j = 0; j < cnlTbl[xI].sLen; j++) {									// search for the matching address in cnlAddr
-			if (_pgmB(devDef.cnlAddr[cnlTbl[xI].sIdx + j]) == buf[i]) {					// if byte found
+			if (_PGM_BYTE(devDef.cnlAddr[cnlTbl[xI].sIdx + j]) == buf[i]) {				// if byte found
 				setEEPromBlock(eIdx + j, 1, (void*)&buf[i+1]);							// add the eeprom content
 				// dbg << "eI:" << _HEXB(eIdx + j) << ", " << _HEXB(buf[i+1]) << '\n';
 				break;																	// go to the next i

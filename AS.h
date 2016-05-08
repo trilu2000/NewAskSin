@@ -21,6 +21,7 @@
 #include "Power.h"
 #include "Battery.h"
 #include "Version.h"
+#include "macros.h"
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.

@@ -21,8 +21,10 @@
 	#include <util/atomic.h>
 	#include <avr/eeprom.h>
 
+	#include "macros.h"
 	#include "Print.h"
 
+	
 	//- MCU dependent HAL definitions -----------------------------------------------------------------------------------------
 	#if defined(__AVR_ATmega328P__)
 		#include "HAL_atmega328P.h"
@@ -33,11 +35,6 @@
 	#endif
 	//- -----------------------------------------------------------------------------------------------------------------------
 
-	struct  s_pcINT {
-		uint8_t cur;
-		uint8_t prev;
-		uint32_t time;
-	} static volatile pcInt[3];
 
 	static uint16_t wdtSleep_TIME;
 
@@ -57,18 +54,6 @@
 	#define SET_TCCRB()	    (REG_TCCRB = CLOCKSEL)
 	//- -----------------------------------------------------------------------------------------------------------------------
 
-	//- some macros and definitions -------------------------------------------------------------------------------------------
-	#define _pgmB(x) pgm_read_byte(&x)											// short hand for PROGMEM read
-	#define _pgmW(x) pgm_read_word(&x)
-
-	#define pinOutput(DDR,PIN)   ((DDR) |=  _BV(PIN))							// pin functions
-	#define pinInput(DDR,PIN)    ((DDR) &= ~_BV(PIN))
-	#define setPinHigh(PORT,PIN) ((PORT) |=  _BV(PIN))
-	#define setPinLow(PORT,PIN)  ((PORT) &= ~_BV(PIN))
-	#define setPinCng(PORT,PIN)  ((PORT) ^= _BV(PIN))
-	#define getPin(PORT,PIN)     ((PORT) &  _BV(PIN))
-	//- -----------------------------------------------------------------------------------------------------------------------
-
 
 	//- timer functions -------------------------------------------------------------------------------------------------------
 	#define HAS_OWN_MILLIS_TIMER
@@ -78,34 +63,38 @@
 	extern void    addMillis(tMillis ms);
 	//- -----------------------------------------------------------------------------------------------------------------------
 
-	//- some macros for debugging ---------------------------------------------------------------------------------------------
-	// http://aeroquad.googlecode.com/svn/branches/pyjamasam/WIFIReceiver/Streaming.h
-	#ifndef dbg
-		#define dbg Serial
-		template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; }
-	#endif
 
-	#define hiHexB(x)  char((x>>4)>9?(x>>4)+55:(x>>4)+48)
-	#define loHexB(x)  char((x&0xF)>9?(x&0xF)+55:(x&0xF)+48)
+
+	/**	- ---------------------------------------------------------------------------------------------------------------------
+	*
+	* @brief Template and some functions for debugging over serial interface
+	* http://aeroquad.googlecode.com/svn/branches/pyjamasam/WIFIReceiver/Streaming.h
+	*/
+
+	// template to enable dbg << "some text" << '\n' 
+	template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; }
 
 	struct _HEXB {
 		uint8_t val;
-		_HEXB(uint8_t v): val(v) {}
+		_HEXB(uint8_t v) : val(v) {}
 	};
-	inline Print &operator <<(Print &obj, const _HEXB &arg) { obj.print(hiHexB(arg.val)); obj.print(loHexB(arg.val)); return obj; }
+	inline Print &operator <<(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
 
 	struct _HEX {
 		uint8_t *val;
 		uint8_t len;
-		_HEX(uint8_t *v, uint8_t l): val(v), len(l) {}
+		_HEX(uint8_t *v, uint8_t l) : val(v), len(l) {}
 	};
-	inline Print &operator <<(Print &obj, const _HEX &arg) { for(uint8_t i=0;i<arg.len;i++)	{ obj.print(hiHexB(arg.val[i])); obj.print(loHexB(arg.val[i])); if(i+1<arg.len) obj.print(' '); }; return obj; }
+	inline Print &operator <<(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i + 1<arg.len) obj.print(' '); }; return obj; }
 
 	enum _eTIME { _TIME };
 	inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(getMillis()); obj.print(')'); return obj; }
 
 	extern void    dbgStart(void);
 	//- -----------------------------------------------------------------------------------------------------------------------
+
+
+
 
 
 	//- pin related functions -------------------------------------------------------------------------------------------------
@@ -121,6 +110,56 @@
 
 	//- pin interrupts --------------------------------------------------------------------------------------------------------
 	// http://www.protostack.com/blog/2010/09/external-interrupts-on-an-atmega168/
+
+	//- include and typedef for delegate ------------------------------------------------------------------------ 
+	#include "Fastdelegate.h"																		// include the fastdelegate library
+
+	using namespace fastdelegate;
+	typedef FastDelegate2<uint8_t, uint8_t> s_pcint_dlgt;											// void function_name(uint8_t pcint_pin, uint8_t pcint_mode)
+
+	/**
+	* @brief Structure to handle information raised by the interrupt function
+	*
+	* @param *PINR  Pointer to PIN register, to read the PIN status
+	* @param prev   To remember on the previus status of the port, to identify which PIN was raising the interrupt
+	* @param mask   Mask byte to clean out bits which are not registered for interrupt detection
+	*/
+	struct  s_pcint_vector_byte {
+		volatile uint8_t *PINR;																		// pointer to the port where pin status can be read
+		uint8_t prev;
+		uint8_t mask;
+	};
+	extern volatile s_pcint_vector_byte pcint_vector_byte[];										// size of the table depending on avr type in the cpp file
+
+	/**
+	* @brief Structure to handle the registered interrupt requests
+	*
+	* @param pin        Stores the interrupt pin
+	* @param debounce   Debounce flag, callback will be handled differently
+	* @param active     Flag is set while interrupt was detected and we need to debounce
+	* @param ie         Interrupt vector, needed for calculation of the pin change interrupt number
+	* @param time       Here we store the time stamp for debouncing functionallity
+	* @param dlgt       Delegate, holds the callback information
+	*/
+	struct s_pcint_table {
+		uint8_t pin;
+		uint8_t debounce;
+		uint8_t active;
+		uint8_t ie;
+		uint32_t time;
+		s_pcint_dlgt dlgt;
+	};
+	extern s_pcint_table pcint_table[];
+
+
+
+	// old struct to catch pin change interrupts
+	struct  s_pcINT {
+		uint8_t cur;
+		uint8_t prev;
+		uint32_t time;
+	} static volatile pcInt[3];
+
 
 	#define regPCIE(PORT)         (PCICR |= _BV(PORT))
 	#define regPCINT(MASK,PORT)   (MASK  |= _BV(PORT))

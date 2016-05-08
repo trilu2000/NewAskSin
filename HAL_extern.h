@@ -1,14 +1,29 @@
+/**
+*
+* @brief Some definitions for the pin change interrupt setup
+*
+* <pcint_vector_byte> array holds current information per interrupt vector
+* <pcint_table> array stores the pin change interrupt specific information and a call back address
+* size information a stored in the hardware.h file in user sketch area
+*
+*/
+volatile s_pcint_vector_byte pcint_vector_byte[_PCINT_PCIE_SIZE];
+s_pcint_table pcint_table[_PCINT_SLOTS];
+
+
 //- cc1100 hardware functions ---------------------------------------------------------------------------------------------
 void    ccInitHw(void) {
-	pinOutput( CC_CS_DDR, CC_CS_PIN );											// set chip select as output
-	pinOutput( SPI_DDR, SPI_MOSI );												// set MOSI as output
-	pinInput ( SPI_DDR, SPI_MISO );												// set MISO as input
-	pinOutput( SPI_DDR, SPI_SCLK );												// set SCK as output
-	pinInput ( CC_GDO0_DDR, CC_GDO0_PIN );										// set GDO0 as input
+	_SET_PIN_AS_OUTPUT( CC_CS_DDR, CC_CS_PIN );									// set chip select as output
+	_SET_PIN_AS_OUTPUT( SPI_DDR, SPI_MOSI );									// set MOSI as output
+	_SET_PIN_AS_INPUT(  SPI_DDR, SPI_MISO );									// set MISO as input
+	_SET_PIN_AS_OUTPUT( SPI_DDR, SPI_SCLK );									// set SCK as output
+	_SET_PIN_AS_INPUT(  CC_GDO0_DDR, CC_GDO0_PIN );								// set GDO0 as input
 
 	SPCR = _BV(SPE) | _BV(MSTR);												// SPI enable, master, speed = CLK/4
 
 	CC_GDO0_PCICR |= _BV(CC_GDO0_PCIE);											// set interrupt in mask active
+	dbg << "pcint_vector_byte: " << sizeof(pcint_vector_byte) << "\n";
+
 }
 uint8_t ccSendByte(uint8_t data) {
 	SPDR = data;																// send byte
@@ -16,7 +31,7 @@ uint8_t ccSendByte(uint8_t data) {
 	return SPDR;
 }
 uint8_t ccGetGDO0() {
-	uint8_t x = chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT, 0);							// check PCINT without debouncing
+	uint8_t x = chkPCINT(CC_GDO0_PCIE, CC_GDO0_INT, 1);							// check PCINT without debouncing
 	//if (x>1) dbg << "x:" << x << '\n';
 
 	if (x == 2 ) return 1;														// falling edge detected
@@ -36,34 +51,34 @@ void    waitMiso(void) {
 	while(SPI_PORT &   _BV(SPI_MISO));
 }
 void    ccSelect(void) {
-	setPinLow( CC_CS_PORT, CC_CS_PIN);
+	_SET_PIN_LOW( CC_CS_PORT, CC_CS_PIN);
 }
 void    ccDeselect(void) {
-	setPinHigh( CC_CS_PORT, CC_CS_PIN);
+	_SET_PIN_HIGH( CC_CS_PORT, CC_CS_PIN);
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
 //- status led related functions -------------------------------------------------------------------------------------------------
 void    initLeds(void) {
-	pinOutput(LED_RED_DDR, LED_RED_PIN);										// set the led pins in port
-	pinOutput(LED_GRN_DDR, LED_GRN_PIN);
+	_SET_PIN_AS_OUTPUT( LED_RED_DDR, LED_RED_PIN);								// set the led pins in port
+	_SET_PIN_AS_OUTPUT( LED_GRN_DDR, LED_GRN_PIN);
 	if (LED_ACTIVE_LOW) {
-		setPinHigh(LED_RED_PORT, LED_RED_PIN);
-		setPinHigh(LED_GRN_PORT, LED_GRN_PIN);
+		_SET_PIN_HIGH(LED_RED_PORT, LED_RED_PIN);
+		_SET_PIN_HIGH(LED_GRN_PORT, LED_GRN_PIN);
 	}
 }
 void    ledRed(uint8_t stat) {
 	stat ^= LED_ACTIVE_LOW;
-	if      (stat == 1) setPinHigh(LED_RED_PORT, LED_RED_PIN);
-	else if (stat == 0) setPinLow(LED_RED_PORT, LED_RED_PIN);
-	else                setPinCng(LED_RED_PORT, LED_RED_PIN);
+	if      (stat == 1) _SET_PIN_HIGH(   LED_RED_PORT, LED_RED_PIN);
+	else if (stat == 0) _SET_PIN_LOW(    LED_RED_PORT, LED_RED_PIN);
+	else                _SET_PIN_TOOGLE( LED_RED_PORT, LED_RED_PIN);
 }
 void    ledGrn(uint8_t stat) {
 	stat ^= LED_ACTIVE_LOW;
-	if      (stat == 1) setPinHigh(LED_GRN_PORT, LED_GRN_PIN);
-	else if (stat == 0) setPinLow(LED_GRN_PORT, LED_GRN_PIN);
-	else                setPinCng(LED_GRN_PORT, LED_GRN_PIN);
+	if      (stat == 1) _SET_PIN_HIGH(   LED_GRN_PORT, LED_GRN_PIN);
+	else if (stat == 0) _SET_PIN_LOW(    LED_GRN_PORT, LED_GRN_PIN);
+	else                _SET_PIN_TOOGLE( LED_GRN_PORT, LED_GRN_PIN);
 }
 
 //- pin related functions -------------------------------------------------------------------------------------------------
@@ -116,8 +131,8 @@ uint8_t chkPCINT(uint8_t port, uint8_t pin, uint8_t debounce) {
  */
 void    initConfKey(void) {
 	// set port pin and register pin interrupt
-	pinInput(CONFIG_KEY_DDR, CONFIG_KEY_PIN);									// init the config key pin
-	setPinHigh(CONFIG_KEY_PORT,CONFIG_KEY_PIN);
+	_SET_PIN_AS_INPUT( CONFIG_KEY_DDR, CONFIG_KEY_PIN);							// init the config key pin
+	_SET_PIN_HIGH( CONFIG_KEY_PORT,CONFIG_KEY_PIN);
 
 	initPCINT();																// some sanity on interrupts
 	regPCIE(CONFIG_KEY_PCIE);													// set the pin change interrupt
@@ -133,31 +148,6 @@ void    initConfKey(void) {
 
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#ifndef USE_OWN_ISR_PCINT0_vect
-	ISR (PCINT0_vect) {
-		pcInt[0].cur = PINB;
-		pcInt[0].time = getMillis();
-	//	dbg << "i1:" << PINB  << "\n";
-	}
-#endif
-
-#ifndef USE_OWN_ISR_PCINT1_vect
-	ISR (PCINT1_vect) {
-		pcInt[1].cur = PINC;
-		pcInt[1].time = getMillis();
-
-	//	dbg << "i2:" << PINC << "\n";
-	}
-#endif
-
-#ifndef USE_OWN_ISR_PCINT2_vect
-	ISR (PCINT2_vect) {
-		pcInt[2].cur = PIND;
-		pcInt[2].time = getMillis();
-	//	dbg << "i3:" << PIND  << "\n";
-	}
-#endif
-//- -----------------------------------------------------------------------------------------------------------------------
 
 
 /*************************************
@@ -197,8 +187,8 @@ uint8_t  getBatteryVoltage(void) {
  * Initialize battery measurement pin for external battery measurement
  */
 void    initExtBattMeasurement(void) {
-	pinInput(BATT_MEASURE_DDR, BATT_MEASURE_PIN);								// set the ADC pin as input
-	pinInput(BATT_ENABLE_DDR, BATT_ENABLE_PIN);									// set the measurement enable pin as input, otherwise we waste energy over the resistor network against VCC
+	_SET_PIN_AS_INPUT( BATT_MEASURE_DDR, BATT_MEASURE_PIN);						// set the ADC pin as input
+	_SET_PIN_AS_INPUT( BATT_ENABLE_DDR, BATT_ENABLE_PIN);						// set the measurement enable pin as input, otherwise we waste energy over the resistor network against VCC
 }
 
 /**
@@ -207,13 +197,53 @@ void    initExtBattMeasurement(void) {
  */
 void    switchExtBattMeasurement(uint8_t stat) {
 	if (stat == 1) {
-		pinOutput(BATT_ENABLE_DDR, BATT_ENABLE_PIN);							// set pin as out put
-		setPinLow(BATT_ENABLE_PORT, BATT_ENABLE_PIN);							// set low to measure the resistor network
-		setPinLow(BATT_MEASURE_PORT, BATT_MEASURE_PIN);
+		_SET_PIN_AS_OUTPUT( BATT_ENABLE_DDR, BATT_ENABLE_PIN);					// set pin as out put
+		_SET_PIN_LOW( BATT_ENABLE_PORT, BATT_ENABLE_PIN);						// set low to measure the resistor network
+		_SET_PIN_LOW( BATT_MEASURE_PORT, BATT_MEASURE_PIN);
 	} else {
-		pinInput(BATT_ENABLE_DDR, BATT_ENABLE_PIN);
+		_SET_PIN_AS_INPUT( BATT_ENABLE_DDR, BATT_ENABLE_PIN);
 
 		// todo: check
-		setPinHigh(BATT_MEASURE_PORT, BATT_MEASURE_PIN);						// switch on pull up, otherwise we waste energy over the resistor network against VCC
+		_SET_PIN_HIGH( BATT_MEASURE_PORT, BATT_MEASURE_PIN);					// switch on pull up, otherwise we waste energy over the resistor network against VCC
 	}
 }
+
+
+
+//- -----------------------------------------------------------------------------------------------------------------------
+//- -----------------------------------------------------------------------------------------------------------------------
+
+/**
+* @brief Pin Change Interrupt catch functions
+*
+*/
+
+
+ISR(PCINT0_vect) {
+	pcInt[0].cur = PINB;
+	pcInt[0].time = getMillis();
+	//	dbg << "i1:" << PINB  << "\n";
+}
+
+ISR(PCINT1_vect) {
+	pcInt[1].cur = PINC;
+	pcInt[1].time = getMillis();
+
+	//	dbg << "i2:" << PINC << "\n";
+}
+
+ISR(PCINT2_vect) {
+	pcInt[2].cur = PIND;
+	pcInt[2].time = getMillis();
+	//	dbg << "i3:" << PIND  << "\n";
+}
+
+ISR(PCINT3_vect) {
+	pcInt[3].cur = PIND;
+	pcInt[3].time = getMillis();
+	//	dbg << "i3:" << PIND  << "\n";
+}
+
+//- -----------------------------------------------------------------------------------------------------------------------
+
+

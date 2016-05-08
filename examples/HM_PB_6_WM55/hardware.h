@@ -11,11 +11,18 @@
 #ifndef _HARDWARE_h
 	#define _HARDWARE_h
 
-	#define EXT_BATTERY_MEASUREMENT												// comment out to use internal battery measurement
+//#define EXT_BATTERY_MEASUREMENT												// comment out to use internal battery measurement
 	#define BATTERY_FACTOR             17										// see excel table
 	#define DEBOUNCE                   5
 
 	#if defined(__AVR_ATmega328P__)
+		//- hardware specific general setup
+		#define _PCINT_PCIE_SIZE        3										// amount of pin change interrupt vectors
+		#define _PCINT_SLOTS            10										// define the max amount of slots for interrupts to register
+
+		#define _CC_CS_PIN														// chip select pin for cc1101 interface
+		#define _CC_GDO0_PIN													// interrupt pin for data detection of cc1101 interface
+
 		//- cc1100 hardware CS and GDO0 definitions -------------------------------------------------------------------
 		#define CC_CS_DDR              DDRB										// SPI chip select definition
 		#define CC_CS_PORT             PORTB

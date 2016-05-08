@@ -77,8 +77,8 @@ void    CC::init(void) {																// initialize CC1101
 		CC1101_PATABLE, 0xC3,
 	};
 	for (uint8_t i=0; i<sizeof(initVal); i+=2) {										// write init value to TRX868
-		writeReg(_pgmB(initVal[i]), _pgmB(initVal[i+1]));
-		//dbg << i << ": " << _HEXB(_pgmB(initVal[i])) << ' ' << _HEXB(_pgmB(initVal[i+1])) << '\n';
+		writeReg(_PGM_BYTE(initVal[i]), _PGM_BYTE(initVal[i+1]));
+		//dbg << i << ": " << _HEXB(_PGM_BYTE(initVal[i])) << ' ' << _HEXB(_PGM_BYTE(initVal[i+1])) << '\n';
 	}
 
 	#ifdef CC_DBG																		// only if cc debug is set

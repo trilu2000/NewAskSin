@@ -10,7 +10,7 @@
 	//- stage modules --------------------------------------------------------------------------------------------------------
 	AS hm;                                                                  // asksin framework
 
-	cmSwitch cmSwitch[1];													// create instances of channel module
+	cmSwitch cm_Switch[1];													// create instances of channel module
 	extern void initRly(uint8_t channel);                                   // declare function to jump in
 	extern void switchRly(uint8_t channel, uint8_t status);                 // declare function to jump in
 
@@ -119,8 +119,8 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);                                 // set power management mode
 
 		// register user modules
-		cmSwitch[0].regInHM(1, 3, &hm);                                    // register user module
-		cmSwitch[0].config(&initRly, &switchRly);                          // configure user module
+		cm_Switch[0].regInHM(1, 3, &hm);	                                // register user module
+		cm_Switch[0].config(&initRly, &switchRly);                          // configure user module
 
 	}
 

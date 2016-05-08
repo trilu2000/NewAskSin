@@ -334,6 +334,9 @@ void cmSwitch::poll(void) {
 //-------------------------------------------------------------------------------------------------------------------------
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
+cmSwitch::cmSwitch(void) {
+}
+
 void cmSwitch::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	hm = instPtr;																			// set pointer to the HM module
 	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&cmSwitch::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);

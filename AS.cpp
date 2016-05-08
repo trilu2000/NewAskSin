@@ -9,7 +9,7 @@
 /*
  * Comment out to disable AES support
  */
-#define SUPPORT_AES
+ #define SUPPORT_AES
 
 /*
  * On device reset the watchdog hart reset the entire device.
