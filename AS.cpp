@@ -67,7 +67,6 @@ void AS::init(void) {
 	initRandomSeed();
 
 	// everything is setuped, enable RF functionality
-	enableGDO0Int();																			// enable interrupt to get a signal while receiving data
 }
 
 /**

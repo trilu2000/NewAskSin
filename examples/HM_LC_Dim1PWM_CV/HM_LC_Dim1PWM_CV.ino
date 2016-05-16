@@ -67,7 +67,7 @@ void initDim(uint8_t channel) {
 		
 	power_timer2_enable();																	// enable the timer2 in power management
 	
-	pinOutput(DDRD,3);																		// init the relay pins
+	SET_PIN_OUTPUT(PIN_D3); //pinOutput(DDRD, 3);																		// init the relay pins
 	//setPinLow(PORTD,3);
 	
 	TCCR2B |= (1<<CS21);																	// configure the PWM for the respective output pin

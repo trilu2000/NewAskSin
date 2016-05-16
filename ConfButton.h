@@ -71,11 +71,9 @@ class CB {
 
 	uint8_t lstSht;							// remember that last key was a short
 
-	uint8_t pciByte;						// PCI byte, indicate interrupt channel
-	uint8_t pciBit;							// PCI bit indicate bit number in PCI channel byte
 
   public:		//---------------------------------------------------------------------------------------------------------
-	void config(uint8_t mode, uint8_t pcIntByte, uint8_t pcIntBit);
+	void config(uint8_t mode);
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------

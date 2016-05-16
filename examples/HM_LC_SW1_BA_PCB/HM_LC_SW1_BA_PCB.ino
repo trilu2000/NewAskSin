@@ -59,8 +59,10 @@ void initRly(uint8_t channel) {
 		dbg << F("initRly: ") << channel << "\n";
 	#endif
 	
-	pinOutput(DDRD,3);																		// init the relay pins
-	setPinLow(PORTD,3);																		// set relay pin to ground
+	SET_PIN_OUTPUT(PIN_D3);
+	//pinOutput(DDRD, 3);																		// init the relay pins
+	//setPinLow(PORTD,3);																		// set relay pin to ground
+	SET_PIN_LOW(PIN_D3);
 }
 void switchRly(uint8_t channel, uint8_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
@@ -68,8 +70,10 @@ void switchRly(uint8_t channel, uint8_t status) {
 		dbg << F("switchRly: ") << channel << ", " << status << "\n";
 	#endif
 
-	if (status) setPinHigh(PORTD,3);														// check status and set relay pin accordingly
-	else setPinLow(PORTD,3);
+	if (status) SET_PIN_HIGH(PIN_D3);														// check status and set relay pin accordingly
+	else SET_PIN_LOW(PIN_D3);
+	//if (status) setPinHigh(PORTD, 3);														// check status and set relay pin accordingly
+	//else setPinLow(PORTD, 3);
 }
 
 

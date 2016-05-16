@@ -71,9 +71,7 @@ void SN::poll(void) {
 
 			pHM->encode(this->buf);															// encode the string
 
-			disableGDO0Int();
 			pHM->cc.sndData(this->buf, tBurst);												// send to communication module
-			enableGDO0Int();
 
 			pHM->decode(this->buf);															// decode the string, so it is readable next time
 			

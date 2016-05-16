@@ -13,10 +13,8 @@
 waitTimer btnTmr;																			// button timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
-void CB::config(uint8_t mode, uint8_t pcIntByte, uint8_t pcIntBit) {
+void CB::config(uint8_t mode) {
 	scn = mode;
-	pciByte = pcIntByte;
-	pciBit = pcIntBit;
 }
 
 // private:		//---------------------------------------------------------------------------------------------------------
@@ -38,7 +36,7 @@ void CB::poll(void) {
 	if (!scn) return;																		// mode not set, nothing to do
 	
 	// 0 for button is pressed, 1 for released, 2 for falling and 3 for rising edge
-	btn = chkPCINT(pciByte, pciBit, 1);														// check input pin, do debouncing
+	btn = checkConfKey();																	// check input pin
 
 	if (btn == 2) {																			// button was just pressed
 		//dbg << "armed \n";
