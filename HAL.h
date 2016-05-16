@@ -95,28 +95,36 @@
 
 
 
+	//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
+	// all functions can be found in HAL_extern.h file, this are only the forward declarations to overcome the problem
+	// of handing over #defines from user folder to library folder in Arduino. No pin change interrupt neccasary any more.
 
-
-	//- pin related functions -------------------------------------------------------------------------------------------------
-	void    initLeds(void);												// initialize leds
-	void    ledRed(uint8_t stat);										// function in main sketch to drive leds
-	extern void    ledGrn(uint8_t stat);										// stat could be 0 for off, 1 for on, 2 for toggle
-
-	extern void    initConfKey(void);											// init the config key, function in user sketch
-
-	extern void    initWakeupPin(void);											// init the wakeup pin
-	extern uint8_t checkWakeupPin(void);										// we could setup a pin which avoid sleep mode
+	extern void    ccInitHw(void);																// init all hardware pins related to the cc1101 module
+	extern uint8_t ccSendByte(uint8_t data);													// SPI send byte function
+	extern uint8_t ccGetGDO0(void);																// detects falling edge while received data
+	extern void    ccSelect(void);																// chip select and wait till ready
+	extern void    ccDeselect(void);															// chip deselect
 	//- -----------------------------------------------------------------------------------------------------------------------
 
+	//- led related functions -------------------------------------------------------------------------------------------------
+	extern void    initLeds(void);																// initialize leds
+	extern void    ledRed(uint8_t stat);														// function in main sketch to drive leds
+	extern void    ledGrn(uint8_t stat);														// stat could be 0 for off, 1 for on, 2 for toggle
+	//- -----------------------------------------------------------------------------------------------------------------------
+
+	//- config key related functions ------------------------------------------------------------------------------------------
+	extern void    initConfKey(void);															// init the config key, function in user sketch
+	extern uint8_t checkConfKey(void);															// checks the conf key if there had something happened
+	//- -----------------------------------------------------------------------------------------------------------------------
+
+	//- needed for 32u4 to prevent sleep, while USB didn't work in sleep ------------------------------------------------------
+	extern void    initWakeupPin(void);															// init the wakeup pin
+	extern uint8_t checkWakeupPin(void);														// we can setup a pin which avoid sleep mode
+	//- -----------------------------------------------------------------------------------------------------------------------
+
+
+
 	//- pin interrupts --------------------------------------------------------------------------------------------------------
-	// http://www.protostack.com/blog/2010/09/external-interrupts-on-an-atmega168/
-
-	//- include and typedef for delegate ------------------------------------------------------------------------ 
-	#include "Fastdelegate.h"																		// include the fastdelegate library
-
-	using namespace fastdelegate;
-	typedef FastDelegate2<uint8_t, uint8_t> s_pcint_dlgt;											// void function_name(uint8_t pcint_pin, uint8_t pcint_mode)
-
 	/**
 	* @brief Structure to handle information raised by the interrupt function
 	*
@@ -126,61 +134,18 @@
 	*/
 	struct  s_pcint_vector_byte {
 		volatile uint8_t *PINR;																		// pointer to the port where pin status can be read
+		uint8_t curr;
 		uint8_t prev;
 		uint8_t mask;
+		uint32_t time;
 	};
 	extern volatile s_pcint_vector_byte pcint_vector_byte[];										// size of the table depending on avr type in the cpp file
-
-	/**
-	* @brief Structure to handle the registered interrupt requests
-	*
-	* @param pin        Stores the interrupt pin
-	* @param debounce   Debounce flag, callback will be handled differently
-	* @param active     Flag is set while interrupt was detected and we need to debounce
-	* @param ie         Interrupt vector, needed for calculation of the pin change interrupt number
-	* @param time       Here we store the time stamp for debouncing functionallity
-	* @param dlgt       Delegate, holds the callback information
-	*/
-	struct s_pcint_table {
-		uint8_t pin;
-		uint8_t debounce;
-		uint8_t active;
-		uint8_t ie;
-		uint32_t time;
-		s_pcint_dlgt dlgt;
-	};
-	extern s_pcint_table pcint_table[];
-
-
-
-	// old struct to catch pin change interrupts
-	struct  s_pcINT {
-		uint8_t cur;
-		uint8_t prev;
-		uint32_t time;
-	} static volatile pcInt[3];
-
-
-	#define regPCIE(PORT)         (PCICR |= _BV(PORT))
-	#define regPCINT(MASK,PORT)   (MASK  |= _BV(PORT))
-
-	extern void    initPCINT(void);
-	extern uint8_t chkPCINT(uint8_t port, uint8_t pin, uint8_t debounce);
+	extern void    registerPCINT(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);
+	extern uint8_t checkPCINT(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC, uint8_t debounce);
+	extern uint8_t checkPCINT(uint8_t port, uint8_t pin, uint8_t debounce);							// function to poll if an interrupt had happened, gives also status of pin
+	extern void    maintainPCINT(uint8_t vec);														// collects all interrupt vectors and maintains the callback address for external pin change interrupt handling
 	//- -----------------------------------------------------------------------------------------------------------------------
 
-
-	//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
-	extern void    ccInitHw(void);
-	extern uint8_t ccSendByte(uint8_t data);
-	extern uint8_t ccGetGDO0(void);
-
-	extern void    enableGDO0Int(void);
-	extern void    disableGDO0Int(void);
-
-	extern void    waitMiso(void);
-	extern void    ccSelect(void);
-	extern void    ccDeselect(void);
-	//- -----------------------------------------------------------------------------------------------------------------------
 
 
 	//- eeprom functions ------------------------------------------------------------------------------------------------------
