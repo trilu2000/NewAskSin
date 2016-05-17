@@ -5,6 +5,7 @@
 #include <AS.h>																				// ask sin framework
 
 
+
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
 
@@ -37,18 +38,21 @@ void setup() {
 
 
 	// - user related -----------------------------------------
-	registerPCINT(PIN_C0);																	// register the pin change interrupt for hw keys
-	registerPCINT(PIN_C1);
-	registerPCINT(PIN_C2);
-	registerPCINT(PIN_C3);
-	registerPCINT(PIN_C4);
-	registerPCINT(PIN_C5);
+//	registerPCINT(PIN_C0);																	// register the pin change interrupt for hw keys
+//	registerPCINT(PIN_C1);
+//	registerPCINT(PIN_C2);
+//	registerPCINT(PIN_C3);
+//	registerPCINT(PIN_C4);
+//	registerPCINT(PIN_C5);
 
 
 	#ifdef SER_DBG
 		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");	// some debug
 	#endif
 }
+
+
+
 
 void loop() {
 	// - AskSin related ---------------------------------------
@@ -57,6 +61,7 @@ void loop() {
 	// - user related -----------------------------------------
 	
 }
+
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
@@ -69,7 +74,7 @@ void loop() {
 * @param   flag    Indicates the value of the port pin (1 = high, 0 = low)
 */
 void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag) {
-	dbg << "cb, vec:" << vec << ", pin:" << pin << ", flag:" << flag << '\n';
+	//dbg << "cb, vec:" << vec << ", pin:" << pin << ", flag:" << flag << '\n';
 }
 
 

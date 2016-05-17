@@ -131,6 +131,7 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);                                 // set power management mode
 
 		// register user modules
+		cm_Remote[0].config(PIN_C0);                                        // hand over the pin to check for action
 		cm_Remote[0].regInHM(1, 4, &hm);                                    // register user module
 		cm_Remote[1].regInHM(2, 4, &hm);                                    // register user module
 		cm_Remote[2].regInHM(3, 4, &hm);                                    // register user module

@@ -2,7 +2,7 @@
 // AskSin driver implementation
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin relay class ----------------------------------------------------------------------------------------------------
+//- AskSin remote class ---------------------------------------------------------------------------------------------------
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -46,22 +46,21 @@ class cmRemote {
 		uint8_t EXPECT_AES                 :1;    // 0x01.7, 0x00
 	} lstPeer;
 
-	waitTimer wt_long_press;
-	waitTimer wt_rpt_long;
-	waitTimer wt_dbl_short;
-	waitTimer wt_dbl_long;
-
-	uint8_t stat_curr;																			// variable to store current status in polling function
-	uint8_t stat_last;																			// same, to remember on last status
+	uint8_t port;																				// port information for checking interrupt
+	uint8_t pin;																				// pin information for checking interrupt
+	uint8_t btn;																				// variable to store current status in polling function
 
 	struct s_check_repeat {
-		uint8_t poll                       :1;													// if this is set to 1, poll function should be entered
+		uint8_t is_configured              :1;													// poll the pin make only sense if it was configured, store result here
+		uint8_t armed                      :1;													// if this is set to 1, poll function should be entered
 		uint8_t last_short                 :1;													// if the last key press was a short to detect a double short
 		uint8_t last_long                  :1;													// if the last keypress was a long to detect a double long
 		uint8_t last_dbl_long              :1;													// last key was a double_long, to detect the end of a double long
 		uint8_t last_rpt_long              :1;													// if the key is still pressed for a certain time to detect repeat status over a timer
-		uint8_t                            :3;
-	} check_repeat;
+		uint8_t                            :2;
+	} chkRPT;
+
+	void    buttonPoll(void);																	// polling function to detect key status
 
 
   public://----------------------------------------------------------------------------------------------------------------
@@ -74,8 +73,9 @@ class cmRemote {
 		uint8_t counter      :8;																// will be increased in buttonAction function
 	} buttonInfo;																				// holds the details for the send event message
 
+	void    config(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);
 	void    buttonAction(uint8_t);																// send message according given event
-	
+
 
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
 	uint8_t regCnl;																				// holds the channel for the module
