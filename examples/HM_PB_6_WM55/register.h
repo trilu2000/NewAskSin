@@ -125,7 +125,6 @@
 
 		// init the homematic framework
 		hm.confButton.config(1);                                            // configure the config button mode
-		//hm.ld.init(&hm);                                                    // set the led
 		hm.ld.set(welcome);                                                 // show something
 		hm.bt.set(30, 3600000);                                             // set battery check, internal, 2.7 reference, measurement each hour
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);                                 // set power management mode

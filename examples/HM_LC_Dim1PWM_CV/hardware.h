@@ -29,8 +29,8 @@
 
 
 		//- LED's definition ------------------------------------------------------------------------------------------
-		#define LED_RED                PIN_D4									// define the red led pin port
-		#define LED_GRN                PIN_D6									// define the green led		
+		#define LED_RED                PIN_D6									// define the red led pin port
+		#define LED_GRN                PIN_D4									// define the green led		
 		#define LED_ACTIVE_LOW         0										// leds connected to GND = 0, VCC = 1
 
 
