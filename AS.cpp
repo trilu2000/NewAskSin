@@ -46,7 +46,7 @@ void AS::init(void) {
 		dbg << F("AS.\n");																		// ...and some information
 	#endif
 
-	initLeds();																					// initialize the leds
+	//initLeds();																					// initialize the leds
 	initConfKey();																				// initialize the port for getting config key interrupts
 
 	ee.init();																					// eeprom init
@@ -58,6 +58,7 @@ void AS::init(void) {
 	sn.init(this);																				// send module
 	rv.init(this);																				// receive module
 	rg.init(this);																				// module registrar
+	ld.init(this);																				// led class initialization
 	confButton.init(this);																		// config button
 	pw.init(this);																				// power management
 	bt.init(this);																				// battery check

@@ -12,6 +12,8 @@ volatile s_pcint_vector_byte pcint_vector_byte[PCINT_PCIE_SIZE];
 extern void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag);
 #endif
 
+
+
 //- cc1100 hardware functions ---------------------------------------------------------------------------------------------
 /**
 * @brief Initialisze the hardware setup of the cc1101 communication modul. No interrupt is used any more, while 
@@ -69,6 +71,40 @@ void    ccDeselect(void) {
 
 
 //- status led related functions -------------------------------------------------------------------------------------------------
+/**
+* @brief Definition of the blink pattern for the LED module. Reason for defining it here is the 
+* limitation of Arduino while #defines from sketch area not seen in library folder
+*/
+#if   defined(LED_RED) && defined(LED_GRN)														// two leds defined  
+const struct s_blPat blPat[] = {																// definition of struct and functionallity can be seen in StatusLed.h
+	{ 2, 0, 1, 1,{ 50, 50, }, },					// pairing
+	{ 2, 1, 0, 1,{ 200, 0, }, },					// pairing success
+	{ 2, 1, 1, 0,{ 200, 0, }, },					// pairing error
+	{ 2, 1, 1, 1,{ 5, 1, }, },						// send indicator
+	{ 2, 1, 0, 1,{ 5, 1, }, },						// ack indicator
+	{ 2, 1, 1, 0,{ 10, 1, }, },						// no ack indicator
+	{ 6, 3, 1, 0,{ 50, 10, 10, 10, 10 ,100, }, },	// battery low indicator
+	{ 6, 3, 1, 0,{ 10, 10, 10, 10, 10, 100, }, },	// defect indicator
+	{ 6, 1, 0, 1,{ 10, 10, 50, 10, 50, 100, }, },	// welcome indicator
+	{ 2, 6, 1, 0,{ 20, 20, }, },					// key long indicator
+};
+#elif defined(LED_RED) || defined(LED_GRN)														// only one led defined
+const struct s_blPat blPat[] = {																// definition of struct and functionallity can be seen in StatusLed.h
+	{ 2, 0, 1, 0,{ 50, 50, } },						// pairing
+	{ 2, 1, 1, 0,{ 200, 0, } },						// pairing success
+	{ 2, 3, 1, 0,{ 5, 10, } },						// pairing error
+	{ 2, 1, 1, 0,{ 5, 1, } },						// send indicator
+	{ 0, 0, 0, 0,{ 0, 0, } },						// ack indicator
+	{ 0, 0, 0, 0,{ 0, 0, } },						// no ack indicator
+	{ 6, 3, 1, 0,{ 50, 10, 10, 10, 10, 100 } },		// battery low indicator
+	{ 6, 3, 1, 0,{ 10, 10, 10, 10, 10, 100 } },		// defect indicator
+	{ 6, 1, 1, 0,{ 10, 10, 50, 10, 50, 100 } },		// welcome indicator
+	{ 2, 6, 1, 0,{ 20, 20, } },						// key long indicator
+};
+#else																							// no led defined
+const struct s_blPat blPat[0];																	// definition of struct and functionallity can be seen in StatusLed.h
+#endif
+
 /**
 * @brief Initialize the led pins, but only if there are some defined.
 */

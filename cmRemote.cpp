@@ -137,7 +137,6 @@ void cmRemote::buttonPoll(void) {
 	} else if ((btn == 1) && (cmrTmr.done())) {						// button is not pressed for a longer time, check if the double flags timed out
 		//if (armFlg) dbg << "r\n";
 		chkRPT.armed = chkRPT.last_dbl_long = chkRPT.last_long = chkRPT.last_rpt_long = 0;
-		//chkRPT.is_configured = 1;
 
 	}
 }

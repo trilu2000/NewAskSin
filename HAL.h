@@ -107,6 +107,14 @@
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 	//- led related functions -------------------------------------------------------------------------------------------------
+	struct s_blPat {							// struct for defining the blink pattern
+		uint8_t len;							// length of pattern string
+		uint8_t dur;							// how often the pattern has to be repeated, 0 for endless
+		uint8_t led0;							// red
+		uint8_t led1;							// green, if you like orange, set led0 and led1 to one
+		uint8_t pat[6];							// the pattern it self, pattern starts always with the on time, followed by off time.
+	};											// time is given in 10ms steps
+	extern const struct s_blPat blPat[];
 	extern void    initLeds(void);																// initialize leds
 	extern void    ledRed(uint8_t stat);														// function in main sketch to drive leds
 	extern void    ledGrn(uint8_t stat);														// stat could be 0 for off, 1 for on, 2 for toggle
