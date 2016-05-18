@@ -3,7 +3,6 @@
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
 //- AskSin status led functions -------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
 //#define LD_DBG
@@ -30,9 +29,9 @@ void    LD::init(AS *ptrMain) {
 	dbg << F("LD.\n");																			// ...and some information
 	#endif
 
-	pHM = ptrMain;																				// store the pointer to the main class
+//	pHM = ptrMain;																				// store the pointer to the main class
 	initLeds();																					// init the hardware, defined in hardware.h
-}
+} 
 
 /**
 * @brief Here we are choosing and start the blink pattern. Processing is done via the poll function within 
@@ -47,17 +46,16 @@ void    LD::set(ledStat stat) {
 	ledRed(0);																					// new program starts, so switch leds off
 	ledGrn(0);
 
-	blinkPtr = &blPat[stat];																	// set the pattern within the pointer, processing is done in the poll function
-	active = 1;																					// make module active
-	lCnt = 0;																					// set start position
-	dCnt = 1;
-
-	if (blinkPtr->len == 0) stat = nothing;														// some sanity on blink pointer
-	
-	if (stat == nothing) {
-		ledTmr.set(0);																			// timer done
-		active = 0;																				// nothing to do any more
+	if (stat == nothing) {																		// nothing, switch inactive
+		active = 0;
+	} else {																					// otherwise copy pattern from progmem and set some counter
+		memcpy_P(&blPtr, &blPat[stat], 10);														// cpoy the pattern from progmem
+		lCnt = 0;																				// set start position
+		dCnt = 1;
+		active = 1;																				// make module active
 	}
+
+	if (blPtr.len == 0) stat = nothing;															// some sanity on blink pointer
 }
 
 /**
@@ -81,16 +79,16 @@ void	LD::poll(void) {
 	if (!ledTmr.done()) return;																	// active but timer not done
 	
 	// if we are here we have something to do, set the led, timer and counter
-	ledTmr.set(blinkPtr->pat[lCnt]*10);															// set the timer for next check up
+	ledTmr.set(blPtr.pat[lCnt] * 10);															// set the timer for next check up
 
-	if ((blinkPtr->led0) && (blinkPtr->pat[lCnt])) {
+	if (blPtr.led0 && blPtr.pat[lCnt]) {
 		ledRed((lCnt % 2)^1);																	// set the led
 		#ifdef LD_DBG
 		dbg << "lCnt:" << lCnt << " led0: " << ((lCnt % 2)^1) << '\n';
 		#endif
 	}
 	
-	if ((blinkPtr->led1) && (blinkPtr->pat[lCnt])) {
+	if (blPtr.led1 && blPtr.pat[lCnt]) {
 		ledGrn((lCnt % 2)^1);
 		#ifdef LD_DBG
 		dbg << "lCnt:" << lCnt  << " led1: " << ((lCnt % 2)^1) << '\n';
@@ -99,14 +97,14 @@ void	LD::poll(void) {
 	lCnt++;																						// increase the pointer for the blink string
 
 	// check if position pointer runs out of string
-	if (lCnt >= blinkPtr->len) {																// we are through the pattern 
-		if (blinkPtr->dur == 0) {																// we are in an endless loop
+	if (lCnt >= blPtr.len) {																	// we are through the pattern 
+		if (blPtr.dur == 0) {																	// we are in an endless loop
 			lCnt = 0;
 			#ifdef LD_DBG
 			dbg << "lCnt 0\n";
 			#endif
 
-		} else if (dCnt < blinkPtr->dur) {														// duration is not done
+		} else if (dCnt < blPtr.dur) {															// duration is not done
 			lCnt = 0;
 			dCnt++;
 			#ifdef LD_DBG

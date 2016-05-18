@@ -3,7 +3,6 @@
 // 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 //- -----------------------------------------------------------------------------------------------------------------------
 //- AskSin status led functions -------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -29,8 +28,8 @@ class LD {
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 	
-	class AS *pHM;								// pointer to main class for function calls
-	const struct s_blPat *blinkPtr;				// pointer to blink struct
+	class AS *pHM;								// standard, but not needed here. pointer to main class for function calls
+	struct s_blPat blPtr;						// empty blink pattern struct
 
 	uint8_t lCnt;								// counter for positioning inside of blink string
 	uint8_t dCnt;								// duration counter
@@ -38,7 +37,7 @@ class LD {
   public:		//---------------------------------------------------------------------------------------------------------
 	void init(AS *ptrMain);						// init function, to be called by AskSin main class
 	void set(ledStat stat);						// function to set the blink pattern
-	void blinkRed(void);						// blink pattern is processed via poll
+	void blinkRed(void);						// blocking blink pattern, not processed via poll
 	
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------

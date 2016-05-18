@@ -76,7 +76,9 @@ void    ccDeselect(void) {
 * limitation of Arduino while #defines from sketch area not seen in library folder
 */
 #if   defined(LED_RED) && defined(LED_GRN)														// two leds defined  
-const struct s_blPat blPat[] = {																// definition of struct and functionallity can be seen in StatusLed.h
+//LD ld;				///< status led
+
+const struct s_blPat blPat[] PROGMEM = {														// definition of struct and functionallity can be seen in StatusLed.h
 	{ 2, 0, 1, 1,{ 50, 50, }, },					// pairing
 	{ 2, 1, 0, 1,{ 200, 0, }, },					// pairing success
 	{ 2, 1, 1, 0,{ 200, 0, }, },					// pairing error
@@ -89,7 +91,7 @@ const struct s_blPat blPat[] = {																// definition of struct and func
 	{ 2, 6, 1, 0,{ 20, 20, }, },					// key long indicator
 };
 #elif defined(LED_RED) || defined(LED_GRN)														// only one led defined
-const struct s_blPat blPat[] = {																// definition of struct and functionallity can be seen in StatusLed.h
+const struct s_blPat blPat[] PROGMEM = {																// definition of struct and functionallity can be seen in StatusLed.h
 	{ 2, 0, 1, 0,{ 50, 50, } },						// pairing
 	{ 2, 1, 1, 0,{ 200, 0, } },						// pairing success
 	{ 2, 3, 1, 0,{ 5, 10, } },						// pairing error
@@ -102,7 +104,7 @@ const struct s_blPat blPat[] = {																// definition of struct and func
 	{ 2, 6, 1, 0,{ 20, 20, } },						// key long indicator
 };
 #else																							// no led defined
-const struct s_blPat blPat[0];																	// definition of struct and functionallity can be seen in StatusLed.h
+const struct s_blPat blPat[1] PROGMEM;															// definition of struct and functionallity can be seen in StatusLed.h
 #endif
 
 /**

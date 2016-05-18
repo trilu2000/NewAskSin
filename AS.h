@@ -38,6 +38,7 @@
  *
  * All send functions are used by sensor or actor classes like THSensor or Dimmer.
  */
+
 class AS {
 	friend class SN;
 	friend class RV;
