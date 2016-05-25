@@ -42,6 +42,11 @@ class cmSwitch {
 		// 0x08,
 		uint8_t  sign                :1;     // 0x08, s:0, e:1
 		uint8_t                      :7;     //
+		uint8_t  transmitTryMax      :8;     // 0x30, s:0, e:8
+		uint8_t  powerUpAction       :1;     // 0x56, s:0, e:1
+		uint8_t                      :7;     // 0x56, s:1, e:8
+		uint8_t  statusInfoMinDly    :5;     // 0x57, s:0, e:5
+		uint8_t  statusInfoRandom    :3;     // 0x57, s:5, e:8
 	} lstCnl;
 
 	struct s_lstPeer {

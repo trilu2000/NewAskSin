@@ -34,7 +34,7 @@ void    BT::init(AS *ptrMain) {
 	bDuration = 0;
 }
 void    BT::poll(void) {
-	if (!battTmr.done() ) return;															// timer still running
+	if (checkTenthVolt==0 || bDuration==0 || !battTmr.done() ) return;															// timer still running
 
 	measureTenthVolt = getBatteryVoltage();
 	bState = (measureTenthVolt < checkTenthVolt) ? 1 : 0;									// set the battery status
