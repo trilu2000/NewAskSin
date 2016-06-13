@@ -131,7 +131,7 @@ void PW::poll(void) {
 		stopWDG();																			// stop the watchdog
 	}
 
-	stayAwake(6);																			// stay awake for a very short time to get things done
+	//stayAwake(6);																			// stay awake for a very short time to get things done
 	
 	#ifdef PW_DBG																			// only if pw debug is set
 	dbg << ':';// << (getMillis() -fTme) << '\n';												// ...and some information
