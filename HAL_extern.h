@@ -1,3 +1,8 @@
+#include <AS.h>
+
+extern AS hm;
+
+
 /**
 *
 * @brief Some definitions for the pin change interrupt setup
@@ -219,6 +224,7 @@ uint8_t checkPCINT(uint8_t port, uint8_t pin, uint8_t debounce) {
 void    maintainPCINT(uint8_t vec) {
 	pcint_vector_byte[vec].curr = *pcint_vector_byte[vec].PINR  & pcint_vector_byte[vec].mask;	// read the pin port and mask out only pins registered
 	pcint_vector_byte[vec].time = getMillis();													// store the time, if debounce is asked for
+	hm.pw.stayAwake(DEBOUNCE + 1);																// stay awake while debounce time is running
 
 	#ifdef PCINT_CALLBACK																		// callback only needed if defined in hardware.h
 	uint8_t bInt = pcint_vector_byte[vec].curr ^ pcint_vector_byte[vec].prev;					// evaluate the pin which raised the interrupt
