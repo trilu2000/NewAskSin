@@ -63,7 +63,7 @@ void    CC::init(void) {																// initialize CC1101
 		CC1101_MDMCFG2,  0x03,
 		CC1101_DEVIATN,  0x34,													// 19.042969 kHz
 		CC1101_MCSM2,    0x01,
-//		CC1101_MCSM1,    0x30,	// (default)									// always go into IDLE
+		CC1101_MCSM1,    0x03,													// always go into RX after TX, no CCA
 		CC1101_MCSM0,    0x18,
 		CC1101_FOCCFG,   0x16,
 		CC1101_AGCCTRL2, 0x43,
@@ -128,12 +128,15 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	strobe(CC1101_SFRX);																// flush the RX buffer
 	strobe(CC1101_STX);																	// send a burst
 
-	for(uint8_t i = 0; i < 200; i++) {													// after sending out all bytes the chip should go automatically in RX mode
-		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_RX)
+	for(uint8_t i = 0; i < 200; i++) {													// wait for end of calibration (about 600us) and entering state TX
+		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_TX)
+		break;
+		_delay_us(10);
+	}
+	// now transmitting data
+	for(uint16_t i = 0; i < 2000; i++) {												// after sending out all bytes the chip should go automatically in RX mode
+		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_TX)
 			break;																		//now in RX mode, good
-		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_TX) {
-			break;																		//neither in RX nor TX, probably some error
-		}
 		_delay_us(10);
 	}
 

@@ -69,7 +69,7 @@ void PW::poll(void) {
 	#ifdef PW_DBG																			// only if pw debug is set
 	dbg << '.';																				// ...and some information
 	_delay_ms(1);
-	uint32_t fTme = getMillis();
+	//uint32_t fTme = getMillis();
 	#endif
 
 
@@ -117,6 +117,10 @@ void PW::poll(void) {
 
 	// todo: move sei() to setSleep() before sleep_cpu();
 	sei();
+
+	#ifdef PW_DBG
+	_delay_ms(1);																			// give UART some time to send last chars
+	#endif
 
 	setSleep();																				// call sleep function in HAL
 

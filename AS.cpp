@@ -46,6 +46,8 @@ void AS::init(void) {
 		dbg << F("AS.\n");																		// ...and some information
 	#endif
 
+	calibrateWatchdog();																		// calibrate the watchdog frequency (in relation to main clock)
+	//dbg << F("wdt_cal: ") << wdt_cal_ms << F("\n");
 	//initLeds();																					// initialize the leds
 	initConfKey();																				// initialize the port for getting config key interrupts
 
@@ -62,8 +64,6 @@ void AS::init(void) {
 	confButton.init(this);																		// config button
 	pw.init(this);																				// power management
 	bt.init(this);																				// battery check
-	
-	initMillis();																				// start the millis counter
 
 	initRandomSeed();
 
@@ -477,12 +477,20 @@ void AS::sendSetTeamTemp(void) {
 	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
 }
 
-void AS::sendWeatherEvent(void) {
-	//TODO: make ready#
-
+void AS::sendWeatherEvent(uint8_t cnl, uint8_t burst, uint8_t *pL, uint8_t len) {
 	//"70"          => { txt => "WeatherEvent", params => {
 	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 	//HUM      => '04,2,$val=(hex($val))', } },
+
+	stcPeer.ptr_payload = pL;
+	stcPeer.len_payload = len;
+	stcPeer.channel = cnl;
+	stcPeer.burst = burst;
+	stcPeer.bidi = 0;																			// we don't need an ACK when sending weather events
+	stcPeer.msg_type = 0x70;
+	stcPeer.active = 1;
+	
+	// --------------------------------------------------------------------
 }
 
 // private:		//---------------------------------------------------------------------------------------------------------
@@ -624,12 +632,12 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
 
 	if (sn.mBdy.mTyp == 0x41) {
 		sn.mBdy.by10 = stcPeer.channel;
-		sn.mBdy.by10 |= (bt.getStatus() << 7);													// battery bit
 		memcpy(sn.buf+11, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
 		sn.mBdy.mLen++;
 	} else {
 		memcpy(sn.buf+10, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
 	}
+	sn.mBdy.by10 |= (bt.getStatus() << 7);														// battery bit
 	sn.maxRetr = retries;																		// send only one time
 }
 

@@ -20,6 +20,7 @@
 	#include <util/delay.h>
 	#include <util/atomic.h>
 	#include <avr/eeprom.h>
+	#include <avr/common.h>
 
 	#include "macros.h"
 	#include "Print.h"
@@ -165,12 +166,14 @@
 
 
 	//- power management functions --------------------------------------------------------------------------------------------
+	extern uint16_t wdt_cal_ms;
 	extern void    startWDG32ms(void);
 	extern void    startWDG64ms(void);
 	extern void    startWDG250ms(void);
 	extern void    startWDG8000ms(void);
 	extern void    setSleep(void);
 
+	extern void    calibrateWatchdog();
 	extern void    startWDG();
 	extern void    stopWDG();
 	extern void    setSleepMode();

@@ -90,6 +90,7 @@ void SN::poll(void) {
 		
 		#ifdef SN_DBG																		// only if AS debug is set
 			dbg << _HEX(this->buf, sndLen) << ' ' << _TIME << '\n';
+			_delay_ms(10);
 		#endif
 
 	} else if ((this->retrCnt >= this->maxRetr) && (sndTmr.done() )) {						// max retries achieved, but seems to have no answer
@@ -106,7 +107,8 @@ void SN::poll(void) {
 		pHM->ld.set(noack);
 		
 		#ifdef SN_DBG																		// only if AS debug is set
-		dbg << F("  timed out") << ' ' << _TIME << '\n';
+			dbg << F("  timed out") << ' ' << _TIME << '\n';
+			_delay_ms(5);
 		#endif
 	}
 
