@@ -298,18 +298,18 @@ void    switchExtBattMeasurement(uint8_t stat) {
 */
 ISR(PCINT0_vect) {
 	maintainPCINT(0);
-	//dbg << "i2:" << PINB << "\n";
+	//dbg << "i0:" << PINB << "\n";
 }
 #if PCINT_PCIE_SIZE > 1
 ISR(PCINT1_vect) {
 	maintainPCINT(1);
-	//dbg << "i2:" << PINC << "\n";
+	//dbg << "i1:" << PINC << "\n";
 }
 #endif
 #if PCINT_PCIE_SIZE > 2
 ISR(PCINT2_vect) {
 	maintainPCINT(2);
-	//dbg << "i3:" << PIND  << "\n";
+	//dbg << "i2:" << PIND  << "\n";
 }
 #endif
 #if PCINT_PCIE_SIZE > 3
