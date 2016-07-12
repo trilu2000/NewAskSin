@@ -551,7 +551,7 @@ void cmBlind::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
  * @brief HM event controller
  */
 void cmBlind::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
-//	dbg << "hmEventCol >>>>>>> by3:" << by3 << " by10:" << by10 << " d:" << _HEX(data, len) << '\n'; _delay_ms(100);
+//	dbg << "hmEventCol >>>>>>> by3:" << by3 << " by10:" << by10 << " d:" << _HEX(data, len) << '\n';
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
 	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
 	else if ((by3 == 0x00) && (by10 == 0x02)) firstStart();

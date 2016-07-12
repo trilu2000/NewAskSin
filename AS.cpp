@@ -862,7 +862,7 @@ void AS::processMessage(void) {
 		uint8_t pIdx;
 		uint8_t cnl = getChannelFromPeerDB(&pIdx);
 
-		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rv.mBdy.mTyp) << " by10: " << _HEXB(rv.mBdy.by10)  << " by11: " << _HEXB(rv.mBdy.by11) << " data: " << _HEX((rv.buf+10),(rv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
+		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rv.mBdy.mTyp) << " by10: " << _HEXB(rv.mBdy.by10)  << " by11: " << _HEXB(rv.mBdy.by11) << " data: " << _HEX((rv.buf+10),(rv.mBdy.mLen-9)) << '\n';
 
 		if (cnl > 0) {
 			#ifdef SUPPORT_AES

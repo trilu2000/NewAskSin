@@ -118,8 +118,8 @@ void PW::poll(void) {
 	// todo: move sei() to setSleep() before sleep_cpu();
 	sei();
 
-	#ifdef PW_DBG
-	_delay_ms(1);																			// give UART some time to send last chars
+	#if defined(PW_DBG)||defined(SER_DBG)||defined(SN_DBG)||defined(RV_DBG)||defined(EE_DBG)||defined(LD_DBG)||defined(CC_DBG)||defined(AS_DBG)||defined(AES_DBG)||defined(BT_DBG)||defined(TH_DBG)
+	Serial.flush();																			// give UART some time to send last chars
 	#endif
 
 	setSleep();																				// call sleep function in HAL

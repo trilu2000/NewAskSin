@@ -52,8 +52,7 @@ void    startWDG8000ms(void) {
 }
 void    setSleep(void) {
 	//dbg << ',';																// some debug
-	//_delay_ms(10);															// delay is necessary to get it printed on the console before device sleeps
-	//_delay_ms(100);
+	//Serial.flush();															// flush is necessary to get it printed on the console before device sleeps
 
 	// some power savings by switching off some CPU functionality
 	ADCSRA = 0;																	// disable ADC

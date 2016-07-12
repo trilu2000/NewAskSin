@@ -129,7 +129,12 @@ void THSensor::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	regCnl = cnl;																			// stores the channel we are responsible fore
 }
 void THSensor::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
-	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << _HEX(data, len) << '\n'; _delay_ms(100);
+	#ifdef TH_DBG
+	if (by3 || by10) {
+		dbg << "by3:" << by3 << " by10:" << by10 << " by11:" << by11 << " d:" << _HEX(data, len) << '\n';
+	}
+	#endif
+	
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
 	else if ((by3 == 0x01) && (by11 == 0x06)) configCngEvent();
 	else if ((by3 == 0x11) && (by10 == 0x02)) pairSetEvent(data, len);

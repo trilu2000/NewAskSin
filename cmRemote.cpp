@@ -225,7 +225,7 @@ void cmRemote::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 void cmRemote::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 
 	#ifdef RM_DBG																			// some debug message
-	//dbg << F("RM hmEventCol, by3: ") << by3 << F(" , by10: ") << by10 << F(" , data: ") << _HEX(data, len) << '\n'; _delay_ms(100);
+	//dbg << F("RM hmEventCol, by3: ") << by3 << F(" , by10: ") << by10 << F(" , data: ") << _HEX(data, len) << '\n';
 	#endif
 
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
