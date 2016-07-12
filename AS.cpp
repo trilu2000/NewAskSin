@@ -627,6 +627,8 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
 	sn.mBdy.mFlg.CFG   = 1;
 	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;															// message flag
 	sn.mBdy.mFlg.BURST = l4_0x01.s.peerNeedsBurst;
+	sn.mBdy.mFlg.WKMEUP= 1;
+	pw.stayAwake(500);
 	
 	prepareToSend(sn.msgCnt, stcPeer.msg_type, xPeer);
 
@@ -834,6 +836,8 @@ void AS::processMessage(void) {
 		#endif
 
 	} else if  (rv.mBdy.mTyp == AS_MESSAGE_HAVE_DATA) {											// HAVE_DATA
+		sn.mBdy.mFlg.WKMEUP= 0;
+		sendACK();
 		// TODO: Make ready
 
 	} else if  (rv.mBdy.mTyp >= AS_MESSAGE_SWITCH_EVENT) {
