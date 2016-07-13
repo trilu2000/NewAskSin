@@ -270,6 +270,7 @@ class waitTimer {
 
 uint32_t byteTimeCvt(uint8_t tTime);
 uint32_t intTimeCvt(uint16_t iTime);
+void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag);
 
 #endif
 

@@ -1,8 +1,3 @@
-#include <AS.h>
-
-extern AS hm;
-
-
 /**
 *
 * @brief Some definitions for the pin change interrupt setup
@@ -12,6 +7,10 @@ extern AS hm;
 * size information a stored in the hardware.h file in user sketch area
 *
 */
+
+// callback is used for setting stayAwake time while debounce time is running
+#define PCINT_CALLBACK
+
 volatile s_pcint_vector_byte pcint_vector_byte[PCINT_PCIE_SIZE];
 #ifdef PCINT_CALLBACK
 extern void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag);
@@ -224,7 +223,6 @@ uint8_t checkPCINT(uint8_t port, uint8_t pin, uint8_t debounce) {
 void    maintainPCINT(uint8_t vec) {
 	pcint_vector_byte[vec].curr = *pcint_vector_byte[vec].PINR  & pcint_vector_byte[vec].mask;	// read the pin port and mask out only pins registered
 	pcint_vector_byte[vec].time = getMillis();													// store the time, if debounce is asked for
-	hm.pw.stayAwake(DEBOUNCE + 1);																// stay awake while debounce time is running
 
 	#ifdef PCINT_CALLBACK																		// callback only needed if defined in hardware.h
 	uint8_t bInt = pcint_vector_byte[vec].curr ^ pcint_vector_byte[vec].prev;					// evaluate the pin which raised the interrupt
@@ -284,13 +282,11 @@ void    switchExtBattMeasurement(uint8_t stat) {
 	if (stat == 1) {
 		SET_PIN_OUTPUT(BATT_ENABLE);					// set pin as out put
 		SET_PIN_LOW(BATT_ENABLE);						// set low to measure the resistor network
-		SET_PIN_LOW(BATT_MEASURE);
+		SET_PIN_LOW(BATT_MEASURE);						// switch off pull up to get correct measurement
 	}
 	else {
 		SET_PIN_INPUT(BATT_ENABLE);
-
-		// todo: check
-		SET_PIN_HIGH(BATT_MEASURE);					// switch on pull up, otherwise we waste energy over the resistor network against VCC
+		// SET_PIN_LOW(BATT_MEASURE);					// switch off pull up, otherwise we waste energy over the resistor network against V-BAT which is lower than VCC
 	}
 }
 //- -----------------------------------------------------------------------------------------------------------------------
