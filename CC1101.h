@@ -25,6 +25,7 @@ class CC {
 	uint8_t crc_ok;																			// CRC OK for received message
 	uint8_t rssi;																			// signal strength
 	uint8_t lqi;																			// link quality
+	uint8_t pwr_down;																		// module sleeping (power down)
 
 	// CC1101 config register													// Reset  Description
 	#define CC1101_IOCFG2           0x00										// (0x29) GDO2 Output Pin Configuration
@@ -156,6 +157,7 @@ class CC {
 
   public:		//---------------------------------------------------------------------------------------------------------
 	void    setIdle(void);																	// put CC1101 into power-down state
+	void	setActive(void);																// put CC1101 into active state
 	uint8_t detectBurst(void);																// detect burst signal, sleep while no signal, otherwise stay awake
 
   protected:	//---------------------------------------------------------------------------------------------------------

@@ -31,6 +31,7 @@ void    CC::init(void) {																// initialize CC1101
 
 	strobe(CC1101_SRES);																// send reset
 	_delay_ms(10);
+	pwr_down = 0;																		// remember active state
 
 	#ifdef CC_DBG																		// only if cc debug is set
 	dbg << '1';
@@ -109,6 +110,7 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 
 	// Going from RX to TX does not work if there was a reception less than 0.5
 	// sec ago. Due to CCA? Using IDLE helps to shorten this period(?)
+	setActive();																		// maybe we come from power down mode
 	strobe(CC1101_SIDLE);																// go to idle mode
 	strobe(CC1101_SFRX );																// flush RX buffer
 	strobe(CC1101_SFTX );																// flush TX buffer
@@ -116,7 +118,7 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	//dbg << "tx\n";
 
 	if (burst) {																		// BURST-bit set?
-		strobe(CC1101_STX  );															// send a burst
+		strobe(CC1101_STX);																// send a burst
 		_delay_ms(360);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
 		//dbg << "send burst\n";
 	} else {
@@ -136,7 +138,7 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	// now transmitting data
 	for(uint16_t i = 0; i < 2000; i++) {												// after sending out all bytes the chip should go automatically in RX mode
 		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_TX)
-			break;																		//now in RX mode, good
+			break;																		// now in RX mode, good
 		_delay_us(10);
 	}
 
@@ -186,10 +188,26 @@ uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	return buf[0];																		// return the data buffer
 }
 void    CC::setIdle() {																	// put CC1101 into power-down state
+	if (pwr_down)																		// do nothing if already powered down
+		return;
 	strobe(CC1101_SIDLE);																// coming from RX state, we need to enter the IDLE state first
 	strobe(CC1101_SFRX);
 	strobe(CC1101_SPWD);																// enter power down state
+	pwr_down = 1;																		// remember power down state
 	//dbg << "pd\n";
+}
+void    CC::setActive() {																// put CC1101 into active state
+	if (!pwr_down)																		// do nothing if already active
+		return;
+	ccSelect();																			// wake up the communication module
+	ccDeselect();
+
+	for(uint8_t i = 0; i < 200; i++) {													// instead of delay, check the really needed time to wakeup
+		if (readReg(CC1101_MARCSTATE, CC1101_STATUS) != 0xff) break;
+		_delay_us(10);
+	}
+	pwr_down = 0;																		// remember active state
+	//dbg << "act\n";
 }
 uint8_t CC::detectBurst(void) {		
 	// 10 7/10 5 in front of the received string; 33 after received string
@@ -212,16 +230,7 @@ uint8_t CC::detectBurst(void) {
 	//
 	// possible solution for finding a burst is to check for bit 6, carrier sense
 
-	// power on cc1101 module and set to RX mode
-	ccSelect();																			// wake up the communication module
-	//waitMiso();
-	ccDeselect();
-
-	for(uint8_t i = 0; i < 200; i++) {													// instead of delay, check the really needed time to wakeup
-		if (readReg(CC1101_MARCSTATE, CC1101_STATUS) != 0xff) break;
-		_delay_us(10);
-	}
-	
+	setActive();
 	strobe(CC1101_SRX);																	// set RX mode again
 
 	uint8_t bTmp;
@@ -235,13 +244,11 @@ uint8_t CC::detectBurst(void) {
 
 void    CC::strobe(uint8_t cmd) {														// send command strobe to the CC1101 IC via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
 	ccSendByte(cmd);																	// send strobe command
 	ccDeselect();																		// deselect CC1101
 }
 inline void    CC::readBurst(uint8_t *buf, uint8_t regAddr, uint8_t len) {						// read burst data from CC1101 via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr | READ_BURST);													// send register address
 	for(uint8_t i=0 ; i<len ; i++) {
 		buf[i] = ccSendByte(0x00);														// read result byte by byte
@@ -251,14 +258,12 @@ inline void    CC::readBurst(uint8_t *buf, uint8_t regAddr, uint8_t len) {						
 }
 inline void    CC::writeBurst(uint8_t regAddr, uint8_t *buf, uint8_t len) {					// write multiple registers into the CC1101 IC via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr | WRITE_BURST);													// send register address
 	for(uint8_t i=0 ; i<len ; i++) ccSendByte(buf[i]);									// send value
 	ccDeselect();																		// deselect CC1101
 }
 uint8_t CC::readReg(uint8_t regAddr, uint8_t regType) {									// read CC1101 register via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr | regType);														// send register address
 	uint8_t val = ccSendByte(0x00);														// read result
 	ccDeselect();																		// deselect CC1101
@@ -266,7 +271,6 @@ uint8_t CC::readReg(uint8_t regAddr, uint8_t regType) {									// read CC1101 r
 }
 void    CC::writeReg(uint8_t regAddr, uint8_t val) {									// write single register into the CC1101 IC via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr);																// send register address
 	ccSendByte(val);																	// send value
 	ccDeselect();																		// deselect CC1101
