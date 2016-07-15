@@ -88,6 +88,8 @@ void SN::poll(void) {
 			pHM->ld.set(send);																// fire the status led
 		}
 		
+		pHM->pw.stayAwake(500);																// stay awake for 1/2 sec since master may send a HAVE_DATA command
+		
 		#ifdef SN_DBG																		// only if AS debug is set
 			dbg << _HEX(this->buf, sndLen) << ' ' << _TIME << '\n';
 		#endif
