@@ -49,8 +49,8 @@ class AS {
 	EE ee;				///< eeprom module
 	SN sn;				///< send module
 	RG rg;				///< user module registrar
-	CB confButton;		///< config button
 	LD ld;				///< status led
+	CB confButton;		///< config button
 	PW pw;				///< power management
 	CC cc;				///< load communication module
 	BT bt;				///< battery status

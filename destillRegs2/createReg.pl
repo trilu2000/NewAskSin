@@ -15,6 +15,11 @@ my $AUTO_FIRMWARE_FROM_XML_FILE=1;
 use subs qw(DEBUG);
 use Time::HiRes qw(time);
 
+sub get_bits_from_size($);
+sub get_number_from_index($);
+sub get_startbit_from_index($);
+
+
 ## ------------- import constants ---------------------------------------------------------------------------
 use devDefinition;
 my %cType             =usrRegs::usr_getHash("configType");
@@ -156,15 +161,61 @@ if ($deviceConfig->{'base_config'}{'configFile'}) {
 	# - finde the respective node and list the paramsets
 	foreach my $xmlNode ( $xmlObj->findnodes('/device/paramset') ) {	
 		my $xml_type  = $xmlNode->getAttribute('type');
+		my $xml_cnl=0;
 		if ( $xml_type ne 'MASTER') {next;};
-		DEBUG "$xml_type";
 
 		foreach my $xmlParam ( $xmlNode->findnodes('./parameter')) {
 			my $xml_id = $xmlParam->getAttribute('id');
-			#my $xml_type  = $xmlNode->getAttribute('type');
 			DEBUG "   $xml_id";
 			
+			my ($xml_phy) = $xmlParam->findnodes('./physical');						# lets go for the physical node
+			# <physical type="integer" interface="config" list="0" index="24" size="0.1"/>
+			my $xml_phy_type = $xml_phy->getAttribute('type');
+			my $xml_phy_list = $xml_phy->getAttribute('list');
+			my $xml_phy_index = $xml_phy->getAttribute('index');
+			my $xml_phy_size = $xml_phy->getAttribute('size');
+			my $xml_phy_interface = $xml_phy->getAttribute('config');
+			
+			my ($xml_log) = $xmlParam->findnodes('./logical');						# lets go for the logical node
+			# <logical type="boolean" default="false"/>
+			# <logical type="float" min="0.3" max="1.8" default="0.4" unit="s"/>
+			my $xml_log_type = $xml_log->getAttribute('type');
+			my $xml_log_default = $xml_log->getAttribute('default');
+
+			my ($xml_con) = $xmlParam->findnodes('./conversion');					# lets go for the conversation node
+			# <conversion type="float_integer_scale" factor="10" offset="-0.3"/>
+			my $xml_con_type = ($xml_con)?$xml_log->getAttribute('type'):"";
+			my $xml_con_factor = ($xml_con)?$xml_log->getAttribute('factor'):"";
+			my $xml_con_offset = ($xml_con)?$xml_log->getAttribute('offset'):"";
+
+			#$regTable{'00 00 0x0a.0'}  = { 'idx' => '0x0a.0', 'cnl' => '0', 'lst' => '0', 'id' => 'MASTER_ID_BYTE_1', 'type' => 'integer', 'interface' => 'config', 'index' => '10', 'bit' => '0', 'size' => '8', 'log_type' => 'integer', 'log_def' => '0' };
+ 			my $idx = sprintf( "0x%.2x.%d" , get_number_from_index($xml_phy_index), get_startbit_from_index($xml_phy_index) );
+ 			my $idIdx = sprintf( "%.2d %.2d %s" , $xml_cnl, $xml_phy_list, $idx ); 
+
+ 			$regTable{$idIdx}{'orig'}    = $xmlParam;
+
+ 			$regTable{$idIdx}{'idx'}     = $idx;
+ 			$regTable{$idIdx}{'cnl'}     = $xml_cnl;
+ 			$regTable{$idIdx}{'lst'}     = $xml_phy_list;
+ 			$regTable{$idIdx}{'type'}    = $xml_phy_type;
+ 			$regTable{$idIdx}{'index'}   = get_number_from_index($xml_phy_index);
+ 			$regTable{$idIdx}{'bit'}     = get_startbit_from_index($xml_phy_index);
+ 			$regTable{$idIdx}{'size'}    = get_bits_from_size($xml_phy_size);
+ 			$regTable{$idIdx}{'id'}      = $xml_id;
+			$regTable{$idIdx}{'log_type'}= $xml_log_type;
+
+ 			## check the type of the default value in logical section, if it is int then copy it, 
+ 			## boolean, float and other special types need a conversation
+ 			if ($xml_log_type eq "boolean") {
+	 			$regTable{$idIdx}{'log_def'} = 1 if (lc($xml_log_default) eq "true");
+	 			$regTable{$idIdx}{'log_def'} = 0 if (lc($xml_log_default) eq "false");
+
+ 			} elsif ($xml_log_type eq "integer") {
+	 			$regTable{$idIdx}{'log_def'} = $xml_log_default;
+
+ 			}
 		}
+
 	}
 	
 	# - now the channel specific ones
@@ -176,9 +227,32 @@ if ($deviceConfig->{'base_config'}{'configFile'}) {
 
 
 
-#DEBUG Dumper(%regTable);
+DEBUG Dumper(%regTable);
 
 exit;
+
+
+sub get_bits_from_size($) {#####################
+	my $size = shift;
+	my ( $int, $rest ) = split /\./, $size, 2;
+	$int  = 0 if( !defined($int) || length($int) == 0 );
+	$rest = 0 if( !defined($rest) || length($rest) == 0);
+	return ($int*8)+$rest;
+}
+
+sub get_number_from_index($) {#####################
+	my $index = shift;
+	my ( $int, $rest ) = split /\./, $index, 2;
+	$int  = 0 if( !defined($int) || length($int) == 0 );
+	return $int;
+}
+
+sub get_startbit_from_index($) {#####################
+	my $index = shift;
+	my ( $int, $rest ) = split /\./, $index, 2;
+	$rest = 0 if( !defined($rest) || length($rest) == 0);
+	return $rest;
+}
 
 
 

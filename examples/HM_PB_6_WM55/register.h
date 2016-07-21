@@ -33,18 +33,18 @@
 	*                  Other bytes not known.
 	*                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
 	*/
-	const uint8_t devIdnt[] PROGMEM = {
-		/* firmwareVersion 1 byte */  0x11,
+	const uint8_t devIdnt[] PROGMEM = {               // HM-PB-6-WM55 
+		/* firmwareVersion 1 byte */  0x11,           // or GE 
 		/* modelID         2 byte */  0x00,0xa9,
-		/* subTypeID       1 byte */  0x40,
-		/* deviceInfo      3 byte */  0x06, 0x00, 0x00,
+		/* subTypeID       1 byte */  0x40,           // replace __ by a valid type id 
+		/* deviceInfo      3 byte */  0x06,0x00,0x00, // device info not found, replace by valid values 
 	};
 
 	/*
 	* Register definitions
 	* The values are adresses in relation to the start adress defines in cnlTbl
 	* Register values can found in related Device-XML-File.
-
+	*
 	* Spechial register list 0: 0x0A, 0x0B, 0x0C
 	* Spechial register list 1: 0x08
 	*
@@ -53,48 +53,69 @@
 	* @See: cnlTbl
 	*/
 	const uint8_t cnlAddr[] PROGMEM = {
-		// channel: 0, list: 0 
-		0x01,0x02,0x0a,0x0b,0x0c,0x18,
-		// channel: 1, list: 1 
+		// channel: 0, list: 0
+		0x0a,0x0b,0x0c,0x18,
+		// channel: 1, list: 1
 		0x04,0x08,0x09,
-		// channel: 1, list: 4 
+		// channel: 1, list: 4
 		0x01,
-	};  // 10 byte
+		// channel: 2, list: 1, link to 01 01
+		// channel: 2, list: 4, link to 01 04
+		// channel: 3, list: 1, link to 01 01
+		// channel: 3, list: 4, link to 01 04
+		// channel: 4, list: 1, link to 01 01
+		// channel: 4, list: 4, link to 01 04
+		// channel: 5, list: 1, link to 01 01
+		// channel: 5, list: 4, link to 01 04
+		// channel: 6, list: 1, link to 01 01
+		// channel: 6, list: 4, link to 01 04
+	}; // 8 byte
 
 	/*
 	* Channel - List translation table
 	* channel, list, startIndex, start address in EEprom, hidden
+	* do not edit the table, if you need more peers edit the defines accordingly.
 	*/
+	#define PHY_ADDR_START 0x20
+	#define CNL_01_PEERS   6 
+	#define CNL_02_PEERS   6 
+	#define CNL_03_PEERS   6 
+	#define CNL_04_PEERS   6 
+	#define CNL_05_PEERS   6 
+	#define CNL_06_PEERS   6 
+
 	EE::s_cnlTbl cnlTbl[] = {
-		// cnl, lst, sIdx, sLen, pAddr,  hidden
-		{ 0,   0,   0x00,  6,   0x0020, 0, },
-		{ 1,   1,   0x06,  3,   0x0026, 0, },
-		{ 1,   4,   0x09,  1,   0x0029, 0, },
-		{ 2,   1,   0x06,  3,   0x002f, 0, },
-		{ 2,   4,   0x09,  1,   0x0032, 0, },
-		{ 3,   1,   0x06,  3,   0x0038, 0, },
-		{ 3,   4,   0x09,  1,   0x003b, 0, },
-		{ 4,   1,   0x06,  3,   0x0041, 0, },
-		{ 4,   4,   0x09,  1,   0x0044, 0, },
-		{ 5,   1,   0x06,  3,   0x004a, 0, },
-		{ 5,   4,   0x09,  1,   0x004d, 0, },
-		{ 6,   1,   0x06,  3,   0x0053, 0, },
-		{ 6,   4,   0x09,  1,   0x0056, 0, },
-	}; // 91 byte
+		// cnl, lst, sIdx, sLen, hide, pAddr 
+		{ 0,   0,    0,    4,    0, PHY_ADDR_START },
+		{ 1,   1,    4,    3,    0, cnlTbl[0].pAddr + cnlTbl[0].sLen },
+		{ 1,   4,    7,    1,    0, cnlTbl[1].pAddr + cnlTbl[1].sLen },
+		{ 2,   1,    4,    3,    0, cnlTbl[2].pAddr + (cnlTbl[2].sLen * CNL_01_PEERS) },
+		{ 2,   4,    7,    1,    0, cnlTbl[3].pAddr + cnlTbl[3].sLen },
+		{ 3,   1,    4,    3,    0, cnlTbl[4].pAddr + (cnlTbl[4].sLen * CNL_02_PEERS) },
+		{ 3,   4,    7,    1,    0, cnlTbl[5].pAddr + cnlTbl[5].sLen },
+		{ 4,   1,    4,    3,    0, cnlTbl[6].pAddr + (cnlTbl[6].sLen * CNL_03_PEERS) },
+		{ 4,   4,    7,    1,    0, cnlTbl[7].pAddr + cnlTbl[7].sLen },
+		{ 5,   1,    4,    3,    0, cnlTbl[8].pAddr + (cnlTbl[8].sLen * CNL_04_PEERS) },
+		{ 5,   4,    7,    1,    0, cnlTbl[9].pAddr + cnlTbl[9].sLen },
+		{ 6,   1,    4,    3,    0, cnlTbl[10].pAddr + (cnlTbl[10].sLen * CNL_05_PEERS) },
+		{ 6,   4,    7,    1,    0, cnlTbl[11].pAddr + cnlTbl[11].sLen },
+	}; // 91 byte 
 
 	/*
 	* Peer-Device-List-Table
 	* channel, maximum allowed peers, start address in EEprom
 	*/
 	EE::s_peerTbl peerTbl[] = {
-		// cnl, pMax, pAddr;
-		{ 1, 6, 0x005c, },
-		{ 2, 6, 0x0074, },
-		{ 3, 6, 0x008c, },
-		{ 4, 6, 0x00a4, },
-		{ 5, 6, 0x00bc, },
-		{ 6, 6, 0x00d4, },
-	}; // 24 byte
+		// pMax, pAddr; 
+		{ 0, cnlTbl[12].pAddr + (cnlTbl[12].sLen * CNL_06_PEERS) },
+		{ CNL_01_PEERS, peerTbl[0].pAddr + (peerTbl[0].pMax * 4) },
+		{ CNL_02_PEERS, peerTbl[1].pAddr + (peerTbl[1].pMax * 4) },
+		{ CNL_03_PEERS, peerTbl[2].pAddr + (peerTbl[2].pMax * 4) },
+		{ CNL_04_PEERS, peerTbl[3].pAddr + (peerTbl[3].pMax * 4) },
+		{ CNL_05_PEERS, peerTbl[4].pAddr + (peerTbl[4].pMax * 4) },
+		{ CNL_06_PEERS, peerTbl[5].pAddr + (peerTbl[5].pMax * 4) },
+	}; // 18 byte 	
+   
 
 	/*
 	* Device definition table
@@ -124,7 +145,7 @@
 		*/
 
 		// init the homematic framework
-		hm.confButton.config(1);                                            // configure the config button mode
+		hm.confButton.config(1);	                                          // configure the config button mode
 		hm.ld.set(welcome);                                                 // show something
 		hm.bt.set(30, 3600000);                                             // set battery check, internal, 2.7 reference, measurement each hour
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);                                 // set power management mode
@@ -188,3 +209,65 @@
 
 	}
 #endif
+
+
+	/*
+	* Channel structs (for developers)
+	* Within the channel struct you will find the definition of the respective registers per channel and list.
+	* These information is only needed if you want to develop your own channel module, for pre defined
+	* channel modules all this definitions enclosed in the pre defined module.
+	*/
+
+	struct s_cnl0_lst0 {
+		uint8_t MASTER_ID : 24;              // 0x0a.0, s:24  d:   
+		uint8_t LOCAL_RESET_DISABLE : 1;     // 0x18.0, s:1   d: false  
+		uint8_t :7;                          // 0x18.1, s:7   d:   
+	}; // 4 byte
+
+	struct s_cnl1_lst1 {
+		uint8_t : 4;                         // 0x04.0, s:4   d:   
+		uint8_t LONG_PRESS_TIME : 4;         // 0x04.4, s:4   d: 0.4 s 
+		uint8_t AES_ACTIVE : 1;              // 0x08.0, s:1   d: false  
+		uint8_t : 7;                         // 0x08.1, s:7   d:   
+		uint8_t DBL_PRESS_TIME : 4;          // 0x09.0, s:4   d: 0.0 s 
+		uint8_t : 4;                         // 0x09.4, s:4   d:   
+	}; // 3 byte
+
+	struct s_cnl1_lst4 {
+		uint8_t PEER_NEEDS_BURST : 1;        // 0x01.0, s:1   d: false  
+		uint8_t : 6;                         // 0x01.1, s:6   d:   
+		uint8_t EXPECT_AES : 1;              // 0x01.7, s:1   d: false  
+	}; // 1 byte
+
+	/*
+	* Message description:
+	*
+	*        00        01 02    03 04 05  06 07 08  09  10  11   12     13
+	* Length MSG_Count    Type  Sender__  Receiver  ACK Cnl Stat Action RSSI
+	* 0F     12        80 02    1E 7A AD  23 70 EC  01  01  BE   20     27    dimmer
+	* 0E     5C        80 02    1F B7 4A  63 19 63  01  01  C8   00     42    pcb relay
+	*
+	* Needed frames:
+	*
+	* <frame id="KEY_EVENT_SHORT" direction="from_device" allowed_receivers="CENTRAL,BROADCAST,OTHER" event="true" type="0x40" channel_field="9:0.6">
+	*      <parameter type="integer" index="9.6" size="0.1" const_value="0"/>
+	*      <parameter type="integer" index="10.0" size="1.0" param="COUNTER"/>
+	*      <parameter type="integer" index="10.0" size="1.0" param="TEST_COUNTER"/>
+	* <frame id="KEY_EVENT_LONG" direction="from_device" allowed_receivers="CENTRAL,BROADCAST,OTHER" event="true" type="0x40" channel_field="9:0.6">
+	*      <parameter type="integer" index="9.6" size="0.1" const_value="1"/>
+	*      <parameter type="integer" index="10.0" size="1.0" param="COUNTER"/>
+	*      <parameter type="integer" index="10.0" size="1.0" param="TEST_COUNTER"/>
+	* <frame id="KEY_EVENT_LONG_BIDI" direction="from_device" allowed_receivers="CENTRAL,BROADCAST,OTHER" event="true" type="0x40" channel_field="9:0.6">
+	*      <parameter type="integer" index="1.5" size="0.1" const_value="1"/>
+	*      <parameter type="integer" index="9.6" size="0.1" const_value="1"/>
+	*      <parameter type="integer" index="10.0" size="1.0" param="COUNTER"/>
+	*      <parameter type="integer" index="10.0" size="1.0" param="TEST_COUNTER"/>
+	* <frame id="KEY_SIM_SHORT" direction="from_device" type="0x40" channel_field="9:0.6">
+	*      <parameter type="integer" index="9.6" size="0.1" const_value="0"/>
+	*      <parameter type="integer" index="9.7" size="0.1" const_value="0"/>
+	*      <parameter type="integer" index="10.0" size="1.0" param="SIM_COUNTER"/>
+	* <frame id="KEY_SIM_LONG" direction="from_device" type="0x40" channel_field="9:0.6">
+	*      <parameter type="integer" index="9.6" size="0.1" const_value="1"/>
+	*      <parameter type="integer" index="9.7" size="0.1" const_value="0"/>
+	*      <parameter type="integer" index="10.0" size="1.0" param="SIM_COUNTER"/>
+	*/

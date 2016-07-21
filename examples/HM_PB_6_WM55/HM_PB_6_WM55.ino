@@ -38,17 +38,25 @@ void setup() {
 
 
 	// - user related -----------------------------------------
-//	registerPCINT(PIN_C0);																	// register the pin change interrupt for hw keys
-//	registerPCINT(PIN_C1);
-//	registerPCINT(PIN_C2);
-//	registerPCINT(PIN_C3);
-//	registerPCINT(PIN_C4);
-//	registerPCINT(PIN_C5);
+	registerPCINT(PIN_C0);																	// register the pin change interrupt for hw keys
+	registerPCINT(PIN_C1);
+	registerPCINT(PIN_C2);
+	registerPCINT(PIN_C3);
+	registerPCINT(PIN_C4);
+	registerPCINT(PIN_C5);
 
 
 	#ifdef SER_DBG
 		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");	// some debug
 	#endif
+
+	// show channel table content
+	dbg << "channel table:\n";
+	dbg << "line\tcnl\tlst\tsIdx\tsLen\thide\tpAddr\n";
+	for (uint8_t i = 0; i < (sizeof(cnlTbl)/sizeof(EE::s_cnlTbl)); i++) {
+		// cnl, lst, sIdx, sLen, hide, pAddr 
+		dbg << i << "\t" << cnlTbl[i].cnl << "\t" << cnlTbl[i].lst << "\t" << cnlTbl[i].sIdx << "\t" << cnlTbl[i].sLen << "\t" << cnlTbl[i].vis << "\t" << cnlTbl[i].pAddr << "\n";
+	}
 }
 
 

@@ -117,8 +117,8 @@ class EE {
 		const uint8_t lst;     ///< List within the channel
 		const uint8_t sIdx;    ///< Index of first entry in channel slice address definition
 		const uint8_t sLen;    ///< Number of registers
-		const uint16_t pAddr;  ///< Address of first byte in EEprom memory
 		const uint8_t vis;     ///< Visibility of channel
+		const uint16_t pAddr;  ///< Address of first byte in EEprom memory
 	};
 
     /**
@@ -140,7 +140,7 @@ class EE {
      * For other configuration data stored in EEprom memory, see s_cnlTbl.
      */
 	struct s_peerTbl {	// peer table holds information were to find peers in eeprom
-		const uint8_t cnl;     ///< Channel
+		//const uint8_t cnl;     ///< Channel
 		const uint8_t pMax;    ///< Maximum number of peer devices
 		const uint16_t pAddr;  ///< Address of configuration data in EEprom memory
 	};
@@ -219,7 +219,7 @@ class EE {
  *
  *
  */
-extern EE::s_cnlTbl cnlTbl[];															// initial register.h
+extern  EE::s_cnlTbl cnlTbl[];															// initial register.h
 
 /**
  * @brief Global peer table definition. Must be declared in user space.

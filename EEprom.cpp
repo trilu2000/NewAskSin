@@ -353,13 +353,13 @@ uint8_t  EE::countFreeSlots(uint8_t cnl) {
 	uint8_t lPeer[4];
 
 	if ((!cnl) || (cnl > devDef.cnlNbr)) return 0;										// return if channel is out of range
-	//dbg << F("cFS: ") << peerTbl[cnl-1].pMax << '\n';
+	//dbg << F("cFS: ") << peerTbl[cnl].pMax << '\n';
 
-	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
+		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 		//if (!*(unsigned long*)lPeer) bCounter++;										// increase counter if peer slot is empty
 		if (isEmpty(lPeer, 4)) bCounter++;												// increase counter if peer slot is empty
-		//dbg << F("addr: ") << (peerTbl[cnl-1].pAddr+(i*4)) << F(", lPeer: ") << pHex(lPeer, 4) << '\n';
+		//dbg << F("addr: ") << (peerTbl[cnl].pAddr+(i*4)) << F(", lPeer: ") << pHex(lPeer, 4) << '\n';
 	}
 	return bCounter;																	// return the counter
 }
@@ -369,8 +369,8 @@ uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	if (!cnl) return 0;																	// on channel 0 there is no need to search
 	if (cnl > devDef.cnlNbr) return 0xff;												// return if channel is out of range
 
-	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
+		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 
 		//dbg << i << ": " << _HEX(lPeer,4) << ", s: " << _HEX(peer, 4) << '\n';
 		if (!memcmp(lPeer, peer, 3)) {
@@ -380,11 +380,10 @@ uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	return 0xff;
 }
 uint8_t  EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
-	getEEPromBlock(peerTbl[cnl-1].pAddr+(idx*4), 4, peer);
+	getEEPromBlock(peerTbl[cnl].pAddr+(idx*4), 4, peer);
 }
 uint8_t  EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t lPeer[4];
-	uint8_t cnl1 = cnl-1;
 
 	// check if channel exists
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
@@ -400,26 +399,26 @@ uint8_t  EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	if (peer[4]) cnt |= 2;
 
 	// count free peer slots and check against cnt
-	for (uint8_t i = 0; i < peerTbl[cnl1].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
+		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 		if (isEmpty(lPeer, 4)) ret++;													// increase counter if peer slot is empty
 	}
 	if (((peer[3]) && (peer[4])) && (ret < 2)) return 0;								// not enough space, return failure
 	if (((peer[3]) || (peer[4])) && (ret < 1)) return 0;
 
 	// search for free peer slots and write content
-	for (uint8_t i = 0; i < peerTbl[cnl1].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
+		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 
 		if        (isEmpty(lPeer, 4) && (cnt & 1)) {									// slot is empty and peer cnlA is set
 			cnt ^= 1;
-			setEEPromBlock(peerTbl[cnl1].pAddr+(i*4), 4, peer);
+			setEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, peer);
 			peer[5] = i;																// remember the idx position, add to the buffer
 
 		} else if (isEmpty(lPeer, 4) && (cnt & 2)) {									// slot is empty and peer cnlB is set
 			cnt ^= 2;
-			setEEPromBlock(peerTbl[cnl1].pAddr+(i*4), 3, peer);						// first 3 bytes
-			setEEPromBlock(peerTbl[cnl1].pAddr+(i*4)+3, 1, peer+4);					// 5th byte
+			setEEPromBlock(peerTbl[cnl].pAddr+(i*4), 3, peer);						// first 3 bytes
+			setEEPromBlock(peerTbl[cnl].pAddr+(i*4)+3, 1, peer+4);					// 5th byte
 			peer[6] = i;																// remember the idx position, add to the buffer
 
 		}
@@ -438,11 +437,11 @@ uint8_t  EE::remPeer(uint8_t cnl, uint8_t *peer) {
 	//dbg << "a: " << pHex(peer,4) << ", b: " << pHex(tPeer,4) << '\n';
 
 	// search for peers and delete them
-	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
+		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
 
 		if (!memcmp(lPeer, peer, 4) || !memcmp(lPeer, tPeer, 4)) {						// check if something matches
-			clearEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4);							// free the slot
+			clearEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4);							// free the slot
 		}
 	}
 	return 1;
@@ -450,7 +449,7 @@ uint8_t  EE::remPeer(uint8_t cnl, uint8_t *peer) {
 uint8_t  EE::countPeerSlc(uint8_t cnl) {
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
 
-	int16_t lTmp = peerTbl[cnl-1].pMax - countFreeSlots(cnl) + 1;						// get used slots and add one for terminating zeros
+	int16_t lTmp = peerTbl[cnl].pMax - countFreeSlots(cnl) + 1;						// get used slots and add one for terminating zeros
 	lTmp = lTmp * 4;																	// 4 bytes per slot
 
 	uint8_t bMax = 0;																	// size return value
@@ -465,9 +464,9 @@ uint8_t  EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 
 	uint8_t byteCnt = 0, slcCnt = 0;													// start the byte counter
 
-	for (uint8_t i = 0; i < peerTbl[cnl-1].pMax; i++) {									// step through the possible peer slots
+	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
 
-		getEEPromBlock(peerTbl[cnl-1].pAddr+(i*4), 4, buf);								// get peer from eeprom
+		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, buf);								// get peer from eeprom
 		if (isEmpty(buf, 4)) continue;													// peer is empty therefor next
 
 		byteCnt+=4;																		// if we are here, then it is valid and we should increase the byte counter
@@ -490,7 +489,7 @@ uint8_t  EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 }
 uint8_t  EE::getPeerSlots(uint8_t cnl) {													// returns the amount of possible peers
 	if (cnl > devDef.cnlNbr) return 0;
-	return peerTbl[cnl-1].pMax;															// return the max amount of peers
+	return peerTbl[cnl].pMax;															// return the max amount of peers
 }
 
 // register functions
@@ -500,7 +499,7 @@ void     EE::clearRegs(void) {
 	for (uint8_t i = 0; i < devDef.lstNbr; i++) {										// steps through the cnlTbl
 
 		if ((cnlTbl[i].lst == 3) || (cnlTbl[i].lst == 4)) {								// list3/4 is peer based
-			peerMax = peerTbl[cnlTbl[i].cnl - 1].pMax;									// get the amount of maximum peers
+			peerMax = peerTbl[cnlTbl[i].cnl].pMax;									// get the amount of maximum peers
 		} else {
 			peerMax = 1;																// otherwise no peer slots available
 		}
@@ -530,7 +529,7 @@ uint8_t  EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, u
 
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
-	//dbg << "idx " << idx << " pT " << peerTbl[cnl-1].pMax << '\n';
+	//dbg << "idx " << idx << " pT " << peerTbl[cnl].pMax << '\n';
 
 	if (!checkIndex(cnl, lst, idx)) return 0;											// check if peer index is in range
 
@@ -615,7 +614,7 @@ uint8_t  EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, ui
 
 	uint8_t xI = getRegListIdx(cnl, lst);
 	if (xI == 0xff) return 0;															// respective line not found
-	if ((cnl > 0) && (idx >=peerTbl[cnl-1].pMax)) return 0;								// check if peer index is in range
+	if ((cnl > 0) && (idx >=peerTbl[cnl].pMax)) return 0;								// check if peer index is in range
 
 	uint16_t eIdx = cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx);
 
@@ -638,7 +637,7 @@ uint8_t  EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
 }
 uint8_t  EE::checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx) {
 	//dbg << "cnl: " << cnl << " lst: " << lst << " idx: " << idx << '\n';
-	if ((cnl) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl-1].pMax) ) return 0;
+	if ((cnl) && ((lst == 3) || (lst == 4)) && (idx >= peerTbl[cnl].pMax) ) return 0;
 	return 1;
 }
 

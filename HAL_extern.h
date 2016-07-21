@@ -151,7 +151,9 @@ void    ledGrn(uint8_t stat) {
 * Interuptflag will be polled while debouncing is needed.
 */
 void    initConfKey(void) {
+#ifdef CONFIG_KEY																				// check if the config key is defined
 	registerPCINT(CONFIG_KEY);
+#endif																				
 }
 
 /**
@@ -159,7 +161,11 @@ void    initConfKey(void) {
 * No parameter needed while config key is defined in hardware.h
 */
 uint8_t checkConfKey(void) {
+#ifdef CONFIG_KEY																				// check if the config key is defined
 	return checkPCINT(CONFIG_KEY, 1);															// checks the conf key if there had something happened, debounce set to 1
+#else
+	return 0;
+#endif
 }															
 //- -----------------------------------------------------------------------------------------------------------------------
 

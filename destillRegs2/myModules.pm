@@ -1,0 +1,788 @@
+use warnings;
+use strict;
+
+use XML::LibXML;
+use XML::Hash;
+#use JSON::XS;
+use JSON;
+
+use Time::HiRes;
+use Time::HiRes qw(time);
+
+use Data::Dumper::Simple;
+$Data::Dumper::Sortkeys = 1;
+
+package myModules;
+
+my $DEBUG=1;
+
+use vars qw($VERSION @ISA @EXPORT);
+require Exporter;
+
+@ISA = qw(Exporter);
+@EXPORT = qw(DEBUG prnHexStr prnASCIIStr load_file_by_name get_file_list get_xml_file_as_hash get_supported_types_hash get_xml_hash_by_devid gen_xml_dev_list gen_xml_dev_hash gen_xml_device_info);
+$VERSION = 1.0;
+ 
+use UserModuls;
+
+
+## -- debug function ----------------------------------------------------------------------------------------
+sub DEBUG {
+	if (!$DEBUG) {return;}
+	print join("",@_) ."\n";
+}
+
+## -- print out functions -----------------------------------------------------------------------------------
+##
+# @brief converts a char string into an hex output
+# @param    prnHexStr("0102",2)
+# @return   0x01,0x02
+##
+sub prnHexStr {
+	my $in = shift;
+	my $len = shift;
+	$in = $in ."0"x(($len*2) - length($in));
+		
+	#$in = sprintf("%.".$len."x", $in);
+	$in =~ s/(..)/0x$&,/g;
+	return $in;
+}
+##
+# @brief converts a char string into a comma seperated output
+# @param    prnASCIIStr("test")
+# @return   't','e','s','t',
+##
+sub prnASCIIStr {
+	my $in = shift;
+	$in =~ s/(.)/'$&',/g;
+	return $in;
+}
+
+## -- file functions ----------------------------------------------------------------------------------------
+##
+# @brief simply loads a file and returns the content in a string variable
+# @param    load_file_by_name("c:\test.txt")
+# @return   $content
+##
+sub load_file_by_name {
+    my $file  = shift;
+
+	#DEBUG "load_file_by_name, file: ", $file;
+    open( my $fh, $file );
+	#DEBUG "load_file_by_name, filehandle: ", Dumper($fh);
+    my $content = do { local $/; <$fh> };
+    close $fh;
+	return $content;
+}
+
+##
+# @brief returns a file list for a given directory
+# @param    path      get_file_list("c:\")
+# @return   $content
+##
+sub get_file_list {
+	my $dir = shift;
+	my $startTime = time;
+	
+	opendir(DIR, $dir) or die $!;																# open the directory
+	our @filelist = grep { $_ ne "." && $_ ne ".."  } readdir(DIR);								# step through the files
+	closedir(DIR);																				# close the directory again
+	#DEBUG "get_file_list, took ", sprintf("%.4f", time - $startTime), " seconds";
+	return \@filelist;
+}
+
+##
+# @brief returns a xml file as hash
+# @param    path/file  the path information and filename 
+# @return   a hash reference with the information
+##
+sub get_xml_file_as_hash {
+	my $dir = shift;
+	my $startTime = time;
+	
+	my $ret = load_file_by_name($dir);															# open the file
+
+	my $self = XML::Hash->new();																# stage the helper
+	#DEBUG "get_xml_file_as_hash, took ", sprintf("%.4f", time - $startTime), " seconds";
+	return $self->fromXMLStringtoHash($ret);													# convert and return
+}
+
+
+
+
+##
+# @brief generates a list of all xml device definition files
+# @param    directory path
+# @return   a list with all information 
+##
+sub gen_xml_dev_list {
+	# information is in 
+	# check for index and size <parameter index="10.0" size="2.0" const_value="11"/>
+	# const value can be in different formats "11", '0x00DD' so normalize
+
+	my $startTime = time;
+	my $file_list = get_file_list('devicetypes');												# get a filelist
+	my $self = XML::Hash->new();																# stage the helper
+	my $ret;
+
+	DEBUG "DeviceID;Version;Support AES;RX modes;Cyclic Timeout;Device Name;Updateable;Priority;Model ID;FW Version;FW Opcond;;Filename\n";  
+	$ret = "DeviceID;Version;Support AES;RX modes;Cyclic Timeout;Device Name;Updateable;Priority;Model ID;FW Version;FW Opcond;;Filename\n";
+	
+	foreach my $file_name (@{$file_list}) 	{													# loop through the filelist
+		# getting everything between <supported_types></supported_types> in a string variable
+		my $xml_file = load_file_by_name("devicetypes/$file_name");								# load the file
+
+#		$xml_file =~ s/<supported_types>(.*?)<\/supported_types>//gs;							# filter the part we need
+#		$xml_hash{'types'} = $self->fromXMLStringtoHash("<types>$1</types>");					# convert and return, types is neccasary because of xml limitation
+
+		my $xml_hash = $self->fromXMLStringtoHash($xml_file);										# convert and return, types is neccasary because of xml limitation
+		$$xml_hash{'filenamepath'} = "devicetypes/$file_name";									# add file path info
+
+		# get some device information
+		my $dev_version         = $$xml_hash{'device'}{'version'};
+		my $dev_support_aes     = ($$xml_hash{'device'}{'supports_aes'})? $$xml_hash{'device'}{'supports_aes'}:"false";
+		my $dev_rx_modes        = ($$xml_hash{'device'}{'rx_modes'})? $$xml_hash{'device'}{'rx_modes'}:"";
+		my $dev_cyclic_timeout  = ($$xml_hash{'device'}{'cyclic_timeout'})? $$xml_hash{'device'}{'cyclic_timeout'}:"";
+		
+		# work on the type section, check if we have an array, if not convert hash to an array
+		$$xml_hash{'device'}{'supported_types'}{'type'} = [$$xml_hash{'device'}{'supported_types'}{'type'}]         if (ref($$xml_hash{'device'}{'supported_types'}{'type'}) eq 'HASH');
+		#DEBUG "ref: ", ref($$xml_hash{'device'}{'supported_types'}{'type'});
+		
+		# loop through the supported_types type info
+		foreach my $type (@{$$xml_hash{'device'}{'supported_types'}{'type'}}) {												# loop through the found elements
+			#DEBUG "file: ", $xml_hash{'filenamepath'};
+
+			# get the needed information
+			my $type_id         = $$type{'id'};
+			my $type_name       = $$type{'name'};
+			my $type_updateable = ($$type{'updatable'})?    $$type{'updatable'}   :"false";
+			my $type_priority   = ($$type{'priority'})?     $$type{'priority'}    :"";
+			
+			my ($type_device_id, $type_fw_version, $type_fw_opcond) = ("","0x00","GE"); 
+
+			# within the type there is a parameter section, check if parameter is an array, if not convert it
+			$$type{'parameter'} = [$$type{'parameter'}]    if (ref($$type{'parameter'}) eq 'HASH');
+
+			# step through the parameters to get id, name, etc
+			# on some devices there are two parameter sections per type, one for device id and the firmware version
+			foreach my $parameter (@{$$type{'parameter'}}) {
+				#<device version="6" rx_modes="CONFIG,WAKEUP" supports_aes="true" cyclic_timeout="88200">
+
+				#<type name="WinMatic white" id="HM-Sec-Win" priority="2">
+				#<parameter index="10.0" size="2.0" const_value="40"/>
+				if (( eval($$parameter{'index'}) == 9 ) && ( eval($$parameter{'size'}) == 1 )) {
+					$type_fw_version = sprintf("0x%.2x", eval($$parameter{'const_value'}),1);	
+					$type_fw_opcond  = $$parameter{'cond_op'};
+
+				} elsif (( eval($$parameter{'index'}) == 10 ) && ( eval($$parameter{'size'}) == 2 )) {
+					$type_device_id = sprintf("0x%.4x", eval($$parameter{'const_value'}));
+					
+				} else {
+					$type_device_id = "$$parameter{'index'} $$parameter{'size'} $$parameter{'const_value'}";
+					
+				}
+			} 
+
+			DEBUG "$type_id;$dev_version;$dev_support_aes;$dev_rx_modes;$dev_cyclic_timeout;$type_name;$type_updateable;$type_priority;$type_device_id;$type_fw_version;$type_fw_opcond;;$file_name";  
+			$ret .= "$type_id;$dev_version;$dev_support_aes;$dev_rx_modes;$dev_cyclic_timeout;$type_name;$type_updateable;$type_priority;$type_device_id;$type_fw_version;$type_fw_opcond;;$file_name\n";  
+			
+		}
+		DEBUG "";
+	}
+
+	DEBUG "gen_xml_dev_list, took ", sprintf("%.4f", time - $startTime), " seconds";
+	return $ret;
+	
+}
+
+
+
+##
+# @brief generates a hash from a xml deive file with all information 
+#        needed to build an register.h
+# @param    file path
+# @return   a list with all information 
+##
+sub gen_xml_dev_hash {
+	my $file_path = shift;
+	my $startTime = time;
+	my %ret;
+	
+	my $xml_file = load_file_by_name($file_path);															# open the file
+
+	my $self = XML::Hash->new();																# stage the helper
+	my $xml_hash = $self->fromXMLStringtoHash($xml_file);													# convert and return
+
+	## get the xml file as hash
+	#my $xml_hash = get_xml_file_as_hash($file_path);	
+	
+
+	## get the overall device info
+	$ret{'devInfo'}{'version'}        = $$xml_hash{'device'}{'version'};
+	$ret{'devInfo'}{'rx_modes'}       = ($$xml_hash{'device'}{'rx_modes'})?$$xml_hash{'device'}{'rx_modes'}:"";
+	$ret{'devInfo'}{'supports_aes'}   = ($$xml_hash{'device'}{'supports_aes'})?$$xml_hash{'device'}{'supports_aes'}:"false";
+	$ret{'devInfo'}{'cyclic_timeout'} = ($$xml_hash{'device'}{'cyclic_timeout'})?$$xml_hash{'device'}{'cyclic_timeout'}:"";
+	
+
+	## get the type info section
+	$$xml_hash{'device'}{'supported_types'}{'type'} = [$$xml_hash{'device'}{'supported_types'}{'type'}]         if (ref($$xml_hash{'device'}{'supported_types'}{'type'}) eq 'HASH');
+
+	foreach my $type (@{$$xml_hash{'device'}{'supported_types'}{'type'}}) {												# loop through the found elements
+		my ($type_device_id, $type_fw_version, $type_fw_opcond) = ("",0,"GE"); 
+
+		# within the type there is a parameter section, check if parameter is an array, if not convert it
+		$$type{'parameter'} = [$$type{'parameter'}]    if (ref($$type{'parameter'}) eq 'HASH');
+
+		# step through the parameters to get id, name, etc
+		# on some devices there are two parameter sections per type, one for device id and the firmware version
+		foreach my $parameter (@{$$type{'parameter'}}) {
+
+				if (( eval($$parameter{'index'}) == 9 ) && ( eval($$parameter{'size'}) == 1 )) {
+					$type_fw_version = eval($$parameter{'const_value'});	
+					$type_fw_opcond  = $$parameter{'cond_op'};
+				} elsif (( eval($$parameter{'index'}) == 10 ) && ( eval($$parameter{'size'}) == 2 )) {
+					$type_device_id = eval($$parameter{'const_value'});
+				} else {
+					$type_device_id = "$$parameter{'index'} $$parameter{'size'} $$parameter{'const_value'}";
+				}
+		}
+
+		# collect the infos we found into the hash to return
+		push @{$ret{'devIdnt'}}, {name => $$type{'name'}, id => $$type{'id'}, fw_opcond => $type_fw_opcond, fw_version => $type_fw_version, model_id => $type_device_id};
+
+	}
+	
+
+	## get the frame section as info
+	$xml_file =~ s/<frames>(.*?)<\/frames>//gs;	
+	foreach my $line (split /\n/, $1) {
+		# if line starts with <frame then we search for the id and open a hash with it
+		$line =~ s/^\s+|\s+$//g;
+		push @{$ret{'devFrames'}}, $line            if ($line =~ /<frame /);
+		push @{$ret{'devFrames'}}, "     $line"     if ($line =~ /<parameter /);
+	}
+
+
+
+	## go through the paramset section
+	DEBUG "paramset <> Master gefunden", Dumper($$xml_hash{'device'}{'paramset'}) if ($$xml_hash{'device'}{'paramset'}{'type'} ne "MASTER" );	
+	## step through the paramsets
+	$$xml_hash{'device'}{'paramset'} = [$$xml_hash{'device'}{'paramset'}]    if (ref($$xml_hash{'device'}{'paramset'}) eq 'HASH');
+	foreach my $paramset (@{$$xml_hash{'device'}{'paramset'}}) {												# loop through the found elements
+		#DEBUG "device - ", Dumper($paramset);
+		my %hash = get_parameter_data($paramset,0,1);
+		@{$ret{'devCnlLst'}}{keys %hash} = values %hash;
+	}
+	
+	## go through the channel section in channels
+	foreach my $channel (@{$$xml_hash{'device'}{'channels'}{'channel'}}) {												# loop through the found elements
+		#<channel index="3" type="VIRTUAL_DIMMER" count="4">
+		#<channel autoregister="true" index="1" type="KEY" count="20" pair_function="BA" function="A" paired="true" aes_default="true">
+
+		## collect within the channel section the paramsets
+		my $channel_index = $$channel{'index'};
+		my $channel_count = $$channel{'count'};
+
+		## if count_from_sysinfo is given, we do not know how many channels we have. set it to 1
+		$channel_count = 6 if $$channel{'count_from_sysinfo'};
+		#DEBUG "cnl, $channel_index, cnt: $channel_count; ", Dumper($$channel{'paramset'});
+
+		$$channel{'paramset'} = [$$channel{'paramset'}]    if (ref($$channel{'paramset'}) eq 'HASH');
+		foreach my $paramset (@{$$channel{'paramset'}}) {												# loop through the found elements
+			if (ref($$paramset{'subset'}) eq 'ARRAY') {
+            	#'id' => 'dimmer_ch_master',
+            	#'subset' => [ {
+                #	'ref' => 'physical_parameters'
+                #	'ref' => 'general_parameters'
+
+				## stepping through the subsets
+				foreach my $subset (@{$$paramset{'subset'}}) {
+					## find the fitting entry in param_defs
+					$$xml_hash{'device'}{'paramset_defs'}{'paramset'} = [$$xml_hash{'device'}{'paramset_defs'}{'paramset'}]   if ( ref( $$xml_hash{'device'}{'paramset_defs'}{'paramset'}) eq "HASH");
+					my ($index) = grep { $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$_]{'id'} eq $$subset{'ref'} } (0 .. @{$$xml_hash{'device'}{'paramset_defs'}{'paramset'}}-1);
+					DEBUG "ARRAY - ref: ", $$subset{'ref'}, " idx: ", $index, " defs: ", $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index]{'id'};
+	
+					## get the details
+					my $temp_paramset = $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index];
+					
+					my %hash = get_parameter_data($temp_paramset,$channel_index,$channel_count);
+					@{$ret{'devCnlLst'}}{keys %hash} = values %hash;
+
+				}
+
+			} elsif (ref($$paramset{'subset'}) eq 'HASH') {
+            	#'id' => 'dimmer_ch_link',
+            	#'subset' => {
+            	#	'ref' => 'dimmer_linkset'
+
+				## find the fitting entry in param_defs
+				$$xml_hash{'device'}{'paramset_defs'}{'paramset'} = [$$xml_hash{'device'}{'paramset_defs'}{'paramset'}]   if ( ref( $$xml_hash{'device'}{'paramset_defs'}{'paramset'}) eq "HASH");
+				my ($index) = grep { $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$_]{'id'} eq $$paramset{'subset'}{'ref'} } (0 .. @{$$xml_hash{'device'}{'paramset_defs'}{'paramset'}}-1);
+				DEBUG "HASH - ref: ", $$paramset{'subset'}{'ref'}, " idx: ", $index, " defs: ", $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index]{'id'};
+
+				## get the details
+				my $temp_paramset = $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index];
+				
+				my %hash = get_parameter_data($temp_paramset,$channel_index,$channel_count);
+				@{$ret{'devCnlLst'}}{keys %hash} = values %hash;
+				
+			} else {
+
+				## get the details
+				my %hash = get_parameter_data($paramset,$channel_index,$channel_count);
+				@{$ret{'devCnlLst'}}{keys %hash} = values %hash;
+
+			}
+
+		}
+		
+	}
+	
+	## add the master id section in channel 0, list 0
+	$ret{'devCnlLst'}{'00 00 0a.0'} = {'channel' => 0, 'default_val' => 0, 'default_type' => 'integer', 'id' => 'MASTER_ID', 'index' => 10, 'index_bit' => 0, 'list' => 0, 'size_bit' => 24, 'type' => 'integer', 'default_sys' => '', 'default_unit' => ''};
+	#DEBUG Dumper($ret{'devCnlLst'});
+
+
+
+	## do some sanity on the collected infos
+	## collect index per channel and list in $ret{'devCnlLst'}
+	my %missing_bits;
+	my ($prev_channel, $prev_list, $prev_index, $prev_index_bit, $array_index) = (-1,-1,-1,8,-1);
+	foreach my $key (sort keys %{$ret{'devCnlLst'}}) {
+		## get channel, list and index from the record and push it into the array
+		my $channel = $ret{'devCnlLst'}{$key}{'channel'};
+		my $list = $ret{'devCnlLst'}{$key}{'list'};
+		my $index = $ret{'devCnlLst'}{$key}{'index'};
+		my $index_bit = $ret{'devCnlLst'}{$key}{'index_bit'};
+		my $size_bit = $ret{'devCnlLst'}{$key}{'size_bit'};
+		my $default = $ret{'devCnlLst'}{$key}{'default_val'};
+
+		## set it to -1 while it is a new channel or list
+		$array_index = -1 if (($prev_channel != $channel) || ($prev_list != $list));
+		#DEBUG "\naind: $array_index, cnl: $channel, lst: $list, ind: $index, bit: $index_bit, size: $size_bit";
+		#DEBUG "pcnl: $prev_channel, plst: $prev_list, pind: $prev_index, pbit: $prev_index_bit";
+
+		## fill uncovered bits in devCnlLst
+		if (($array_index == -1 ) && ($index_bit > 0)) {
+			## search for missing upfront bits
+			my $idx = sprintf("%.2d %.2d %.2x.%d", $channel, $list, $index, 0);
+			$missing_bits{$idx} = {'channel' => $channel, 'list' => $list, 'index' => $index, 'index_bit' => 0, 'size_bit' => $index_bit, 'type' => 'fill', 'id' => '', 'default_val' => '', 'default_sys' => '', 'default_unit' => ''};
+		} 
+
+		if (($array_index == -1 ) && ($prev_index_bit < 8)) {
+			## search on the last entry in a channel/list
+			my $idx = sprintf("%.2d %.2d %.2x.%d", $prev_channel, $prev_list, $prev_index, $prev_index_bit);
+			$missing_bits{$idx} = {'channel' => $prev_channel, 'list' => $prev_list, 'index' => $prev_index, 'index_bit' => $prev_index_bit, 'size_bit' => (8-$prev_index_bit), 'type' => 'fill', 'id' => '', 'default_val' => '', 'default_sys' => '', 'default_unit' => ''};
+		} 
+		
+		if (($prev_index == $index) && ($prev_index_bit < $index_bit)) {
+			## fill in between
+			my $idx = sprintf("%.2d %.2d %.2x.%d", $channel, $list, $index, $prev_index_bit);
+			$missing_bits{$idx} = {'channel' => $channel, 'list' => $list, 'index' => $index, 'index_bit' => $prev_index_bit, 'size_bit' => ($index_bit - $prev_index_bit), 'type' => 'fill', 'id' => '', 'default_val' => '', 'default_sys' => '', 'default_unit' => ''};
+
+		} elsif (($prev_index != $index) && ($prev_index_bit < 8)) {
+			my $idx = sprintf("%.2d %.2d %.2x.%d", $prev_channel, $prev_list, $prev_index, $prev_index_bit);
+			$missing_bits{$idx} = {'channel' => $prev_channel, 'list' => $prev_list, 'index' => $prev_index, 'index_bit' => $prev_index_bit, 'size_bit' => (8-$prev_index_bit), 'type' => 'fill', 'id' => '', 'default_val' => '', 'default_sys' => '', 'default_unit' => ''};
+
+		}
+
+		## take care of the size bit - in cnl0, lst0 there is the masterid, starts at 0x0a and covers 3 byte
+		for (my $i=0; $i < $size_bit; $i+=8) {
+			## increase the position counter while index had changed
+			$array_index++ if ($prev_index != $index);
+
+			#DEBUG "i: $i, cnl: $channel, lst: $list, aind: $array_index, ", ($index+($i/8)), "   ind: $index, pind: $prev_index";
+			
+			## store the index identifier in an array
+			my $short = sprintf("%02d %02d",$channel,$list);
+			$ret{'devCnlAddr'}{$short}{'reg'}[$array_index] = ($index+($i/8));
+			$ret{'devCnlAddr'}{$short}{'channel'} = $channel;
+			$ret{'devCnlAddr'}{$short}{'list'} = $list;
+			
+			## store the default value in an array
+			## todo: not sure is there is a index bigger a byte with a default value bigger then a byte
+			$ret{'devCnlAddrDef'}{$short}{'reg'}[$array_index] |= ($default << $index_bit);
+			$ret{'devCnlAddrDef'}{$short}{'channel'} = $channel;
+			$ret{'devCnlAddrDef'}{$short}{'list'} = $list;
+			
+		}
+
+		## remember the previous values to identify a change
+		($prev_channel, $prev_list, $prev_index, $prev_index_bit) = ($channel, $list, $index, $index_bit+$size_bit);
+	}
+	@{$ret{'devCnlLst'}}{keys %missing_bits} = values %missing_bits;
+	#DEBUG Dumper(%missing_bits);
+
+	## complete the devCnlAddr table by stepping through the channel lists 
+	## enhance by start and len flag per list 
+	
+	## reduce to the minimum by deleting double lists
+	my $last_slice_index = 0;
+	foreach my $cnl_lst (sort keys %{$ret{'devCnlAddr'}}) {
+		next if ($ret{'devCnlAddr'}{$cnl_lst}{'link'});
+		
+		## store slice len and start
+		$ret{'devCnlAddr'}{$cnl_lst}{'slice_idx'} = $last_slice_index;
+		$ret{'devCnlAddr'}{$cnl_lst}{'slice_len'} = @{$ret{'devCnlAddr'}{$cnl_lst}{'reg'}};
+		$last_slice_index += $ret{'devCnlAddr'}{$cnl_lst}{'slice_len'};
+		my $cnl_lst_string = join(",",@{$ret{'devCnlAddr'}{$cnl_lst}{'reg'}});
+				
+		foreach my $x_cnl_lst (sort keys %{$ret{'devCnlAddr'}}) {
+			next if ($cnl_lst eq $x_cnl_lst);
+
+			my $x_cnl_lst_string = join(",",@{$ret{'devCnlAddr'}{$x_cnl_lst}{'reg'}});
+			
+			# check for doubles, set a link, delete content and fix the slice index
+			if($cnl_lst_string eq $x_cnl_lst_string) {
+				$ret{'devCnlAddr'}{$x_cnl_lst}{'link'} = $cnl_lst;
+				@{$ret{'devCnlAddr'}{$x_cnl_lst}{'reg'}} = ();
+				$ret{'devCnlAddr'}{$x_cnl_lst}{'slice_idx'} = $ret{'devCnlAddr'}{$cnl_lst}{'slice_idx'};
+				$ret{'devCnlAddr'}{$x_cnl_lst}{'slice_len'} = $ret{'devCnlAddr'}{$cnl_lst}{'slice_len'};
+			}
+		}
+	}
+	
+	DEBUG "gen_xml_dev_hash, took ", sprintf("%.4f", time - $startTime), " seconds";
+	return \%ret;
+
+}
+
+
+##
+# @brief replacement list, there are some registers marked as internal
+#        without a valid register index, size, list and so on
+# @param    no param
+# @return   simply a hash with the id as index 
+##
+my $replace;
+$$replace{'AES_ACTIVE'} = {'index' => '8.0','interface' => 'config','list' => '1','size' => '0.1','type' => 'boolean'};
+
+sub get_parameter_data {
+	my $paramset = shift;	
+	my $channel = shift;	
+	my $count = shift;	
+	my %ret;
+	
+	## step through the parameters in the paramset
+	$$paramset{'parameter'} = [$$paramset{'parameter'}]    if (ref($$paramset{'parameter'}) eq 'HASH');
+	foreach my $parameter (@{$$paramset{'parameter'}}) {												# loop through the found elements
+
+		## check for any internal paramsets and replace them with a version incl. index
+		if ( $$parameter{'ui_flags'} && $$parameter{'ui_flags'} eq "internal" &&  $$parameter{'physical'}{'interface'} && $$parameter{'physical'}{'interface'} eq "internal") {
+			DEBUG "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+			DEBUG Dumper($parameter);
+			DEBUG "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+			$$parameter{'physical'} = $$replace{$$parameter{'id'}} if $$replace{$$parameter{'id'}};
+		}
+
+		next if (!$$parameter{'physical'});
+		next if (!$$parameter{'physical'}{'index'});
+		
+			
+		## collect the physical information
+		for (my $i=$channel; $i < $channel+$count; $i++) {
+		
+			my $hash = get_physical_section($parameter, $i, $count);
+		
+			my $idx = sprintf("%.2d %.2d %.2x.%d", $$hash{'channel'}, $$hash{'list'}, $$hash{'index'}, $$hash{'index_bit'});
+			next if (!$idx);
+			#DEBUG Dumper($hash);
+		
+			$ret{$idx} = $hash;
+			$ret{$idx}{'id'} = $$parameter{'id'};
+				
+			## get the default information
+			my ($default, $type, $unit, $default_sys) = get_default($parameter);
+			$ret{$idx}{'default_val'} = $default;
+			$ret{$idx}{'default_type'} = $type;
+			$ret{$idx}{'default_unit'} = $unit;
+			$ret{$idx}{'default_sys'} = $default_sys;
+			
+		}
+	}
+
+	#DEBUG Dumper(%ret);
+	return %ret;
+}
+
+sub get_default {
+	#<logical type="float" min="0.5" max="15.5" default="2.0" unit="s">
+	#   <special_value id="NOT_USED" value="0.0"/>
+	#</logical>	
+	#<conversion type="float_integer_scale" factor="2"/>
+
+	my $parameter = shift;
+	my ($default, $type, $unit, $default_sys);
+	
+	$type = $$parameter{'logical'}{'type'};
+	$unit = $$parameter{'logical'}{'unit'};
+	
+	if      ($$parameter{'logical'}{'type'} eq "boolean") {
+		$default_sys = $$parameter{'logical'}{'default'};
+		$default_sys = "false" if (!$default_sys);
+		$default = 1    if $default_sys =~ m/true|TRUE|True/;
+		$default = 0    if $default_sys =~ m/false|FALSE|False/;
+
+	} elsif ($$parameter{'logical'}{'type'} eq "string") {
+		$default_sys = "";
+		$default = 0;
+
+	} elsif ($$parameter{'logical'}{'type'} eq "option") {
+		## step throug the list of options and search for the default= flag
+		$$parameter{'logical'}{'option'} = [$$parameter{'logical'}{'option'}]    if (ref($$parameter{'logical'}{'option'}) eq 'HASH');
+		foreach my $i (0 .. $#{$$parameter{'logical'}{'option'}}) {												# loop through the found elements
+			next if(!$$parameter{'logical'}{'option'}[$i]{'default'});
+			next if($$parameter{'logical'}{'option'}[$i]{'default'} =~ m/false|FALSE|False/);
+			$default = $i;
+			$default_sys = $$parameter{'logical'}{'option'}[$i]{'id'};
+			#DEBUG Dumper($$parameter{'logical'}{'option'}[$i]);
+		}
+		
+	} elsif (($$parameter{'logical'}{'type'} eq "float") && ($$parameter{'conversion'}{'type'} eq 'float_integer_scale')){
+    	#'conversion' => {
+        #	'factor' => '200',
+        #	'offset' => '-0.1',		
+		#value->floatValue = ((double)value->integerValue / factor) - offset;
+		#value->integerValue = std::lround((value->floatValue + offset) * factor);
+		#float_integer_scale 0.05 offset: 0, factor: 200
+		
+		my $input = $$parameter{'logical'}{'default'};    $input = 0  if (!$input);		
+		my $factor = $$parameter{'conversion'}{'factor'}; $factor = 0 if(!$factor);
+		my $offset = $$parameter{'conversion'}{'offset'}; $offset = 0 if(!$offset);
+
+		$default_sys = $input;
+		$default = ($input + $offset) * $factor;
+		#DEBUG "float_integer_scale ", $input, " offset: $offset, factor: $factor ", "out: $default";		
+
+	} elsif (($$parameter{'logical'}{'type'} eq "float") && ($$parameter{'conversion'}{'type'} eq 'float_configtime')){
+		#	int32_t factorIndex = (value->integerValue & 0xFF) >> 5;
+		# 	switch(factorIndex); case 0: factor = 0.1;
+		#						 case 1: factor = 1;
+		#						 case 2: factor = 5;
+		#						 case 3: factor = 10;
+		#						 case 4: factor = 60;
+		#						 case 5: factor = 300;
+		#						 case 6: factor = 600;
+		# 						 case 7: factor = 3600;
+		#	value->floatValue = (value->integerValue & 0x1F) * factor;
+		
+		#int32_t factorIndex = 0;
+		#double factor = 0.1;
+		#if(value->floatValue < 0) value->floatValue = 0;
+		#if(value->floatValue <= 3.1) { factorIndex = 0; factor = 0.1; }
+		#else if(value->floatValue <= 31) { factorIndex = 1; factor = 1; }
+		#else if(value->floatValue <= 155) { factorIndex = 2; factor = 5; }
+		#else if(value->floatValue <= 310) { factorIndex = 3; factor = 10; }
+		#else if(value->floatValue <= 1860) { factorIndex = 4; factor = 60; }
+		#else if(value->floatValue <= 9300) { factorIndex = 5; factor = 300; }
+		#else if(value->floatValue <= 18600) { factorIndex = 6; factor = 600; }
+		#else { factorIndex = 7; factor = 3600; }
+		#value->integerValue = ((factorIndex << 5) | std::lround(value->floatValue / factor)) & 0xFF;
+		
+		my $input = $$parameter{'logical'}{'default'};    $input = 0  if ((!$input) || ($input < 0));		
+		my $factor = 0.1; 
+		my $factor_index;
+		
+		if($input <= 3.1) { $factor_index = 0; $factor = 0.1; }
+		elsif($input <= 31) { $factor_index = 1; $factor = 1; }
+		elsif($input <= 155) { $factor_index = 2; $factor = 5; }
+		elsif($input <= 310) { $factor_index = 3; $factor = 10; }
+		elsif($input <= 1860) { $factor_index = 4; $factor = 60; }
+		elsif($input <= 9300) { $factor_index = 5; $factor = 300; }
+		elsif($input <= 18600) { $factor_index = 6; $factor = 600; }
+		else { $factor_index = 7; $factor = 3600; }
+		$default = (($factor_index << 5) | int(($input / $factor)+0.5)) & 0xFF;
+		$default_sys = $input;
+		#DEBUG "float_configtime ", "in: $input, out: $default";		
+		#DEBUG Dumper($parameter);
+
+	} elsif (($$parameter{'logical'}{'type'} eq "integer") && (!$$parameter{'conversion'})){
+		$default = $$parameter{'logical'}{'default'};
+		$default = 0   if (!$default);		
+		$default_sys = $default;
+
+	} else {
+		DEBUG "Found paramset with a special type...", Dumper($parameter);
+	}
+	$unit = ''   if (!$unit);
+	$unit = '%'  if ($unit eq '100%');
+	return ($default, $type, $unit, $default_sys);
+}
+
+
+sub get_physical_section {
+	my $parameter = shift;
+	my $channel = shift;
+	
+	my $para_index     = get_index($$parameter{'physical'}{'index'});
+	my $para_index_bit = get_index_bit($$parameter{'physical'}{'index'});
+	my $para_size_bit  = get_size_bit($$parameter{'physical'}{'size'});
+	my $para_channel   = $channel;
+	my $para_list      = $$parameter{'physical'}{'list'};
+	my $para_type      = $$parameter{'physical'}{'type'};;
+	
+	## take care of the count flag
+	my $ret = {'channel' => $para_channel, 'list' => $para_list, 'index' => $para_index, 'index_bit' => $para_index_bit, 'size_bit' => $para_size_bit, 'type' => $para_type};
+	#DEBUG Dumper($ret);
+
+	return $ret;
+}
+
+
+sub get_index {
+	## we got something like '0x15' or '2.7', this needs to be cleaned up and the return has to be a decimal number	
+	## reflecting the number in front of the dot or converting the hex figure into dec
+	my $number = shift;
+	my ( $int, $rest ) = split /\./, $number, 2;
+	$int  = 0 if !defined $int  || length $int  == 0;
+	$rest = 0 if !defined $rest || length $rest == 0;
+	return eval $int;
+}
+
+
+sub get_index_bit {
+	## we got something like '0x15' or '2.7', this needs to be cleaned up and the return has to be a decimal number	
+	## between 0 and 7 reflecting the starting bit
+	my $number = shift;
+	my ( $int, $rest ) = split /\./, $number, 2;
+	$int  = 0 if !defined $int  || length $int  == 0;
+	$rest = 0 if !defined $rest || length $rest == 0;
+	return $rest;
+}
+
+
+sub get_size_bit {
+	# size could be something like '0.1' or '1', but we want to store the bit value, so we have to sort out
+	my $number = shift;
+	my ( $int, $rest ) = split /\./, $number, 2;
+	$int  = 0 if !defined $int  || length $int  == 0;
+	$rest = 0 if !defined $rest || length $rest == 0;
+	return ($int * 8) + $rest;
+}
+
+
+
+
+
+
+sub gen_xml_device_info {
+	## config data should come from outside per hash
+	my %config = %{(shift)};
+	
+	## step throug the channels and create xml string
+	my $cnl_max = scalar @{$config{'channels'}};
+	my $ret;
+
+	## channel 0 should be Master anyhow and need more configuration
+	## header
+	my $user_master = UserModuls::get("Master");	
+	$ret = $$user_master{'header'};
+
+	## device section
+	# rx_modes are depending on powerMode
+	my $rx_flags;
+	$rx_flags = "BURST" if ($config{'extended_config'}{'powerMode'} == 1);
+	$rx_flags = "WAKEUP,LAZY_CONFIG" if ($config{'extended_config'}{'powerMode'} == 2);
+	#<device version="1" rx_modes="CONFIG,$rx_mode_flags" peering_sysinfo_expect_channel="false" supports_aes="true">
+	$$user_master{'device'} =~ s/\$rx_mode_flags/$rx_flags/g;
+	$ret .= $$user_master{'device'};
+
+	## supported type section
+	#<supported_types>
+	#	<type name="$type_name" id="$type_id" updatable="true" priority="2">
+	#		<parameter index="10.0" size="2.0" const_value="$type_const"/>
+	$$user_master{'supported_types'} =~ s/\$type_id/$config{'extended_config'}{'id'}/g;
+	$$user_master{'supported_types'} =~ s/\$type_name/$config{'extended_config'}{'name'}/g;
+	my $model_id = sprintf("0x%04x", $config{'base_config'}{'modelID'});
+	$$user_master{'supported_types'} =~ s/\$type_const/$model_id/g;
+	$ret .= $$user_master{'supported_types'};
+	
+	## paramset master, check low_bat_limit first
+	my ($lowbat_register, $lowbat_min, $lowbat_max) = ("",25,50);
+	$lowbat_register = $$user_master{'lowbat_limit'}     if ($config{'extended_config'}{'lowbat_register'});
+	$lowbat_min =  ($config{'extended_config'}{'lowbat_min'}/10)     if ($config{'extended_config'}{'lowbat_min'});
+	$lowbat_max =  ($config{'extended_config'}{'lowbat_max'}/10)     if ($config{'extended_config'}{'lowbat_max'});
+	$lowbat_register =~ s/\$lowbat_min/$lowbat_min/g; 
+	#$lowbat_register = 
+	#$lowbat_register = 
+	
+	$$user_master{'paramset_dev_master'} =~ s/\$low_bat_limit/$lowbat_register/g;
+	$ret .= $$user_master{'paramset_dev_master'};
+	
+	## now we are in the channels section
+	## check low_bat and duty cycle?
+	my ($low_bat, $dutycycle) = ("","");
+	$low_bat =   $$user_master{'param_lowbat'}     if ($config{'extended_config'}{'lowbat_signal'});
+	$dutycycle = $$user_master{'param_dutycycle'}  if ($config{'extended_config'}{'dutycycle'});
+	$$user_master{'param_default'} =~ s/\$lowbat/$low_bat/g;
+	$$user_master{'param_default'} =~ s/\$dutycycle/$dutycycle/g;
+	$ret .= $$user_master{'param_default'};
+
+	## step through the user module array and put together the channel information
+	my $channel_total = scalar @{$config{'channels'}};
+	my @frames; my @paramsets;
+	for (my $i=1; $i < $channel_total; $i++) {
+		next if (!$config{'channels'}[$i]);
+		
+		## looking forward to identify similar channels
+		my $index = $i;
+		my $counter = 1;
+		
+		while ((($i+1) < $channel_total) && ($config{'channels'}[$i+1]) && ($config{'channels'}[$i]{'type'} eq $config{'channels'}[$i+1]{'type'})) {
+			$counter++;
+			$i++;
+		}
+		
+		## now we see only defined channels, lets search for a predefined modul - if not
+		## available, choose a placeholder
+		my $user_channel = UserModuls::get($config{'channels'}[$i]{'type'});	
+		$user_channel = UserModuls::get('xmlDummy')   if(!$user_channel);
+
+		## replace variables with real values and copy to the return value
+		my $user_text = $$user_channel{'channels'};
+		$user_text =~ s/\$channel_index/$index/g;
+		$user_text =~ s/\$channel_count/$counter/g;
+		$ret .= $user_text;
+
+		## collect frames and parasets in an array, because we have to cleanup any doubles later
+		my $user_frames = $$user_channel{'frames'};
+		push @frames,$user_frames;
+		my $user_paramsets = $$user_channel{'paramsets'};
+		push @paramsets,$user_paramsets;
+	} 
+	
+	$ret .= "	</channels>\n";
+	## channels are done now
+
+	## sorting out doubles in frames and paramsets	
+	my @frames_clean = do { my %seen; grep { !$seen{$_}++ } @frames };
+	my @paramsets_clean = do { my %seen; grep { !$seen{$_}++ } @paramsets };
+	
+	## put together the frames
+	$ret .= "	<frames>\n";
+	$ret .= join "", @frames_clean;
+	$ret .= "	</frames>\n";
+		
+	## and now the paramsets	
+	$ret .= "	<paramset_defs>\n";
+	$ret .= join "", @paramsets_clean;
+	$ret .= "	</paramset_defs>\n";
+	
+
+	my $user_modules             =UserModuls::get("xmlRemote");
+	print "channels: $cnl_max\n";
+
+
+	$ret .= "</device>\n";
+	
+	DEBUG Dumper($ret);	
+	
+	# xml content will be collected as a string and returned
+	return $ret;
+	
+}
+
+
+
+
+1;
