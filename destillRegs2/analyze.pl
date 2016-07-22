@@ -27,6 +27,7 @@ my $AUTO_FIRMWARE_FROM_XML_FILE=1;
 
 ## generates an overview of all existing xml device descriptions
 #my $ret = gen_xml_dev_list();
+#DEBUG Dumper($ret);
 
 
 ## generates a new xml file based on a json device definition
@@ -57,12 +58,12 @@ $config{'extended_config'}{'lowbat_max'} = 40;        # in V * 10
 #$config{'channels'}[3] = {type => "xmlRemote", peers => 4, hidden => 0, linked => 0 };
 #$config{'channels'}[5] = {type => "xmlRemote", peers => 4, hidden => 0, linked => 0 };
 
-#$config{'channels'}[1] = {type => "xmlRemote", peers => 4, hidden => 0, linked => 0 };
+$config{'channels'}[1] = {type => "xmlRemote", peers => 4, hidden => 0, linked => 0 };
 #$config{'channels'}[1] = {type => "xmlSwitch", peers => 4, hidden => 0, linked => 0 };
 #$config{'channels'}[1] = {type => "xmlDimmer", peers => 4, hidden => 0, linked => 0 };
 #$config{'channels'}[1] = {type => "xmlBlind", peers => 4, hidden => 0, linked => 0 };
 #$config{'channels'}[1] = {type => "xmlMotion", peers => 4, hidden => 0, linked => 0 };
-$config{'channels'}[1] = {type => "xmlWeather", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[1] = {type => "xmlWeather", peers => 4, hidden => 0, linked => 0 };
 
 my $ret = gen_xml_device_info(\%config);
 
