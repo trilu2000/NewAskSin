@@ -1,29 +1,28 @@
+my $DEBUG=1;
+
 use warnings;
 use strict;
 
 use XML::LibXML;
 use XML::Hash;
-#use JSON::XS;
+
 use JSON;
 
-use Time::HiRes;
-use Time::HiRes qw(time);
+use Time::HiRes qw(gettimeofday tv_interval);
 
 use Data::Dumper::Simple;
 $Data::Dumper::Sortkeys = 1;
 
-package myModules;
-
-my $DEBUG=1;
+package destillRegs;
 
 use vars qw($VERSION @ISA @EXPORT);
 require Exporter;
 
 @ISA = qw(Exporter);
-@EXPORT = qw(DEBUG prnHexStr prnASCIIStr load_file_by_name get_file_list get_xml_file_as_hash get_supported_types_hash get_xml_hash_by_devid gen_xml_dev_list gen_xml_dev_hash gen_xml_device_info);
+@EXPORT = qw(DEBUG prnHexStr prnASCIIStr load_file_by_name get_file_list get_xml_file_as_hash get_supported_types_hash get_xml_hash_by_devid gen_xml_dev_list gen_xml_dev_info_hash gen_xml_device_info gen_reg_h_device_info);
 $VERSION = 1.0;
  
-use UserModuls;
+use userModuls;
 
 
 ## -- debug function ----------------------------------------------------------------------------------------
@@ -67,9 +66,13 @@ sub prnASCIIStr {
 sub load_file_by_name {
     my $file  = shift;
 
-	#DEBUG "load_file_by_name, file: ", $file;
-    open( my $fh, $file );
-	#DEBUG "load_file_by_name, filehandle: ", Dumper($fh);
+	# check if it is multiline, if yes step out
+	return '' if ($file =~ /\n/);
+	# check if the file exist	
+	return '' if not -e $file;
+	
+	# open the file and read the content
+	open( my $fh, $file );
     my $content = do { local $/; <$fh> };
     close $fh;
 	return $content;
@@ -203,26 +206,25 @@ sub gen_xml_dev_list {
 # @param    file path
 # @return   a list with all information 
 ##
-sub gen_xml_dev_hash {
+sub gen_xml_dev_info_hash {
 	my $file_path = shift;
-	my $startTime = time;
+	my $startTime = [Time::HiRes::gettimeofday];
 	my %ret;
 	
-	my $xml_file = load_file_by_name($file_path);															# open the file
-
-	my $self = XML::Hash->new();																# stage the helper
-	my $xml_hash = $self->fromXMLStringtoHash($xml_file);													# convert and return
-
-	## get the xml file as hash
-	#my $xml_hash = get_xml_file_as_hash($file_path);	
+	## check if file_path is a path or a xml_string by checking of multiline
+	#'./devicetypes/rf_rc-4-2.xml'
+	$file_path = load_file_by_name($file_path) if ($file_path !~ /\n/);
 	
+	## convert it into an hash
+	my $self = XML::Hash->new();																# stage the helper
+	my $xml_hash = $self->fromXMLStringtoHash($file_path);													# convert and return
 
 	## get the overall device info
 	$ret{'devInfo'}{'version'}        = $$xml_hash{'device'}{'version'};
 	$ret{'devInfo'}{'rx_modes'}       = ($$xml_hash{'device'}{'rx_modes'})?$$xml_hash{'device'}{'rx_modes'}:"";
 	$ret{'devInfo'}{'supports_aes'}   = ($$xml_hash{'device'}{'supports_aes'})?$$xml_hash{'device'}{'supports_aes'}:"false";
 	$ret{'devInfo'}{'cyclic_timeout'} = ($$xml_hash{'device'}{'cyclic_timeout'})?$$xml_hash{'device'}{'cyclic_timeout'}:"";
-	
+
 
 	## get the type info section
 	$$xml_hash{'device'}{'supported_types'}{'type'} = [$$xml_hash{'device'}{'supported_types'}{'type'}]         if (ref($$xml_hash{'device'}{'supported_types'}{'type'}) eq 'HASH');
@@ -254,7 +256,7 @@ sub gen_xml_dev_hash {
 	
 
 	## get the frame section as info
-	$xml_file =~ s/<frames>(.*?)<\/frames>//gs;	
+	$file_path =~ s/<frames>(.*?)<\/frames>//gs;	
 	foreach my $line (split /\n/, $1) {
 		# if line starts with <frame then we search for the id and open a hash with it
 		$line =~ s/^\s+|\s+$//g;
@@ -300,7 +302,7 @@ sub gen_xml_dev_hash {
 					## find the fitting entry in param_defs
 					$$xml_hash{'device'}{'paramset_defs'}{'paramset'} = [$$xml_hash{'device'}{'paramset_defs'}{'paramset'}]   if ( ref( $$xml_hash{'device'}{'paramset_defs'}{'paramset'}) eq "HASH");
 					my ($index) = grep { $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$_]{'id'} eq $$subset{'ref'} } (0 .. @{$$xml_hash{'device'}{'paramset_defs'}{'paramset'}}-1);
-					DEBUG "ARRAY - ref: ", $$subset{'ref'}, " idx: ", $index, " defs: ", $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index]{'id'};
+					#DEBUG "ARRAY - ref: ", $$subset{'ref'}, " idx: ", $index, " defs: ", $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index]{'id'};
 	
 					## get the details
 					my $temp_paramset = $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index];
@@ -318,7 +320,7 @@ sub gen_xml_dev_hash {
 				## find the fitting entry in param_defs
 				$$xml_hash{'device'}{'paramset_defs'}{'paramset'} = [$$xml_hash{'device'}{'paramset_defs'}{'paramset'}]   if ( ref( $$xml_hash{'device'}{'paramset_defs'}{'paramset'}) eq "HASH");
 				my ($index) = grep { $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$_]{'id'} eq $$paramset{'subset'}{'ref'} } (0 .. @{$$xml_hash{'device'}{'paramset_defs'}{'paramset'}}-1);
-				DEBUG "HASH - ref: ", $$paramset{'subset'}{'ref'}, " idx: ", $index, " defs: ", $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index]{'id'};
+				#DEBUG "HASH - ref: ", $$paramset{'subset'}{'ref'}, " idx: ", $index, " defs: ", $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index]{'id'};
 
 				## get the details
 				my $temp_paramset = $$xml_hash{'device'}{'paramset_defs'}{'paramset'}[$index];
@@ -418,7 +420,10 @@ sub gen_xml_dev_hash {
 	
 	## reduce to the minimum by deleting double lists
 	my $last_slice_index = 0;
+	$ret{'devInfo'}{'max_config'} = scalar keys %{$ret{'devCnlAddr'}};
+	
 	foreach my $cnl_lst (sort keys %{$ret{'devCnlAddr'}}) {
+		$ret{'devInfo'}{'max_channel'} = $ret{'devCnlAddr'}{$cnl_lst}{'channel'};
 		next if ($ret{'devCnlAddr'}{$cnl_lst}{'link'});
 		
 		## store slice len and start
@@ -441,10 +446,8 @@ sub gen_xml_dev_hash {
 			}
 		}
 	}
-	
-	DEBUG "gen_xml_dev_hash, took ", sprintf("%.4f", time - $startTime), " seconds";
+	DEBUG "\ngen_xml_dev_hash, took ", Time::HiRes::tv_interval($startTime), " seconds\n\n";
 	return \%ret;
-
 }
 
 
@@ -469,9 +472,9 @@ sub get_parameter_data {
 
 		## check for any internal paramsets and replace them with a version incl. index
 		if ( $$parameter{'ui_flags'} && $$parameter{'ui_flags'} eq "internal" &&  $$parameter{'physical'}{'interface'} && $$parameter{'physical'}{'interface'} eq "internal") {
-			DEBUG "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+			DEBUG "-- internal parameter without index found ---------------------";
 			DEBUG Dumper($parameter);
-			DEBUG "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+			DEBUG "---------------------------------------------------------------";
 			$$parameter{'physical'} = $$replace{$$parameter{'id'}} if $$replace{$$parameter{'id'}};
 		}
 
@@ -657,14 +660,16 @@ sub get_size_bit {
 	my ( $int, $rest ) = split /\./, $number, 2;
 	$int  = 0 if !defined $int  || length $int  == 0;
 	$rest = 0 if !defined $rest || length $rest == 0;
+	$int  = hex($int) if $int =~ /0x/;
 	return ($int * 8) + $rest;
 }
 
 
 
 
-
-
+##########################################################
+## + working +
+## generate xml device info and return it as string
 sub gen_xml_device_info {
 	## config data should come from outside per hash
 	my %config = %{(shift)};
@@ -680,9 +685,9 @@ sub gen_xml_device_info {
 
 	## device section
 	# rx_modes are depending on powerMode
-	my $rx_flags;
-	$rx_flags = "BURST" if ($config{'extended_config'}{'powerMode'} == 1);
-	$rx_flags = "WAKEUP,LAZY_CONFIG" if ($config{'extended_config'}{'powerMode'} == 2);
+	my $rx_flags = "";
+	$rx_flags = "BURST" if ($config{'extended_config'}{'power_mode'} == 1);
+	$rx_flags = "WAKEUP,LAZY_CONFIG" if ($config{'extended_config'}{'power_mode'} >= 2);
 	#<device version="1" rx_modes="CONFIG,$rx_mode_flags" peering_sysinfo_expect_channel="false" supports_aes="true">
 	$$user_master{'device'} =~ s/\$rx_mode_flags/$rx_flags/g;
 	$ret .= $$user_master{'device'};
@@ -693,18 +698,19 @@ sub gen_xml_device_info {
 	#		<parameter index="10.0" size="2.0" const_value="$type_const"/>
 	$$user_master{'supported_types'} =~ s/\$type_id/$config{'extended_config'}{'id'}/g;
 	$$user_master{'supported_types'} =~ s/\$type_name/$config{'extended_config'}{'name'}/g;
-	my $model_id = sprintf("0x%04x", $config{'base_config'}{'modelID'});
+	my $model_id = sprintf("0x%04x", $config{'base_config'}{'model_ID'});
 	$$user_master{'supported_types'} =~ s/\$type_const/$model_id/g;
 	$ret .= $$user_master{'supported_types'};
 	
 	## paramset master, check low_bat_limit first
-	my ($lowbat_register, $lowbat_min, $lowbat_max) = ("",25,50);
+	my ($lowbat_register, $lowbat_min, $lowbat_max, $lowbat_def) = ("",25,50,30);
 	$lowbat_register = $$user_master{'lowbat_limit'}     if ($config{'extended_config'}{'lowbat_register'});
 	$lowbat_min =  ($config{'extended_config'}{'lowbat_min'}/10)     if ($config{'extended_config'}{'lowbat_min'});
 	$lowbat_max =  ($config{'extended_config'}{'lowbat_max'}/10)     if ($config{'extended_config'}{'lowbat_max'});
+	$lowbat_def =  ($config{'extended_config'}{'lowbat_limit'}/10)   if ($config{'extended_config'}{'lowbat_limit'});
 	$lowbat_register =~ s/\$lowbat_min/$lowbat_min/g; 
-	#$lowbat_register = 
-	#$lowbat_register = 
+	$lowbat_register =~ s/\$lowbat_max/$lowbat_max/g; 
+	$lowbat_register =~ s/\$lowbat_def/$lowbat_def/g;  
 	
 	$$user_master{'paramset_dev_master'} =~ s/\$low_bat_limit/$lowbat_register/g;
 	$ret .= $$user_master{'paramset_dev_master'};
@@ -721,14 +727,13 @@ sub gen_xml_device_info {
 	## step through the user module array and put together the channel information
 	my $channel_total = scalar @{$config{'channels'}};
 	my @frames; my @paramsets;
-	for (my $i=1; $i < $channel_total; $i++) {
+
+	for(my $i = 1; $i < $channel_total; $i++) {
 		next if (!$config{'channels'}[$i]);
 		
 		## looking forward to identify similar channels
-		my $index = $i;
-		my $counter = 1;
-		
-		while ((($i+1) < $channel_total) && ($config{'channels'}[$i+1]) && ($config{'channels'}[$i]{'type'} eq $config{'channels'}[$i+1]{'type'})) {
+		my $index = $i;	my $counter = 1;
+		while ( ($config{'channels'}[$i+1]) && ($config{'channels'}[$i]{'type'} eq $config{'channels'}[$i+1]{'type'})) {
 			$counter++;
 			$i++;
 		}
@@ -768,21 +773,130 @@ sub gen_xml_device_info {
 	$ret .= join "", @paramsets_clean;
 	$ret .= "	</paramset_defs>\n";
 	
-
 	my $user_modules             =UserModuls::get("xmlRemote");
-	print "channels: $cnl_max\n";
-
-
 	$ret .= "</device>\n";
-	
-	DEBUG Dumper($ret);	
 	
 	# xml content will be collected as a string and returned
 	return $ret;
-	
 }
+##########################################################
+
+##########################################################
+## + working +
+## generate xml device info and return it as string
+sub gen_reg_h_device_info {
+	## config data should come from outside per hash, define the return object
+	my %config = %{(shift)};
+	my %ret;
+
+	## channel 0 should be Master anyhow and need more configuration
+	## read from user modules file
+	my $user_master = UserModuls::get("Master");	
+	$ret{'library'} = [$$user_master{'library'}];
+	$ret{'stage'} = [$$user_master{'stage'}];
+	$ret{'stage_counter'}[0] = 0;
+	$ret{'config'}[0] = $$user_master{'config'};
+	$ret{'config_index'}[0] = 0;
+
+	## replace the variables in config section of master
+	## conf key mode
+	$ret{'config'}[0] =~ s/\$conf_keymode/$config{'extended_config'}{'conf_key_mode'}/g;	
+
+	## power mode
+	my @pw_mode = ('POWER_MODE_NO_SLEEP', 'POWER_MODE_WAKEUP_ONRADIO', 'POWER_MODE_WAKEUP_32MS', 'POWER_MODE_WAKEUP_64MS', 'POWER_MODE_WAKEUP_250MS', 'POWER_MODE_WAKEUP_8000MS', 'POWER_MODE_WAKEUP_EXT_INT');
+	$ret{'config'}[0] =~ s/\$conf_powermode/$pw_mode[$config{'extended_config'}{'power_mode'}]/g;	
+
+	## low battery check, if defined replace placeholders, otherwise delete line
+	if ($config{'extended_config'}{'lowbat_signal'}) {
+		$ret{'config'}[0] =~ s/\$conf_lowbat_limit/$config{'extended_config'}{'lowbat_limit'}/g;	
+		$ret{'config'}[0] =~ s/\$conf_lowbat_timer/$config{'extended_config'}{'lowbat_timer'}/g;	
+	} else {
+		$ret{'config'}[0] =~ s/.*hm.bt.set.*\n//g;
+	}	
 
 
+	## step through all user channels starting with 1
+	for my $i (1 .. $#{$config{'channels'}}) {
+		## skip while channel def is empty
+		next if (!$config{'channels'}[$i]);
+		
+		## get the respective library section and double check 
+		## if already added to our return object
+		my $user_channel = UserModuls::get($config{'channels'}[$i]{'type'});
+		
+		# search the return object and remember the position
+		my ($index) = grep { $ret{'library'}[$_] eq $$user_channel{'library'} } 0..$#{$ret{'library'}};
+		# if the entry exist already, increase counter for stage
+		# otherwise collect respective information
+		if ( $index ) {
+			$ret{'stage_counter'}[$index] += 1;
+			$ret{'config_index'}[$i] = $ret{'stage_counter'}[$index] - 1;
+		} else {
+			push @{$ret{'library'}}, $$user_channel{'library'};
+			push @{$ret{'stage_counter'}}, 1;
+			push @{$ret{'stage'}}, $$user_channel{'stage'};
+			push @{$ret{'config_index'}}, 0;
+		}
+
+		## take care of the config section
+		$ret{'config'}[$i] = $$user_channel{'config'};
+		$ret{'config'}[$i] =~ s/\$cm_reg_channel/$i/g;	
+		$ret{'config'}[$i] =~ s/\$cm_index/$ret{'config_index'}[$i]/g;	
+
+		## take care of the peer amount per channel
+		$ret{'peers'}[$i] = $config{'channels'}[$i]{'peers'};
+	}
+			
+	## loop through the reduced list, starting with 1 while 0 is the maintenance channel
+	## and replace the $cm_tot_index variable
+	for my $i (1 .. $#{$ret{'stage'}}) {
+    	$ret{'stage'}[$i] =~ s/\$cm_tot_index/$ret{'stage_counter'}[$i]/g;
+	}	
+	
+	## generate HMSerialData
+	# if hm_id is given, format it accordingly, 
+	# if empty, generate a random number
+	if ($config{'base_config'}{'hm_ID'}) {
+		$ret{'general'}{'hm_ID'} = sprintf("%06x", $config{'base_config'}{'hm_ID'});
+	} else {
+		$ret{'general'}{'hm_ID'} = randString('H',6);
+	}
+
+	# if serial_ID is given, format it accordingly, 
+	# if empty, generate a random string
+	if ($config{'base_config'}{'serial_ID'}) {
+		$ret{'general'}{'serial_ID'} = $config{'base_config'}{'serial_ID'};
+		$ret{'general'}{'serial_ID'} =~ s/[^a-zA-Z0-9]//g; 
+	} else {
+		$ret{'general'}{'serial_ID'} = "HB";
+	}
+	$ret{'general'}{'serial_ID'} .= randString('D', 10-length($ret{'general'}{'serial_ID'}) );
+
+	
+
+	## cleanup the return object, stage_counter and config_index not needed anymore
+	delete($ret{'stage_counter'});
+	delete($ret{'config_index'});
+
+	## done, return the data object
+	return \%ret;
+}
+## generates an DEC or HEX string with the given length
+## returns the generated string
+sub randString {
+	# parameter needed by the function
+	# randString('DEC or HEX', 'length of string')
+	my $chkCnt = shift;	my $chkLen = shift;
+	my $ret = ""; my @chars;
+
+	@chars = ();
+	@chars = ('a'..'f', '0'..'9') if ($chkCnt eq 'H');
+	@chars = ('0'..'9')           if ($chkCnt eq 'D');
+	
+	while($chkLen--){ $ret .= $chars[rand @chars] };
+	return $ret;
+}
+##########################################################
 
 
 1;

@@ -4,43 +4,101 @@ use warnings;
 use destillRegs;
 use subs qw(DEBUG);
 
-## handover commandline
-my $filename = shift or die "Usage: analyze.pl FILENAME\n";
+my $CONFIG_FROM_PERL_FILE=1;
+my $CONFIG_FROM_JSON_FILE=0;
+my $CONFIG_FROM_JSON_HANDLE=0;
 
-## check if it is a valid filepath
-die "$filename is not valid, please check\n" if not -e $filename;
+## generates a new xml file based on a json device definition
+my %config;
+$config{'base_config'}{'hm_ID'} = 0x001122;
+$config{'base_config'}{'serial_ID'} = "HBremote01";
+$config{'base_config'}{'model_ID'} = 0x00A9;
+$config{'base_config'}{'firmware_ver'} = 11;
 
-## check if all needed libraries installed
-#die "XML::LibXML missing, please install via cpan...\n" if not -e 'use XML::LibXML;';
-print eval{require XML::LibXM};
+$config{'extended_config'}{'id'} = "testID";
+$config{'extended_config'}{'name'} = "testName";
+#$config{'extended_config'}{'dutycycle'} = 1;
+$config{'extended_config'}{'conf_key_mode'} = 2;
+$config{'extended_config'}{'power_mode'} = 0;
 
-#use XML::LibXML;
-#use XML::Hash;
-#use JSON;
-#use Time::HiRes qw(gettimeofday tv_interval);
-#use Data::Dumper::Simple;
+$config{'extended_config'}{'lowbat_signal'} = 1;      # bool
+$config{'extended_config'}{'lowbat_limit'} = 30;      # in V * 10
+$config{'extended_config'}{'lowbat_timer'} = 3600000; # in ms
+
+$config{'extended_config'}{'lowbat_register'} = 1;    # bool
+$config{'extended_config'}{'lowbat_min'} = 10;        # in V * 10
+$config{'extended_config'}{'lowbat_max'} = 40;        # in V * 10
+
+
+$config{'channels'}[0] = {type => "Master",    peers => 0, hidden => 0, linked => 0 };
+$config{'channels'}[1] = {type => "xmlRemote", peers => 6, hidden => 0, linked => 0 };
+$config{'channels'}[2] = {type => "xmlRemote", peers => 8, hidden => 0, linked => 0 };
+$config{'channels'}[3] = {type => "xmlRemote", peers => 4, hidden => 0, linked => 0 };
+$config{'channels'}[4] = {type => "xmlRemote", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[4] = {type => "xmlSwitch", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[5] = {type => "xmlRemote", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[6] = {type => "xmlSwitch", peers => 4, hidden => 0, linked => 0 };
+
+#$config{'channels'}[1] = {type => "xmlRemote", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[1] = {type => "xmlSwitch", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[1] = {type => "xmlDimmer", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[1] = {type => "xmlBlind", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[1] = {type => "xmlMotion", peers => 4, hidden => 0, linked => 0 };
+#$config{'channels'}[1] = {type => "xmlWeather", peers => 4, hidden => 0, linked => 0 };
+
+
+###############################################################
+## ++ working ++
+## generates a xml device config file out of a given hash 
+## describing the functionallity
+## returns a string with the xml device content
+my $dev_info_xml_string = gen_xml_device_info(\%config);
+## todo: implement a download or automatic file creation function
 
 ## ++ in progress ++ 
 ## generates a hash with all information to build a register.h
 ## todo: some default conversations to be implemented
-#my $dev_info_hash = gen_xml_dev_info_hash($dev_info_xml_string);
-my $dev_info_hash = gen_xml_dev_info_hash($filename);
+my $dev_info_hash = gen_xml_dev_info_hash($dev_info_xml_string);
+#my $dev_info_hash = gen_xml_dev_info_hash('./devicetypes/rf_rc-4-2.xml');
+
+
+## ++ working ++
+## generates the device declaration and configuration for a
+## register.h out of a given hash describing the functionallity
+## returns a hash with a stage and config section and therin an
+## array to add it to the respective register.h section
+my $re_config = gen_reg_h_device_info(\%config);
 
 
 ## ++ in progress ++
 ## print register.h functions
+## todo: implement a download or automatic file creation function
 print "--------------------------------------------------------------------------------------------\n";
-print " This is the register.h content for the analysed xml file \n";
-print " There are several information missing for a comlete register.h configuration \n";
+print " This are the xml file information for your created device \n";
+print " copy and paste into the xml folder of the CCU or Homegear \n";
+print "--------------------------------------------------------------------------------------------\n";
+print "\n";
+print "$dev_info_xml_string\n";
+print "--------------------------------------------------------------------------------------------\n";
+print "\n\n";
+
+print "--------------------------------------------------------------------------------------------\n";
+print " This is the register.h content for your created device \n";
+print " copy and paste into the register.h file of your sketch \n";
 print "--------------------------------------------------------------------------------------------\n";
 print "\n";
 print "#ifndef _REGISTER_h \n";
 print " "x4 ."#define _REGISTER_h \n\n";
+print_library($$re_config{'library'});
+print_stage($$re_config{'stage'});
+print_hm_serial_data($$re_config{'general'});
 print_device_ident($$dev_info_hash{'devIdnt'});
 print_channel_registers($$dev_info_hash{'devCnlAddr'});
-print_channel_table($$dev_info_hash{'devCnlAddr'});
+print_channel_table($$dev_info_hash{'devCnlAddr'}, $$re_config{'peers'});
 print_device_description($$dev_info_hash{'devInfo'});
 print_module_register_table($$dev_info_hash{'devInfo'});
+print_every_time_start($$re_config{'config'});
+print_first_time_start();
 print "#endif \n\n";
 
 print "--------------------------------------------------------------------------------------------\n";
