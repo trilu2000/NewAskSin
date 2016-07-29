@@ -4,6 +4,23 @@ my %user_modul;
 
 
 ## Master ###################################################################################
+$user_modul{'Master'}{'library'} = << 'END_LINE';
+#include <AS.h> 
+#include "hardware.h"
+#include "hmkey.h"
+END_LINE
+
+$user_modul{'Master'}{'stage'} = << 'END_LINE';
+AS hm;
+END_LINE
+
+$user_modul{'Master'}{'config'} = << 'END_LINE';
+hm.ld.set(welcome); 
+hm.confButton.config($conf_keymode);
+hm.pw.setMode($conf_powermode);
+hm.bt.set($conf_lowbat_limit, $conf_lowbat_timer);
+END_LINE
+
 $user_modul{'Master'}{'header'} = << 'END_LINE';
 <?xml version="1.0" encoding="iso-8859-1"?>
 <?xml-stylesheet type="text/xsl" href="device.xsl"?>
@@ -36,7 +53,7 @@ END_LINE
 
 $user_modul{'Master'}{'lowbat_limit'} = << 'END_LINE';
 		<parameter id="LOW_BAT_LIMIT">
-			<logical type="float" min="$lowbat_min" max="15.0" default="10.5" unit="V"/>
+			<logical type="float" min="$lowbat_min" max="$lowbat_max" default="$lowbat_def" unit="V"/>
 			<physical type="integer" interface="config" list="0" index="18" size="1"/>
 			<conversion type="float_integer_scale" factor="10"/>
 		</parameter>
@@ -102,6 +119,20 @@ END_LINE
 ## END Master ###############################################################################
 
 ## xmlDummy
+$user_modul{'xmlDummy'}{'library'} = << 'END_LINE';
+#include <cmDummy.h> 
+END_LINE
+
+$user_modul{'xmlDummy'}{'stage'} = << 'END_LINE';
+cmDummy cm_Dummy[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+extern void switchDummy(uint8_t channel, uint8_t status);
+END_LINE
+
+$user_modul{'xmlDummy'}{'config'} = << 'END_LINE';
+	cm_Dummy[$cm_index].regInHM($cm_reg_channel, 3, &hm);
+	cm_Dummy[$cm_index].config(&initDim, &switchDim);
+END_LINE
+
 $user_modul{'xmlDummy'}{'channels'} = << 'END_LINE';
 		<channel autoregister="false" index="$channel_index" type="KEY" count="$channel_count" paired="false" aes_default="false">
 			<link_roles>
@@ -131,6 +162,20 @@ END_LINE
 
 
 ## xmlRemote
+$user_modul{'xmlRemote'}{'library'} = << 'END_LINE';
+#include <cmRemote.h> 
+END_LINE
+
+$user_modul{'xmlRemote'}{'stage'} = << 'END_LINE';
+cmRemote cm_Remote[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+extern void initRemote(uint8_t channel);
+END_LINE
+
+$user_modul{'xmlRemote'}{'config'} = << 'END_LINE';
+cm_Remote[$cm_index].regInHM($cm_reg_channel, 4, &hm);
+cm_Remote[$cm_index].config(&initRemote);
+END_LINE
+
 $user_modul{'xmlRemote'}{'channels'} = << 'END_LINE';
 		<channel autoregister="true" index="$channel_index" type="KEY" count="$channel_count" pair_function="BA" function="A" paired="true" aes_default="false">
 			<link_roles>
@@ -250,7 +295,23 @@ END_LINE
 
 ## END Remote #########################################################################
 
+
 ## xmlDimmer
+$user_modul{'xmlDimmer'}{'library'} = << 'END_LINE';
+#include <cmDimmer.h> 
+END_LINE
+
+$user_modul{'xmlDimmer'}{'stage'} = << 'END_LINE';
+cmDimmer cm_Dimmer[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+extern void initDim(uint8_t channel);
+extern void switchDim(uint8_t channel, uint8_t status, uint8_t characteristic);
+END_LINE
+
+$user_modul{'xmlDimmer'}{'config'} = << 'END_LINE';
+cm_Dimmer[$cm_index].regInHM($cm_reg_channel, 3, &hm);
+cm_Dimmer[$cm_index].config(&initDim, &switchDim);
+END_LINE
+
 $user_modul{'xmlDimmer'}{'channels'} = << 'END_LINE';
 		<channel index="$channel_index" type="DIMMER" count="$channel_count">
 			<link_roles>
@@ -1287,11 +1348,25 @@ $user_modul{'xmlDimmer'}{'paramsets'} = << 'END_LINE';
 		</paramset>
 END_LINE
 
-
 ## END Dimmer #########################################################################
 
 
 ## xmlSwitch
+$user_modul{'xmlSwitch'}{'library'} = << 'END_LINE';
+#include <cmSwitch.h> 
+END_LINE
+
+$user_modul{'xmlSwitch'}{'stage'} = << 'END_LINE';
+cmSwitch cm_Switch[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+extern void initSwitch(uint8_t channel);
+extern void switchSwitch(uint8_t channel, uint8_t status);
+END_LINE
+
+$user_modul{'xmlSwitch'}{'config'} = << 'END_LINE';
+cm_Switch[$cm_index].regInHM($cm_reg_channel, 3, &hm);
+cm_Switch[$cm_index].config(&initSwitch, &switchSwitch);
+END_LINE
+
 $user_modul{'xmlSwitch'}{'channels'} = << 'END_LINE';
 		<channel index="$channel_index" type="SWITCH" count="$channel_count">
 			<link_roles>
@@ -1779,6 +1854,21 @@ END_LINE
 
 
 ## xmlBlind
+$user_modul{'xmlBlind'}{'library'} = << 'END_LINE';
+#include <cmBlind.h>
+END_LINE
+
+$user_modul{'xmlBlind'}{'stage'} = << 'END_LINE';
+cmBlind cm_Blind[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+extern void initBlind(uint8_t channel);
+extern void switchBlind(uint8_t channel, uint8_t status);
+END_LINE
+
+$user_modul{'xmlBlind'}{'config'} = << 'END_LINE';
+cm_Blind[$cm_index].regInHM($cm_reg_channel, 3, &hm);
+cm_Blind[$cm_index].config(&initBlind, &switchBlind);
+END_LINE
+
 $user_modul{'xmlBlind'}{'channels'} = << 'END_LINE';
 		<channel index="$channel_index" type="BLIND" count="$channel_count"">
 			<link_roles>
@@ -2725,6 +2815,20 @@ END_LINE
 
 
 ## xmlMotion
+$user_modul{'xmlMotion'}{'library'} = << 'END_LINE';
+#include <cmMotion.h>
+END_LINE
+
+$user_modul{'xmlMotion'}{'stage'} = << 'END_LINE';
+cmMotion cm_Motion[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+extern void initMotion(uint8_t channel);
+END_LINE
+
+$user_modul{'xmlMotion'}{'config'} = << 'END_LINE';
+cm_Motion[$cm_index].regInHM($cm_reg_channel, 4, &hm);
+cm_Motion[$cm_index].config(&initMotion);
+END_LINE
+
 $user_modul{'xmlMotion'}{'channels'} = << 'END_LINE';
 		<channel autoregister="true" index="$channel_index" type="MOTION_DETECTOR" count="$channel_count" aes_default="false">
 			<link_roles>
@@ -2877,6 +2981,21 @@ END_LINE
 
 
 ## xmlWeather
+$user_modul{'xmlWeather'}{'library'} = << 'END_LINE';
+#include <cmWeather.h>
+END_LINE
+
+$user_modul{'xmlWeather'}{'stage'} = << 'END_LINE';
+cmWeather cm_Weather[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+extern void initWeather(uint8_t channel);                                   // declare function to jump in
+extern void readWeather(uint8_t channel);                                   // declare function to jump in
+END_LINE
+
+$user_modul{'xmlWeather'}{'config'} = << 'END_LINE';
+cm_Weather[$cm_index].regInHM($cm_reg_channel, 3, &hm);
+cm_Weather[$cm_index].config(&initWeather, &readWeather);
+END_LINE
+
 $user_modul{'xmlWeather'}{'channels'} = << 'END_LINE';
 		<channel index="$channel_index" type="WEATHER" count="$channel_count">
 			<paramset type="MASTER" id="wds30ot2_ch_master">
@@ -2942,6 +3061,21 @@ END_LINE
 	
 ### Needed for new channels ###########################################################
 ## xmlDummy
+#$user_modul{'xmlDummy'}{'library'} = << 'END_LINE';
+#include <cmDummy.h>
+#END_LINE
+
+#$user_modul{'xmlDummy'}{'stage'} = << 'END_LINE';
+#cmDummy cm_Dummy[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+#extern void initDummy(uint8_t channel);                                   // declare function to jump in
+#extern void readDummy(uint8_t channel);                                   // declare function to jump in
+#END_LINE
+
+#$user_modul{'xmlDummy'}{'config'} = << 'END_LINE';
+#cm_Dummy[$cm_index].regInHM($cm_reg_channel, 3, &hm);
+#cm_Dummy[$cm_index].config(&initDummy, &readDummy);
+#END_LINE
+
 #$user_modul{'xmlDummy'}{'channels'} = << 'END_LINE';
 #		<channel autoregister="false" index="$channel_index" type="KEY" count="$channel_count" paired="false" aes_default="false">
 #END_LINE
