@@ -331,7 +331,7 @@ uint8_t  EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
 
 // peer functions
 void     EE::clearPeers(void) {
-	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {										// step through all channels
+	for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {										// step through all channels
 		clearEEPromBlock(peerTbl[i].pAddr, peerTbl[i].pMax * 4);
 		//dbg << F("clear eeprom, addr ") << peerTbl[i].pAddr << F(", len ") << (peerTbl[i].pMax * 4) << '\n';																	// ...and some information
 	}
