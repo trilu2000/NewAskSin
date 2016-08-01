@@ -1,3 +1,12 @@
+###############################################################################
+# analyze.pl is part of the destillregs packet in AskSin library.
+# With analyze.pl you are able to destill/extract device information 
+# of a xml config file of a CCU2. It returns the register content
+# as a struct of all channel/lists of a specific device.
+# Can be used to understand better a device configuration or to rebuild 
+# device functionallity wit the asksin lib.
+###############################################################################
+
 use strict;
 use warnings;
 
@@ -11,14 +20,11 @@ my $filename = shift or die "Usage: analyze.pl FILENAME\n";
 die "$filename is not valid, please check\n" if not -e $filename;
 
 ## check if all needed libraries installed
-#die "XML::LibXML missing, please install via cpan...\n" if not -e 'use XML::LibXML;';
-print eval{require XML::LibXM};
-
-#use XML::LibXML;
-#use XML::Hash;
-#use JSON;
-#use Time::HiRes qw(gettimeofday tv_interval);
-#use Data::Dumper::Simple;
+die "XML::LibXML missing, please install via cpan...\n" if not eval{require XML::LibXML};
+die "XML::Hash missing, please install via cpan...\n" if not eval{require XML::Hash};
+die "JSON missing, please install via cpan...\n" if not eval{require JSON};
+die "Time::HiRes missing, please install via cpan...\n" if not eval{require Time::HiRes};
+die "Data::Dumper::Simple missing, please install via cpan...\n" if not eval{require Data::Dumper::Simple};
 
 ## ++ in progress ++ 
 ## generates a hash with all information to build a register.h
