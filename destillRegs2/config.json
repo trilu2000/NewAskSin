@@ -1,31 +1,39 @@
 
-{"base_config":{
-    "serial":       "HBremote01",
-    "hmID":         "",
-    "hmKEY":        "0102030405060708090a0b0c0d0e0f10",
-	
-    "modelID":      "00A9",
-    "firmwareVer":  "11"
+{"base_config": {
+    "@comment":        "Das ist ein test", 
+    "hm_ID":           "001122",
+    "serial_ID":       "HBremote01",
+    "model_ID":        "00A9",
+    "firmware_ver":    "11"
     },
 
- "extended_config":{
-    "name":          "Test128", 
-    "description":   "das ist ein test",
+ "extended_config": {
+    "id":              "testID",
+    "name":            "testName",
+    "dutycycle":       1,
+    "conf_key_mode":   2,
+    "power_mode":      0,
 
-    "subtypeID":     "40",
-    "deviceInfo":    "060000",
-	
-    "burstRx":       1,
-    "localResDis":   1,
-    "intKeysVis":    1,
+    "lowbat_signal":   1,
+    "lowbat_limit":    30,
+    "lowbat_timer":    3600000,
 
-    "confKeyMode":   1,
+    "lowbat_register": 1, 
+    "lowbat_min":      10,
+    "lowbat_max":      40
+    },
 
-    "statusLED":     2,
+ "channels": [
+    { "type": "Master",    "peers": 0, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 6, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 8, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 4, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 4, "hidden": 0, "linked": 0 }
+    ]
 
-    "battValue":     30,
-    "battVisib":     0,
-    "battChkDura":   3600000,
+}
 
-    "powerMode":     0
-}}
+
+
+
+
