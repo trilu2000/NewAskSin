@@ -167,7 +167,7 @@ $user_modul{'xmlRemote'}{'library'} = << 'END_LINE';
 END_LINE
 
 $user_modul{'xmlRemote'}{'stage'} = << 'END_LINE';
-cmRemote cm_Remote[$cm_tot_index];												    // create instances of channel module	extern void initDim(uint8_t channel);
+cmRemote cm_Remote[$cm_tot_index];
 extern void initRemote(uint8_t channel);
 END_LINE
 

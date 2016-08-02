@@ -1,4 +1,4 @@
-#define SER_DBG																				// serial debug messages
+#define SER_DBG
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																		// configuration sheet
@@ -50,13 +50,6 @@ void setup() {
 		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");	// some debug
 	#endif
 
-	// show channel table content
-	dbg << "channel table:\n";
-	dbg << "line\tcnl\tlst\tsIdx\tsLen\thide\tpAddr\n";
-	for (uint8_t i = 0; i < (sizeof(cnlTbl)/sizeof(EE::s_cnlTbl)); i++) {
-		// cnl, lst, sIdx, sLen, hide, pAddr 
-		dbg << i << "\t" << cnlTbl[i].cnl << "\t" << cnlTbl[i].lst << "\t" << cnlTbl[i].sIdx << "\t" << cnlTbl[i].sLen << "\t" << cnlTbl[i].vis << "\t" << cnlTbl[i].pAddr << "\n";
-	}
 }
 
 
@@ -70,7 +63,9 @@ void loop() {
 	
 }
 
+void initRemote(uint8_t channel) {
 
+}
 
 //- user functions --------------------------------------------------------------------------------------------------------
 /**

@@ -21,7 +21,7 @@ require Exporter;
 #                                                                                                                                                                                                                                                                                
 
 @ISA = qw(Exporter);
-@EXPORT = qw(DEBUG print_library print_stage print_hm_serial_data print_device_ident print_channel_registers print_channel_table print_device_description print_module_register_table print_every_time_start print_first_time_start print_channel_structs print_device_frames load_file_by_name get_file_list gen_xml_dev_info_hash gen_xml_device_info gen_reg_h_device_info gen_xml_dev_list);
+@EXPORT = qw(DEBUG print_library print_stage print_hm_serial_data print_device_ident print_channel_registers print_channel_defaults print_channel_table print_device_description print_module_register_table print_every_time_start print_first_time_start print_channel_structs print_device_frames load_file_by_name get_file_list gen_xml_dev_info_hash gen_xml_device_info gen_reg_h_device_info gen_xml_dev_list);
 $VERSION = 1.0;
  
 use userModuls;
@@ -973,7 +973,7 @@ sub print_channel_registers {
 	my $size = 0;
 	
 	print " "x4 ."/** \n";
-	print " "x4 ." * Register definitions \n";
+	print " "x4 ." * \@brief Register definitions \n";
 	print " "x4 ." * The values are adresses in relation to the start adress defines in cnlTbl \n";
 	print " "x4 ." * Register values can found in related Device-XML-File. \n";
 	print " "x4 ." * \n";
@@ -996,6 +996,32 @@ sub print_channel_registers {
 
 		printf " "x8 ."0x%02x," x @{$$input{$cnl_lst}{'reg'}} . "\n", @{$$input{$cnl_lst}{'reg'}};
 		$size += @{$$input{$cnl_lst}{'reg'}};
+	}
+	print " "x4 ."}; // $size byte\n\n";	
+}
+sub print_channel_defaults {
+	my ($addr,$defs) = @_;
+	#DEBUG Dumper($defs);
+	my $size = 0;
+	
+	print " "x4 ."/** \n";
+	print " "x4 ." * \@brief Channel, List defaults \n";
+	print " "x4 ." * Source of the default values is the respective xml file. \n";
+	print " "x4 ." * This values are the defined default values and should be set \n";
+	print " "x4 ." * in the first start function. \n";
+	print " "x4 ." */ \n";
+	print " "x4 ."const uint8_t cnlDefs[] PROGMEM = { \n";
+
+	## step through channels, lists
+	foreach my $cnl_lst (sort keys %$addr) {
+		print " "x8 ."// channel: $$addr{$cnl_lst}{'channel'}, list: $$addr{$cnl_lst}{'list'}";
+		printf "%s",($$addr{$cnl_lst}{'link'})? ", link to $$addr{$cnl_lst}{'link'}\n" : "\n";
+		
+		## if we have content go further
+		next if($$addr{$cnl_lst}{'link'});
+
+		printf " "x8 ."0x%02x," x @{$$defs{$cnl_lst}{'reg'}} . "\n", @{$$defs{$cnl_lst}{'reg'}};
+		$size += @{$$defs{$cnl_lst}{'reg'}};
 	}
 	print " "x4 ."}; // $size byte\n\n";	
 }
@@ -1115,20 +1141,43 @@ sub print_every_time_start {
 	print " "x4 ."} \n\n";
 }
 sub print_first_time_start {
-	print " "x4 ."/** \n";
-	print " "x4 ." * \@brief First time start function \n";
-	print " "x4 ." * This function is called by the main function on the first boot of a device.  \n";
-	print " "x4 ." * First boot is indicated by a magic byte in the eeprom. \n";
-	print " "x4 ." * Here we can setup everything which is needed for a proper device operation, like cleaning  \n";
-	print " "x4 ." * of eeprom variables, or setting a default link in the peer table for 2 channels \n";
-	print " "x4 ." */ \n";
-	print " "x4 ."void firstTimeStart(void) { \n\n";
-	#print " "x8 ."/*  \n";
-	#print " "x8 ." * Place here everything which should be done on the first start of the device.  \n";
-	#print " "x8 ." * Typical use case are loading default values for the user channels. \n";
-	#print " "x8 ." */  \n\n";
+	my $input = shift;
 
-	print " "x4 ."} \n\n";
+	print << 'END_LINE';
+    /** 
+     * \@brief First time start function 
+     * This function is called by the main function on the first boot of a device. 
+     * First boot is indicated by a magic byte in the eeprom. 
+     * Here we can setup everything which is needed for a proper device operation, like cleaning 
+     * of eeprom variables, or setting a default link in the peer table for 2 channels 
+     */ 
+    void firstTimeStart(void) { 
+
+    #ifdef SER_DBG
+        // some debug
+        dbg << F("First time start active:\n");
+        dbg << F("cnl\tlst\tsIdx\tsLen\thide\tpAddr\n");
+        for (uint8_t i = 0; i < devDef.lstNbr; i++) {
+            // cnl, lst, sIdx, sLen, hide, pAddr 
+            dbg  << cnlTbl[i].cnl << "\t" << cnlTbl[i].lst << "\t" << cnlTbl[i].sIdx << "\t" << cnlTbl[i].sLen << "\t" << cnlTbl[i].vis << "\t" << cnlTbl[i].pAddr << "\n";
+        }
+    #endif
+
+        // fill register with default values, peer registers are not filled while done in usermodules
+END_LINE
+
+	## step through the hash
+	foreach my $cnl_lst (sort keys %$input) {
+		## skip on list 3 and 4
+		next if (($$input{$cnl_lst}{'list'} == 3)||($$input{$cnl_lst}{'list'} == 4));	
+		print " "x8 ."hm.ee.setList($$input{$cnl_lst}{'channel'}, $$input{$cnl_lst}{'list'}, 0, (uint8_t*)&cnlDefs[$$input{$cnl_lst}{'slice_idx'}]);\n";
+	}
+
+	print << "END_LINE";
+\n        // format peer db
+        hm.ee.clearPeers();
+    } \n;
+END_LINE
 }
 sub print_channel_structs {
 	my ($input, $cnl_addr) = @_;

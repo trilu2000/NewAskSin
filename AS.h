@@ -23,6 +23,7 @@
 #include "Version.h"
 #include "macros.h"
 
+
 /**
  * @short Main class for implementation of the AskSin protocol stack.
  * Every device needs exactly one instance of this class.

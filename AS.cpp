@@ -17,7 +17,7 @@
  */
 #define WDT_RESET_ON_RESET
 
-//#define AS_DBG
+#define AS_DBG
 //#define RV_DBG_EX
 //#define AES_DBG
 

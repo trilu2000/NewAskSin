@@ -10,8 +10,8 @@
  "extended_config": {
     "id":              "testID",
     "name":            "testName",
-    "dutycycle":       1,
-    "conf_key_mode":   2,
+    "dutycycle":       0,
+    "conf_key_mode":   1,
     "power_mode":      0,
 
     "lowbat_signal":   1,
@@ -24,11 +24,13 @@
     },
 
  "channels": [
-    { "type": "Master",    "peers": 0, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 6, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 8, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 4, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 4, "hidden": 0, "linked": 0 }
+    { "type": "Master",    "peers":  0, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 }
     ]
 
 }

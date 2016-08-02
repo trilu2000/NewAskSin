@@ -86,7 +86,7 @@ uint8_t  EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 
 	if (!checkIndex(cnl, lst, idx)) return 0;
 
-	setEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
+	setEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// set the eeprom content
 	return 1;
 }
 
@@ -174,10 +174,6 @@ void     EE::init(void) {
 	#endif
 
 	if(flashCRC != eepromCRC) {															// first time detected, format eeprom, load defaults and write magicByte
-		// formating eeprom
-		clearPeers();
-		clearRegs();
-
 		// write magic byte
 		#ifdef EE_DBG																	// only if ee debug is set
 		dbg << F("writing magic byte\n");												// ...and some information
@@ -662,3 +658,4 @@ uint8_t  isEmpty(void *ptr, uint8_t len) {
 	}
 	return 1;
 }
+

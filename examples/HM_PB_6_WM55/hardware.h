@@ -19,7 +19,6 @@
 		//- hardware specific general setup
 		#define PCINT_CALLBACK													// enables the pin change interrupt callback in user sketch
 
-
 		//- cc1100 hardware CS and GDO0 definitions -------------------------------------------------------------------
 		#define CC_CS                  PIN_B2									// chip select
 		#define CC_GDO0                PIN_D2									// GDO0 pin, identify data received on falling edge

@@ -100,42 +100,44 @@ my $re_config = gen_reg_h_device_info($config);
 ## ++ in progress ++
 ## print register.h functions
 ## todo: implement a download or automatic file creation function
-print "--------------------------------------------------------------------------------------------\n";
-print " This are the xml file information for your created device \n";
-print " copy and paste into the xml folder of the CCU or Homegear \n";
-print "--------------------------------------------------------------------------------------------\n";
-print "\n";
-print "$dev_info_xml_string\n";
-print "--------------------------------------------------------------------------------------------\n";
-print "\n\n";
+print  << "END_LINE";
+--------------------------------------------------------------------------------------------
+ This are the xml file information for your created device 
+ copy and paste into the xml folder of the CCU or Homegear 
+--------------------------------------------------------------------------------------------\n
+$dev_info_xml_string
+--------------------------------------------------------------------------------------------\n
+END_LINE
 
-print "--------------------------------------------------------------------------------------------\n";
-print " This is the register.h content for your created device \n";
-print " copy and paste into the register.h file of your sketch \n";
-print "--------------------------------------------------------------------------------------------\n";
-print "\n";
-print "#ifndef _REGISTER_h \n";
-print " "x4 ."#define _REGISTER_h \n\n";
+print  << "END_LINE";
+--------------------------------------------------------------------------------------------
+ This is the register.h content for your created device
+ copy and paste into the register.h file of your sketch
+--------------------------------------------------------------------------------------------\n
+#ifndef _REGISTER_h
+    #define _REGISTER_h \n
+END_LINE
 print_library($$re_config{'library'});
 print_stage($$re_config{'stage'});
 print_hm_serial_data($$re_config{'general'});
 print_device_ident($$dev_info_hash{'devIdnt'});
 print_channel_registers($$dev_info_hash{'devCnlAddr'});
+print_channel_defaults($$dev_info_hash{'devCnlAddr'}, $$dev_info_hash{'devCnlAddrDef'});
 print_channel_table($$dev_info_hash{'devCnlAddr'}, $$re_config{'peers'});
 print_device_description($$dev_info_hash{'devInfo'});
 print_module_register_table($$dev_info_hash{'devInfo'});
 print_every_time_start($$re_config{'config'});
-print_first_time_start();
+print_first_time_start($$dev_info_hash{'devCnlAddr'});
 print "#endif \n\n";
 
-print "--------------------------------------------------------------------------------------------\n";
-print " This are some additional information especially for developers of user modules \n";
-print " The channel structs reflecting the register content, the frame section shows \n";
-print " which message types are used for the device functionallity \n";
-print "--------------------------------------------------------------------------------------------\n";
-print "\n";
+print  << "END_LINE";
+--------------------------------------------------------------------------------------------
+ This are some additional information especially for developers of user modules 
+ The channel structs reflecting the register content, the frame section shows
+ which message types are used for the device functionallity 
+--------------------------------------------------------------------------------------------\n
+END_LINE
 print_channel_structs($$dev_info_hash{'devCnlLst'}, $$dev_info_hash{'devCnlAddr'});
 print_device_frames($$dev_info_hash{'devFrames'});
-
 
 
