@@ -64,7 +64,7 @@ void    CC::init(void) {																// initialize CC1101
 		CC1101_MDMCFG2,  0x03,
 		CC1101_DEVIATN,  0x34,													// 19.042969 kHz
 		CC1101_MCSM2,    0x01,
-		CC1101_MCSM1,    0x03,													// always go into RX after TX, no CCA
+		CC1101_MCSM1,    0x33,													// always go into RX after TX, CCA mode 3
 		CC1101_MCSM0,    0x18,
 		CC1101_FOCCFG,   0x16,
 		CC1101_AGCCTRL2, 0x43,
@@ -232,6 +232,11 @@ uint8_t CC::detectBurst(void) {
 
 	setActive();
 	strobe(CC1101_SRX);																	// set RX mode again
+	for(uint8_t i = 0; i < 200; i++) {													// wait for reaching RX state
+		if( readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_RX)
+			break;																		// now in RX mode, good
+		_delay_us(10);
+	}
 
 	uint8_t bTmp;
 	for (uint8_t i = 0; i < 200; i++) {													// check if we are in RX mode
