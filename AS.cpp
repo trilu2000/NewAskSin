@@ -1309,8 +1309,9 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
  */
 void AS::deviceReset(uint8_t clearEeprom) {
 	if (clearEeprom == AS_RESET_CLEAR_EEPROM) {
-		ee.clearPeers();
-		ee.clearRegs();
+		//ee.clearPeers();
+		//ee.clearRegs();
+		firstTimeStart();
 		ee.getMasterID();
 
 		#ifdef SUPPORT_AES
