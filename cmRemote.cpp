@@ -34,16 +34,18 @@ void cmRemote::config(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t 
 * @brief Sending out an Asksin message by the given action. Function can be called from user sketch directly.
 * Intend is, not every remote channel needs an hardware pin anymore. Looking for further projects like a 
 * wall mount toch switch.
-* @param   bEvent   0 - short key press
-*                   1 - double short key press
-*                   2 - long key press
-*                   3 - repeated long key press
-*                   4 - end of long key press
-*                   5 - double long key press
-*                   6 - end of double long key press
+* @param   bEvent   1 - short key press
+*                   2 - double short key press
+*                   3 - long key press
+*                   4 - repeated long key press
+*                   5 - end of long key press
+*                   6 - double long key press
+*                   7 - end of double long key press
 *                 255 - key press, for stay awake issues
 */
 void cmRemote::buttonAction(uint8_t bEvent) {
+	// at the moment this channel module will only work for channel > 0 while key for maintanance channel need
+	// some special functionality, like link to toogle and pairing
 
 	hm->pw.stayAwake(1000);																		// overcome the problem of not getting a long repeated key press
 	if (bEvent == 255) return;																	// was only a wake up message
@@ -52,27 +54,17 @@ void cmRemote::buttonAction(uint8_t bEvent) {
 	dbg << F("RM buttonAction, cnl: ") << regCnl << ", s:" << bEvent << '\n';
 	#endif
 
-	// at the moment this channel module will only work for channel > 0 while key for maintanance channel need
-	// some special functionality, like link to toogle and pairing
-
-	if ((bEvent >= 2) && (bEvent <= 3)) buttonInfo.longpress = 1;								// set the long key flag if requested
+	if ((bEvent == 3) || (bEvent == 4)) buttonInfo.longpress = 1;								// set the long key flag if requested
 	else buttonInfo.longpress = 0;																// otherwise it is a short
-	
-//	if (bEvent == 3) hm->sendREMOTE(regCnl, (uint8_t*)&buttonInfo);								// send the message
-//	else hm->sendREMOTE(regCnl, (uint8_t*)&buttonInfo, AS_ACK_REQ);
+	dbg << "x:" << buttonInfo.longpress << '\n';
 
-	// not sure if there is a need for a call back function
-	//if (callBack) callBack(regCnl, bEvent);													// call the callback function
+	//	if (bEvent == 3) hm->sendREMOTE(regCnl, (uint8_t*)&buttonInfo);								// send the message
+	//	else hm->sendREMOTE(regCnl, (uint8_t*)&buttonInfo, AS_ACK_REQ);
 
 	buttonInfo.counter++;																		// increase the button counter
 }
 
 void cmRemote::buttonPoll(void) {
-
-	#define detectLong      3000																// has to be replaced by list1 content
-	#define repeatedLong    300
-	#define timeoutDouble   1000
-
 
 	if (!chkRPT.is_configured) return;															// if port is not configured, poll makes no sense
 	btn = checkPCINT(port, pin, 1);																// check if an interrupt had happened
@@ -80,8 +72,8 @@ void cmRemote::buttonPoll(void) {
 
 	if (btn == 2) {													// button was just pressed
 		//dbg << "armed \n";
-		cmrTmr.set(detectLong);																	// set timer to detect a long
-		hm->pw.stayAwake(detectLong + 500);														// stay awake to check button status
+		cmrTmr.set(LONG_PRESS_TIME);															// set timer to detect a long
+		hm->pw.stayAwake(LONG_PRESS_TIME + 500);												// stay awake to check button status
 		chkRPT.armed = 1;																		// set it armed
 		return;																					// all done while button was pressed
 	}
@@ -90,44 +82,49 @@ void cmRemote::buttonPoll(void) {
 
 	if (btn == 3) {													// button was just released, keyShortSingle, keyShortDouble, keyLongRelease
 
-		//dbg << "3 lstLng:" << lstLng << " dblLng:" << dblLng << " lngRpt:" << lngRpt << " lstSht:" << lstSht << '\n';
-		cmrTmr.set(timeoutDouble);																// set timer to clear the repeated flags
-		hm->pw.stayAwake(timeoutDouble + 500);													// stay awake to check button status
+		//dbg << "3 lstLng:" << chkRPT.last_long << " dblLng:" << chkRPT.last_dbl_long << " lngRpt:" << chkRPT.last_rpt_long << " lstSht:" << chkRPT.last_short << '\n';
+		cmrTmr.set(DBL_PRESS_TIME);																// set timer to clear the repeated flags
+		hm->pw.stayAwake(DBL_PRESS_TIME + 500);													// stay awake to check button status
 
-		if ((chkRPT.last_long) && (chkRPT.last_rpt_long)) {										// keyLongRelease
-				buttonAction(5);
+		if (chkRPT.last_long) { 									// keyLongRelease
+			chkRPT.wait_dbl_long = 1;															// waiting for a key long double
+			buttonAction(5);
 
-		} else if (chkRPT.last_long) {															// no action, only remember for a double
-			chkRPT.last_dbl_long = 1;															// waiting for a key long double
-
-		} else if (chkRPT.last_short) {															// keyShortDouble
+		} else if (chkRPT.last_short) {								// keyShortDouble
 			chkRPT.last_short = 0;
 			buttonAction(2);
 
-		} else if ((!chkRPT.last_long) && (!chkRPT.last_dbl_long)) {							// keyShortSingle
+		} else if ((!chkRPT.last_long) && (!chkRPT.wait_dbl_long)) {// keyShortSingle
 			chkRPT.last_short = 1;																// waiting for a key short double
 			buttonAction(1);
+
+		} else if (chkRPT.last_rpt_long && chkRPT.wait_dbl_long) {	// keyLongDoubleRelease														
+			buttonAction(7);
 
 		}
 		chkRPT.last_long = chkRPT.last_rpt_long = 0;											// some cleanup
 
 
 	} else if ((btn == 0) && (cmrTmr.done())) {						// button is still pressed, but timed out, seems to be a long
-		//dbg << "0 lstLng:" << lstLng << " dblLng:" << dblLng << " lngRpt:" << lngRpt << " lstSht:" << lstSht << '\n';
+		//dbg << "0 lstLng:" << chkRPT.last_long << " dblLng:" << chkRPT.last_dbl_long << " lngRpt:" << chkRPT.last_rpt_long << " lstSht:" << chkRPT.last_short << '\n';
 
-		hm->pw.stayAwake(detectLong + 500);														// stay awake to check button status
+		hm->pw.stayAwake(LONG_PRESS_TIME + 500);												// stay awake to check button status
 
-		if (chkRPT.last_long) {																	// keyLongRepeat
+		if (chkRPT.last_rpt_long  && chkRPT.wait_dbl_long) {		// detect a repeated double long
+			cmrTmr.set(LONG_PRESS_TIME);														// set timer to detect next long
+
+		} else if (chkRPT.last_long) {															// keyLongRepeat
 			cmrTmr.set(repeatedLong);															// set timer to detect a repeated long
 			chkRPT.last_rpt_long = 1;
 			buttonAction(4);																	// last key state was a long, now it is a repeated long
 
-		} else if (chkRPT.last_dbl_long) {														// keyLongDouble
-			cmrTmr.set(detectLong);																// set timer to detect next long
+		} else if (chkRPT.wait_dbl_long) {														// keyLongDouble
+			cmrTmr.set(LONG_PRESS_TIME);														// set timer to detect next long
+			chkRPT.last_rpt_long = 1;															// remember last was long
 			buttonAction(6);																	// double flag is set, means was the second time for a long													
 
 		} else {																				// keyLongSingle
-			cmrTmr.set(detectLong);																// set timer to detect a repeated long
+			cmrTmr.set(repeatedLong);															// set timer to detect a repeated long
 			chkRPT.last_long = 1;																// remember last was long
 			buttonAction(3);																	// first time detect a long
 
@@ -135,8 +132,8 @@ void cmRemote::buttonPoll(void) {
 
 
 	} else if ((btn == 1) && (cmrTmr.done())) {						// button is not pressed for a longer time, check if the double flags timed out
-		//if (armFlg) dbg << "r\n";
-		chkRPT.armed = chkRPT.last_dbl_long = chkRPT.last_long = chkRPT.last_rpt_long = 0;
+		//if (chkRPT.armed) dbg << "r\n";
+		chkRPT.armed = chkRPT.wait_dbl_long = chkRPT.last_long = chkRPT.last_rpt_long = chkRPT.last_short = 0;
 
 	}
 }
@@ -148,15 +145,20 @@ void cmRemote::buttonPoll(void) {
 void cmRemote::setToggle(void) {
 	// setToggle will be addressed by config button in mode 2 by a short key press
 	// here we can toggle the status of the actor
-	#ifdef RM_DBG																				// some debug message
-	dbg << F("RM setToggle\n");
-	#endif
+//	#ifdef RM_DBG																				// some debug message
+//	dbg << F("RM setToggle\n");
+//	#endif
 }
 
 void cmRemote::configCngEvent(void) {
+	// set the value for LONG_PRESS_TIME and DBL_PRESS_TIME while encoded in the lstCnl struct
+	LONG_PRESS_TIME = (lstCnl.LONG_PRESS_TIME * 100) + 300; // s (0.3-1.8), factor="10" offset="-0.3"
+	DBL_PRESS_TIME = lstCnl.DBL_PRESS_TIME * 100;			// s (0.0-1.5), factor="10" offset="0.0"  
+
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
 	#ifdef RM_DBG																				// some debug message
 	dbg << F("RM configCngEvent, lst1: ") << _HEX(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
+	dbg << F("LONG_PRESS_TIME:") << lstCnl.LONG_PRESS_TIME << F(", AES_FLAG:") << lstCnl.AES_FLAG << F(", DBL_PRESS_TIME:") << lstCnl.DBL_PRESS_TIME << '\n';
 	#endif
 }
 

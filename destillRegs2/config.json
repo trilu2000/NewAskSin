@@ -1,17 +1,17 @@
 
 {"base_config": {
     "@comment":        "Das ist ein test", 
-    "hm_ID":           "001122",
-    "serial_ID":       "HBremote01",
-    "model_ID":        "00A9",
-    "firmware_ver":    "11"
+    "hm_ID":           "331122",
+    "serial_ID":       "HBswitch01",
+    "model_ID":        "006c",
+    "firmware_ver":    "10"
     },
 
  "extended_config": {
     "id":              "testID",
     "name":            "testName",
     "dutycycle":       0,
-    "conf_key_mode":   1,
+    "conf_key_mode":   2,
     "power_mode":      0,
 
     "lowbat_signal":   1,
@@ -25,12 +25,7 @@
 
  "channels": [
     { "type": "Master",    "peers":  0, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
-    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 }
+    { "type": "xmlSwitch", "peers": 10, "hidden": 0, "linked": 0 }
     ]
 
 }

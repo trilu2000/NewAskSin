@@ -1010,7 +1010,7 @@ sub print_channel_defaults {
 	print " "x4 ." * This values are the defined default values and should be set \n";
 	print " "x4 ." * in the first start function. \n";
 	print " "x4 ." */ \n";
-	print " "x4 ."const uint8_t cnlDefs[] PROGMEM = { \n";
+	print " "x4 ."const uint8_t cnlDefs[] = { \n";
 
 	## step through channels, lists
 	foreach my $cnl_lst (sort keys %$addr) {
@@ -1145,7 +1145,7 @@ sub print_first_time_start {
 
 	print << 'END_LINE';
     /** 
-     * \@brief First time start function 
+     * @brief First time start function 
      * This function is called by the main function on the first boot of a device. 
      * First boot is indicated by a magic byte in the eeprom. 
      * Here we can setup everything which is needed for a proper device operation, like cleaning 
@@ -1176,7 +1176,7 @@ END_LINE
 	print << "END_LINE";
 \n        // format peer db
         hm.ee.clearPeers();
-    } \n;
+    } \n
 END_LINE
 }
 sub print_channel_structs {

@@ -94,7 +94,7 @@
 	 */
     const uint8_t cnlDefs[] = {
         // channel: 0, list: 0
-        0x80,0x11,0x22,0x33,0x1e,0x00,
+        0x80,0x00,0x00,0x00,0x1e,0x00,
 		// channel: 1, list: 1
 		0x10,0x00,0x00,
 		// channel: 1, list: 4
@@ -117,7 +117,7 @@
      * do not edit the table, if you need more peers edit the defines accordingly.
      */
     #define PHY_ADDR_START 0x20
-    #define CNL_01_PEERS   10 
+    #define CNL_01_PEERS   9 
     #define CNL_02_PEERS   10 
     #define CNL_03_PEERS   10 
     #define CNL_04_PEERS   10 
@@ -182,7 +182,7 @@
 
         // channel 0 section 
 		hm.ld.set(welcome);
-		hm.confButton.config(2);
+		hm.confButton.config(1);
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);
 		hm.bt.set(30, 3600000);
 		// channel 1 section 

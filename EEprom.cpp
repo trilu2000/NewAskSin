@@ -193,7 +193,6 @@ void     EE::init(void) {
 	getMasterID();
 
 	everyTimeStart();																	// add this function in register.h to setup default values every start
-
 }
 
 void     EE::initHMKEY(void) {
@@ -330,54 +329,112 @@ uint8_t  EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
 }
 
 // peer functions
+/**
+* @brief Clears the complete defined peer database in eeprom
+*        by writing 0's. Used on first time start or device reset 
+*        to defaults. 
+*
+*/
 void     EE::clearPeers(void) {
 	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {										// step through all channels
 		clearEEPromBlock(peerTbl[i].pAddr, peerTbl[i].pMax * 4);
-		//dbg << F("clear eeprom, addr ") << peerTbl[i].pAddr << F(", len ") << (peerTbl[i].pMax * 4) << '\n';																	// ...and some information
+		#ifdef EE_DBG																	// only if ee debug is set
+		dbg << F("clearPeers, addr:") << peerTbl[i].pAddr << F(", len ") << (peerTbl[i].pMax * 4) << '\n';																	// ...and some information
+		#endif
 	}
 }
+
+/**
+* @brief Returns the channel where the peer was found in the peer database
+*
+* @param peer Pointer to byte array containing the peer/peer channel
+*
+* @return the channel were the peer was found, 0 if not
+*/
 uint8_t  EE::isPeerValid (uint8_t *peer) {
-	//dbg << "p: " << _HEX(peer, 4) << '\n';
+	uint8_t retByte = 0;
+
 	for (uint8_t i = 1; i <= devDef.cnlNbr; i++) {										// step through all channels
-		if (getIdxByPeer(i, peer) != 0xff) return i;									// if a valid peer is found return the respective channel
+		if (getIdxByPeer(i, peer) != 0xff) retByte = i;									// if a valid peer is found return the respective channel
 	}
-	return 0;																			// otherwise 0
+
+	#ifdef EE_DBG																		// only if ee debug is set
+	dbg << F("isPeerValid:") << _HEX(peer, 4) << F(", ret:") << retByte << '\n';
+	#endif
+	return retByte;																		// otherwise 0
 }
 
+/**
+* @brief Returns the amount of free peer slots of the peer database 
+*        of the given channel.
+*
+* @param cnl Channel
+*
+* @return the amount of free slots
+*/
 uint8_t  EE::countFreeSlots(uint8_t cnl) {
-	uint8_t bCounter = 0;																// set counter to zero
 	uint8_t lPeer[4];
+	uint8_t bCounter = 0;																// set counter to zero
 
-	if ((!cnl) || (cnl > devDef.cnlNbr)) return 0;										// return if channel is out of range
-	//dbg << F("cFS: ") << peerTbl[cnl].pMax << '\n';
+	if (cnl > devDef.cnlNbr) return bCounter;											// return if channel is out of range
 
 	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
-		//if (!*(unsigned long*)lPeer) bCounter++;										// increase counter if peer slot is empty
+		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);								// get peer from eeprom
 		if (isEmpty(lPeer, 4)) bCounter++;												// increase counter if peer slot is empty
 		//dbg << F("addr: ") << (peerTbl[cnl].pAddr+(i*4)) << F(", lPeer: ") << pHex(lPeer, 4) << '\n';
 	}
+
+	#ifdef EE_DBG																		// only if ee debug is set
+	dbg << F("countFreeSlots, cnl:") << cnl << F(", total:") << peerTbl[cnl].pMax << F(", free:") << bCounter << '\n';
+	#endif
 	return bCounter;																	// return the counter
 }
-uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
-	uint8_t lPeer[4];
 
-	if (!cnl) return 0;																	// on channel 0 there is no need to search
-	if (cnl > devDef.cnlNbr) return 0xff;												// return if channel is out of range
+/**
+* @brief Search for a given peer/peer channel in the peer database and return the index 
+*
+* @param cnl Channel
+* @param peer Pointer to a byte array with the peer and respective
+*             peerchannel to search for the index
+*
+* @return the found idx or 0xff if not found
+*/
+uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
+	uint8_t lPeer[4];																	// byte array to load peer from eeprom
+	uint8_t retByte = 0xff;																// default return value
+
+	if (cnl > devDef.cnlNbr) return retByte;											// return if channel is out of range
 
 	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
-
-		//dbg << i << ": " << _HEX(lPeer,4) << ", s: " << _HEX(peer, 4) << '\n';
-		if (!memcmp(lPeer, peer, 3)) {
-			return i;																	// if result matches then return slot index
-		}
+		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);								// get peer from eeprom
+		if (!memcmp(lPeer, peer, 4)) retByte = i;										// if result matches then return slot index
 	}
-	return 0xff;
+
+	#ifdef EE_DBG																		// only if ee debug is set
+	dbg << F("getIdxByPeer, cnl:") << cnl << F(", peer:") << _HEX(peer, 4) << F(", ret:") << retByte << '\n';
+	#endif
+
+	return retByte;
 }
-uint8_t  EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
-	getEEPromBlock(peerTbl[cnl].pAddr+(idx*4), 4, peer);
+
+/**
+* @brief Search for a given peer/peer channel in the peer database and return the index
+*
+* @param cnl Channel
+* @param peer Pointer to a byte array with the peer and respective
+*             peerchannel to search for the index
+*
+* @return the found idx or 0xff if not found
+*/
+void     EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
+	if (cnl > devDef.cnlNbr) return;													// return if channel is out of range
+	getEEPromBlock(peerTbl[cnl].pAddr+(idx*4), 4, peer);								// get the respective eeprom block
+	#ifdef EE_DBG																		// only if ee debug is set
+	dbg << F("getPeerByIdx, cnl:") << cnl << F(", idx:") << idx << F(", peer:") << _HEX(peer, 4) << '\n';
+	#endif
 }
+
+
 uint8_t  EE::addPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t lPeer[4];
 

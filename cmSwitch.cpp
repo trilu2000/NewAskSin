@@ -6,12 +6,19 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define RL_DBG																			// debug message flag
+#define RL_DBG																			// debug message flag
 #include "cmSwitch.h"
 
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
+/**
+* @brief Config function to set up channel specific settings 
+*
+* @param Init    Pointer to a callback function we have to call while module is starting
+* @param xSwitch Pointer to a callback function to indicate changes in value 
+*
+*/
 void cmSwitch::config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t)) { //, uint8_t minDelay) {
 
 	fInit = Init;
@@ -32,14 +39,24 @@ void cmSwitch::config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t)) { //, u
 	msgTmr.set(msgDelay);
 
 	l3 = (s_l3*)&lstPeer;																	// set pointer to something useful
-	l3->actionType = 0;																		// and secure that no action will happened in polling function
-
+	l3->ACTION_TYPE = 0;																	// and secure that no action will happened in polling function
 }
+
+/**
+* @brief Function is called on messages comming from a central device.
+*        No need to call the function from outside as it is
+*        called from the module registrar
+*
+* @param setValue 1 byte containing the value we have to set
+* @param rampTime Pointer to 2 byte array containing the encoded ramptime value
+* @param duraTime Pointer to 2 byte array containing the encoded durationtime value
+*
+*/
 void cmSwitch::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
 
 	// some sanity
 	delayTmr.set(0);																		// also delay timer is not needed any more
-	l3->actionType = 0;
+	l3->ACTION_TYPE = 0;																	// action type to off otherwise the polling function will overwrite
 
 	// convert the timer values
 	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];				// if ramp time is given, bring it in the right format
@@ -59,76 +76,99 @@ void cmSwitch::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime)
 	} else modStat = setValue;																// otherwise set value directly
 
 	if (duraTme) tr11 = 1;																	// indicate we are coming from trigger11
-	//dbg << F("RL:trigger11, val:") << setValue << F(", rampT:") << intTimeCvt(rampTme) << F(", duraT:") << intTimeCvt(duraTme) << '\n';
+
+	#ifdef RL_DBG																			// some debug
+	dbg << F("trigger11, setValue:") << setValue << F(", rampTime:") << intTimeCvt(rampTme) << F(", duraTime:") << intTimeCvt(duraTme) << '\n';
+	#endif 
 }
+
+/**
+* @brief Function is called on messages comming from a remote or push button.
+*        No need to call the function from outside as it is
+*        called from the module registrar
+*
+* @param msgLng 1 byte containing the long message flag but also low battery
+* @param msgCnt 1 byte containing the message counter of the sender
+*
+*/
 void cmSwitch::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 
 	// some sanity
+	uint8_t isLng = (msgLng & 0x40) ? 1 : 0;												// is it a long message?
+	l3 = (isLng) ? (s_l3*)&lstPeer + 11 : (s_l3*)&lstPeer;									// set short or long struct portion
 	delayTmr.set(0);																		// also delay timer is not needed any more
-	rampTme = duraTme = 0;
+	rampTme = duraTme = 0;																	// ramp and durantion timer not needed while peer has own timers
 	
 	// check for multi execute flag
-	if (( msgLng) && (!lstPeer.lgMultiExec) && (cnt == msgCnt)) return;						// trigger was long, but we have no multi execute
+	if ((isLng) && (cnt == msgCnt) && (!lstPeer.LONG_MULTIEXECUTE)) return;					// trigger was a repeated long, but we have no multi execute, so return
 	cnt = msgCnt;																			// remember message counter
 
-	// set short or long
-	l3 = (msgLng)?(s_l3*)&lstPeer+1 :(s_l3*)&lstPeer;
-
 	// check against action type
-	if        (l3->actionType == 0) {		// off
+	if        (l3->ACTION_TYPE == 0) {		// off
 
-	} else if (l3->actionType == 1) {		// jmpToTarget
-
+	} else if (l3->ACTION_TYPE == 1) {		// jmpToTarget
 		// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-		if      (curStat == 1) nxtStat = l3->jtDlyOn;										// delay on
-		else if (curStat == 3) nxtStat = l3->jtOn;											// on
-		else if (curStat == 4) nxtStat = l3->jtDlyOff;										// delay off
-		else if (curStat == 6) nxtStat = l3->jtOff;											// currently off
-		delayTmr.set(0);																	// set timer to 0 for avoiding delays
+		if (curStat == 1)      nxtStat = l3->JT_ONDELAY;									// delay on
+		else if (curStat == 3) nxtStat = l3->JT_ON;											// on
+		else if (curStat == 4) nxtStat = l3->JT_OFFDELAY;									// delay off
+		else if (curStat == 6) nxtStat = l3->JT_OFF;										// currently off
 
-	} else if (l3->actionType == 2) {		// toogleToCounter
+	} else if (l3->ACTION_TYPE == 2) {		// toogleToCounter
+		modStat = (msgCnt % 2) ? 200 : 0;													// set the relay status depending on message counter
 
-		modStat = (msgCnt%2)?200:0;															// odd
-
-	} else if (l3->actionType == 3) {		// toogleInversToCounter
-
-		modStat = (msgCnt%2)?0:200;															// odd
-
+	} else if (l3->ACTION_TYPE == 3) {		// toogleInversToCounter
+		modStat = (msgCnt % 2) ? 0 : 200;													// set the relay status depending on message counter
 	}
-	//dbg << "a: " << l3->actionType << ", c: " << curStat << ", n: " << nxtStat << ", onDly: " << _HEXB(l3->onDly) << ", onTime: " << _HEXB(l3->onTime) << ", offDly: " << _HEXB(l3->offDly) << ", offTime: " << _HEXB(l3->offTime) << '\n';
+
+	#ifdef RL_DBG
+	dbg << F("trigger40, msgLng:") << msgLng << F(", msgCnt:") << msgCnt << F(",ACTION_TYPE:") << l3->ACTION_TYPE << F(", curStat:") << curStat << F(", nxtStat:") << nxtStat << F(", JT_ONDELAY:") << _HEXB(l3->JT_ONDELAY) << F(", JT_ON:") << _HEXB(l3->JT_ON) << F(", JT_OFFDELAY:") << _HEXB(l3->JT_OFFDELAY) << F(", JT_OFF:") << _HEXB(l3->JT_OFF) << '\n';
+	#endif
 }
+
+/**
+* @brief Function is called on messages comming from sensors.
+*        No need to call the function from outside as it is 
+*        called from the module registrar
+*
+* @param msgBLL 1 byte containing the long message flag
+* @param msgCnt 1 byte containing the message counter of the sender
+* @param msgVal 1 bayte with the value of the sensor
+*
+*/
 void cmSwitch::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 
 	uint8_t isLng = (msgBLL & 0x40)?1:0;													// is it a long message?
-	uint8_t ctTbl;
+	uint8_t ctTbl;																			// to select the condition depending on current device status
 	
 	// set short or long
 	l3 = (isLng)?(s_l3*)&lstPeer+1 :(s_l3*)&lstPeer;										// set pointer to the right part of the list3, short or long
 
 
 	// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-	if      (curStat == 1) ctTbl = l3->ctDlyOn;												// delay on
-	else if (curStat == 3) ctTbl = l3->ctOn;												// on
-	else if (curStat == 4) ctTbl = l3->ctDlyOff;											// delay off
-	else if (curStat == 6) ctTbl = l3->ctOff;												// currently off
+	if      (curStat == 1) ctTbl = l3->CT_ONDELAY;											// condition table delay on
+	else if (curStat == 3) ctTbl = l3->CT_ON;												// condition table on
+	else if (curStat == 4) ctTbl = l3->CT_OFFDELAY;											// condition table delay off
+	else if (curStat == 6) ctTbl = l3->CT_OFF;												// condition table off
 	
-	// X GE COND_VALUE_LO                         - geLo -  > low           - 0
-	// X GE COND_VALUE_HI                         - geHi -  > high          - 1
-	// X LT COND_VALUE_LO                         - ltLo -  < low           - 2
-	// X LT COND_VALUE_HI                         - ltHi -  < high          - 3
-	// COND_VALUE_LO LE X LT COND_VALUE_HIGH      - betW -  low <> high     - 4
-	// X LT COND_VALUE_LO OR X GE COND_VALUE_HIGH - outS -  < low or > high - 5
+	// X GE COND_VALUE_LO                         - geLo -  > low           - 0 x greater or equal
+	// X GE COND_VALUE_HI                         - geHi -  > high          - 1 x greater or equal
+	// X LT COND_VALUE_LO                         - ltLo -  < low           - 2 x lower than
+	// X LT COND_VALUE_HI                         - ltHi -  < high          - 3 x lower than
+	// COND_VALUE_LO LE X LT COND_VALUE_HIGH      - betW -  low <> high     - 4 LO lower or equal x and x lower than HI
+	// X LT COND_VALUE_LO OR X GE COND_VALUE_HIGH - outS -  < low or > high - 5 x lower than LO or x greater or equal
 
-	//dbg << "curStat: " << curStat  << ", isLng: " << isLng << ", val: " << msgVal  << ", cond: " << ctTbl << '\n';
+	#ifdef RL_DBG
+	dbg << F("trigger41, curStat:") << curStat  << F(", nxtStat:") << ctTbl << F(", val:") << msgVal << F(", HI:") << l3->COND_VALUE_HI << F(", LO:") << l3->COND_VALUE_LO << '\n';
+	#endif
 
-	if      (ctTbl == 0) if (msgVal > l3->ctValLo) trigger40(isLng, msgCnt);
-	else if (ctTbl == 1) if (msgVal > l3->ctValHi) trigger40(isLng, msgCnt);
-	else if (ctTbl == 2) if (msgVal < l3->ctValLo) trigger40(isLng, msgCnt);
-	else if (ctTbl == 3) if (msgVal < l3->ctValHi) trigger40(isLng, msgCnt);
-	else if (ctTbl == 4) if ((msgVal > l3->ctValLo) && (msgVal < l3->ctValHi)) trigger40(isLng, msgCnt);
-	else if (ctTbl == 5) if ((msgVal < l3->ctValLo) && (msgVal > l3->ctValHi)) trigger40(isLng, msgCnt);
-
+	if      ( (ctTbl == 0) && ( msgVal >= l3->COND_VALUE_LO) )                                   trigger40(isLng, msgCnt);
+	else if ( (ctTbl == 1) && ( msgVal >= l3->COND_VALUE_HI) )                                   trigger40(isLng, msgCnt);
+	else if ( (ctTbl == 2) && ( msgVal <  l3->COND_VALUE_LO) )                                   trigger40(isLng, msgCnt);
+	else if ( (ctTbl == 3) && ( msgVal <  l3->COND_VALUE_HI) )                                   trigger40(isLng, msgCnt);
+	else if ( (ctTbl == 4) && ( l3->COND_VALUE_LO <= msgVal) && (msgVal <  l3->COND_VALUE_HI) )  trigger40(isLng, msgCnt);
+	else if ( (ctTbl == 5) && ( (msgVal < l3->COND_VALUE_LO) || (msgVal >= l3->COND_VALUE_HI) )) trigger40(isLng, msgCnt);
 }
+
 void cmSwitch::adjRly(void) {
 
 	// something to do?
@@ -194,7 +234,7 @@ void cmSwitch::rlyPoll(void) {
 	
 
 	// - jump table section, only
-	if (l3->actionType != 1) return;														// only valid for jump table
+	if (l3->ACTION_TYPE != 1) return;														// only valid for jump table
 	if (curStat == nxtStat) return;															// no status change expected
 
 	// check the different status changes, {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
@@ -204,10 +244,10 @@ void cmSwitch::rlyPoll(void) {
 		#endif
 		
 		curStat = nxtStat;																	// remember current status
-		nxtStat = l3->jtDlyOn;																// get next status from jump table
+		nxtStat = l3->JT_ONDELAY;															// get next status from jump table
 		
-		if (l3->onDly) {																	// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(l3->onDly));											// activate the timer and set next status
+		if (l3->ONDELAY_TIME) {																// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->ONDELAY_TIME));									// activate the timer and set next status
 		}
 		
 
@@ -217,13 +257,13 @@ void cmSwitch::rlyPoll(void) {
 		#endif
 		
 		curStat = nxtStat;																	// remember current status, when timer not set, we stay here for ever
-		nxtStat = l3->jtOn;																	// get next status from jump table
+		nxtStat = l3->JT_ON;																// get next status from jump table
 		modStat = 200;																		// switch relay on
 		
-		if ((l3->onTime) && (l3->onTime != 255)) {											// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(l3->onTime));											// activate the timer and set next status
+		if ((l3->ON_TIME) && (l3->ON_TIME != 255)) {										// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->ON_TIME));											// activate the timer and set next status
 			nxtStat = 6;																	// go to off
-			l3->jtOff = 6;																	// stay in off mode
+			l3->JT_OFF = 6;																	// stay in off mode
 		} 
 
 	} else if (nxtStat == 4) {		// dlyOff
@@ -232,10 +272,10 @@ void cmSwitch::rlyPoll(void) {
 		#endif
 
 		curStat = nxtStat;																	// remember current status
-		nxtStat = l3->jtDlyOff;																// get jump table for next status
+		nxtStat = l3->JT_OFFDELAY;															// get jump table for next status
 
-		if (l3->offDly) {																	// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(l3->offDly));											// activate the timer and set next status
+		if (l3->OFFDELAY_TIME) {															// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->OFFDELAY_TIME));									// activate the timer and set next status
 		}
 
 
@@ -245,13 +285,13 @@ void cmSwitch::rlyPoll(void) {
 		#endif
 
 		curStat = nxtStat;																	// remember the current status
-		nxtStat = l3->jtOff;																// get the next status from jump table
+		nxtStat = l3->JT_OFF;																// get the next status from jump table
 		modStat = 0;																		// switch off relay
 
-		if ((l3->offTime) && (l3->offTime != 255)) {										// check if there is something in the duration timer, set next status accordingly
-			delayTmr.set(byteTimeCvt(l3->offTime));											// activate the timer and set next status
+		if ((l3->OFF_TIME) && (l3->OFF_TIME != 255)) {										// check if there is something in the duration timer, set next status accordingly
+			delayTmr.set(byteTimeCvt(l3->OFF_TIME));										// activate the timer and set next status
 			nxtStat = 3;																	// go to on
-			l3->jtOn = 3;																	// stay in on mode
+			l3->JT_ON = 3;																	// stay in on mode
 		}
 	}
 }

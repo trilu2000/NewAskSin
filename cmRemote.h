@@ -12,9 +12,6 @@
 #include "AS.h"
 #include "HAL.h"
 
-#define TIMEOUT_DBL_LONG        5000
-#define TIMEOUT_REPEATED_LONG   300
-
 
 // default settings for list4
 const uint8_t peerSingle[] = {
@@ -29,14 +26,18 @@ class cmRemote {
   protected://-------------------------------------------------------------------------------------------------------------
   private://---------------------------------------------------------------------------------------------------------------
 
+	#define repeatedLong    250
+	uint16_t LONG_PRESS_TIME;
+	uint16_t DBL_PRESS_TIME;
+
 	struct s_lstCnl {
 		// 0x04:0x10, 0x08:0x00, 0x09:0x00,
-		uint8_t                            :4;    // 0x04.0
-		uint8_t LONG_PRESS_TIME            :4;    // 0x04.4, 0x01
-		uint8_t AES_FLAG                   :1;    // 0x08.0, 0x00
-		uint8_t                            :7;    // 0x08.1
-		uint8_t DBL_PRESS_TIME             :4;    // 0x09.0, 0x00
-		uint8_t                            :4;    // 0x09.4
+		uint8_t                            :4;    // 0x04.0, s:4   d:  
+		uint8_t LONG_PRESS_TIME            :4;    // 0x04.4, s:4   d: 0.4 s
+		uint8_t AES_FLAG                   :1;    // 0x08.0, s:1   d: false
+		uint8_t                            :7;    // 0x08.1, s:7   d:  
+		uint8_t DBL_PRESS_TIME             :4;    // 0x09.0, s:4   d: 0.0 s
+		uint8_t                            :4;    // 0x09.4, s:4   d:
 	} lstCnl;
 
 	struct s_lstPeer {
@@ -55,7 +56,7 @@ class cmRemote {
 		uint8_t armed                      :1;													// if this is set to 1, poll function should be entered
 		uint8_t last_short                 :1;													// if the last key press was a short to detect a double short
 		uint8_t last_long                  :1;													// if the last keypress was a long to detect a double long
-		uint8_t last_dbl_long              :1;													// last key was a double_long, to detect the end of a double long
+		uint8_t wait_dbl_long              :1;													// wait for a double_long, while last key was a long or repeated long
 		uint8_t last_rpt_long              :1;													// if the key is still pressed for a certain time to detect repeat status over a timer
 		uint8_t                            :2;
 	} chkRPT;

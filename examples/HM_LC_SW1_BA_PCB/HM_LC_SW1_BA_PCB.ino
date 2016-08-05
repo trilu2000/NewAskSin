@@ -53,7 +53,7 @@ void loop() {
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
-void initRly(uint8_t channel) {
+void initSwitch(uint8_t channel) {
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
 	#ifdef SER_DBG
 		dbg << F("initRly: ") << channel << "\n";
@@ -63,7 +63,7 @@ void initRly(uint8_t channel) {
 	SET_PIN_LOW(PIN_D3);																		// set relay pin to ground
 }
 
-void switchRly(uint8_t channel, uint8_t status) {
+void switchSwitch(uint8_t channel, uint8_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
 	#ifdef SER_DBG
 		dbg << F("switchRly: ") << channel << ", " << status << "\n";

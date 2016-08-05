@@ -191,7 +191,7 @@ class EE {
 
 	uint8_t  countFreeSlots(uint8_t cnl);												// ok, counts the free peer slots of a channel
 	uint8_t  getIdxByPeer(uint8_t cnl, uint8_t *peer);									// ok, find the index of the respective peer
-	uint8_t  getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);						// ok, returns the respective peer of the given index
+	void     getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);						// ok, returns the respective peer of the given index
 	uint8_t  addPeer(uint8_t cnl, uint8_t *peer);										// ok, writes a peer in the database on first free slot
 	uint8_t  remPeer(uint8_t cnl, uint8_t *peer);										// ok, writes a zero to the respective slot
 	uint8_t  countPeerSlc(uint8_t cnl);													// ok, count the slices for function getPeerListSlc
@@ -296,7 +296,7 @@ extern uint8_t HMKEY[];
 extern uint8_t hmKeyIndex[];
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
-inline uint16_t crc16(uint16_t crc, uint8_t a);												// crc function
+inline uint16_t crc16(uint16_t crc, uint8_t a);											// crc function
 uint8_t  isEmpty(void *p1, uint8_t len);												// check if a byte array is empty
 void print_channel_table(void);
 

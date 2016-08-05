@@ -1,0 +1,41 @@
+
+{"base_config": {
+    "@comment":        "Das ist ein test", 
+    "hm_ID":           "001122",
+    "serial_ID":       "HBremote01",
+    "model_ID":        "00A9",
+    "firmware_ver":    "11"
+    },
+
+ "extended_config": {
+    "id":              "testID",
+    "name":            "testName",
+    "dutycycle":       0,
+    "conf_key_mode":   1,
+    "power_mode":      0,
+
+    "lowbat_signal":   1,
+    "lowbat_limit":    30,
+    "lowbat_timer":    3600000,
+
+    "lowbat_register": 1, 
+    "lowbat_min":      10,
+    "lowbat_max":      40
+    },
+
+ "channels": [
+    { "type": "Master",    "peers":  0, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 }
+    ]
+
+}
+
+
+
+
+

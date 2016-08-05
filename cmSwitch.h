@@ -32,6 +32,14 @@ const uint8_t peerSingle[] = {
 	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x21, 0x14, 0x63,
 };
 
+//  0x00, 0x00, 0x32, 0x64, 0x00, 0xff, 0x00, 0xff, 0x01, 0x44, 0x44, 
+//	0x00, 0x00, 0x32, 0x64, 0x00, 0xff, 0x00, 0xff, 0x21, 0x44, 0x44,
+//l3: 00 00 32 64 00 FF 00 FF 01 13 33 00 00 32 64 00 FF 00 FF 21 13 33 key 1
+//l3: 00 00 32 64 00 FF 00 FF 01 64 66 00 00 32 64 00 FF 00 FF 21 64 66
+	
+//l3: 00 00 32 64 00 FF 00 FF 01 13 33 00 00 32 64 00 FF 00 FF 21 13 33 key 2
+//l3: 00 00 32 64 00 FF 00 FF 01 64 66 00 00 32 64 00 FF 00 FF 21 64 66
+
 
 class cmSwitch {
   //- user code here ------------------------------------------------------------------------------------------------------
@@ -39,73 +47,70 @@ class cmSwitch {
   protected://-------------------------------------------------------------------------------------------------------------
   private://---------------------------------------------------------------------------------------------------------------
 	struct s_lstCnl {
-		// 0x08,
-		uint8_t  sign                :1;     // 0x08, s:0, e:1
-		uint8_t                      :7;     //
-	} lstCnl;
-
+		uint8_t AES_ACTIVE           : 1;  // 0x08.0, s:1   d: false  
+		uint8_t                      : 7;  // 0x08.1, s:7   d:   
+	  } lstCnl; 
+	  
 	struct s_lstPeer {
-		// 0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,
-		uint8_t  shCtDlyOn           :4;     // 0x02, s:0, e:4
-		uint8_t  shCtDlyOff          :4;     // 0x02, s:4, e:8
-		uint8_t  shCtOn              :4;     // 0x03, s:0, e:4
-		uint8_t  shCtOff             :4;     // 0x03, s:4, e:8
-		uint8_t  shCtValLo;                  // 0x04, s:0, e:0
-		uint8_t  shCtValHi;                  // 0x05, s:0, e:0
-		uint8_t  shOnDly;                    // 0x06, s:0, e:0
-		uint8_t  shOnTime;                   // 0x07, s:0, e:0
-		uint8_t  shOffDly;                   // 0x08, s:0, e:0
-		uint8_t  shOffTime;                  // 0x09, s:0, e:0
-		uint8_t  shActionType        :2;     // 0x0a, s:0, e:2
-		uint8_t                      :4;     //
-		uint8_t  shOffTimeMode       :1;     // 0x0a, s:6, e:7
-		uint8_t  shOnTimeMode        :1;     // 0x0a, s:7, e:8
-		uint8_t  shSwJtOn            :4;     // 0x0b, s:0, e:4
-		uint8_t  shSwJtOff           :4;     // 0x0b, s:4, e:8
-		uint8_t  shSwJtDlyOn         :4;     // 0x0c, s:0, e:4
-		uint8_t  shSwJtDlyOff        :4;     // 0x0c, s:4, e:8
-		uint8_t  lgCtDlyOn           :4;     // 0x82, s:0, e:4
-		uint8_t  lgCtDlyOff          :4;     // 0x82, s:4, e:8
-		uint8_t  lgCtOn              :4;     // 0x83, s:0, e:4
-		uint8_t  lgCtOff             :4;     // 0x83, s:4, e:8
-		uint8_t  lgCtValLo;                  // 0x84, s:0, e:0
-		uint8_t  lgCtValHi;                  // 0x85, s:0, e:0
-		uint8_t  lgOnDly;                    // 0x86, s:0, e:0
-		uint8_t  lgOnTime;                   // 0x87, s:0, e:0
-		uint8_t  lgOffDly;                   // 0x88, s:0, e:0
-		uint8_t  lgOffTime;                  // 0x89, s:0, e:0
-		uint8_t  lgActionType        :2;     // 0x8a, s:0, e:2
-		uint8_t                      :3;     //
-		uint8_t  lgMultiExec         :1;     // 0x8a, s:5, e:6
-		uint8_t  lgOffTimeMode       :1;     // 0x8a, s:6, e:7
-		uint8_t  lgOnTimeMode        :1;     // 0x8a, s:7, e:8
-		uint8_t  lgSwJtOn            :4;     // 0x8b, s:0, e:4
-		uint8_t  lgSwJtOff           :4;     // 0x8b, s:4, e:8
-		uint8_t  lgSwJtDlyOn         :4;     // 0x8c, s:0, e:4
-		uint8_t  lgSwJtDlyOff        :4;     // 0x8c, s:4, e:8
+		uint8_t SHORT_CT_ONDELAY     : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO  -------------------------------------
+		uint8_t SHORT_CT_OFFDELAY    : 4;  // 0x02.4, s:4   d: X GE COND_VALUE_LO   
+		uint8_t SHORT_CT_ON          : 4;  // 0x03.0, s:4   d: X GE COND_VALUE_LO  
+		uint8_t SHORT_CT_OFF         : 4;  // 0x03.4, s:4   d: X GE COND_VALUE_LO  
+		uint8_t SHORT_COND_VALUE_LO  : 8;  // 0x04.0, s:8   d: 50  
+		uint8_t SHORT_COND_VALUE_HI  : 8;  // 0x05.0, s:8   d: 100  
+		uint8_t SHORT_ONDELAY_TIME   : 8;  // 0x06.0, s:8   d: 0 s                      11 Byte for a short struct to
+		uint8_t SHORT_ON_TIME        : 8;  // 0x07.0, s:8   d: 111600.0 s               differentiate between short
+		uint8_t SHORT_OFFDELAY_TIME  : 8;  // 0x08.0, s:8   d: 0 s                      and long values
+		uint8_t SHORT_OFF_TIME       : 8;  // 0x09.0, s:8   d: 111600.0 s 
+		uint8_t SHORT_ACTION_TYPE    : 2;  // 0x0a.0, s:2   d: JUMP_TO_TARGET  
+		uint8_t                      : 4;  // 0x0a.2, s:4   d:   
+		uint8_t SHORT_OFF_TIME_MODE  : 1;  // 0x0a.6, s:1   d: ABSOLUTE  
+		uint8_t SHORT_ON_TIME_MODE   : 1;  // 0x0a.7, s:1   d: ABSOLUTE  
+		uint8_t SHORT_JT_ON          : 4;  // 0x0b.0, s:4   d: OFF  
+		uint8_t SHORT_JT_OFF         : 4;  // 0x0b.4, s:4   d: OFF  
+		uint8_t SHORT_JT_ONDELAY     : 4;  // 0x0c.0, s:4   d: OFF  
+		uint8_t SHORT_JT_OFFDELAY    : 4;  // 0x0c.4, s:4   d: OFF                 -------------------------------------
+		uint8_t LONG_CT_ONDELAY      : 4;  // 0x82.0, s:4   d: X GE COND_VALUE_LO  ------------------------------------- 
+		uint8_t LONG_CT_OFFDELAY     : 4;  // 0x82.4, s:4   d: X GE COND_VALUE_LO  
+		uint8_t LONG_CT_ON           : 4;  // 0x83.0, s:4   d: X GE COND_VALUE_LO  
+		uint8_t LONG_CT_OFF          : 4;  // 0x83.4, s:4   d: X GE COND_VALUE_LO  
+		uint8_t LONG_COND_VALUE_LO   : 8;  // 0x84.0, s:8   d: 50  
+		uint8_t LONG_COND_VALUE_HI   : 8;  // 0x85.0, s:8   d: 100  
+		uint8_t LONG_ONDELAY_TIME    : 8;  // 0x86.0, s:8   d: 0 s                      another 11 byte for the long
+		uint8_t LONG_ON_TIME         : 8;  // 0x87.0, s:8   d: 111600.0 s				message portion 
+		uint8_t LONG_OFFDELAY_TIME   : 8;  // 0x88.0, s:8   d: 0 s 
+		uint8_t LONG_OFF_TIME        : 8;  // 0x89.0, s:8   d: 111600.0 s 
+		uint8_t LONG_ACTION_TYPE     : 2;  // 0x8a.0, s:2   d: JUMP_TO_TARGET  
+		uint8_t                      : 3;  // 0x8a.2, s:3   d:   
+		uint8_t LONG_MULTIEXECUTE    : 1;  // 0x8a.5, s:1   d: ON  
+		uint8_t LONG_OFF_TIME_MODE   : 1;  // 0x8a.6, s:1   d: ABSOLUTE  
+		uint8_t LONG_ON_TIME_MODE    : 1;  // 0x8a.7, s:1   d: ABSOLUTE  
+		uint8_t LONG_JT_ON           : 4;  // 0x8b.0, s:4   d: OFF  
+		uint8_t LONG_JT_OFF          : 4;  // 0x8b.4, s:4   d: OFF  
+		uint8_t LONG_JT_ONDELAY      : 4;  // 0x8c.0, s:4   d: OFF  
+		uint8_t LONG_JT_OFFDELAY     : 4;  // 0x8c.4, s:4   d: OFF                 -------------------------------------
 	} lstPeer;
 
 	struct s_l3 {
-		// 0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,
-		uint8_t  ctDlyOn             :4;     // 0x02, 0x82, s:0, e:4
-		uint8_t  ctDlyOff            :4;     // 0x02, 0x82, s:4, e:8
-		uint8_t  ctOn                :4;     // 0x03, 0x83, s:0, e:4
-		uint8_t  ctOff               :4;     // 0x03, 0x83, s:4, e:8
-		uint8_t  ctValLo;                    // 0x04, 0x84, s:0, e:0
-		uint8_t  ctValHi;                    // 0x05, 0x85, s:0, e:0
-		uint8_t  onDly;                      // 0x06, 0x86, s:0, e:0
-		uint8_t  onTime;                     // 0x07, 0x87, s:0, e:0
-		uint8_t  offDly;                     // 0x08, 0x88, s:0, e:0
-		uint8_t  offTime;                    // 0x09, 0x89, s:0, e:0
-		uint8_t  actionType          :2;     // 0x0a, 0x8a, s:0, e:2
-		uint8_t                      :3;     //
-		uint8_t  multiExec           :1;     //       0x8a, s:5, e:6
-		uint8_t  offTimeMode         :1;     // 0x0a, 0x8a, s:6, e:7
-		uint8_t  onTimeMode          :1;     // 0x0a, 0x8a, s:7, e:8
-		uint8_t  jtOn                :4;     // 0x0b, 0x8b, s:0, e:4
-		uint8_t  jtOff               :4;     // 0x0b, 0x8b, s:4, e:8
-		uint8_t  jtDlyOn             :4;     // 0x0c, 0x8c, s:0, e:4
-		uint8_t  jtDlyOff            :4;     // 0x0c, 0x8c, s:4, e:8
+		uint8_t CT_ONDELAY           : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO   -- ctDlyOn             :4;     // 0x02, 0x82, s:0, e:4
+		uint8_t CT_OFFDELAY          : 4;  // 0x02.4, s:4   d: X GE COND_VALUE_LO   -- ctDlyOff            :4;     // 0x02, 0x82, s:4, e:8 
+		uint8_t CT_ON                : 4;  // 0x03.0, s:4   d: X GE COND_VALUE_LO   -- ctOn                :4;     // 0x03, 0x83, s:0, e:4
+		uint8_t CT_OFF               : 4;  // 0x03.4, s:4   d: X GE COND_VALUE_LO   -- ctOff               :4;     // 0x03, 0x83, s:4, e:8
+		uint8_t COND_VALUE_LO        : 8;  // 0x04.0, s:8   d: 50                   -- ctValLo;                    // 0x04, 0x84, s:0, e:0
+		uint8_t COND_VALUE_HI        : 8;  // 0x05.0, s:8   d: 100                  -- ctValHi;                    // 0x05, 0x85, s:0, e:0
+		uint8_t ONDELAY_TIME         : 8;  // 0x06.0, s:8   d: 0 s                  -- onDly;                      // 0x06, 0x86, s:0, e:0
+		uint8_t ON_TIME              : 8;  // 0x07.0, s:8   d: 111600.0 s           -- onTime;                     // 0x07, 0x87, s:0, e:0
+		uint8_t OFFDELAY_TIME        : 8;  // 0x08.0, s:8   d: 0 s                  -- offDly;                     // 0x08, 0x88, s:0, e:0
+		uint8_t OFF_TIME             : 8;  // 0x09.0, s:8   d: 111600.0 s           -- offTime;                    // 0x09, 0x89, s:0, e:0
+		uint8_t ACTION_TYPE          : 2;  // 0x0a.0, s:2   d: JUMP_TO_TARGET       -- actionType          :2;     // 0x0a, 0x8a, s:0, e:2
+		uint8_t                      : 3;  // 0x0a.2, s:3   d:   
+		uint8_t                      : 1;  // 0x0a.5, s:1   d:                      -- multiExec           :1;     //       0x8a, s:5, e:6
+		uint8_t OFF_TIME_MODE        : 1;  // 0x0a.6, s:1   d: ABSOLUTE             -- offTimeMode         :1;     // 0x0a, 0x8a, s:6, e:7
+		uint8_t ON_TIME_MODE         : 1;  // 0x0a.7, s:1   d: ABSOLUTE	            -- onTimeMode          :1;     // 0x0a, 0x8a, s:7, e:8
+		uint8_t JT_ON                : 4;  // 0x0b.0, s:4   d: OFF                  -- jtOn                :4;     // 0x0b, 0x8b, s:0, e:4
+		uint8_t JT_OFF               : 4;  // 0x0b.4, s:4   d: OFF                  -- jtOff               :4;     // 0x0b, 0x8b, s:4, e:8
+		uint8_t JT_ONDELAY           : 4;  // 0x0c.0, s:4   d: OFF                  -- jtDlyOn             :4;     // 0x0c, 0x8c, s:0, e:4
+		uint8_t JT_OFFDELAY          : 4;  // 0x0c.4, s:4   d: OFF                  -- jtDlyOff            :4;     // 0x0c, 0x8c, s:4, e:8
 	} *l3;
 	
 
