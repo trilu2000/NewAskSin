@@ -41,6 +41,10 @@ void setup() {
 	#ifdef SER_DBG
 		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
 	#endif
+
+	uint8_t xtemp[] = {0x33,0x11,0x22,0x01,0x02,0x00,0x00};
+	hm.ee.addPeers(1, xtemp, xtemp+5);
+	dbg << "x:" << _HEX(xtemp, 7) << "\n";
 }
 
 void loop() {

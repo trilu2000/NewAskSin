@@ -1145,8 +1145,8 @@ uint8_t AS::processMessageConfig() {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 01        01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerAdd(uint8_t by10) {
-	ee.remPeer(rv.mBdy.by10, rv.buf+12);														// first call remPeer to avoid doubles
-	uint8_t ackOk = ee.addPeer(rv.mBdy.by10, rv.buf+12);										// send to addPeer function
+	//ee.remPeers(rv.mBdy.by10, rv.buf+12);														// first call remPeer to avoid doubles
+	uint8_t ackOk = ee.addPeers(rv.mBdy.by10, rv.buf+12, rv.buf + 17);							// send to addPeer function
 
 	// let module registrations know of the change
 	if ((ackOk) && (modTbl[by10].cnl)) {
@@ -1164,7 +1164,7 @@ inline uint8_t AS::configPeerAdd(uint8_t by10) {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerRemove() {
-	return ee.remPeer(rv.mBdy.by10,rv.buf+12);													// call the remPeer function
+	return ee.remPeers(rv.mBdy.by10,rv.buf+12);													// call the remPeer function
 }
 
 /**
