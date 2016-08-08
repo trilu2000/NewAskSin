@@ -1138,22 +1138,29 @@ uint8_t AS::processMessageConfig() {
 }
 
 /**
- * @brief Process CONFIG_PEER_REMOVE messages
+ * @brief Process CONFIG_PEER_ADD messages
+ *        by10 is the channel were the peer has to be added, 
+ *        but reworked with -1 to reflect the logix of the module table
  *
  * Message description:
  *             Sender__ Receiver Byte10    Channel Peer-ID_ PeerChannelA  PeerChannelB
  * 0C 0A A4 01 23 70 EC 1E 7A AD 01        01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerAdd(uint8_t by10) {
+
+	// set the peers in the peerdatabase
 	ee.remPeer(rv.mBdy.by10, rv.buf+12);														// first call remPeer to avoid doubles
 	uint8_t ackOk = ee.addPeer(rv.mBdy.by10, rv.buf+12);										// send to addPeer function
 
-	// let module registrations know of the change
-	if ((ackOk) && (modTbl[by10].cnl)) {
+	//#ifdef AS_DBG																				// only if ee debug is set
+	dbg << F("configPeerAdd, by10:") << by10 << F(", cnl:") << _HEXB(rv.buf[11]) << F(", data:") << _HEX(rv.buf + 12, 5) << '\n';
+
+	// call the respective user module and indicate the change
+	if ((ackOk) && (modTbl[by10].cnl)) {														// let module registrations know of the change
 		modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
 	}
 
-	return ackOk;
+	return ackOk;																				// return the status
 }
 
 /**
