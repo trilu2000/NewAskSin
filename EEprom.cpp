@@ -19,9 +19,9 @@ uint8_t hmKeyIndex[1];
 // public:		//---------------------------------------------------------------------------------------------------------
 uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 	uint8_t xI = getRegListIdx(cnl, lst);
-	if (xI == 0xff) return 0;															// respective line not found
 
-	if (!checkIndex(cnl, lst, idx)) return 0;
+	if (xI >= devDef.lstNbr) return 0;													// respective line not found
+	if (idx >= peerTbl[cnl].pMax) return 0;												// index out of range
 
 	getEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// get the eeprom content
 	return 1;
@@ -81,13 +81,24 @@ uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
  * @see setListArray(), firstTimeStart()
  */
 uint8_t  EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
-	uint8_t xI = getRegListIdx(cnl, lst);
-	if (xI == 0xff) return 0;															// respective line not found
 
-	if (!checkIndex(cnl, lst, idx)) return 0;
+	uint8_t xI = getRegListIdx(cnl, lst);												// get the respective line in cnlTbl
+	return setList(xI, idx, buf);														// call setlist shortend
 
-	setEEPromBlock(cnlTbl[xI].pAddr + (cnlTbl[xI].sLen * idx), cnlTbl[xI].sLen, buf);	// set the eeprom content
-	return 1;
+}
+uint8_t  EE::setList(uint8_t cnlTblIdx, uint8_t idx, uint8_t *buf) {
+
+	if (idx >= peerTbl[cnlTbl[cnlTblIdx].cnl].pMax) return 0;							// index out of range
+	if (cnlTblIdx >= devDef.lstNbr) return 0;											// respective line not found
+
+	uint16_t pAddr = cnlTbl[cnlTblIdx].pAddr + (cnlTbl[cnlTblIdx].sLen * idx);			// calculate the address
+	setEEPromBlock(pAddr, cnlTbl[cnlTblIdx].sLen, buf);									// set the eeprom content
+
+	#ifdef EE_DBG																		// only if ee debug is set
+	dbg << F("setList, cnl:") << cnlTbl[cnlTblIdx].cnl << F(", lst:") << cnlTbl[cnlTblIdx].lst << F(", idx:") << idx << F(", tblRow:") << cnlTblIdx << F(", addr:") << pAddr << '\n';
+	dbg << F("data:") << _HEX(buf, cnlTbl[cnlTblIdx].sLen) << '\n';
+	#endif
+	return 1;																			// report everything ok
 }
 
 /**
@@ -402,7 +413,7 @@ uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t retByte = 0xff;																// default return value
 	
 	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
-			getPeerByIdx(cnl, i, lPeer);													// get peer from eeprom
+		getPeerByIdx(cnl, i, lPeer);													// get peer from eeprom
 		//dbg << "ee:" << _HEX(lPeer, 4) << ", gv:" << _HEX(peer, 4) << "\n";
 		if (!memcmp(lPeer, peer, 4)) { retByte = i; break; };							// if result matches then return slot index
 	}
@@ -448,22 +459,26 @@ uint8_t  EE::addPeers(uint8_t cnl, uint8_t *peer, uint8_t *retIdx) {
 
 	// remove peers if exist and check if we have enough free slots
 	remPeers(cnl, peer);																// first we remove the probably existing entries in the peer database
+	uint8_t needSlots = 0; if (peer[3]) needSlots++; if (peer[4]) needSlots++;			// count the needed slots
 	uint8_t freeSlots = countFreeSlots(cnl);											// get the amount of free slots
-	if (((peer[3]) && (peer[4])) && (freeSlots < 2)) return retByte;					// not enough space, return failure
-	if (((peer[3]) || (peer[4])) && (freeSlots < 1)) return retByte;
+	if (needSlots > freeSlots) return retByte;											// check if we have enough space
 
-	// find the free slots and write peers 
+	// find the free slots and write peers - set the respective list 3/4 also 
 	for (uint8_t i = 0; i < 2; i++) {													// standard gives 2 peer channels
 		if (!peer[3+i]) continue;														// if the current peer channel is empty, go to the next entry 
 
 		uint8_t free_idx = getIdxByPeer(cnl, lPeer);									// get the index of the free slot
 		if (free_idx == 0xff) return retByte;											// no free index found, probably not needed while checked the free slots before
-
+		
 		uint16_t peerAddr = peerTbl[cnl].pAddr + (free_idx * 4);						// calculate the peer address in eeprom
 		setEEPromBlock(peerAddr, 3, peer);												// write the peer to the eeprom
 		setEEPromBlock(peerAddr +3, 1, peer+3+i);										// write the peer channel to the eeprom
-		retIdx[i] = free_idx;
-		retByte++;
+
+		uint8_t pLink = peerTbl[cnl].pLink;												// shorten the line to the link
+		setList(pLink, free_idx, (uint8_t*)&cnlDefs[cnlTbl[pLink].sIdx]);				// set defaults in the respective list 
+
+		retIdx[i] = free_idx;															// deliver back the index of the added peer
+		retByte++;																		// increase our return byte
 	}
 
 	#ifdef EE_DBG																		// only if ee debug is set

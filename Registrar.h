@@ -36,6 +36,7 @@ class RG {
 	class AS *pHM;							// pointer to main class for function calls
 
   public:		//---------------------------------------------------------------------------------------------------------
+	//enum event { POLL, SET_TOGGLE, CONFIG_CHANGE, PAIR_SET, PAIR_STATUS, PEER_ADD, PEER_MESSAGE };
 	void regInAS(uint8_t cnl, uint8_t lst, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList);
 
   protected:	//---------------------------------------------------------------------------------------------------------

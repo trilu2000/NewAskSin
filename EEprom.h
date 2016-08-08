@@ -142,6 +142,7 @@ class EE {
 	struct s_peerTbl {	// peer table holds information were to find peers in eeprom
 		//const uint8_t cnl;     ///< Channel
 		const uint8_t pMax;    ///< Maximum number of peer devices
+		const uint8_t pLink;    ///< Link to channel table row
 		const uint16_t pAddr;  ///< Address of configuration data in EEprom memory
 	};
 
@@ -169,6 +170,7 @@ class EE {
   public:		//---------------------------------------------------------------------------------------------------------
 	uint8_t  getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in to a given buffer
 	uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
+	uint8_t  setList(uint8_t cnlTblIdx, uint8_t idx, uint8_t *buf);						// if we know the channel table index already
 	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 	uint32_t getHMID(void);																// get HMID as 32 bit integer
 
@@ -214,12 +216,19 @@ class EE {
 };
 
 /**
+* @brief Array with channel defaults. Index and length are hold in the channel table array.
+*        Must be declared in user space.
+*/
+extern  const uint8_t cnlDefs[];
+
+
+/**
  * @brief Global device register channel table definition. Must be declared in user space.
  *
  *
  *
  */
-extern  EE::s_cnlTbl cnlTbl[];															// initial register.h
+extern  const EE::s_cnlTbl cnlTbl[];															// initial register.h
 
 /**
  * @brief Global peer table definition. Must be declared in user space.
@@ -227,7 +236,7 @@ extern  EE::s_cnlTbl cnlTbl[];															// initial register.h
  *
  * @todo Insert description and example for peerTbl
  */
-extern EE::s_peerTbl peerTbl[];															// initial register.h
+extern const EE::s_peerTbl peerTbl[];															// initial register.h
 
 /**
  * @brief Global device definition. Must be declared in user space.

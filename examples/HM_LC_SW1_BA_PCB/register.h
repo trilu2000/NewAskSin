@@ -93,15 +93,15 @@
 	}; // 29 byte
 
 
-	 /**
-	  * @brief Channel - List translation table
-	  * channel, list, startIndex, start address in EEprom, hidden
-	  * do not edit the table, if you need more peers edit the defines accordingly.
-	  */
+	/**
+	 * @brief Channel - List translation table
+	 * channel, list, startIndex, start address in EEprom, hidden
+	 * do not edit the table, if you need more peers edit the defines accordingly.
+	 */
 	#define PHY_ADDR_START 0x20
 	#define CNL_01_PEERS   10 
 
-	EE::s_cnlTbl cnlTbl[] = {
+	const EE::s_cnlTbl cnlTbl[] = {
 		// cnl, lst, sIdx, sLen, hide, pAddr 
 		{    0,   0,    0,    6,    0, PHY_ADDR_START },
 		{    1,   1,    6,    1,    0, cnlTbl[0].pAddr + cnlTbl[0].sLen },
@@ -113,14 +113,14 @@
 
 
 	/**
-	 * Peer-Device-List-Table
-	 * channel, maximum allowed peers, start address in EEprom
+	 * @brief Peer-Device-List-Table
+	 * maximum allowed peers, link to row in cnlTbl, start address in EEprom
 	 */
-	EE::s_peerTbl peerTbl[] = {
-		// pMax, pAddr; 
-		{ 0, cnlTbl[2].pAddr + (cnlTbl[2].sLen * CNL_01_PEERS) },
-		{ CNL_01_PEERS, peerTbl[0].pAddr + (peerTbl[0].pMax * 4) },
-	}; // 3 byte
+	const EE::s_peerTbl peerTbl[] = {
+		//    pMax, pLink, pAddr; 
+		{            0, 0, cnlTbl[2].pAddr + (cnlTbl[2].sLen * CNL_01_PEERS) },
+		{ CNL_01_PEERS, 2, peerTbl[0].pAddr + (peerTbl[0].pMax * 4) },
+	}; // 8 byte
 
 	/**
 	 * @brief Struct with basic information for the AskSin library.

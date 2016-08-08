@@ -18,7 +18,8 @@ void	RG::regInAS(uint8_t cnl, uint8_t lst, s_mod_dlgt delegate, uint8_t *mainLis
 	modTbl[cnl-1].lstCnl = mainList;
 	modTbl[cnl-1].lstPeer = peerList;
 
-	pHM->ee.getList(cnl,1,0,modTbl[cnl-1].lstCnl);											// load list1 in the respective buffer
+	pHM->ee.getList(cnl, 1, 0, mainList);													// load list1 in the respective buffer
+	//pHM->ee.getList(cnl, 1, 0, modTbl[cnl - 1].lstCnl);									// load list1 in the respective buffer
 	modTbl[cnl-1].mDlgt(0x01, 0, 0x06, NULL, 0);											// inform the module of the change
 }
 
@@ -40,3 +41,5 @@ void	RG::poll(void) {
 		if (modTbl[i].cnl) modTbl[i].mDlgt(0,0,0,NULL,0);
 	}
 }
+
+

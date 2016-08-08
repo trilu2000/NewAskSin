@@ -1013,7 +1013,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
 	// check if a module is registered and send the information, otherwise report an empty status
 	if (modTbl[by10].cnl) {
-		modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen-11);
+		modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen - 11);
 	} else {
 		sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);
 	}
@@ -1149,8 +1149,7 @@ uint8_t AS::processMessageConfig() {
 inline uint8_t AS::configPeerAdd(uint8_t by10) {
 
 	// set the peers in the peerdatabase
-	ee.remPeer(rv.mBdy.by10, rv.buf+12);														// first call remPeer to avoid doubles
-	uint8_t ackOk = ee.addPeer(rv.mBdy.by10, rv.buf+12);										// send to addPeer function
+	uint8_t ackOk = ee.addPeers(rv.mBdy.by10, rv.buf+12, rv.buf + 17);							// send to addPeer function
 
 	//#ifdef AS_DBG																				// only if ee debug is set
 	dbg << F("configPeerAdd, by10:") << by10 << F(", cnl:") << _HEXB(rv.buf[11]) << F(", data:") << _HEX(rv.buf + 12, 5) << '\n';
@@ -1171,7 +1170,7 @@ inline uint8_t AS::configPeerAdd(uint8_t by10) {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerRemove() {
-	return ee.remPeer(rv.mBdy.by10,rv.buf+12);													// call the remPeer function
+	return ee.remPeers(rv.mBdy.by10,rv.buf+12);													// call the remPeer function
 }
 
 /**
