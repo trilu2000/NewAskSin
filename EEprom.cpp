@@ -338,6 +338,7 @@ uint8_t  EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
 void     EE::clearPeers(void) {
 	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {										// step through all channels
 		clearEEPromBlock(peerTbl[i].pAddr, peerTbl[i].pMax * 4);
+
 		#ifdef EE_DBG																	// only if ee debug is set
 		dbg << F("clearPeers, addr:") << peerTbl[i].pAddr << F(", len ") << (peerTbl[i].pMax * 4) << '\n';																	// ...and some information
 		#endif
@@ -373,15 +374,12 @@ uint8_t  EE::isPeerValid (uint8_t *peer) {
 * @return the amount of free slots
 */
 uint8_t  EE::countFreeSlots(uint8_t cnl) {
-	uint8_t lPeer[4];
+	uint8_t lPeer[4];																	// temp byte array to load peer addresses
 	uint8_t bCounter = 0;																// set counter to zero
 
-	if (cnl > devDef.cnlNbr) return bCounter;											// return if channel is out of range
-
 	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);								// get peer from eeprom
+		getPeerByIdx(cnl, i, lPeer);													// get peer from eeprom
 		if (isEmpty(lPeer, 4)) bCounter++;												// increase counter if peer slot is empty
-		//dbg << F("addr: ") << (peerTbl[cnl].pAddr+(i*4)) << F(", lPeer: ") << pHex(lPeer, 4) << '\n';
 	}
 
 	#ifdef EE_DBG																		// only if ee debug is set
@@ -402,18 +400,16 @@ uint8_t  EE::countFreeSlots(uint8_t cnl) {
 uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	uint8_t lPeer[4];																	// byte array to load peer from eeprom
 	uint8_t retByte = 0xff;																// default return value
-
-	if (cnl > devDef.cnlNbr) return retByte;											// return if channel is out of range
-
+	
 	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);								// get peer from eeprom
-		if (!memcmp(lPeer, peer, 4)) retByte = i;										// if result matches then return slot index
+			getPeerByIdx(cnl, i, lPeer);													// get peer from eeprom
+		//dbg << "ee:" << _HEX(lPeer, 4) << ", gv:" << _HEX(peer, 4) << "\n";
+		if (!memcmp(lPeer, peer, 4)) { retByte = i; break; };							// if result matches then return slot index
 	}
 
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbg << F("getIdxByPeer, cnl:") << cnl << F(", peer:") << _HEX(peer, 4) << F(", ret:") << retByte << '\n';
 	#endif
-
 	return retByte;
 }
 
@@ -427,78 +423,88 @@ uint8_t  EE::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 * @return the found idx or 0xff if not found
 */
 void     EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
-	if (cnl > devDef.cnlNbr) return;													// return if channel is out of range
 	getEEPromBlock(peerTbl[cnl].pAddr+(idx*4), 4, peer);								// get the respective eeprom block
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbg << F("getPeerByIdx, cnl:") << cnl << F(", idx:") << idx << F(", peer:") << _HEX(peer, 4) << '\n';
 	#endif
 }
 
+/**
+* @brief Add 2 peers incl peer channels to the peer database by the given channel
+*        and returns a byte array with the two peer index numbers for further processing
+*
+* @param cnl Channel
+* @param peer Pointer to a byte array with the peer and respective
+*             peerchannel to search for the index
+*             { 01, 02, 03, 04, 05 } 01 - 03 peer address, 04 peer channel 1, 05 peer channel 2
+* @param retIdx Pointer to a 2 byte array, function writes the index of the added peers incl. 
+*               peer channel into the array
+*
+* @return the amount of added peers
+*/
+uint8_t  EE::addPeers(uint8_t cnl, uint8_t *peer, uint8_t *retIdx) {
+	uint8_t lPeer[] = { 0,0,0,0 };
+	uint8_t retByte = 0;
 
-uint8_t  EE::addPeer(uint8_t cnl, uint8_t *peer) {
-	uint8_t lPeer[4];
+	// remove peers if exist and check if we have enough free slots
+	remPeers(cnl, peer);																// first we remove the probably existing entries in the peer database
+	uint8_t freeSlots = countFreeSlots(cnl);											// get the amount of free slots
+	if (((peer[3]) && (peer[4])) && (freeSlots < 2)) return retByte;					// not enough space, return failure
+	if (((peer[3]) || (peer[4])) && (freeSlots < 1)) return retByte;
 
-	// check if channel exists
-	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
+	// find the free slots and write peers 
+	for (uint8_t i = 0; i < 2; i++) {													// standard gives 2 peer channels
+		if (!peer[3+i]) continue;														// if the current peer channel is empty, go to the next entry 
 
-	// check if one of the peers already exists
-	if (getIdxByPeer(cnl, peer) != 0xff) peer[3] = 0;									// peer 1 exists, therefore write a 0 in the peer channel byte
-	memcpy(lPeer, peer, 3); lPeer[3] = peer[4];											// prepare peer 2
-	if (getIdxByPeer(cnl, lPeer) != 0xff) peer[4] = 0;									// peer 2 exists, therefore write a 0 in the peer channel byte
+		uint8_t free_idx = getIdxByPeer(cnl, lPeer);									// get the index of the free slot
+		if (free_idx == 0xff) return retByte;											// no free index found, probably not needed while checked the free slots before
 
-	// set bit mask against peer cnl
-	uint8_t cnt = 0, ret = 0;
-	if (peer[3]) cnt |= 1;
-	if (peer[4]) cnt |= 2;
-
-	// count free peer slots and check against cnt
-	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
-		if (isEmpty(lPeer, 4)) ret++;													// increase counter if peer slot is empty
+		uint16_t peerAddr = peerTbl[cnl].pAddr + (free_idx * 4);						// calculate the peer address in eeprom
+		setEEPromBlock(peerAddr, 3, peer);												// write the peer to the eeprom
+		setEEPromBlock(peerAddr +3, 1, peer+3+i);										// write the peer channel to the eeprom
+		retIdx[i] = free_idx;
+		retByte++;
 	}
-	if (((peer[3]) && (peer[4])) && (ret < 2)) return 0;								// not enough space, return failure
-	if (((peer[3]) || (peer[4])) && (ret < 1)) return 0;
 
-	// search for free peer slots and write content
-	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
-
-		if        (isEmpty(lPeer, 4) && (cnt & 1)) {									// slot is empty and peer cnlA is set
-			cnt ^= 1;
-			setEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, peer);
-			peer[5] = i;																// remember the idx position, add to the buffer
-
-		} else if (isEmpty(lPeer, 4) && (cnt & 2)) {									// slot is empty and peer cnlB is set
-			cnt ^= 2;
-			setEEPromBlock(peerTbl[cnl].pAddr+(i*4), 3, peer);						// first 3 bytes
-			setEEPromBlock(peerTbl[cnl].pAddr+(i*4)+3, 1, peer+4);					// 5th byte
-			peer[6] = i;																// remember the idx position, add to the buffer
-
-		}
-	}
-	return 1;																			// everything went fine, return success
+	#ifdef EE_DBG																		// only if ee debug is set
+	dbg << F("addPeers, cnl:") << cnl << F(", peer:") << _HEX(peer, 5) << F(", idx:") << _HEX(retIdx, 2) << '\n';
+	#endif
+	return retByte;																		// everything went fine, return success
 }
-uint8_t  EE::remPeer(uint8_t cnl, uint8_t *peer) {
-	uint8_t tPeer[4], lPeer[4];
 
-	// check if channel exists
-	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
+/**
+* @brief Removes up to 2 peers incl peer channels from the peer database by the given channel
+*        and returns the amount of deleted peers incl peer channels
+*
+* @param cnl  Channel
+* @param peer Pointer to a byte array with the peer and respective
+*             peerchannel to remove from the database
+*             { 01, 02, 03, 04, 05 } 01 - 03 peer address, 04 peer channel 1, 05 peer channel 2
+*
+* @return the amount of removed peers
+*/
+uint8_t  EE::remPeers(uint8_t cnl, uint8_t *peer) {
+	uint8_t lPeer[4];																	// temp array to build peer and peer channel
+	uint8_t retByte = 0;																// return value set to 0 while nothing removed
 
-	// peerA is given by (uint32_t*)peer, peerB has to be constructed
-	memcpy(tPeer, peer, 3);
-	memcpy(tPeer+3, peer+4, 1);
-	//dbg << "a: " << pHex(peer,4) << ", b: " << pHex(tPeer,4) << '\n';
+	for (uint8_t i = 0; i < 2; i++) {													// standard gives 2 peer channels
+		if (!peer[3 + i]) continue;														// if the current peer channel is empty, go to the next entry 
 
-	// search for peers and delete them
-	for (uint8_t i = 0; i < peerTbl[cnl].pMax; i++) {									// step through the possible peer slots
-		getEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4, lPeer);							// get peer from eeprom
+		memcpy(lPeer, peer, 3);															// copy the peer address into the temp array
+		memcpy(lPeer+3, peer+3+i, 1);													// copy the peer channel byte into the array
+		uint8_t rem_idx = getIdxByPeer(cnl, lPeer);										// get the index of the peer to remove
+		if (rem_idx == 0xff) continue;													// peer not found, process next value
 
-		if (!memcmp(lPeer, peer, 4) || !memcmp(lPeer, tPeer, 4)) {						// check if something matches
-			clearEEPromBlock(peerTbl[cnl].pAddr+(i*4), 4);							// free the slot
-		}
+		clearEEPromBlock(peerTbl[cnl].pAddr + (rem_idx * 4), 4);						// clear the peer in the eeprom
+		retByte++;
 	}
-	return 1;
+
+	#ifdef EE_DBG																		// only if ee debug is set
+	dbg << F("remPeers, cnl:") << cnl << F(", peer:") << _HEX(peer, 5) << F(", removed:") << retByte << '\n';
+	#endif
+	return retByte;
 }
+
 uint8_t  EE::countPeerSlc(uint8_t cnl) {
 	if (cnl > devDef.cnlNbr) return 0;													// return if channel is out of range
 
@@ -540,7 +546,7 @@ uint8_t  EE::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 	memset(buf, 0, 4);																	// add the terminating zeros
 	return byteCnt + 4;																	// return the amount of bytes
 }
-uint8_t  EE::getPeerSlots(uint8_t cnl) {													// returns the amount of possible peers
+uint8_t  EE::getPeerSlots(uint8_t cnl) {												// returns the amount of possible peers
 	if (cnl > devDef.cnlNbr) return 0;
 	return peerTbl[cnl].pMax;															// return the max amount of peers
 }
