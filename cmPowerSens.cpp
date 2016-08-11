@@ -68,7 +68,7 @@ void cmPowerSens::sendPowerEvent(uint32_t eCountToSend, uint32_t powerToSend){
 		Serial << F("sendPowerEvent3: ") << _HEX(buf, 6) << '\n';*/
 	#endif
 
-	hm->sendINFO_POWER_EVENT(buf);
+	hm.sendINFO_POWER_EVENT(buf);
 	lastReportedEnergyCount = energyCount;
 }
 
@@ -230,15 +230,16 @@ inline void cmPowerSens::pairStatusReq(void) {
 /**
  * @brief Register module in HM
  */
-void cmPowerSens::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
+void cmPowerSens::regInHM(uint8_t cnl, uint8_t lst) {
 	#ifdef CM_POWER_SENS_DBG
 		dbg << F("regInHM cnl: ")  << cnl << F(" lst: ")  << lst << '\n';
 	#endif
-	hm = instPtr;																	// set pointer to the HM module
-	hm->rg.regInAS(
+	//hm = instPtr;																	// set pointer to the HM module
+	hm.rg.regUserModuleInAS(
 		cnl,
 		lst,
-		s_mod_dlgt(this,&cmPowerSens::hmEventCol),
+		myDelegate::from_function<cmPowerSens, &cmPowerSens::hmEventCol>(this),
+		//s_mod_dlgt(this,&cmPowerSens::hmEventCol),
 		(uint8_t*)&lstCnl,
 		(uint8_t*)&lstPeer
 	);

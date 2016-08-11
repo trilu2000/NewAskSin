@@ -89,7 +89,8 @@
 	enum _eTIME { _TIME };
 	inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(getMillis()); obj.print(')'); return obj; }
 
-	extern void    dbgStart(void);
+	//extern void    dbgStart(void);
+	void    dbgStart(void);
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 

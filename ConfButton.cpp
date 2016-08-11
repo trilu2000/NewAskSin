@@ -19,15 +19,14 @@ void CB::config(uint8_t mode) {
 
 // private:		//---------------------------------------------------------------------------------------------------------
 CB::CB() {
-}
-void CB::init(AS *ptrMain) {
 	#ifdef CB_DBG																			// only if ee debug is set
 	dbgStart();																				// serial setup
 	dbg << F("CB.\n");																		// ...and some information
 	#endif
-
-	pHM = ptrMain;
 }
+//void CB::init(AS *ptrMain) {
+//	pHM = ptrMain;
+//}
 void CB::poll(void) {
 	#define detectLong      3000
 	#define repeatedLong    300
@@ -41,7 +40,7 @@ void CB::poll(void) {
 	if (btn == 2) {																			// button was just pressed
 		//dbg << "armed \n";
 		btnTmr.set(detectLong);																// set timer to detect a long
-		pHM->pw.stayAwake(detectLong+500);													// stay awake to check button status
+		hm.pw.stayAwake(detectLong+500);													// stay awake to check button status
 		armFlg = 1;																			// set it armed
 		return;
 	}
@@ -54,7 +53,7 @@ void CB::poll(void) {
 		//dbg << "3 lstLng:" << lstLng << " dblLng:" << dblLng << " lngRpt:" << lngRpt << " lstSht:" << lstSht << '\n';
 
 		btnTmr.set(timeoutDouble);															// set timer to clear the repeated flags
-		pHM->pw.stayAwake(timeoutDouble+500);												// stay awake to check button status
+		hm.pw.stayAwake(timeoutDouble+500);													// stay awake to check button status
 		
 		if       ((lstLng) && (lngRpt)) {			// keyLongRelease
 			outSignal(5);
@@ -76,7 +75,7 @@ void CB::poll(void) {
 	} else if ((btn == 0) && (btnTmr.done() )) {	// button is still pressed, but timed out, seems to be a long
 		//dbg << "0 lstLng:" << lstLng << " dblLng:" << dblLng << " lngRpt:" << lngRpt << " lstSht:" << lstSht << '\n';
 
-		pHM->pw.stayAwake(detectLong+500);													// stay awake to check button status
+		hm.pw.stayAwake(detectLong+500);													// stay awake to check button status
 
 		if (lstLng) {								// keyLongRepeat
 			btnTmr.set(repeatedLong);														// set timer to detect a repeated long
@@ -104,8 +103,8 @@ void CB::poll(void) {
 
 void CB::outSignal(uint8_t mode) {
 	
-	pHM->pw.stayAwake(500);																	// stay awake to fulfill the action
-	pHM->ld.blinkRed();																		// show via led that we have some action in place
+	hm.pw.stayAwake(500);																	// stay awake to fulfill the action
+	hm.ld.blinkRed();																		// show via led that we have some action in place
 	
 	#ifdef CB_DBG																			// only if ee debug is set
 		if (mode == 1) dbg << F("keyShortSingle\n");										// ...and some information
@@ -119,7 +118,7 @@ void CB::outSignal(uint8_t mode) {
 
 	if (mode == 1) {						// keyShortSingle
 
-		if (scn == 1) pHM->sendDEVICE_INFO();												// send pairing string
+		if (scn == 1) hm.sendDEVICE_INFO();													// send pairing string
 		if ((scn == 2) && (modTbl[0].cnl)) {
 			modTbl[0].mDlgt(0,1,0,NULL,0);													// send toggle to user module registered on channel 1
 		}
@@ -128,22 +127,22 @@ void CB::outSignal(uint8_t mode) {
 		
 	} else if (mode == 3) {					// keyLongSingle
 
-		if (scn == 1) pHM->ld.set(key_long);
-		if (scn == 2) pHM->sendDEVICE_INFO();												// send pairing string
+		if (scn == 1) hm.ld.set(key_long);
+		if (scn == 2) hm.sendDEVICE_INFO();													// send pairing string
 
 	} else if (mode == 4) {					// keyLongRepeat
-		pHM->ld.set(nothing);
+		hm.ld.set(nothing);
 
 	} else if (mode == 5) {					// keyLongRelease
 
 	} else if (mode == 6) {					// keyLongDouble
-		pHM->ld.set(nothing);
+		hm.ld.set(nothing);
 
 		// TODO: 0x18 localResDis available, take care of it
-		uint8_t localResDis = pHM->ee.getRegAddr(0,0,0,0x18);								// get register address
+		uint8_t localResDis = hm.ee.getRegAddr(0,0,0,0x18);									// get register address
 		//dbg << "x:" << localResDis <<'\n';
 		if (!localResDis) {																	// if local reset is not disabled, reset
-			pHM->deviceReset(AS_RESET_CLEAR_EEPROM);
+			hm.deviceReset(AS_RESET_CLEAR_EEPROM);
 		}
 	}
 }

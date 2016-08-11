@@ -12,17 +12,25 @@
 
 waitTimer sndTmr;																			// send timer functionality
 
-SN::SN() {}
-
-void SN::init(AS *ptrMain) {
+SN::SN() {
 	#ifdef SN_DBG																			// only if ee debug is set
-		dbgStart();																			// serial setup
-		dbg << F("SN.\n");																	// ...and some information
+	dbgStart();																			// serial setup
+	dbg << F("SN.\n");																	// ...and some information
 	#endif
 
-	pHM = ptrMain;
+	//pHM = ptrMain;
 	buf = (uint8_t*)&mBdy;
 }
+
+//void SN::init(AS *ptrMain) {
+//	#ifdef SN_DBG																			// only if ee debug is set
+//		dbgStart();																			// serial setup
+//		dbg << F("SN.\n");																	// ...and some information
+//	#endif
+
+//	pHM = ptrMain;
+//	buf = (uint8_t*)&mBdy;
+//}
 
 void SN::poll(void) {
 	#define maxRetries    3
@@ -51,7 +59,7 @@ void SN::poll(void) {
 
 		// check if we should send an internal message
 		if (!memcmp(this->mBdy.toID, HMID, 3)) {
-			memcpy(pHM->rv.buf, this->buf, sndLen);											// copy send buffer to received buffer
+			memcpy(hm.rv.buf, this->buf, sndLen);											// copy send buffer to received buffer
 			this->retrCnt = 0xFF;															// ACK not required, because internal
 						
 			#ifdef SN_DBG																	// only if AS debug is set
@@ -69,11 +77,11 @@ void SN::poll(void) {
 			 */
 			memcpy(this->msgToSign+5, this->buf, (sndLen > 27) ? 27 : sndLen);
 
-			pHM->encode(this->buf);															// encode the string
+			hm.encode(this->buf);															// encode the string
 
-			pHM->cc.sndData(this->buf, tBurst);												// send to communication module
+			hm.cc.sndData(this->buf, tBurst);												// send to communication module
 
-			pHM->decode(this->buf);															// decode the string, so it is readable next time
+			hm.decode(this->buf);															// decode the string, so it is readable next time
 			
 			if (reqACK) {
 				sndTmr.set(maxTime);														// set the time out for the message
@@ -84,8 +92,8 @@ void SN::poll(void) {
 			#endif
 		}
 		
-		if (!pHM->ld.active) {
-			pHM->ld.set(send);																// fire the status led
+		if (!hm.ld.active) {
+			hm.ld.set(send);																// fire the status led
 		}
 		
 		#ifdef SN_DBG																		// only if AS debug is set
@@ -102,8 +110,8 @@ void SN::poll(void) {
 		}
 		
 		this->timeOut = 1;																	// set the time out only while an ACK or answer was requested
-		pHM->pw.stayAwake(100);
-		pHM->ld.set(noack);
+		hm.pw.stayAwake(100);
+		hm.ld.set(noack);
 		
 		#ifdef SN_DBG																		// only if AS debug is set
 		dbg << F("  timed out") << ' ' << _TIME << '\n';
@@ -114,8 +122,8 @@ void SN::poll(void) {
 //		dbg << F(">>> clear timer") << _TIME << "\n";
 
 		this->cleanUp();
-		pHM->pw.stayAwake(100);
-		if (!pHM->ld.active) pHM->ld.set(ack);												// fire the status led
+		hm.pw.stayAwake(100);
+		if (!hm.ld.active) hm.ld.set(ack);												// fire the status led
 	}
 }
 

@@ -6,35 +6,24 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define RG_DBG
 #include "Registrar.h"
 #include "AS.h"
 
 // public:		//---------------------------------------------------------------------------------------------------------
-void	RG::regInAS(uint8_t cnl, uint8_t lst, s_mod_dlgt delegate, uint8_t *mainList, uint8_t *peerList) {
-	modTbl[cnl-1].cnl = cnl;
-	modTbl[cnl-1].lst = lst;
-	modTbl[cnl-1].mDlgt = delegate;
-	modTbl[cnl-1].lstCnl = mainList;
-	modTbl[cnl-1].lstPeer = peerList;
+void	RG::regUserModuleInAS(uint8_t cnl, uint8_t lst, myDelegate delegate, uint8_t *mainList, uint8_t *peerList) {
+	uint8_t mod_cnl = cnl - 1;
+	modTbl[mod_cnl].cnl = cnl;
+	modTbl[mod_cnl].lst = lst;
+	modTbl[mod_cnl].mDlgt = delegate;
+	modTbl[mod_cnl].lstCnl = mainList;
+	modTbl[mod_cnl].lstPeer = peerList;
 
-	pHM->ee.getList(cnl, 1, 0, mainList);													// load list1 in the respective buffer
-	//pHM->ee.getList(cnl, 1, 0, modTbl[cnl - 1].lstCnl);									// load list1 in the respective buffer
-	modTbl[cnl-1].mDlgt(0x01, 0, 0x06, NULL, 0);											// inform the module of the change
-}
-
-// private:		//---------------------------------------------------------------------------------------------------------
-RG::RG() {
-} 
-void    RG::init(AS *ptrMain) {
+	hm.ee.getList(cnl, 1, 0, mainList);														// load list1 in the respective buffer
 	
-	#ifdef RG_DBG																			// only if ee debug is set
-	dbgStart();																				// serial setup
-	dbg << F("RG.\n");																		// ...and some information
-	#endif
-
-	pHM = ptrMain;
+	//hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len)
+	modTbl[mod_cnl].mDlgt(0x01, 0, 0x06, NULL, 0);											// inform the module of the change
 }
+
 void	RG::poll(void) {
 	// poll through the module table
 	for (uint8_t i = 0; i < devDef.cnlNbr; i++) {

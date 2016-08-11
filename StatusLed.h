@@ -35,7 +35,7 @@ class LD {
 	uint8_t dCnt;								// duration counter
 	
   public:		//---------------------------------------------------------------------------------------------------------
-	void init(AS *ptrMain);						// init function, to be called by AskSin main class
+	//void init(AS *ptrMain);						// init function, to be called by AskSin main class
 	void set(ledStat stat);						// function to set the blink pattern
 	void blinkRed(void);						// blocking blink pattern, not processed via poll
 	

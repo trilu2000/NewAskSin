@@ -47,7 +47,7 @@ class SN {
 	uint8_t maxRetr;						// how often a message has to be send until ACK
 	uint8_t lastMsgCnt;						// store of message counter, needed to identify ACK
 
-	class AS *pHM;							// pointer to main class for function calls
+	//class AS *pHM;							// pointer to main class for function calls
 
   protected:	//---------------------------------------------------------------------------------------------------------
   public:		//---------------------------------------------------------------------------------------------------------
@@ -65,7 +65,7 @@ class SN {
   private:		//---------------------------------------------------------------------------------------------------------
 
 	SN();
-	void init(AS *ptrMain);
+	//void init(AS *ptrMain);
 	void poll(void);
 	void cleanUp(void);
 };

@@ -21,18 +21,15 @@ void    BT::set(uint8_t tenthVolt, uint32_t duration) {
 
 // private:		//---------------------------------------------------------------------------------------------------------
 BT::BT() {
-} 
-void    BT::init(AS *ptrMain) {
-	
 	#ifdef BT_DBG																			// only if ee debug is set
-		dbgStart();																				// serial setup
-		dbg << F("BT.\n");																		// ...and some information
+	dbgStart();																				// serial setup
+	dbg << F("BT.\n");																		// ...and some information
 	#endif
 
-	pHM = ptrMain;
 	bMode = 0;
 	bDuration = 0;
 }
+
 void    BT::poll(void) {
 	if (!battTmr.done() ) return;															// timer still running
 
@@ -40,7 +37,7 @@ void    BT::poll(void) {
 	bState = (measureTenthVolt < checkTenthVolt) ? 1 : 0;									// set the battery status
 
 	#ifdef BT_DBG																			// only if ee debug is set
-		dbg << "cTV:" << checkTenthVolt << ", mTV:" << measureTenthVolt << " , s:" << bState << '\n';
+	dbg << "cTV:" << checkTenthVolt << ", mTV:" << measureTenthVolt << " , s:" << bState << '\n';
 	#endif
 
 	battTmr.set(bDuration);																	// set next check time

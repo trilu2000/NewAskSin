@@ -251,7 +251,7 @@ class cmPowerSens {
 	uint8_t  modState;																		// module status byte, needed for list3 modules to answer status requests
 	uint8_t  regCnl;																		// holds the channel for the module
 
-	AS       *hm;																			// pointer to HM class instance
+	//AS       *hm;																			// pointer to HM class instance
 
 	inline void     setToggle(void);																// toggle the module initiated by config button
 	void     configCngEvent(void);															// list1 on registered channel had changed
@@ -260,7 +260,7 @@ class cmPowerSens {
 	//void     peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len);						// peer message was received on the registered channel, handover the message bytes and length
 
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
-	void     regInHM(uint8_t cnl, uint8_t lst, AS *instPtr);								// register this module in HM on the specific channel
+	void     regInHM(uint8_t cnl, uint8_t lst);								// register this module in HM on the specific channel
 	void     hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
 	void     peerAddEvent(uint8_t *data, uint8_t len);										// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
 	inline void     firstStart(void);																// first start detection, to write list1

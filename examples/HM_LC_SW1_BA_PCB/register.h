@@ -152,7 +152,7 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);
 		hm.bt.set(30, 3600000);
 		// channel 1 section 
-		cm_Switch[0].regInHM(1, 3, &hm);
+		cm_Switch[0].regInHM(1, 3);
 		cm_Switch[0].config(&initSwitch, &switchSwitch);
 	}
 
@@ -165,7 +165,7 @@
 	 */
 	void firstTimeStart(void) {
 
-	#ifdef SER_DBG
+		#ifdef SER_DBG
 		// some debug
 		dbg << F("First time start active:\n");
 		dbg << F("cnl\tlst\tsIdx\tsLen\thide\tpAddr\n");
@@ -173,7 +173,7 @@
 			// cnl, lst, sIdx, sLen, hide, pAddr 
 			dbg << cnlTbl[i].cnl << "\t" << cnlTbl[i].lst << "\t" << cnlTbl[i].sIdx << "\t" << cnlTbl[i].sLen << "\t" << cnlTbl[i].vis << "\t" << cnlTbl[i].pAddr << "\n";
 		}
-	#endif
+		#endif
 
 		// fill register with default values, peer registers are not filled while done in usermodules
 		hm.ee.setList(0, 0, 0, (uint8_t*)&cnlDefs[0]);

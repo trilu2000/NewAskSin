@@ -12,40 +12,13 @@
 #include "AS.h"
 #include "HAL.h"
 
-// default settings for list3 or list4
-const uint8_t peerOdd[] =    {		// cnl 2, 4, 6
-	// Default actor dual 1: 02:00 03:00 04:32 05:64 06:00 07:FF 08:00 09:FF 0A:01
-	// 0B:64 0C:66 82:00 83:00 84:32 85:64 86:00 87:FF 88:00 89:FF 8A:21 8B:64 8C:66
-	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x01, 0x64, 0x66,
-	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x21, 0x64, 0x66
-};
-const uint8_t peerEven[] =   {		// cnl 1, 3, 5
-	// Default actor dual 2: 02:00 03:00 04:32 05:64 06:00 07:FF 08:00 09:FF 0A:01
-	// 0B:13 0C:33 82:00 83:00 84:32 85:64 86:00 87:FF 88:00 89:FF 8A:21 8B:13 8C:33
-	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x01, 0x13, 0x33,
-	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x21, 0x13, 0x33
-};
-const uint8_t peerSingle[] = {
-	// Default actor single: 02:00 03:00 04:32 05:64 06:00 07:FF 08:00 09:FF 0A:01
-	// 0B:14 0C:63 82:00 83:00 84:32 85:64 86:00 87:FF 88:00 89:FF 8A:21 8B:14 8C:63
-	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x01, 0x14, 0x63,
-	0x00, 0x00, 0x32, 0x64, 0x00, 0xFF, 0x00, 0xFF, 0x21, 0x14, 0x63,
-};
-
-//  0x00, 0x00, 0x32, 0x64, 0x00, 0xff, 0x00, 0xff, 0x01, 0x44, 0x44, 
-//	0x00, 0x00, 0x32, 0x64, 0x00, 0xff, 0x00, 0xff, 0x21, 0x44, 0x44,
-//l3: 00 00 32 64 00 FF 00 FF 01 13 33 00 00 32 64 00 FF 00 FF 21 13 33 key 1
-//l3: 00 00 32 64 00 FF 00 FF 01 64 66 00 00 32 64 00 FF 00 FF 21 64 66
-	
-//l3: 00 00 32 64 00 FF 00 FF 01 13 33 00 00 32 64 00 FF 00 FF 21 13 33 key 2
-//l3: 00 00 32 64 00 FF 00 FF 01 64 66 00 00 32 64 00 FF 00 FF 21 64 66
+// default settings are defined in cmSwitch.cpp - updatePeerDefaults
 
 
 class cmSwitch {
-  //- user code here ------------------------------------------------------------------------------------------------------
-  public://----------------------------------------------------------------------------------------------------------------
-  protected://-------------------------------------------------------------------------------------------------------------
-  private://---------------------------------------------------------------------------------------------------------------
+	//- user code here ------------------------------------------------------------------------------------------------------
+	private://---------------------------------------------------------------------------------------------------------------
+
 	struct s_lstCnl {
 		uint8_t AES_ACTIVE           : 1;  // 0x08.0, s:1   d: false  
 		uint8_t                      : 7;  // 0x08.1, s:7   d:   
@@ -114,8 +87,8 @@ class cmSwitch {
 	} *l3;
 	
 
-  public://----------------------------------------------------------------------------------------------------------------
-  //- user defined functions ----------------------------------------------------------------------------------------------
+	public://----------------------------------------------------------------------------------------------------------------
+	//- user defined functions ----------------------------------------------------------------------------------------------
 	cmSwitch();
 
 	void (*fInit)(uint8_t);																	// pointer to init function in main sketch
@@ -153,8 +126,6 @@ class cmSwitch {
 	uint8_t modDUL;																			// module down up low battery byte
 	uint8_t regCnl;																			// holds the channel for the module
 
-	AS      *hm;																			// pointer to HM class instance
-
 	void    setToggle(void);																// toggle the module initiated by config button
 	void    configCngEvent(void);															// list1 on registered channel had changed
 	void    pairSetEvent(uint8_t *data, uint8_t len);										// pair message to specific channel, handover information for value, ramp time and so on
@@ -164,8 +135,9 @@ class cmSwitch {
 	void    poll(void);																		// poll function, driven by HM loop
 
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
-	void    regInHM(uint8_t cnl, uint8_t lst, AS *instPtr);									// register this module in HM on the specific channel
+	void    regInHM(uint8_t cnl, uint8_t lst);												// register this module in HM on the specific channel
 	void    hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
+	void    updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len);					// add peer channel defaults to list3/4
 	void    peerAddEvent(uint8_t *data, uint8_t len);										// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
 };
 

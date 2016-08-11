@@ -17,7 +17,8 @@ void dbgStart(void) {
 
 	if (!(UCSR & (1<<RXEN))) {													// check if serial was already set
 		dbg.begin(57600);
-		_delay_ms(500);
+		dbg << F("debug startet...\n");
+		//		_delay_ms(500);
 	}
 }
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -116,15 +117,19 @@ void    initEEProm(void) {
 }
 void    getEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
 	eeprom_read_block((void*)ptr,(const void*)addr,len);									// AVR GCC standard function
+	//dbg << "getEEPromBlock:" << addr << ", len:" << len << ", data:" << _HEX((uint8_t*)ptr, len) << '\n';
 }
 void    setEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
 	eeprom_write_block((const void*)ptr,(void*)addr,len);									// AVR GCC standard function
+	//dbg << "setEEPromBlock:" << addr << ", len:" << len << ", data:" << _HEX((uint8_t*)ptr, len) << '\n';
 }
 void    clearEEPromBlock(uint16_t addr, uint16_t len) {
 	uint8_t tB=0;
+	if (!len) return;
 	for (uint16_t l = 0; l < len; l++) {													// step through the bytes of eeprom
 		setEEPromBlock(addr+l,1,(void*)&tB);
 	}
+	//dbg << "clearEEPromBlock:" << addr << ", len:" << len << '\n';
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 

@@ -194,8 +194,8 @@ void cmSwitch::sendStatus(void) {
 	if (!delayTmr.done() )       modDUL |= 0x40;
 	
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);					// send ACK
-	else if (sendStat == 2) hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);			// send status
+	if      (sendStat == 1) hm.sendACK_STATUS(regCnl, modStat, modDUL);					// send ACK
+	else if (sendStat == 2) hm.sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);			// send status
 
 	// check if it is a stable status, otherwise schedule next info message
 	if (modDUL)  {																			// status is currently changing
@@ -361,7 +361,7 @@ void cmSwitch::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 		msgTmr.set(10);																			// wait a short time to set status
 
 	} else {
-		hm->sendACK();
+		hm.sendACK();
 
 	}
 }
@@ -377,15 +377,17 @@ void cmSwitch::poll(void) {
 cmSwitch::cmSwitch(void) {
 }
 
-void cmSwitch::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
-	hm = instPtr;																			// set pointer to the HM module
-	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&cmSwitch::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
+void cmSwitch::regInHM(uint8_t cnl, uint8_t lst) {
+
+	hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<cmSwitch, &cmSwitch::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
 }
+
 void cmSwitch::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
 	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
 	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
+	else if ((by3 == 0x00) && (by10 == 0x02)) updatePeerDefaults(by11, data, len);
 	else if ((by3 == 0x01) && (by11 == 0x06)) configCngEvent();
 	else if ((by3 == 0x11) && (by10 == 0x02)) pairSetEvent(data, len);
 	else if ((by3 == 0x01) && (by11 == 0x0E)) pairStatusReq();
@@ -393,24 +395,62 @@ void cmSwitch::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data
 	else if  (by3 >= 0x3E)                    peerMsgEvent(by3, data, len);
 	else return;
 }
-void cmSwitch::peerAddEvent(uint8_t *data, uint8_t len) {
-	// we received an peer add event, which means, there was a peer added in this respective channel
-	// 1st byte and 2nd byte shows the peer channel, 3rd and 4th byte gives the peer index
-	// no need for sending an answer, but we could set default data to the respective list3/4
-	#ifdef RL_DBG
-	dbg << F("peerAddEvent: pCnl1: ") << _HEXB(data[0]) << F(", pCnl2: ") << _HEXB(data[1]) << F(", pIdx1: ") << _HEXB(data[2]) << F(", pIdx2: ") << _HEXB(data[3]) << '\n';
-	#endif
+
+/**
+* This function will be called by the eeprom module as a request to update the
+* list3 structure by the default values per peer channel for the user module.
+* Overall defaults are already set to the list3/4 by the eeprom class, here it 
+* is only about peer channel specific deviations.
+* As we get this request for each peer channel we don't need the peer index.
+* Setting defaults could be done in different ways but this should be the easiest...
+*
+* Byte     00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21
+* ADDRESS  02 03 04 05 06 07 08 09 0a 0b 0c 82 83 84 85 86 87 88 89 8a 8b 8c
+* DEFAULT  00 00 32 64 00 ff 00 ff 01 44 44 00 00 32 64 00 ff 00 ff 21 44 44
+* to Change                           14 63                            14 63
+* OFF                                 64 66                            64  66
+* ON                                  13 33                            13  33
+* TOGGLE   0B 14  0C 63  8B 14  8C 63
+* As we have to change only 4 bytes, we can map the struct to a byte array point
+* and address/change the bytes direct. EEprom gets updated by the eeprom class
+* automatically.
+*/
+void cmSwitch::updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len) {
 	
-	if ((data[0]) && (data[1])) {															// dual peer add
-		if (data[0]%2) {																	// odd
-			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
-			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
-		} else {																			// even
-			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
-			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
+	uint8_t *lstP = (uint8_t*)&lstPeer;														// cast the struct in a byte array
+
+	// if both peer channels are given, peer channel 01 default is the off dataset, peer channel 02 default is the on dataset
+	// if only one peer channel is given, then the default dataset is toogle
+	if ((data[0]) && (data[1])) {	// dual peer add
+
+		if (by11 % 2) {				// odd (1,3,5..) means OFF								// if this returns 1 it has detected an odd number(1,3,5..)
+			lstP[9] = lstP[20] = 0x64;														// set some byte
+			lstP[10] = lstP[21] = 0x66;
+
+		} else {					// even (2,4,6..) means ON
+			lstP[9] = lstP[20] = 0x13;														// set some byte
+			lstP[10] = lstP[21] = 0x33;
+
 		}
-	} else {																				// single peer add
-		if (data[0]) hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
-		if (data[1]) hm->ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
-	}
+
+	} else  {						// toggle peer channel
+		lstP[9]  = lstP[20] = 0x14;															// set some byte
+		lstP[10] = lstP[21] = 0x63;
+
+	} 
+	#ifdef RL_DBG
+	dbg << F("updatePeerDefaults: pCnl1: ") << _HEXB(data[0]) << F(", pCnl2: ") << _HEXB(data[1]) << F(", cur_pCnl: ") << _HEXB(by11) << '\n';
+	#endif
+}
+
+/**
+* we received an peer add event, which means, there was a peer added in this respective channel
+* 1st byte and 2nd byte shows the peer channel, 3rd and 4th byte gives the peer index
+* no need for sending an answer here, for information only
+*/
+void cmSwitch::peerAddEvent(uint8_t *data, uint8_t len) {
+
+	#ifdef RL_DBG
+	dbg << F("peerAddEvent: peer: ") << _HEX(data, 3) << F(", pCnl1: ") << _HEXB(data[3]) << F(", pCnl2: ") << _HEXB(data[4]) << '\n';
+	#endif
 }

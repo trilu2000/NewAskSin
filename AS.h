@@ -23,6 +23,8 @@
 #include "Version.h"
 #include "macros.h"
 
+const uint8_t empty_4_byte[] = { 0,0,0,0, };					// need it all time to get an empty peer slot or for compare... 
+#define EMPTY4BYTE (uint8_t*)empty_4_byte
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.
@@ -40,6 +42,7 @@
  * All send functions are used by sensor or actor classes like THSensor or Dimmer.
  */
 
+
 class AS {
 	friend class SN;
 	friend class RV;
@@ -48,18 +51,18 @@ class AS {
 
   public:		//---------------------------------------------------------------------------------------------------------
 	EE ee;				///< eeprom module
-	SN sn;				///< send module
+	CC cc;				///< load communication module
 	RG rg;				///< user module registrar
+	SN sn;				///< send module
+	RV rv;				///< receive module
 	LD ld;				///< status led
 	CB confButton;		///< config button
-	PW pw;				///< power management
-	CC cc;				///< load communication module
 	BT bt;				///< battery status
+	PW pw;				///< power management
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 
-	RV rv;				///< receive module
 
 	/** @brief Helper structure for keeping track of active config mode */
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
@@ -168,6 +171,8 @@ class AS {
 
 	void initPseudoRandomNumberGenerator();
 
+
+
   private:		//---------------------------------------------------------------------------------------------------------
 
 	inline void processMessageSwitchEvent();
@@ -186,7 +191,7 @@ class AS {
 	inline void processMessageConfigAESProtected();
 
 	inline void actionSwitchEvent();
-	inline uint8_t configPeerAdd(uint8_t by10);
+	inline uint8_t configPeerAdd();
 	inline uint8_t configPeerRemove();
 	inline void configStart();
 	inline void configEnd();
@@ -228,6 +233,7 @@ class AS {
 
 };
 extern AS hm;
+//extern AS::s_modTable modTbl[];															// initial register.h
 
 /**
  * @short Timer class for non-blocking delays

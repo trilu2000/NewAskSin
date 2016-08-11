@@ -295,7 +295,7 @@ class cmDimmer {
 	uint8_t  modDUL;																		// module down up low battery byte
 	uint8_t  regCnl;																		// holds the channel for the module
 
-	AS       *hm;																			// pointer to HM class instance
+	//AS       *hm;																			// pointer to HM class instance
 
 	void     setToggle(void);																// toggle the module initiated by config button
 	void     configCngEvent(void);															// list1 on registered channel had changed

@@ -81,7 +81,7 @@ class cmRemote {
   //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
 	uint8_t regCnl;																				// holds the channel for the module
 
-	AS      *hm;																				// pointer to HM class instance
+	//AS      *hm;																				// pointer to HM class instance
 
 	void    setToggle(void);																	// toggle the module initiated by config button
 	void    configCngEvent(void);																// list1 on registered channel had changed
@@ -92,7 +92,7 @@ class cmRemote {
 	void    poll(void);																			// poll function, driven by HM loop
 
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
-	void    regInHM(uint8_t cnl, uint8_t lst, AS *instPtr);										// register this module in HM on the specific channel
+	void    regInHM(uint8_t cnl, uint8_t lst);													// register this module in HM on the specific channel
 	void    hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);	// call back address for HM for informing on events
 	void    peerAddEvent(uint8_t *data, uint8_t len);											// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
 };

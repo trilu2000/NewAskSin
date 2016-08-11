@@ -13,19 +13,15 @@
 // private:		//---------------------------------------------------------------------------------------------------------
 waitTimer pwrTmr;																			// power timer functionality
 
-PW::PW() {
-}
-
 /**
- * @brief Initialize the power module
- */
-void PW::init(AS *ptrMain) {
+* @brief Initialize the power module
+*/
+PW::PW() {
 	#ifdef PW_DBG																			// only if ee debug is set
-		dbgStart();																			// serial setup
-		dbg << F("PW.\n");																	// ...and some information
+	dbgStart();																				// serial setup
+	dbg << F("PW.\n");																		// ...and some information
 	#endif
 
-	pHM = ptrMain;																			// pointer to main class
 	pwrMode = POWER_MODE_NO_SLEEP;															// set default
 }
 
@@ -36,7 +32,7 @@ void PW::setMode(uint8_t mode) {
 	pwrMode = mode;
 
 	#ifdef PW_DBG																			// only if pw debug is set
-		dbg << F("PowerMode: ") << pwrMode << '\n';											// ...and some information
+	dbg << F("PowerMode: ") << pwrMode << '\n';											// ...and some information
 	#endif
 
 	initWakeupPin();
@@ -64,7 +60,7 @@ void PW::poll(void) {
 	if (checkWakeupPin()) return;															// wakeup pin active
 	
 	// some communication still active, jump out
-	if ((pHM->sn.active) || (pHM->stcSlice.active) || (pHM->cFlag.active) || (pHM->pairActive) || (pHM->confButton.armFlg)) return;
+	if ((hm.sn.active) || (hm.stcSlice.active) || (hm.cFlag.active) || (hm.pairActive) || (hm.confButton.armFlg)) return;
 	
 	#ifdef PW_DBG																			// only if pw debug is set
 	dbg << '.';																				// ...and some information
@@ -75,7 +71,7 @@ void PW::poll(void) {
 
 	if (pwrMode == POWER_MODE_WAKEUP_ONRADIO) {												// check communication on power mode 1
 
-		tmpCCBurst = pHM->cc.detectBurst();
+		tmpCCBurst = hm.cc.detectBurst();
 		if ((tmpCCBurst) && (!chkCCBurst)) {												// burst detected for the first time
 			chkCCBurst = 1;																	// set the flag
 			
@@ -103,8 +99,8 @@ void PW::poll(void) {
 	}
 
 	// if we are here, we could go sleep. set cc module idle, switch off led's and sleep
-	pHM->cc.setIdle();																		// set communication module to idle
-	pHM->ld.set(nothing);																	// switch off all led's
+	hm.cc.setIdle();																		// set communication module to idle
+	hm.ld.set(nothing);																	// switch off all led's
 
 	// start the respective watchdog timers
 	cli();

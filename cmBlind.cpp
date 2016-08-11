@@ -255,9 +255,9 @@ inline void cmBlind::sendState(void) {
 	}
 		
 	if (stateToSend == AS_CM_STATETOSEND_ACK) {											// Check which type has to be send
-		hm->sendACK_STATUS(regCnl, modState, extState);								// send ACK
+		hm.sendACK_STATUS(regCnl, modState, extState);								// send ACK
 	} else if (stateToSend == AS_CM_STATETOSEND_STATE) {
-		hm->sendINFO_ACTUATOR_STATUS(regCnl, modState, extState);					// send status
+		hm.sendINFO_ACTUATOR_STATUS(regCnl, modState, extState);					// send status
 	}
 
 	// check if it is a stable status, otherwise schedule next info message
@@ -449,7 +449,7 @@ void cmBlind::configCngEvent(void) {
 
 	if (lstCnl.STATUSINFO_RANDOM) {
 		// maybe we outsource this call to external module
-		hm->initPseudoRandomNumberGenerator();
+		hm.initPseudoRandomNumberGenerator();
 		msgDelay += (rand()%(uint16_t)(lstCnl.STATUSINFO_RANDOM * 1000));
 	}
 
@@ -521,7 +521,7 @@ void cmBlind::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 		msgTmr.set(100);															// immediately
 
 	} else {
-		hm->sendACK();
+		hm.sendACK();
 	}
 }
 
@@ -535,11 +535,14 @@ void cmBlind::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
  * @brief Register module in HM
  */
 void cmBlind::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
-	hm = instPtr;																	// set pointer to the HM module
-	hm->rg.regInAS(
+	//hm = instPtr;																	// set pointer to the HM module
+	//hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<cmSwitch, &cmSwitch::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
+
+	hm.rg.regUserModuleInAS(
 		cnl,
 		lst,
-		s_mod_dlgt(this,&cmBlind::hmEventCol),
+		myDelegate::from_function<cmBlind, &cmBlind::hmEventCol>(this),
+		//s_mod_dlgt(this,&cmBlind::hmEventCol),
 		(uint8_t*)&lstCnl,
 		(uint8_t*)&lstPeer
 	);
@@ -577,16 +580,16 @@ void cmBlind::peerAddEvent(uint8_t *data, uint8_t len) {
 	
 	if ((data[0]) && (data[1])) {															// dual peer add
 		if (data[0]%2) {																	// odd
-			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
-			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
+			hm.ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
+			hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
 		} else {																			// even
-			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
-			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
+			hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
+			hm.ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
 		}
 
 	} else {																				// single peer add
-		if (data[0]) hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
-		if (data[1]) hm->ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
+		if (data[0]) hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
+		if (data[1]) hm.ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
 }
 

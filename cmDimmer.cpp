@@ -307,8 +307,8 @@ void cmDimmer::sendStatus(void) {
 	if (!delayTmr.done() )       modDUL |= 0x40;
 		
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      (sendStat == 1) hm->sendACK_STATUS(regCnl, modStat, modDUL);					// send ACK
-	else if (sendStat == 2) hm->sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);			// send status
+	if      (sendStat == 1) hm.sendACK_STATUS(regCnl, modStat, modDUL);					// send ACK
+	else if (sendStat == 2) hm.sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);			// send status
 
 	// check if it is a stable status, otherwise schedule next info message
 	if (modDUL >= 0x40) {																	// status is currently changing
@@ -559,7 +559,7 @@ void cmDimmer::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 		msgTmr.set(100);																	// immediately
 
 	} else {
-		hm->sendACK();
+		hm.sendACK();
 
 	}
 }
@@ -572,8 +572,9 @@ void cmDimmer::poll(void) {
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
 void cmDimmer::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
-	hm = instPtr;																			// set pointer to the HM module
-	hm->rg.regInAS(cnl, lst, s_mod_dlgt(this,&cmDimmer::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
+	//hm = instPtr;																			// set pointer to the HM module
+	hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<cmDimmer, &cmDimmer::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
+	//hm.rg.regUserModuleInAS(cnl, lst, s_mod_dlgt(this,&cmDimmer::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
 }
 void cmDimmer::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
@@ -598,15 +599,15 @@ void cmDimmer::peerAddEvent(uint8_t *data, uint8_t len) {
 	
 	if ((data[0]) && (data[1])) {															// dual peer add
 		if (data[0]%2) {																	// odd
-			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
-			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
+			hm.ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
+			hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
 		} else {																			// even
-			hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
-			hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
+			hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
+			hm.ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
 		}
 	} else {																				// single peer add
-		if (data[0]) hm->ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
-		if (data[1]) hm->ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
+		if (data[0]) hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
+		if (data[1]) hm.ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
 }
 void cmDimmer::firstStart(void) {

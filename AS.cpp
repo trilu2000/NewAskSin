@@ -17,7 +17,7 @@
  */
 #define WDT_RESET_ON_RESET
 
-#define AS_DBG
+//#define AS_DBG
 //#define RV_DBG_EX
 //#define AES_DBG
 
@@ -35,18 +35,18 @@ waitTimer pairTmr;																				// pair timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS() {
+	#ifdef AS_DBG																				// only if cc debug is set
+	dbgStart();																				// serial setup
+	dbg << F("AS.\n");																		// ...and some information
+	#endif
 }
 
 /**
  * @brief Initialize the AskSin Module
  */
 void AS::init(void) {
-	#ifdef AS_DBG																				// only if cc debug is set
-		dbgStart();																				// serial setup
-		dbg << F("AS.\n");																		// ...and some information
-	#endif
 
-	//initLeds();																					// initialize the leds
+	initLeds();																					// initialize the leds
 	initConfKey();																				// initialize the port for getting config key interrupts
 
 	ee.init();																					// eeprom init
@@ -55,14 +55,6 @@ void AS::init(void) {
 	memcpy_P(HMID, HMSerialData+0, 3);															// set HMID from pgmspace
 	memcpy_P(HMSR, HMSerialData+3, 10);															// set HMSerial from pgmspace
 
-	sn.init(this);																				// send module
-	rv.init(this);																				// receive module
-	rg.init(this);																				// module registrar
-	ld.init(this);																				// led class initialization
-	confButton.init(this);																		// config button
-	pw.init(this);																				// power management
-	bt.init(this);																				// battery check
-	
 	initMillis();																				// start the millis counter
 
 	initRandomSeed();
@@ -1118,7 +1110,7 @@ uint8_t AS::processMessageConfig() {
 	uint8_t ackOk = 1;
 
 	if (rv.mBdy.by11 == AS_CONFIG_PEER_ADD) {													// CONFIG_PEER_ADD
-		ackOk = configPeerAdd(rv.mBdy.by10 -1);
+		ackOk = configPeerAdd();
 
 	} else if (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE) {											// CONFIG_PEER_REMOVE
 		ackOk = configPeerRemove();
@@ -1146,18 +1138,18 @@ uint8_t AS::processMessageConfig() {
  *             Sender__ Receiver Byte10    Channel Peer-ID_ PeerChannelA  PeerChannelB
  * 0C 0A A4 01 23 70 EC 1E 7A AD 01        01      1F A6 5C 06            05
  */
-inline uint8_t AS::configPeerAdd(uint8_t by10) {
+inline uint8_t AS::configPeerAdd() {
 
 	// set the peers in the peerdatabase
-	uint8_t ackOk = ee.addPeers(rv.mBdy.by10, rv.buf+12, rv.buf + 17);							// send to addPeer function
+	uint8_t ackOk = ee.addPeers(rv.mBdy.by10, rv.buf+12);										// send to addPeer function
 
-	//#ifdef AS_DBG																				// only if ee debug is set
-	dbg << F("configPeerAdd, by10:") << by10 << F(", cnl:") << _HEXB(rv.buf[11]) << F(", data:") << _HEX(rv.buf + 12, 5) << '\n';
-
+	#ifdef AS_DBG																				// only if ee debug is set
+	dbg << F("configPeerAdd, cnl:") << _HEXB(rv.buf[11]) << F(", data:") << _HEX(rv.buf + 12, 5) << '\n';
+	#endif
 	// call the respective user module and indicate the change
-	if ((ackOk) && (modTbl[by10].cnl)) {														// let module registrations know of the change
-		modTbl[by10].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
-	}
+	//if ((ackOk) && (modTbl[rv.mBdy.by10 - 1].cnl)) {											// let module registrations know of the change
+	//	modTbl[rv.mBdy.by10 - 1].mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+15, 4);
+	//}
 
 	return ackOk;																				// return the status
 }
@@ -1315,8 +1307,9 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
  */
 void AS::deviceReset(uint8_t clearEeprom) {
 	if (clearEeprom == AS_RESET_CLEAR_EEPROM) {
-		ee.clearPeers();
-		ee.clearRegs();
+		firstTimeStart();
+		//ee.clearPeers();
+		//ee.clearRegs();
 		ee.getMasterID();
 
 		#ifdef SUPPORT_AES
@@ -1705,6 +1698,9 @@ inline void AS::initRandomSeed() {
 
 	initPseudoRandomNumberGenerator();
 }
+
+
+
 
 /**
  * @brief Query if the timer has expired

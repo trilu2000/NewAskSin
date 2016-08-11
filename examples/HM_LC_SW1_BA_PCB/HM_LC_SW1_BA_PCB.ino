@@ -25,10 +25,10 @@ void setup() {
 	// enable only what is really needed
 
 	#ifdef SER_DBG																				// some debug
-		dbgStart();																				// serial setup
-		dbg << F("HM_LC_SW1_BA_PCB\n");	
-		dbg << F(LIB_VERSION_STRING);
-		_delay_ms (50);																			// ...and some information
+	dbgStart();																					// serial setup
+	dbg << F("HM_LC_SW1_BA_PCB\n");	
+	dbg << F(LIB_VERSION_STRING);
+	//_delay_ms (50);																			// ...and some information
 	#endif
 
 	
@@ -42,9 +42,9 @@ void setup() {
 		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
 	#endif
 
-	uint8_t xtemp[] = {0x33,0x11,0x22,0x01,0x02,0x00,0x00};
-	hm.ee.addPeers(1, xtemp, xtemp+5);
-	dbg << "x:" << _HEX(xtemp, 7) << "\n";
+	//uint8_t xtemp[] = {0x33,0x11,0x22,0x01,0x02,0x00,0x00};
+	//hm.ee.addPeers(1, xtemp, xtemp+5);
+	//dbg << "x:" << _HEX(xtemp, 7) << "\n";
 }
 
 void loop() {
