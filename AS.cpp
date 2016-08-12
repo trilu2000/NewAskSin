@@ -1008,7 +1008,6 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
 	// check if a module is registered and send the information, otherwise report an empty status
 	RG::s_modTable *pModTbl = &modTbl[by10];													// pointer to the respective line in the module table
-	//s_modTable *pModTbl = &modTbl[by10];													// pointer to the respective line in the module table
 
 	if ( pModTbl->cnl ) {
 		pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen - 11);

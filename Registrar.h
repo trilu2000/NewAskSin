@@ -43,12 +43,10 @@ private: //---------------------------------------------------------------------
 		return (p->*TMethod)(xs...);
 	}
 };
-//- typedef for delegate to module function
+
 typedef Delegate<void, uint8_t, uint8_t, uint8_t, uint8_t*, uint8_t> myDelegate;
-typedef Delegate<void, uint8_t, uint8_t, uint8_t*, uint8_t> xDelegate;
 
 
-enum RGEVENT :uint8_t { POLL = 0, TOGGLE, UPDATE_PEERS, CONFIG_CHANGE, PAIR_SET, PAIR_STATUS, PEER_ADD, PEER_MSG, };
 
 /**
 * @brief Registrar class - this is all about an struct array to store information of
@@ -62,14 +60,27 @@ enum RGEVENT :uint8_t { POLL = 0, TOGGLE, UPDATE_PEERS, CONFIG_CHANGE, PAIR_SET,
 class RG {
 public:	//---------------------------------------------------------------------------------------------------------
 
+	/**
+	* @brief Struct to hold information to handle channel modules
+	*
+	* @param cnl      Channel where the module is registered to
+	* @param lst      Module has a list3 or list 4
+	* @param msgCnt   Channel message counter
+	* @param *lstCnl  Pointer to list0/1 in the registered channel module
+	* @param *lstPeer Pointer to list3/4
+	* @param mDlgt    Delegate to the module function
+	*/
 	struct s_modTable {
 		uint8_t cnl;																		// channel where the module is registered to
 		uint8_t lst;																		// module has a list3 or list 4
 		uint8_t msgCnt;																		// channel message counter
 		uint8_t *lstCnl;																	// pointer to list0/1
 		uint8_t *lstPeer;																	// pointer to list3/4
-		myDelegate mDlgt;																	// delegate to the module function
-		xDelegate xDlgt;																	// delegate to the module function
+		/** @brief Delegate to the channel module function
+		* (by3, by10, by11, *buf, len)
+		* 0,0,0,NULL,0  = poll()
+		*/
+		myDelegate mDlgt;																	
 	};
 
 	RG() {}																					// constructor

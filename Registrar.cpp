@@ -22,16 +22,14 @@ void	RG::regUserModuleInAS(uint8_t cnl, uint8_t lst, myDelegate delegate, uint8_
 
 	hm.ee.getList(cnl, 1, 0, pModTbl->lstCnl);											// load list1 in the respective buffer
 	
-	//hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len)
-	pModTbl->mDlgt(0x01, 0, 0x06, NULL, 0);												// inform the module of the change
+	pModTbl->mDlgt(1,0,6,NULL,0);														// inform the module of the change
 }
 
 void	RG::poll(void) {
 
 	for (uint8_t i = 0; i <= cnl_max; i++) {											// poll through the module table
 		s_modTable *pModTbl = &modTbl[i];												// pointer to the respective line in the module table
-		//if (pModTbl->cnl) pModTbl->mDlgt(0, 0, 0, NULL, 0);
-		if (pModTbl->cnl) pModTbl->xDlgt(POLL, 0, NULL, 0);
+		if (pModTbl->cnl) pModTbl->mDlgt(0,0,0,NULL,0);
 	}
 }
 

@@ -383,7 +383,6 @@ void cmSwitch::regInHM(uint8_t cnl, uint8_t lst) {
 	pModTbl->cnl = cnl;
 	pModTbl->lst = lst;
 	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
-	pModTbl->xDlgt = xDelegate::from_function<CLASS_NAME, &CLASS_NAME::eventCol>(this);
 	pModTbl->lstCnl = (uint8_t*)&lstCnl;
 	pModTbl->lstPeer = (uint8_t*)&lstPeer;
 
@@ -393,30 +392,23 @@ void cmSwitch::regInHM(uint8_t cnl, uint8_t lst) {
 
 void cmSwitch::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
-	if ((by3 == 0x00) && (by10 == 0x00));// poll();
-	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
-	else if ((by3 == 0x00) && (by10 == 0x02)) updatePeerDefaults(by11, data, len);
-	else if ((by3 == 0x01) && (by11 == 0x06)) configCngEvent();
-	else if ((by3 == 0x11) && (by10 == 0x02)) pairSetEvent(data, len);
-	else if ((by3 == 0x01) && (by11 == 0x0E)) pairStatusReq();
-	else if ((by3 == 0x01) && (by11 == 0x01)) peerAddEvent(data, len);
-	else if  (by3 >= 0x3E)                    peerMsgEvent(by3, data, len);
-	else return;
+	if (by3 == 0x00) {				// system call
+		if (by10 == 0x00) poll();
+		if (by10 == 0x01) setToggle();
+		if (by10 == 0x02) updatePeerDefaults(by11, data, len);
+
+	} else if (by3 == 0x01) {
+		if (by11 == 0x06) configCngEvent();
+		if (by11 == 0x0E) pairStatusReq();
+		if (by11 == 0x01) peerAddEvent(data, len);
+
+	} else if (by3 == 0x11) {
+		if (by10 == 0x02) pairSetEvent(data, len);
+
+	} else if (by3 >= 0x3E) peerMsgEvent(by3, data, len);
+
 }
 
-void cmSwitch::eventCol(uint8_t intend, uint8_t spare, uint8_t *data, uint8_t len) {
-	// POLL, TOGGLE, UPDATE_PEERS, CONFIG_CHANGE, PAIR_SET, PAIR_STATUS, PEER_ADD, PEER_MSG
-	switch (intend) {
-		case POLL:          poll();	break;
-		case TOGGLE:        setToggle(); break;
-		case UPDATE_PEERS:  updatePeerDefaults(spare, data, len); break;
-		case CONFIG_CHANGE: configCngEvent(); break;
-		case PAIR_SET:      pairSetEvent(data, len); break;
-		case PAIR_STATUS:   pairStatusReq(); break;
-		case PEER_ADD:      peerAddEvent(data, len); break;
-		case PEER_MSG:      peerMsgEvent(spare, data, len); break;
-	}
-}
 
 /**
 * This function will be called by the eeprom module as a request to update the
