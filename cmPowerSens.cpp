@@ -165,7 +165,7 @@ void cmPowerSens::configCngEvent(void) {
 	dbg << F("lstCnl *: ") << ((int)modTbl[0].lstCnl) <<  '\n';
 	dbg << F("lstCnl: ") << _HEX((uint8_t*)&lstCnl, 9) << '\n';
 	dbg << F("lstCnl *: ") << ((int)&lstCnl) <<  '\n';
-	dbg << F("lstCnl *: ") << ((int)modTbl[0].lstPeer) << F(" lst: ") << modTbl[0].lst <<  '\n';
+	//dbg << F("lstCnl *: ") << ((int)modTbl[0].lstPeer) << F(" lst: ") << modTbl[0].lst <<  '\n';
 
 	s_lstCnl * cnlList = ((s_lstCnl *)modTbl[0].lstCnl);
 	cnlList->METER_CONSTANT_LED1;
@@ -234,12 +234,10 @@ void cmPowerSens::regInHM(uint8_t cnl, uint8_t lst) {
 	#ifdef CM_POWER_SENS_DBG
 		dbg << F("regInHM cnl: ")  << cnl << F(" lst: ")  << lst << '\n';
 	#endif
-	//hm = instPtr;																	// set pointer to the HM module
 	hm.rg.regUserModuleInAS(
 		cnl,
 		lst,
 		myDelegate::from_function<cmPowerSens, &cmPowerSens::hmEventCol>(this),
-		//s_mod_dlgt(this,&cmPowerSens::hmEventCol),
 		(uint8_t*)&lstCnl,
 		(uint8_t*)&lstPeer
 	);

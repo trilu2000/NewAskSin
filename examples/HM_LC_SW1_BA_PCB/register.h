@@ -5,10 +5,10 @@
 	 * @brief Libraries needed to run AskSin library
 	 */
 	#include <AS.h> 
+	#include <Registrar.h>
 	#include "hardware.h"
 	#include "hmkey.h"
 	#include <cmSwitch.h> 
-
 
 	/**
 	 * @brief Stage the modules and declare external functions.
@@ -127,17 +127,15 @@
 	 * amount of user channels, amount of lines in the channel table,
 	 * link to devIdent byte array, link to cnlAddr byte array
 	 */
-	EE::s_devDef devDef = {
-		1, 3, devIdnt, cnlAddr,
-	};
+	const uint8_t cnl_max = 1;
+	const uint8_t cnl_tbl_max = 3;
 
 	/**
 	 * @brief Sizing of the user module register table.
 	 * Within this register table all user modules are registered to make
 	 * them accessible for the AskSin library
 	 */
-	RG::s_modTable modTbl[1];
-
+	RG::s_modTable modTbl[cnl_max + 1];
 
 	/**
 	 * @brief Regular start function
@@ -166,13 +164,13 @@
 	void firstTimeStart(void) {
 
 		#ifdef SER_DBG
-		// some debug
+		/*// some debug
 		dbg << F("First time start active:\n");
 		dbg << F("cnl\tlst\tsIdx\tsLen\thide\tpAddr\n");
-		for (uint8_t i = 0; i < devDef.lstNbr; i++) {
+		for (uint8_t i = 0; i < cnl_tbl_max; i++) {
 			// cnl, lst, sIdx, sLen, hide, pAddr 
 			dbg << cnlTbl[i].cnl << "\t" << cnlTbl[i].lst << "\t" << cnlTbl[i].sIdx << "\t" << cnlTbl[i].sLen << "\t" << cnlTbl[i].vis << "\t" << cnlTbl[i].pAddr << "\n";
-		}
+		}*/
 		#endif
 
 		// fill register with default values, peer registers are not filled while done in usermodules

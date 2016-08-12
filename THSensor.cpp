@@ -64,7 +64,12 @@ void THSensor::sensPoll(void) {
 }
 
 uint32_t THSensor::calcSendSlot(void) {
-	uint32_t result = (((hm.ee.getHMID() << 8) | (hm.sn.msgCnt)) * 1103515245 + 12345) >> 16;
+	uint8_t a[4];
+	a[0] = HMID[2];
+	a[1] = HMID[1];
+	a[2] = HMID[0];
+	a[3] = 0;	
+	uint32_t result = ((( *(uint32_t*)&a << 8) | (hm.sn.msgCnt)) * 1103515245 + 12345) >> 16;
 	result = (result & 0xFF) + 480;
 	//dbg << "calcSendSlot: " << result << '\n'; 
 	return result;
@@ -124,9 +129,7 @@ void THSensor::poll(void) {
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
 void THSensor::regInHM(uint8_t cnl, uint8_t lst) {
-	//hm = instPtr;																			// set pointer to the HM module
 	hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<THSensor, &THSensor::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
-	//hm.rg.regUserModuleInAS(cnl, lst, s_mod_dlgt(this,&THSensor::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
 }
 void THSensor::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {

@@ -8,6 +8,7 @@
 
 #ifndef _cmSwitch_H
 #define _cmSwitch_H
+#define CLASS_NAME cmSwitch
 
 #include "AS.h"
 #include "HAL.h"
@@ -17,7 +18,7 @@
 
 class cmSwitch {
 	//- user code here ------------------------------------------------------------------------------------------------------
-	private://---------------------------------------------------------------------------------------------------------------
+	public://---------------------------------------------------------------------------------------------------------------
 
 	struct s_lstCnl {
 		uint8_t AES_ACTIVE           : 1;  // 0x08.0, s:1   d: false  
@@ -137,6 +138,7 @@ class cmSwitch {
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
 	void    regInHM(uint8_t cnl, uint8_t lst);												// register this module in HM on the specific channel
 	void    hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
+	void    eventCol(uint8_t intend, uint8_t spare, uint8_t *data, uint8_t len);			// call back address for HM for informing on events
 	void    updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len);					// add peer channel defaults to list3/4
 	void    peerAddEvent(uint8_t *data, uint8_t len);										// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
 };

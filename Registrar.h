@@ -6,22 +6,9 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-
 #ifndef _RG_H
 #define _RG_H
-
 #include "HAL.h"
-
-//- some macro to make it easier to call hmEventCol of user modules
-#define _USER_MODULE_POLL(CNL)              if (modTbl[CNL-1].cnl) modTbl[CNL-1].mDlgt(0x00, 0x00, 0x00, NULL, 0)
-#define _USER_MODULE_TOGGLE(CNL)            if (modTbl[CNL-1].cnl) modTbl[CNL-1].mDlgt(0x00, 0x01, 0x00, NULL, 0)
-#define _USER_MODULE_CONFIG_CHANGE(CNL)     if (modTbl[CNL-1].cnl) modTbl[CNL-1].mDlgt(0x01, 0x00, 0x06, NULL, 0)
-#define _USER_MODULE_PAIR_STATUS(CNL)       if (modTbl[CNL-1].cnl) modTbl[CNL-1].mDlgt(0x01, 0x00, 0x0E, NULL, 0)
-#define _USER_MODULE_PEER_ADD(CNL,DATA,LEN) if (modTbl[CNL-1].cnl) modTbl[CNL-1].mDlgt(0x01, 0x00, 0x01, DATA, LEN)
-#define _USER_MODULE_PAIR_SET(CNL,DATA,LEN) if (modTbl[CNL-1].cnl) modTbl[CNL-1].mDlgt(0x11, 0x02, 0x00, DATA, LEN)
-//#define _USER_MODULE_PEER_MSG(CNL,DATA,LEN) if (modTbl[CNL-1].cnl) modTbl[CNL-1].mDlgt(0x11, 0x02, 0x00, DATA, LEN)
-//modTbl[mod_cnl].mDlgt(0x01, 0, 0x06, NULL, 0);
-//else if (by3 >= 0x3E)                    peerMsgEvent(by3, data, len);
 
 
 /**
@@ -58,12 +45,23 @@ private: //---------------------------------------------------------------------
 };
 //- typedef for delegate to module function
 typedef Delegate<void, uint8_t, uint8_t, uint8_t, uint8_t*, uint8_t> myDelegate;
+typedef Delegate<void, uint8_t, uint8_t, uint8_t*, uint8_t> xDelegate;
 
 
+enum RGEVENT :uint8_t { POLL = 0, TOGGLE, UPDATE_PEERS, CONFIG_CHANGE, PAIR_SET, PAIR_STATUS, PEER_ADD, PEER_MSG, };
 
+/**
+* @brief Registrar class - this is all about an struct array to store information of
+*        the registered channel modules. Holds a pointer for list 1 and list 3 or 4
+*        but also a pointer to call the hmEventCol funktion of the respective channel module.
+*
+*  The struct array is sized by the amount of channels, channel 0 has an own slot to register
+*  a conf button module in the future.
+*
+*/
 class RG {
-
 public:	//---------------------------------------------------------------------------------------------------------
+
 	struct s_modTable {
 		uint8_t cnl;																		// channel where the module is registered to
 		uint8_t lst;																		// module has a list3 or list 4
@@ -71,18 +69,17 @@ public:	//----------------------------------------------------------------------
 		uint8_t *lstCnl;																	// pointer to list0/1
 		uint8_t *lstPeer;																	// pointer to list3/4
 		myDelegate mDlgt;																	// delegate to the module function
+		xDelegate xDlgt;																	// delegate to the module function
 	};
 
-	RG() {}																					// class constructor
-	//enum event { POLL, SET_TOGGLE, CONFIG_CHANGE, PAIR_SET, PAIR_STATUS, PEER_ADD, PEER_MESSAGE };
+	RG() {}																					// constructor
+	// todo: -- depreciated, clean up user channel modules 
 	void regUserModuleInAS(uint8_t cnl, uint8_t lst, myDelegate delegate, uint8_t *mainList, uint8_t *peerList);
-	void poll(void);
+	void poll(void);																		// polls regulary through the channel modules
 	
 };
+
+extern const uint8_t cnl_max;																// get access to cnl_max in register.h
 extern RG::s_modTable modTbl[];																// initial register.h
-
-
-
-
 
 #endif

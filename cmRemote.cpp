@@ -211,9 +211,7 @@ void cmRemote::regInHM(uint8_t cnl, uint8_t lst) {
 	dbg << F("RM regInHM, cnl: ") << cnl << F(" , lst: ") << lst << '\n';
 	#endif
 
-	//hm = instPtr;																			// set pointer to the HM module
 	hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<cmRemote, &cmRemote::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
-	//hm.rg.regUserModuleInAS(cnl, lst, s_mod_dlgt(this,&cmRemote::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
 	buttonInfo.channel = cnl;																// remembers the channel number
 }
@@ -265,7 +263,7 @@ void cmRemote::peerAddEvent(uint8_t *data, uint8_t len) {
 	//		hm->ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
 	//	}
 	//} else {																				// single peer add
-		if (data[0]) hm.ee.setList(regCnl, 4, data[3], (uint8_t*)peerSingle);
-		if (data[1]) hm.ee.setList(regCnl, 4, data[4], (uint8_t*)peerSingle);
+		if (data[0]) ee.setList(regCnl, 4, data[3], (uint8_t*)peerSingle);
+		if (data[1]) ee.setList(regCnl, 4, data[4], (uint8_t*)peerSingle);
 	//}
 }

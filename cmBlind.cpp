@@ -542,7 +542,6 @@ void cmBlind::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 		cnl,
 		lst,
 		myDelegate::from_function<cmBlind, &cmBlind::hmEventCol>(this),
-		//s_mod_dlgt(this,&cmBlind::hmEventCol),
 		(uint8_t*)&lstCnl,
 		(uint8_t*)&lstPeer
 	);
@@ -580,16 +579,16 @@ void cmBlind::peerAddEvent(uint8_t *data, uint8_t len) {
 	
 	if ((data[0]) && (data[1])) {															// dual peer add
 		if (data[0]%2) {																	// odd
-			hm.ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
-			hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
+			ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
+			ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
 		} else {																			// even
-			hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
-			hm.ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
+			ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
+			ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
 		}
 
 	} else {																				// single peer add
-		if (data[0]) hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
-		if (data[1]) hm.ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
+		if (data[0]) ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
+		if (data[1]) ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
 }
 

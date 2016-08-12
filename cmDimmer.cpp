@@ -574,7 +574,6 @@ void cmDimmer::poll(void) {
 void cmDimmer::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	//hm = instPtr;																			// set pointer to the HM module
 	hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<cmDimmer, &cmDimmer::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
-	//hm.rg.regUserModuleInAS(cnl, lst, s_mod_dlgt(this,&cmDimmer::hmEventCol), (uint8_t*)&lstCnl,(uint8_t*)&lstPeer);
 	regCnl = cnl;																			// stores the channel we are responsible fore
 }
 void cmDimmer::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
@@ -599,15 +598,15 @@ void cmDimmer::peerAddEvent(uint8_t *data, uint8_t len) {
 	
 	if ((data[0]) && (data[1])) {															// dual peer add
 		if (data[0]%2) {																	// odd
-			hm.ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
-			hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
+			ee.setList(regCnl, 3, data[2], (uint8_t*)peerOdd);
+			ee.setList(regCnl, 3, data[3], (uint8_t*)peerEven);
 		} else {																			// even
-			hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
-			hm.ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
+			ee.setList(regCnl, 3, data[3], (uint8_t*)peerOdd);
+			ee.setList(regCnl, 3, data[2], (uint8_t*)peerEven);
 		}
 	} else {																				// single peer add
-		if (data[0]) hm.ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
-		if (data[1]) hm.ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
+		if (data[0]) ee.setList(regCnl, 3, data[3], (uint8_t*)peerSingle);
+		if (data[1]) ee.setList(regCnl, 3, data[4], (uint8_t*)peerSingle);
 	}
 }
 void cmDimmer::firstStart(void) {

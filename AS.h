@@ -26,6 +26,7 @@
 const uint8_t empty_4_byte[] = { 0,0,0,0, };					// need it all time to get an empty peer slot or for compare... 
 #define EMPTY4BYTE (uint8_t*)empty_4_byte
 
+
 /**
  * @short Main class for implementation of the AskSin protocol stack.
  * Every device needs exactly one instance of this class.
@@ -59,6 +60,7 @@ class AS {
 	CB confButton;		///< config button
 	BT bt;				///< battery status
 	PW pw;				///< power management
+
 
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
@@ -116,7 +118,7 @@ class AS {
 	uint8_t  signingRequestData[6];
 	uint8_t  tempHmKey[16];
 	uint8_t  newHmKey[16];
-	uint8_t  newHmKeyIndex[];
+	uint8_t  newHmKeyIndex[1];
 	uint16_t randomSeed = 0;
 	uint8_t  resetStatus = 0;
 
@@ -232,8 +234,21 @@ class AS {
 
 
 };
+
+extern const uint8_t devIdnt[];
+extern const uint8_t cnlAddr[];
+/**
+* @brief Array with channel defaults. Index and length are hold in the channel table array.
+*        Must be declared in user space.
+*/
+extern const uint8_t cnlDefs[];
+extern const uint8_t cnl_max;
+extern const uint8_t cnl_tbl_max;
+
 extern AS hm;
-//extern AS::s_modTable modTbl[];															// initial register.h
+
+
+
 
 /**
  * @short Timer class for non-blocking delays

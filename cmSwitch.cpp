@@ -6,7 +6,7 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#define RL_DBG																			// debug message flag
+//#define RL_DBG																			// debug message flag
 #include "cmSwitch.h"
 
 //-------------------------------------------------------------------------------------------------------------------------
@@ -378,14 +378,22 @@ cmSwitch::cmSwitch(void) {
 }
 
 void cmSwitch::regInHM(uint8_t cnl, uint8_t lst) {
+	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
 
-	hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<cmSwitch, &cmSwitch::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
+	pModTbl->cnl = cnl;
+	pModTbl->lst = lst;
+	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
+	pModTbl->xDlgt = xDelegate::from_function<CLASS_NAME, &CLASS_NAME::eventCol>(this);
+	pModTbl->lstCnl = (uint8_t*)&lstCnl;
+	pModTbl->lstPeer = (uint8_t*)&lstPeer;
+
+	hm.ee.getList(cnl, 1, 0, (uint8_t*)&lstCnl);											// load list1 in the respective buffer
 	regCnl = cnl;																			// stores the channel we are responsible fore
 }
 
 void cmSwitch::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);
-	if      ((by3 == 0x00) && (by10 == 0x00)) poll();
+	if ((by3 == 0x00) && (by10 == 0x00));// poll();
 	else if ((by3 == 0x00) && (by10 == 0x01)) setToggle();
 	else if ((by3 == 0x00) && (by10 == 0x02)) updatePeerDefaults(by11, data, len);
 	else if ((by3 == 0x01) && (by11 == 0x06)) configCngEvent();
@@ -394,6 +402,20 @@ void cmSwitch::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data
 	else if ((by3 == 0x01) && (by11 == 0x01)) peerAddEvent(data, len);
 	else if  (by3 >= 0x3E)                    peerMsgEvent(by3, data, len);
 	else return;
+}
+
+void cmSwitch::eventCol(uint8_t intend, uint8_t spare, uint8_t *data, uint8_t len) {
+	// POLL, TOGGLE, UPDATE_PEERS, CONFIG_CHANGE, PAIR_SET, PAIR_STATUS, PEER_ADD, PEER_MSG
+	switch (intend) {
+		case POLL:          poll();	break;
+		case TOGGLE:        setToggle(); break;
+		case UPDATE_PEERS:  updatePeerDefaults(spare, data, len); break;
+		case CONFIG_CHANGE: configCngEvent(); break;
+		case PAIR_SET:      pairSetEvent(data, len); break;
+		case PAIR_STATUS:   pairStatusReq(); break;
+		case PEER_ADD:      peerAddEvent(data, len); break;
+		case PEER_MSG:      peerMsgEvent(spare, data, len); break;
+	}
 }
 
 /**

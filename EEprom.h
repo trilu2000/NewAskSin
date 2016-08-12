@@ -146,37 +146,18 @@ class EE {
 		const uint16_t pAddr;  ///< Address of configuration data in EEprom memory
 	};
 
-    /**
-     * @brief Device Definition
-     *
-     * This structure is used to define basic device properties:
-     *   - The channel/list combinations are specified in the channel table EE::s_cnlTbl cnlTbl
-     *   - The device identity is specified in a separate byte array (see example)
-     *   - The channel slice address information is specified in a separate byte array
-     *
-     * @include docs/snippets/register-h-devDef.cpp
-     *
-     */
-	struct s_devDef {	// device definition table
-		const uint8_t   cnlNbr;    ///< Number of channels
-		const uint8_t   lstNbr;    ///< Number of lists
-		const uint8_t   *devIdnt;  ///< Pointer to device identifier
-		const uint8_t   *cnlAddr;  ///< Pointer to the channel slice address definition
-	};
-
   protected:	//---------------------------------------------------------------------------------------------------------
   private:		//---------------------------------------------------------------------------------------------------------
 
   public:		//---------------------------------------------------------------------------------------------------------
 	uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
-	uint8_t  setList(uint8_t cnlTblIdx, uint8_t idx, uint8_t *buf);						// if we know the channel table index already
+	uint8_t  setList(s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);					// if we know the channel table index already
 	uint8_t  setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
 	uint8_t  setListArray(uint8_t cnlTblIdx, uint8_t idx, uint8_t len, uint8_t *buf);
 
 	uint8_t  getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in to a given buffer
 	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 
-	uint32_t getHMID(void);																// get HMID as 32 bit integer
 
   protected:	//---------------------------------------------------------------------------------------------------------
   public:		//--------------------------------------------------------------------------------------------------------
@@ -202,11 +183,9 @@ class EE {
 	uint8_t  remPeers(uint8_t cnl, uint8_t *peer);										// ok, writes a zero to the respective slot
 	uint8_t  countPeerSlc(uint8_t cnl);													// ok, count the slices for function getPeerListSlc
 	uint8_t  getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);					// ok, returns the whole peer database as a string
-	uint8_t  getPeerSlots(uint8_t cnl);													// ok, returns max peers per channel
+	//uint8_t  getPeerSlots(uint8_t cnl);													// ok, returns max peers per channel
 
 	// register functions
-	void     clearRegs(void);															// ok, clears register space
-
 	uint8_t  countRegListSlc(uint8_t cnl, uint8_t lst);									// ok, counts the slices for a complete regs transmition
 	uint8_t  getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);// ok, generates answer to a channel/list request
 
@@ -214,15 +193,21 @@ class EE {
 	//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);
 	//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len);
 
-	uint8_t  getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
-	uint8_t  checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx);
+	uint8_t   getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
+	s_cnlTbl* getRegListStruct(uint8_t cnl, uint8_t lst);								// ok, returns the respective line of cnlTbl
+	//uint8_t   checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx);
 };
+extern EE ee;
 
+extern const uint8_t devIdnt[];
+extern const uint8_t cnlAddr[];
 /**
 * @brief Array with channel defaults. Index and length are hold in the channel table array.
 *        Must be declared in user space.
 */
-extern  const uint8_t cnlDefs[];
+extern const uint8_t cnlDefs[];
+extern const uint8_t cnl_max;
+extern const uint8_t cnl_tbl_max;
 
 
 /**
@@ -247,7 +232,7 @@ extern const EE::s_peerTbl peerTbl[];															// initial register.h
  *
  * @todo Insert description and example for devDef
  */
-extern EE::s_devDef devDef;																// initial register.h
+//extern EE::s_devDef devDef;																// initial register.h
 
 /**
  * @brief Global definition of master HM-ID (paired central).

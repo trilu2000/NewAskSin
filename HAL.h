@@ -157,10 +157,10 @@
 
 
 	//- eeprom functions ------------------------------------------------------------------------------------------------------
-	extern void    initEEProm(void);
-	extern void    getEEPromBlock(uint16_t addr,uint8_t len,void *ptr);
-	extern void    setEEPromBlock(uint16_t addr,uint8_t len,void *ptr);
-	extern void    clearEEPromBlock(uint16_t addr, uint16_t len);
+	void    initEEProm(void);
+	void    getEEPromBlock(uint16_t addr,uint8_t len,void *ptr);
+	void    setEEPromBlock(uint16_t addr,uint8_t len,void *ptr);
+	void    clearEEPromBlock(uint16_t addr, uint16_t len);
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 
