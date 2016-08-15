@@ -7,6 +7,7 @@
 
 #ifndef _THSENSOR_H
 #define _THSENSOR_H
+#define CLASS_NAME THSensor
 
 #include "AS.h"
 #include "HAL.h"

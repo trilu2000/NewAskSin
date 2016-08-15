@@ -8,6 +8,7 @@
 
 #ifndef _CM_POWER_SENS_H
 #define _CM_POWER_SENS_H
+#define CLASS_NAME cmPowerSens
 
 
 #include "AS.h"

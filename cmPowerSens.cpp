@@ -234,7 +234,17 @@ void cmPowerSens::regInHM(uint8_t cnl, uint8_t lst) {
 	#ifdef CM_POWER_SENS_DBG
 		dbg << F("regInHM cnl: ")  << cnl << F(" lst: ")  << lst << '\n';
 	#endif
-	hm.rg.regUserModuleInAS(
+	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
+
+	pModTbl->cnl = cnl;
+	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
+	pModTbl->lstCnl = (uint8_t*)&lstCnl;
+	pModTbl->lstPeer = (uint8_t*)&lstPeer;
+
+	hm.ee.getList(cnl, 1, 0, (uint8_t*)&lstCnl);											// load list1 in the respective buffer
+	regCnl = cnl;																			// stores the channel we are responsible fore
+		
+	/*hm.rg.regUserModuleInAS(
 		cnl,
 		lst,
 		myDelegate::from_function<cmPowerSens, &cmPowerSens::hmEventCol>(this),
@@ -242,7 +252,7 @@ void cmPowerSens::regInHM(uint8_t cnl, uint8_t lst) {
 		(uint8_t*)&lstPeer
 	);
 
-	regCnl = cnl;																	// stores the channel we are responsible fore
+	regCnl = cnl;	*/																// stores the channel we are responsible fore
 	infraDetector = InfraRedSignalDetector();
 }
 

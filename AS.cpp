@@ -1285,15 +1285,23 @@ void AS::processMessageAction11() {
 
 /**
  * @brief Process all action (3E, 3F, 40, 41, ...) messages
+ * 
+ * Within the function we load the respective list3/4 into the
+ * list pointer in module table registered. Identification of the list
+ * is done by a lookup in the peertable and following the plink into the 
+ * the respective line in the channel table.
+ *
  */
 void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
 	// check if a module is registered and send the information, otherwise report an empty status
-	RG::s_modTable *pModTbl = &modTbl[cnl];														// pointer to the respective line in the module table
+	RG::s_modTable *pModTbl = &modTbl[ cnl ];													// pointer to the respective line in the module table
+	EE::s_peerTbl *pPeerTbl = (EE::s_peerTbl*)&peerTbl[ cnl ];
+	EE::s_cnlTbl *pCnlTbl = (EE::s_cnlTbl*)&cnlTbl[ pPeerTbl->pLink ];
 
 	if (pModTbl->cnl) {
 
 		//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
-		ee.getList( cnl, pModTbl->lst, pIdx, pModTbl->lstPeer);									// get list3 or list4 loaded into the user module
+		ee.getList( pCnlTbl->cnl, pCnlTbl->lst, pIdx, pModTbl->lstPeer);						// get list3 or list4 loaded into the user module
 
 		// call the user module
 		pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);

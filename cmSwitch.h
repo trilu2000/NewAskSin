@@ -1,10 +1,11 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin relay class ----------------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
-//- -----------------------------------------------------------------------------------------------------------------------
+/**
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin registrar functions -----------------------------------------------------------------------------------------------
+* - with a lot of support from martin876 at FHEM forum
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
 
 #ifndef _cmSwitch_H
 #define _cmSwitch_H
@@ -17,8 +18,9 @@
 
 
 class cmSwitch {
-	//- user code here ------------------------------------------------------------------------------------------------------
-	public://---------------------------------------------------------------------------------------------------------------
+//- user code here --------------------------------------------------------------------------------------------------------
+public://------------------------------------------------------------------------------------------------------------------
+	cmSwitch() {}																				// class constructor
 
 	struct s_lstCnl {
 		uint8_t AES_ACTIVE           : 1;  // 0x08.0, s:1   d: false  
@@ -26,7 +28,7 @@ class cmSwitch {
 	  } lstCnl; 
 	  
 	struct s_lstPeer {
-		uint8_t SHORT_CT_ONDELAY     : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO  -------------------------------------
+		uint8_t SHORT_CT_ONDELAY     : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO  ----------------------------------------
 		uint8_t SHORT_CT_OFFDELAY    : 4;  // 0x02.4, s:4   d: X GE COND_VALUE_LO   
 		uint8_t SHORT_CT_ON          : 4;  // 0x03.0, s:4   d: X GE COND_VALUE_LO  
 		uint8_t SHORT_CT_OFF         : 4;  // 0x03.4, s:4   d: X GE COND_VALUE_LO  
@@ -43,8 +45,8 @@ class cmSwitch {
 		uint8_t SHORT_JT_ON          : 4;  // 0x0b.0, s:4   d: OFF  
 		uint8_t SHORT_JT_OFF         : 4;  // 0x0b.4, s:4   d: OFF  
 		uint8_t SHORT_JT_ONDELAY     : 4;  // 0x0c.0, s:4   d: OFF  
-		uint8_t SHORT_JT_OFFDELAY    : 4;  // 0x0c.4, s:4   d: OFF                 -------------------------------------
-		uint8_t LONG_CT_ONDELAY      : 4;  // 0x82.0, s:4   d: X GE COND_VALUE_LO  ------------------------------------- 
+		uint8_t SHORT_JT_OFFDELAY    : 4;  // 0x0c.4, s:4   d: OFF                 ----------------------------------------------
+		uint8_t LONG_CT_ONDELAY      : 4;  // 0x82.0, s:4   d: X GE COND_VALUE_LO  ---------------------------------------------- 
 		uint8_t LONG_CT_OFFDELAY     : 4;  // 0x82.4, s:4   d: X GE COND_VALUE_LO  
 		uint8_t LONG_CT_ON           : 4;  // 0x83.0, s:4   d: X GE COND_VALUE_LO  
 		uint8_t LONG_CT_OFF          : 4;  // 0x83.4, s:4   d: X GE COND_VALUE_LO  
@@ -62,7 +64,7 @@ class cmSwitch {
 		uint8_t LONG_JT_ON           : 4;  // 0x8b.0, s:4   d: OFF  
 		uint8_t LONG_JT_OFF          : 4;  // 0x8b.4, s:4   d: OFF  
 		uint8_t LONG_JT_ONDELAY      : 4;  // 0x8c.0, s:4   d: OFF  
-		uint8_t LONG_JT_OFFDELAY     : 4;  // 0x8c.4, s:4   d: OFF                 -------------------------------------
+		uint8_t LONG_JT_OFFDELAY     : 4;  // 0x8c.4, s:4   d: OFF                 ----------------------------------------------
 	} lstPeer;
 
 	struct s_l3 {
@@ -88,9 +90,8 @@ class cmSwitch {
 	} *l3;
 	
 
-	public://----------------------------------------------------------------------------------------------------------------
-	//- user defined functions ----------------------------------------------------------------------------------------------
-	cmSwitch();
+public://------------------------------------------------------------------------------------------------------------------
+//- user defined functions ------------------------------------------------------------------------------------------------
 
 	void (*fInit)(uint8_t);																	// pointer to init function in main sketch
 	void (*fSwitch)(uint8_t,uint8_t);														// pointer to switch function in main sketch
@@ -122,24 +123,24 @@ class cmSwitch {
 	void      rlyPoll(void);																// polling function
 
 
-  //- mandatory functions for every new module to communicate within AS protocol stack ------------------------------------
-	uint8_t modStat;																		// module status byte, needed for list3 modules to answer status requests
-	uint8_t modDUL;																			// module down up low battery byte
-	uint8_t regCnl;																			// holds the channel for the module
+//- mandatory functions for every new module to communicate within AS protocol stack --------------------------------------
+	uint8_t     modStat;																	// module status byte, needed for list3 modules to answer status requests
+	uint8_t     modDUL;																		// module down up low battery byte
+	uint8_t     regCnl;																		// holds the channel for the module
 
-	void    setToggle(void);																// toggle the module initiated by config button
-	void    configCngEvent(void);															// list1 on registered channel had changed
-	void    pairSetEvent(uint8_t *data, uint8_t len);										// pair message to specific channel, handover information for value, ramp time and so on
-	void    pairStatusReq(void);															// event on status request
-	void    peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len);							// peer message was received on the registered channel, handover the message bytes and length
+	inline void setToggle(void);															// toggle the module initiated by config button
+	inline void configCngEvent(void);														// list1 on registered channel had changed
+	inline void pairSetEvent(uint8_t *data, uint8_t len);									// pair message to specific channel, handover information for value, ramp time and so on
+	inline void pairStatusReq(void);														// event on status request
+	inline void peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len);						// peer message was received on the registered channel, handover the message bytes and length
+	inline void peerAddEvent(uint8_t *data, uint8_t len);									// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
 
-	void    poll(void);																		// poll function, driven by HM loop
+	inline void poll(void);																	// poll function, driven by HM loop
+	inline void updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len);				// add peer channel defaults to list3/4
 
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
-	void    regInHM(uint8_t cnl, uint8_t lst);												// register this module in HM on the specific channel
-	void    hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
-	void    updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len);					// add peer channel defaults to list3/4
-	void    peerAddEvent(uint8_t *data, uint8_t len);										// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
+	void        regInHM(uint8_t cnl, uint8_t lst);											// register this module in HM on the specific channel
+	void        hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
 };
 
 #endif

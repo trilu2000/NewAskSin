@@ -1,10 +1,11 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin relay class ----------------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
-//- -----------------------------------------------------------------------------------------------------------------------
+/**
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin registrar functions -----------------------------------------------------------------------------------------------
+* - with a lot of support from martin876 at FHEM forum
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
 
 //#define RL_DBG																			// debug message flag
 #include "cmSwitch.h"
@@ -374,14 +375,12 @@ void cmSwitch::poll(void) {
 //-------------------------------------------------------------------------------------------------------------------------
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
-cmSwitch::cmSwitch(void) {
-}
+
 
 void cmSwitch::regInHM(uint8_t cnl, uint8_t lst) {
 	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
 
 	pModTbl->cnl = cnl;
-	pModTbl->lst = lst;
 	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
 	pModTbl->lstCnl = (uint8_t*)&lstCnl;
 	pModTbl->lstPeer = (uint8_t*)&lstPeer;

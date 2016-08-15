@@ -8,6 +8,7 @@
 
 #ifndef _CM_BLIND_H
 #define _CM_BLIND_H
+#define CLASS_NAME cmBlind
 
 #include "AS.h"
 #include "HAL.h"

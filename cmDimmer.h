@@ -8,6 +8,7 @@
 
 #ifndef _cmDimmer_H
 #define _cmDimmer_H
+#define CLASS_NAME cmDimmer
 
 #include "AS.h"
 #include "HAL.h"

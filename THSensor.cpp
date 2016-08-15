@@ -129,8 +129,17 @@ void THSensor::poll(void) {
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
 void THSensor::regInHM(uint8_t cnl, uint8_t lst) {
-	hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<THSensor, &THSensor::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
+	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
+
+	pModTbl->cnl = cnl;
+	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
+	pModTbl->lstCnl = (uint8_t*)&lstCnl;
+	pModTbl->lstPeer = (uint8_t*)&lstPeer;
+
+	hm.ee.getList(cnl, 1, 0, (uint8_t*)&lstCnl);											// load list1 in the respective buffer
 	regCnl = cnl;																			// stores the channel we are responsible fore
+	/*hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<THSensor, &THSensor::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
+	regCnl = cnl;*/																			// stores the channel we are responsible fore
 }
 void THSensor::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << _HEX(data, len) << '\n'; _delay_ms(100);

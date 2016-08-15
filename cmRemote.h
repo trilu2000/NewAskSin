@@ -8,6 +8,7 @@
 
 #ifndef _cmRemote_H
 #define _cmRemote_H
+#define CLASS_NAME cmRemote
 
 #include "AS.h"
 #include "HAL.h"
