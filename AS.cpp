@@ -26,20 +26,16 @@
 
 #ifdef SUPPORT_AES
 	#include "aes.h"
-
 	aes128_ctx_t ctx; 																			// the context where the round keys are stored
 #endif
 
 waitTimer cnfTmr;																				// config timer functionality
 waitTimer pairTmr;																				// pair timer functionality
 
-// public:		//---------------------------------------------------------------------------------------------------------
+
+																								// public:		//---------------------------------------------------------------------------------------------------------
 AS::AS()  {
 //AS::AS() : rg(this) {
-	#ifdef AS_DBG																				// only if cc debug is set
-	dbgStart();																					// serial setup
-	dbg << F("AS.\n");																			// ...and some information
-	#endif
 	//RG(this);
 }
 
@@ -47,6 +43,10 @@ AS::AS()  {
  * @brief Initialize the AskSin Module
  */
 void AS::init(void) {
+	#ifdef AS_DBG																				// only if cc debug is set
+	dbgStart();																					// serial setup
+	dbg << F("AS.\n");																			// ...and some information
+	#endif
 
 	initLeds();																					// initialize the leds
 	initConfKey();																				// initialize the port for getting config key interrupts
@@ -1009,8 +1009,8 @@ inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
 	// check if a module is registered and send the information, otherwise report an empty status
 	RG::s_modTable *pModTbl = &modTbl[by10];													// pointer to the respective line in the module table
 
-	if ( pModTbl->cnl ) {
-		pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen - 11);
+	if (pModTbl->isActive) {
+			pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen - 11);
 	} else {
 		sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);
 	}
@@ -1205,7 +1205,7 @@ inline void AS::configEnd() {
 	}
 	// remove message id flag to config in send module
 
-	if ( (cFlag.channel > 0) && ( pModTbl->cnl) ) {
+	if ( (cFlag.channel > 0) && ( pModTbl->isActive) ) {
 		/*
 		 * Check if a new list1 was written and reload.
 		 * No need for reload list3/4 because they will be loaded on an peer event.
@@ -1277,7 +1277,7 @@ void AS::processMessageAction11() {
 		 * 0E 5E B0 11 63 19 63 1F B7 4A 02   01         01      C8 00 00 00 00
 		 */
 		RG::s_modTable *pModTbl = &modTbl[rv.mBdy.by11];										// pointer to the respective line in the module table
-		if (pModTbl->cnl) {
+		if (pModTbl->isActive) {
 			pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
 		}
 	}
@@ -1294,17 +1294,17 @@ void AS::processMessageAction11() {
  */
 void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
 	// check if a module is registered and send the information, otherwise report an empty status
-	RG::s_modTable *pModTbl = &modTbl[ cnl ];													// pointer to the respective line in the module table
+	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
 	EE::s_peerTbl *pPeerTbl = (EE::s_peerTbl*)&peerTbl[ cnl ];
 	EE::s_cnlTbl *pCnlTbl = (EE::s_cnlTbl*)&cnlTbl[ pPeerTbl->pLink ];
 
-	if (pModTbl->cnl) {
+	if (pModTbl->isActive) {
 
 		//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
 		ee.getList( pCnlTbl->cnl, pCnlTbl->lst, pIdx, pModTbl->lstPeer);						// get list3 or list4 loaded into the user module
 
 		// call the user module
-		pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+10, rv.mBdy.mLen-9);
+		pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf + 10, rv.mBdy.mLen - 9);
 
 	} else {
 		sendACK();

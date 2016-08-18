@@ -535,11 +535,9 @@ void cmBlind::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
  * @brief Register module in HM
  */
 void cmBlind::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
-	//hm = instPtr;																	// set pointer to the HM module
-	//hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<cmSwitch, &cmSwitch::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
 	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
 
-	pModTbl->cnl = cnl;
+	pModTbl->isActive = 1;
 	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
 	pModTbl->lstCnl = (uint8_t*)&lstCnl;
 	pModTbl->lstPeer = (uint8_t*)&lstPeer;
@@ -547,15 +545,6 @@ void cmBlind::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	hm.ee.getList(cnl, 1, 0, (uint8_t*)&lstCnl);											// load list1 in the respective buffer
 	regCnl = cnl;																			// stores the channel we are responsible fore
 
-/*	hm.rg.regUserModuleInAS(
-		cnl,
-		lst,
-		myDelegate::from_function<cmBlind, &cmBlind::hmEventCol>(this),
-		(uint8_t*)&lstCnl,
-		(uint8_t*)&lstPeer
-	);
-
-	regCnl = cnl;	*/																// stores the channel we are responsible fore
 }
 
 /**

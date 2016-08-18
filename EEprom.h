@@ -140,7 +140,6 @@ class EE {
      * For other configuration data stored in EEprom memory, see s_cnlTbl.
      */
 	struct s_peerTbl {	// peer table holds information were to find peers in eeprom
-		//const uint8_t cnl;     ///< Channel
 		const uint8_t pMax;    ///< Maximum number of peer devices
 		const uint8_t pLink;    ///< Link to channel table row
 		const uint16_t pAddr;  ///< Address of configuration data in EEprom memory

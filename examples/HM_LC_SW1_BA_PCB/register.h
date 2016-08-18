@@ -18,9 +18,12 @@
 	 * to be defined in the user sketch.
 	 */
 	AS hm;
-	cmSwitch cm_Switch[1];	
-	extern void initSwitch(uint8_t channel);
-	extern void switchSwitch(uint8_t channel, uint8_t status);
+	/*
+	* cmSwitch requires this functions in the user sketch:
+	* void cmSwitch::initSwitch(uint8_t channel);
+	* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
+	*/
+	cmSwitch cm_Switch[1];
 
 
 	/*
@@ -150,8 +153,7 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);
 		hm.bt.set(30, 3600000);
 		// channel 1 section 
-		cm_Switch[0].regInHM(1, 3);
-		cm_Switch[0].config(&initSwitch, &switchSwitch);
+		cm_Switch[0].regInHM(1);
 	}
 
 	/**

@@ -102,7 +102,8 @@ void CB::poll(void) {
 }
 
 void CB::outSignal(uint8_t mode) {
-	
+	RG::s_modTable *pModTbl = &modTbl[1];													// pointer to the respective line in the module table
+
 	hm.pw.stayAwake(500);																	// stay awake to fulfill the action
 	hm.ld.blinkRed();																		// show via led that we have some action in place
 	
@@ -116,19 +117,15 @@ void CB::outSignal(uint8_t mode) {
 		if (mode == 7) dbg << F("keyLongTimeout\n");
 	#endif
 
-	if (mode == 1) {						// keyShortSingle
-
+	if        (mode == 1) {					// keyShortSingle
 		if (scn == 1) hm.sendDEVICE_INFO();													// send pairing string
-		if ((scn == 2) && (modTbl[0].cnl)) {
-			modTbl[0].mDlgt(0,1,0,NULL,0);													// send toggle to user module registered on channel 1
-		}
+		else if (scn == 2) if (pModTbl->isActive) pModTbl->mDlgt(TOOGLE);					// send toggle to user module registered on channel 1
 		
 	} else if (mode == 2) {					// keyShortDouble
 		
 	} else if (mode == 3) {					// keyLongSingle
-
-		if (scn == 1) hm.ld.set(key_long);
-		if (scn == 2) hm.sendDEVICE_INFO();													// send pairing string
+		if      (scn == 1) hm.ld.set(key_long);
+		else if (scn == 2) hm.sendDEVICE_INFO();											// send pairing string
 
 	} else if (mode == 4) {					// keyLongRepeat
 		hm.ld.set(nothing);
@@ -141,8 +138,8 @@ void CB::outSignal(uint8_t mode) {
 		// TODO: 0x18 localResDis available, take care of it
 		uint8_t localResDis = hm.ee.getRegAddr(0,0,0,0x18);									// get register address
 		//dbg << "x:" << localResDis <<'\n';
-		if (!localResDis) {																	// if local reset is not disabled, reset
+		if (!localResDis) 																	// if local reset is not disabled, reset
 			hm.deviceReset(AS_RESET_CLEAR_EEPROM);
-		}
+		
 	}
 }

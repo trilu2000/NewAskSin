@@ -23,8 +23,7 @@ void	RG::poll(void) {
 
 	for (uint8_t i = 0; i <= cnl_max; i++) {											// poll through the module table
 		RG::s_modTable *pModTbl = &modTbl[i];											// pointer to the respective line in the module table
-		if (pModTbl->cnl) pModTbl->mDlgt(POLL);
+		if (pModTbl->isActive) pModTbl->mDlgt(POLL);
 	}
 }
-
 

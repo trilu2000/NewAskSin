@@ -572,10 +572,9 @@ void cmDimmer::poll(void) {
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
 void cmDimmer::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
-	//hm = instPtr;																			// set pointer to the HM module
 	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
 
-	pModTbl->cnl = cnl;
+	pModTbl->isActive = 1;
 	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
 	pModTbl->lstCnl = (uint8_t*)&lstCnl;
 	pModTbl->lstPeer = (uint8_t*)&lstPeer;
@@ -583,8 +582,6 @@ void cmDimmer::regInHM(uint8_t cnl, uint8_t lst, AS *instPtr) {
 	hm.ee.getList(cnl, 1, 0, (uint8_t*)&lstCnl);											// load list1 in the respective buffer
 	regCnl = cnl;																			// stores the channel we are responsible fore
 
-/*	hm.rg.regUserModuleInAS(cnl, lst, myDelegate::from_function<cmDimmer, &cmDimmer::hmEventCol>(this), (uint8_t*)&lstCnl, (uint8_t*)&lstPeer);
-	regCnl = cnl;*/																			// stores the channel we are responsible fore
 }
 void cmDimmer::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
 	// dbg << "by3:" << by3 << " by10:" << by10 << " d:" << pHex(data, len) << '\n'; _delay_ms(100);

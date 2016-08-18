@@ -14,19 +14,28 @@
 #include "AS.h"
 #include "HAL.h"
 
+
 // default settings are defined in cmSwitch.cpp - updatePeerDefaults
 
 
 class cmSwitch {
+
 //- user code here --------------------------------------------------------------------------------------------------------
 public://------------------------------------------------------------------------------------------------------------------
-	cmSwitch() {}																				// class constructor
+	cmSwitch(){}																				// class constructor
+
+	#define NOT_USED 255
+	enum ACTION { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
+	enum JT { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, ON = 0x03, OFFDELAY = 0x04, OFF = 0x06 };
+	enum CT { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
+	enum INFO {NOTHING, ACK_STATUS, ACTUATOR_STATUS};
 
 	struct s_lstCnl {
 		uint8_t AES_ACTIVE           : 1;  // 0x08.0, s:1   d: false  
 		uint8_t                      : 7;  // 0x08.1, s:7   d:   
 	  } lstCnl; 
-	  
+
+
 	struct s_lstPeer {
 		uint8_t SHORT_CT_ONDELAY     : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO  ----------------------------------------
 		uint8_t SHORT_CT_OFFDELAY    : 4;  // 0x02.4, s:4   d: X GE COND_VALUE_LO   
@@ -92,35 +101,34 @@ public://-----------------------------------------------------------------------
 
 public://------------------------------------------------------------------------------------------------------------------
 //- user defined functions ------------------------------------------------------------------------------------------------
+	static void initSwitch(uint8_t channel);												// functions in user sketch needed
+	static void switchSwitch(uint8_t channel, uint8_t status);
 
-	void (*fInit)(uint8_t);																	// pointer to init function in main sketch
-	void (*fSwitch)(uint8_t,uint8_t);														// pointer to switch function in main sketch
-
-	waitTimer delayTmr;																		// delay timer for relay
+	uint8_t   active_tr11;																	// trigger 11 active
+	uint8_t   value_tr11;																	// trigger 11 set value
+	uint16_t  rampTme, duraTme;																// time store for trigger 11
 
 	uint8_t   cnt;																			// message counter for type 40 message
-	uint8_t   curStat:4, nxtStat:4;															// current state and next state
+	uint8_t   curStat, nxtStat;																// current state and next state
 
 	waitTimer msgTmr;																		// message timer for sending status
 	uint16_t  msgDelay;																		// delay for sending initial status
-	uint8_t	  sendStat  :2;																	// indicator for sendStatus function
+	uint8_t	  sendStat;																		// indicator for sendStatus function
 
-	uint8_t   tr11      :1;																	// trigger 11 active
-	uint8_t   tr11Value;																	// trigger 11 set value
-	uint16_t  rampTme, duraTme;																// time store for trigger 11
-
+	waitTimer delayTmr;																		// delay timer for relay
 	uint8_t   setStat;																		// status to set on the Relay channel
 
-	void      config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t));					// handover for jump addresses
 
-	void      trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);				// what happens while a trigger11 message arrive
-	void      trigger40(uint8_t msgLng, uint8_t msgCnt);									// same for peer messages
-	void      trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);					// same for sensor messages
+	inline void config(void);																// set up of module specific settings, called by regInHM
 
-	void      adjRly(void);																	// setting of relay status
-	void      sendStatus(void);																// help function to send status messages
+	inline void trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);				// what happens while a trigger11 message arrive
+	inline void trigger40(uint8_t msgLng, uint8_t msgCnt);									// same for peer messages
+	inline void trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);					// same for sensor messages
 
-	void      rlyPoll(void);																// polling function
+	inline void adjustStatus(void);															// setting of relay status
+	inline void sendStatus(void);															// help function to send status messages
+
+	inline void pollModule(void);															// polling function
 
 
 //- mandatory functions for every new module to communicate within AS protocol stack --------------------------------------
@@ -139,7 +147,7 @@ public://-----------------------------------------------------------------------
 	inline void updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len);				// add peer channel defaults to list3/4
 
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
-	void        regInHM(uint8_t cnl, uint8_t lst);											// register this module in HM on the specific channel
+	void        regInHM(uint8_t cnl);														// registers the module in the module table
 	void        hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
 };
 

@@ -12,6 +12,7 @@
 #include "HAL.h"
 
 #define POLL	0,0,0,NULL,0
+#define TOOGLE  0,1,0,NULL,0
 
 /**
 * @brief Delegation for channel module registrar.
@@ -79,7 +80,7 @@ public:	//----------------------------------------------------------------------
 	* @param mDlgt    Delegate to the module function
 	*/
 	struct s_modTable {
-		uint8_t cnl;								// channel where the module is registered to
+		uint8_t isActive   : 1;						// is some module registered
 		uint8_t msgCnt;								// channel message counter
 		uint8_t *lstCnl;							// pointer to list0/1
 		uint8_t *lstPeer;							// pointer to list3/4
@@ -92,7 +93,6 @@ public:	//----------------------------------------------------------------------
 
 	RG() {}											// constructor
 	void poll(void);								// polls regulary through the channel modules
-	
 };
 
 /**
@@ -113,6 +113,6 @@ extern const uint8_t cnl_max;
 * @param *lstPeer Pointer to list3/4
 * @param mDlgt    Delegate to the module function
 */
-extern RG::s_modTable modTbl[];	
+extern RG::s_modTable modTbl[];
 
 #endif

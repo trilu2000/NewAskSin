@@ -213,7 +213,7 @@ void cmRemote::regInHM(uint8_t cnl, uint8_t lst) {
 
 	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
 
-	pModTbl->cnl = cnl;
+	pModTbl->isActive = 1;
 	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
 	pModTbl->lstCnl = (uint8_t*)&lstCnl;
 	pModTbl->lstPeer = (uint8_t*)&lstPeer;

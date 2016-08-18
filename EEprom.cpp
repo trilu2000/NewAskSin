@@ -562,7 +562,7 @@ void     EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
 */
 uint8_t  EE::addPeers(uint8_t cnl, uint8_t *peer) {
 	uint8_t retByte = 0;
-	RG::s_modTable *pModTbl  = &modTbl[cnl];											// pointer to the respective line in the module table
+	RG::s_modTable *pModTbl = &modTbl[cnl];												// pointer to the respective line in the module table
 	EE::s_peerTbl  *pPeerTbl = (s_peerTbl*)&peerTbl[cnl];								// pointer to the peer table line
 	EE::s_cnlTbl   *pCnlTbl  = (s_cnlTbl*)&cnlTbl[ pPeerTbl->pLink ];					// easier to work with a pointer to the channel table
 
@@ -593,7 +593,7 @@ uint8_t  EE::addPeers(uint8_t cnl, uint8_t *peer) {
 		*/
 
 		// check if we have a registered channel module, otherwise write only defaults from register.h
-		if (pModTbl->cnl) {																// copy the respective defaults from cnlDefs into the list3/4 of the usermodule
+		if (pModTbl->isActive) {														// copy the respective defaults from cnlDefs into the list3/4 of the usermodule
 			memcpy(pModTbl->lstPeer, (uint8_t*)&cnlDefs[ pCnlTbl->sIdx ], pCnlTbl->sLen); // ask to update the peer list
 			pModTbl->mDlgt(0x00, 0x02, peer[3 + i], peer + 3, 2);						// contact the user module
 
@@ -604,7 +604,7 @@ uint8_t  EE::addPeers(uint8_t cnl, uint8_t *peer) {
 		retByte++;																		// increase our return byte
 	}
 
-	if (pModTbl->cnl) pModTbl->mDlgt(0x01, 0x00, 0x01, peer, 5);						// inform user module
+	if (pModTbl->isActive) pModTbl->mDlgt(0x01, 0x00, 0x01, peer, 5);					// inform user module
 
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbg << F("addPeers, cnl:") << cnl << F(", peer:") << _HEX(peer, 5) << '\n';

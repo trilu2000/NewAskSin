@@ -10,37 +10,27 @@
 //#define RL_DBG																			// debug message flag
 #include "cmSwitch.h"
 
+
 //-------------------------------------------------------------------------------------------------------------------------
 //- user defined functions -
 //-------------------------------------------------------------------------------------------------------------------------
 /**
-* @brief Config function to set up channel specific settings 
-*
-* @param Init    Pointer to a callback function we have to call while module is starting
-* @param xSwitch Pointer to a callback function to indicate changes in value 
+* @brief Config function to set up channel specific settings, called by 
+*        the regInHM function. No need to call from outside.
 *
 */
-void cmSwitch::config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t)) { //, uint8_t minDelay) {
-
-	fInit = Init;
-	fSwitch = xSwitch;
-
-	// set output pins
-	fInit(regCnl);
-
-	// some basic settings for start
-	// {no=>0,dlyOn=>1,on=>3,dlyOff=>4,off=>6}
-	curStat = nxtStat = 6;																	// set relay status to off
-	modStat = setStat = 0;
-	
-	msgDelay = (rand()%2000)+1000;															// set message delay
-
-	// send the initial status info
-	sendStat = 2;
-	msgTmr.set(msgDelay);
+void cmSwitch::config(void) { 
 
 	l3 = (s_l3*)&lstPeer;																	// set pointer to something useful
-	l3->ACTION_TYPE = 0;																	// and secure that no action will happened in polling function
+	l3->ACTION_TYPE = ACTION::INACTIVE;														// and secure that no action will happened in polling function
+
+	initSwitch(regCnl);																		// call external init function to set the output pins
+	modStat = setStat = 0;																	// output to 0
+	curStat = JT::OFF;																		// initialize the jump table value
+
+	msgDelay = (rand() % 2000) + 1000;														// set message delay
+	msgTmr.set(msgDelay);																	// wait some time to settle the device
+	sendStat = INFO::ACTUATOR_STATUS;														// send the initial status info
 }
 
 /**
@@ -54,29 +44,21 @@ void cmSwitch::config(void Init(uint8_t), void xSwitch(uint8_t,uint8_t)) { //, u
 *
 */
 void cmSwitch::trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *duraTime) {
+	l3->ACTION_TYPE = ACTION::INACTIVE;														// action type to off otherwise the polling function will overwrite
 
-	// some sanity
-	delayTmr.set(0);																		// also delay timer is not needed any more
-	l3->ACTION_TYPE = 0;																	// action type to off otherwise the polling function will overwrite
+	// convert the timer values and prepare the tr11 handling
+	//rampTme = *(uint16_t*)*rampTime;														// if ramp time is given, bring it in the right format
+	//duraTme = *(uint16_t*)*duraTime;														// duration time if given
+	rampTme = (uint16_t)rampTime[0] << 8 | (uint16_t)rampTime[1];							// if ramp time is given, bring it in the right format
+	duraTme = (uint16_t)duraTime[0] << 8 | (uint16_t)duraTime[1];							// duration time if given
 
-	// convert the timer values
-	if (rampTime) rampTme = (uint16_t)rampTime[0]<<8 | (uint16_t)rampTime[1];				// if ramp time is given, bring it in the right format
-	else rampTme = 0;																		// otherwise empty variable
+	if (rampTme) active_tr11 = 1;															// indicate we are coming from trigger11
+	else modStat = setValue;																// otherwise set the value directly
 
-	if (duraTime) duraTme = (uint16_t)duraTime[0]<<8 | (uint16_t)duraTime[1];				// duration time if given
-	else duraTme = 0;																		// or clear value
+	if (duraTme) active_tr11 = 1;															// set tr11 flag active to be processed in the poll function
 
-	// set values to proceed
-	tr11Value = setValue;																	// remember the value to be set
-
-	if (rampTme) {																			// ramp time is given
-		tr11 = 1;																			// indicate we are coming from trigger11
-		curStat = 1;																		// delay on
-		delayTmr.set(intTimeCvt(rampTme));													// set the timer accordingly
-
-	} else modStat = setValue;																// otherwise set value directly
-
-	if (duraTme) tr11 = 1;																	// indicate we are coming from trigger11
+	delayTmr.set( intTimeCvt(rampTme) );													// set the timer accordingly, could be 0 or a time
+	value_tr11 = setValue;																	// forward the value to be set
 
 	#ifdef RL_DBG																			// some debug
 	dbg << F("trigger11, setValue:") << setValue << F(", rampTime:") << intTimeCvt(rampTme) << F(", duraTime:") << intTimeCvt(duraTme) << '\n';
@@ -98,26 +80,26 @@ void cmSwitch::trigger40(uint8_t msgLng, uint8_t msgCnt) {
 	uint8_t isLng = (msgLng & 0x40) ? 1 : 0;												// is it a long message?
 	l3 = (isLng) ? (s_l3*)&lstPeer + 11 : (s_l3*)&lstPeer;									// set short or long struct portion
 	delayTmr.set(0);																		// also delay timer is not needed any more
-	rampTme = duraTme = 0;																	// ramp and durantion timer not needed while peer has own timers
+	active_tr11 = 0;																		// stop any tr11 processing
 	
 	// check for multi execute flag
 	if ((isLng) && (cnt == msgCnt) && (!lstPeer.LONG_MULTIEXECUTE)) return;					// trigger was a repeated long, but we have no multi execute, so return
 	cnt = msgCnt;																			// remember message counter
 
 	// check against action type
-	if        (l3->ACTION_TYPE == 0) {		// off
+	if        (l3->ACTION_TYPE == ACTION::INACTIVE) {
 
-	} else if (l3->ACTION_TYPE == 1) {		// jmpToTarget
-		// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-		if (curStat == 1)      nxtStat = l3->JT_ONDELAY;									// delay on
-		else if (curStat == 3) nxtStat = l3->JT_ON;											// on
-		else if (curStat == 4) nxtStat = l3->JT_OFFDELAY;									// delay off
-		else if (curStat == 6) nxtStat = l3->JT_OFF;										// currently off
+	} else if (l3->ACTION_TYPE == ACTION::JUMP_TO_TARGET) {
+		// set next status depending on current status
+		if      (curStat == JT::ONDELAY)  nxtStat = l3->JT_ONDELAY;							// delay on
+		else if (curStat == JT::ON)       nxtStat = l3->JT_ON;								// on
+		else if (curStat == JT::OFFDELAY) nxtStat = l3->JT_OFFDELAY;						// delay off
+		else if (curStat == JT::OFF)      nxtStat = l3->JT_OFF;								// currently off
 
-	} else if (l3->ACTION_TYPE == 2) {		// toogleToCounter
+	} else if (l3->ACTION_TYPE == ACTION::TOGGLE_TO_COUNTER) {
 		modStat = (msgCnt % 2) ? 200 : 0;													// set the relay status depending on message counter
 
-	} else if (l3->ACTION_TYPE == 3) {		// toogleInversToCounter
+	} else if (l3->ACTION_TYPE == ACTION::TOGGLE_INV_TO_COUNTER) {
 		modStat = (msgCnt % 2) ? 0 : 200;													// set the relay status depending on message counter
 	}
 
@@ -145,44 +127,46 @@ void cmSwitch::trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal) {
 	l3 = (isLng)?(s_l3*)&lstPeer+1 :(s_l3*)&lstPeer;										// set pointer to the right part of the list3, short or long
 
 
-	// SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-	if      (curStat == 1) ctTbl = l3->CT_ONDELAY;											// condition table delay on
-	else if (curStat == 3) ctTbl = l3->CT_ON;												// condition table on
-	else if (curStat == 4) ctTbl = l3->CT_OFFDELAY;											// condition table delay off
-	else if (curStat == 6) ctTbl = l3->CT_OFF;												// condition table off
+	// set condition table in conjunction of the current jump table status
+	if      (curStat == JT::ONDELAY)  ctTbl = l3->CT_ONDELAY;								// condition table delay on
+	else if (curStat == JT::ON)       ctTbl = l3->CT_ON;									// condition table on
+	else if (curStat == JT::OFFDELAY) ctTbl = l3->CT_OFFDELAY;								// condition table delay off
+	else if (curStat == JT::OFF)      ctTbl = l3->CT_OFF;									// condition table off
 	
-	// X GE COND_VALUE_LO                         - geLo -  > low           - 0 x greater or equal
-	// X GE COND_VALUE_HI                         - geHi -  > high          - 1 x greater or equal
-	// X LT COND_VALUE_LO                         - ltLo -  < low           - 2 x lower than
-	// X LT COND_VALUE_HI                         - ltHi -  < high          - 3 x lower than
-	// COND_VALUE_LO LE X LT COND_VALUE_HIGH      - betW -  low <> high     - 4 LO lower or equal x and x lower than HI
-	// X LT COND_VALUE_LO OR X GE COND_VALUE_HIGH - outS -  < low or > high - 5 x lower than LO or x greater or equal
-
 	#ifdef RL_DBG
 	dbg << F("trigger41, curStat:") << curStat  << F(", nxtStat:") << ctTbl << F(", val:") << msgVal << F(", HI:") << l3->COND_VALUE_HI << F(", LO:") << l3->COND_VALUE_LO << '\n';
 	#endif
 
-	if      ( (ctTbl == 0) && ( msgVal >= l3->COND_VALUE_LO) )                                   trigger40(isLng, msgCnt);
-	else if ( (ctTbl == 1) && ( msgVal >= l3->COND_VALUE_HI) )                                   trigger40(isLng, msgCnt);
-	else if ( (ctTbl == 2) && ( msgVal <  l3->COND_VALUE_LO) )                                   trigger40(isLng, msgCnt);
-	else if ( (ctTbl == 3) && ( msgVal <  l3->COND_VALUE_HI) )                                   trigger40(isLng, msgCnt);
-	else if ( (ctTbl == 4) && ( l3->COND_VALUE_LO <= msgVal) && (msgVal <  l3->COND_VALUE_HI) )  trigger40(isLng, msgCnt);
-	else if ( (ctTbl == 5) && ( (msgVal < l3->COND_VALUE_LO) || (msgVal >= l3->COND_VALUE_HI) )) trigger40(isLng, msgCnt);
+	if      (ctTbl == CT::X_GE_COND_VALUE_LO)                       
+		if ( msgVal >= l3->COND_VALUE_LO) trigger40(isLng, msgCnt);
+	
+	else if (ctTbl == CT::X_GE_COND_VALUE_HI)
+		if ( msgVal >= l3->COND_VALUE_HI) trigger40(isLng, msgCnt);
+	
+	else if (ctTbl == CT::X_LT_COND_VALUE_LO)
+		if ( msgVal <  l3->COND_VALUE_LO) trigger40(isLng, msgCnt);
+	
+	else if (ctTbl == CT::X_LT_COND_VALUE_HI)
+		if ( msgVal <  l3->COND_VALUE_HI) trigger40(isLng, msgCnt);
+	
+	else if (ctTbl == CT::COND_VALUE_LO_LE_X_LT_COND_VALUE_HI)
+		if ( ( l3->COND_VALUE_LO <= msgVal) && (msgVal <  l3->COND_VALUE_HI) ) trigger40(isLng, msgCnt);
+	
+	else if (ctTbl == CT::X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI) 
+		if ( (msgVal < l3->COND_VALUE_LO) || (msgVal >= l3->COND_VALUE_HI) ) trigger40(isLng, msgCnt);
 }
 
-void cmSwitch::adjRly(void) {
+void cmSwitch::adjustStatus(void) {
 
-	// something to do?
-	if (setStat == modStat) return;															// nothing to do
+	if (modStat == setStat) return;															// nothing to do, return
 	//dbg << "m" << modStat << " s" << setStat << '\n';
 
-	// calculate next step, SwJtOn {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-	curStat = modStat?3:6;
 	setStat = modStat;																		// follow action
-	fSwitch(regCnl, setStat);																// set accordingly
-	
-	msgTmr.set(0);
+	switchSwitch(regCnl, setStat);															// calling the external function to make it happen
+
+	msgTmr.set(0);																			// send status was set before, 0 the timer to send the status
 }
+
 void cmSwitch::sendStatus(void) {
 
 	if (!sendStat) return;																	// nothing to do
@@ -195,104 +179,94 @@ void cmSwitch::sendStatus(void) {
 	if (!delayTmr.done() )       modDUL |= 0x40;
 	
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      (sendStat == 1) hm.sendACK_STATUS(regCnl, modStat, modDUL);					// send ACK
-	else if (sendStat == 2) hm.sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);			// send status
+	if      (sendStat == INFO::ACK_STATUS)      hm.sendACK_STATUS(regCnl, modStat, modDUL);	
+	else if (sendStat == INFO::ACTUATOR_STATUS) hm.sendINFO_ACTUATOR_STATUS(regCnl, modStat, modDUL);	
 
 	// check if it is a stable status, otherwise schedule next info message
 	if (modDUL)  {																			// status is currently changing
-		sendStat = 2;																		// send next time a info status message
+		sendStat = INFO::ACTUATOR_STATUS;													// send next time a info status message
 		msgTmr.set(delayTmr.remain()+5);
-	} else sendStat = 0;																	// no need for next time
-	//sendStat = 0;
+
+	} else sendStat = INFO::NOTHING;														// no need for next time
 }
 
-void cmSwitch::rlyPoll(void) {
+void cmSwitch::pollModule(void) {
 
-	adjRly();																				// check if something is to be set on the Relay channel
+	adjustStatus();																			// check if something is to be set on the Relay channel
 	sendStatus();																			// check if there is some status to send
 
-	// check if something is to do on the dimmer
+	// check if something is to do on the switch
 	if (!delayTmr.done() ) return;															// timer not done, wait until then
-	
 
 	// - trigger11, check if rampTime or onTimer is set
-	if ((tr11) && (rampTme)) {																// ramp timer was set, now we have to set the value
-		modStat = tr11Value;																// set the value we had stored
-		if (!duraTme) tr11 = 0;																// check duration time, other wise nothing to do anymore
-		rampTme = 0;																		// not necessary to do it again
+	if (active_tr11) {
+		if (rampTme) {																		// ramp timer was set, now we have to set the value
+			modStat = value_tr11;															// set the value we had stored
+			active_tr11 = 0;																// reset tr11, if dura time is set, we activate again
+			rampTme = 0;																	// not necessary to do it again
+		}
+
+		if (duraTme) {																		// coming from trigger 11, we should set the duration period
+			delayTmr.set(intTimeCvt(duraTme));												// set the duration time
+			active_tr11 = 1;
+			duraTme = 0;																	// but indicate, it was done
+
+		} else {																			// check if something is to do from trigger11
+			modStat = value_tr11 ^ 200;														// invert the status
+			active_tr11 = 0;																// trigger11 ready
+		}
 	}
 
-	if ((tr11) && (duraTme))  {																// coming from trigger 11, we should set the duration period
-		delayTmr.set(intTimeCvt(duraTme));													// set the duration time
-		duraTme = 0;																		// but indicate, it was done
-		curStat = modStat?4:1;																// delay off or on depending on modStat value
-		
-	} else if (tr11) {																		// check if something is to do from trigger11
-		modStat = tr11Value^200;															// invert the status
-		tr11 = 0;																			// trigger11 ready
-
-	}
 	
 
-	// - jump table section, only
-	if (l3->ACTION_TYPE != 1) return;														// only valid for jump table
-	if (curStat == nxtStat) return;															// no status change expected
+	// - jump table section for trigger40/41
+	if (l3->ACTION_TYPE != ACTION::JUMP_TO_TARGET) return;									// only valid for jump table
+	if (curStat == nxtStat) return;															// no status change, leave
+	curStat = nxtStat;																		// seems next status is different to current, remember for next poll
 
-	// check the different status changes, {no=>0, dlyOn=>1, rampOn=>2, on=>3, dlyOff=>4, rampOff=>5, off=>6}
-	if        (nxtStat == 1) {		// dlyOn
+	// check the different status changes
+	if        (nxtStat == JT::ONDELAY) {	
 		#ifdef RL_DBG
 		dbg << F("dlyOn\n");
 		#endif
 		
-		curStat = nxtStat;																	// remember current status
 		nxtStat = l3->JT_ONDELAY;															// get next status from jump table
-		
 		if (l3->ONDELAY_TIME) {																// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->ONDELAY_TIME));									// activate the timer and set next status
 		}
-		
 
-	} else if (nxtStat == 3) {		// on
+	} else if (nxtStat == JT::ON) {	
 		#ifdef RL_DBG
 		dbg << F("on\n");
 		#endif
 		
-		curStat = nxtStat;																	// remember current status, when timer not set, we stay here for ever
 		nxtStat = l3->JT_ON;																// get next status from jump table
 		modStat = 200;																		// switch relay on
-		
-		if ((l3->ON_TIME) && (l3->ON_TIME != 255)) {										// check if there is something in the duration timer, set next status accordingly
+		if ((l3->ON_TIME) && (l3->ON_TIME != NOT_USED)) {									// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->ON_TIME));											// activate the timer and set next status
-			nxtStat = 6;																	// go to off
-			l3->JT_OFF = 6;																	// stay in off mode
+			nxtStat = l3->JT_OFF = JT::OFF;													// go to off and keep status till we get the next trigger40/41 message
 		} 
 
-	} else if (nxtStat == 4) {		// dlyOff
+	} else if (nxtStat == JT::OFFDELAY) {
 		#ifdef RL_DBG
 		dbg << F("dlyOff\n");
 		#endif
 
-		curStat = nxtStat;																	// remember current status
 		nxtStat = l3->JT_OFFDELAY;															// get jump table for next status
-
 		if (l3->OFFDELAY_TIME) {															// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->OFFDELAY_TIME));									// activate the timer and set next status
 		}
 
-
-	} else if (nxtStat == 6) {		// off
+	} else if (nxtStat == JT::OFF) {
 		#ifdef RL_DBG
 		dbg << F("off\n");
 		#endif
 
-		curStat = nxtStat;																	// remember the current status
 		nxtStat = l3->JT_OFF;																// get the next status from jump table
 		modStat = 0;																		// switch off relay
-
-		if ((l3->OFF_TIME) && (l3->OFF_TIME != 255)) {										// check if there is something in the duration timer, set next status accordingly
+		if ((l3->OFF_TIME) && (l3->OFF_TIME != NOT_USED)) {									// check if there is something in the duration timer, set next status accordingly
 			delayTmr.set(byteTimeCvt(l3->OFF_TIME));										// activate the timer and set next status
-			nxtStat = 3;																	// go to on
-			l3->JT_ON = 3;																	// stay in on mode
+			nxtStat = l3->JT_ON = JT::ON;													// go to on and keep till we get the next trigger40/41
 		}
 	}
 }
@@ -309,16 +283,16 @@ void cmSwitch::setToggle(void) {
 	#endif
 
 	modStat ^= 200;																			// xor the relay status
-	sendStat = 2;																			// send next time a info status message
-	
+	sendStat = INFO::ACTUATOR_STATUS;														// send next time a info status message
 }
+
 void cmSwitch::configCngEvent(void) {
 	// it's only for information purpose while something in the channel config was changed (List0/1 or List3/4)
 	#ifdef RL_DBG
 	dbg << F("CCE, lst1: ") << _HEX(((uint8_t*)&lstCnl), sizeof(s_lstCnl)) << '\n';
 	#endif
-
 }
+
 void cmSwitch::pairSetEvent(uint8_t *data, uint8_t len) {
 	// we received a message from master to set a new value, typical you will find three bytes in data
 	// 1st byte = value; 2nd and 3rd byte = ramp time; 4th and 5th byte = duration time;
@@ -332,20 +306,22 @@ void cmSwitch::pairSetEvent(uint8_t *data, uint8_t len) {
 
 	trigger11(data[0], (len > 1)?data+1:NULL, (len > 3)?data+3:NULL);
 
-	sendStat = 1;																			// ACK should be send
+	sendStat = INFO::ACK_STATUS;															// ACK should be send
 	msgTmr.set(10);																			// give some time
 
 }
+
 void cmSwitch::pairStatusReq(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	#ifdef RL_DBG
 	dbg << F("PSR\n");
 	#endif
 	
-	sendStat = 2;																			// send next time a info status message
+	sendStat = INFO::ACTUATOR_STATUS;														// send next time a info status message
 	msgTmr.set(10);																			// wait a short time to set status
 
 }
+
 void cmSwitch::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	// we received a peer event, in type you will find the marker if it was a switch(3E), remote(40) or sensor(41) event
 	// appropriate answer is an ACK
@@ -353,22 +329,16 @@ void cmSwitch::peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len) {
 	dbg << F("PME, type: ")  << _HEXB(type) << F(", data: ")  << _HEX(data, len) << '\n';
 	#endif
 	
-	if (type == 0x3E) trigger40( data[4], data[5]);
-	if (type == 0x40) trigger40((data[0] & 0x40), data[1]);
-	if (type == 0x41) trigger41((data[0] & 0x7F), data[1], data[2]);
+	if      (type == 0x3E) trigger40( data[4], data[5]);
+	else if (type == 0x40) trigger40((data[0] & 0x40), data[1]);
+	else if (type == 0x41) trigger41((data[0] & 0x7F), data[1], data[2]);
 	
-	if ((type == 0x3e) || (type == 0x40) || (type == 0x41)) {
-		sendStat = 1;																			// send next time a ack info message
-		msgTmr.set(10);																			// wait a short time to set status
-
-	} else {
-		hm.sendACK();
-
-	}
+	sendStat = INFO::ACK_STATUS;															// send next time a ack info message
+	msgTmr.set(10);																			// wait a short time to set status
 }
 
 void cmSwitch::poll(void) {
-	rlyPoll();
+	pollModule();
 }
 
 
@@ -376,17 +346,17 @@ void cmSwitch::poll(void) {
 //- predefined, no reason to touch -
 //-------------------------------------------------------------------------------------------------------------------------
 
-
-void cmSwitch::regInHM(uint8_t cnl, uint8_t lst) {
+void cmSwitch::regInHM(uint8_t cnl) {
 	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
-
-	pModTbl->cnl = cnl;
+	pModTbl->isActive = 1;
 	pModTbl->mDlgt = myDelegate::from_function<CLASS_NAME, &CLASS_NAME::hmEventCol>(this);
 	pModTbl->lstCnl = (uint8_t*)&lstCnl;
 	pModTbl->lstPeer = (uint8_t*)&lstPeer;
 
-	hm.ee.getList(cnl, 1, 0, (uint8_t*)&lstCnl);											// load list1 in the respective buffer
+	hm.ee.getList(cnl, 1, 0, pModTbl->lstCnl);												// load list1 in the respective buffer
 	regCnl = cnl;																			// stores the channel we are responsible fore
+	
+	config();																				// initialize the module settings
 }
 
 void cmSwitch::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len) {
@@ -404,8 +374,9 @@ void cmSwitch::hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data
 	} else if (by3 == 0x11) {
 		if (by10 == 0x02) pairSetEvent(data, len);
 
-	} else if (by3 >= 0x3E) peerMsgEvent(by3, data, len);
-
+	} else if (by3 >= 0x3E) {
+		peerMsgEvent(by3, data, len);
+	}
 }
 
 
@@ -439,18 +410,16 @@ void cmSwitch::updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len) {
 		if (by11 % 2) {				// odd (1,3,5..) means OFF								// if this returns 1 it has detected an odd number(1,3,5..)
 			lstP[9] = lstP[20] = 0x64;														// set some byte
 			lstP[10] = lstP[21] = 0x66;
-
 		} else {					// even (2,4,6..) means ON
 			lstP[9] = lstP[20] = 0x13;														// set some byte
 			lstP[10] = lstP[21] = 0x33;
-
 		}
 
 	} else  {						// toggle peer channel
 		lstP[9]  = lstP[20] = 0x14;															// set some byte
 		lstP[10] = lstP[21] = 0x63;
-
 	} 
+
 	#ifdef RL_DBG
 	dbg << F("updatePeerDefaults: pCnl1: ") << _HEXB(data[0]) << F(", pCnl2: ") << _HEXB(data[1]) << F(", cur_pCnl: ") << _HEXB(by11) << '\n';
 	#endif
@@ -462,7 +431,6 @@ void cmSwitch::updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len) {
 * no need for sending an answer here, for information only
 */
 void cmSwitch::peerAddEvent(uint8_t *data, uint8_t len) {
-
 	#ifdef RL_DBG
 	dbg << F("peerAddEvent: peer: ") << _HEX(data, 3) << F(", pCnl1: ") << _HEXB(data[3]) << F(", pCnl2: ") << _HEXB(data[4]) << '\n';
 	#endif
