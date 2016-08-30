@@ -1,10 +1,12 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin send function --------------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
-//- -----------------------------------------------------------------------------------------------------------------------
+/**
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin registrar functions -----------------------------------------------------------------------------------------------
+* - with a lot of support from Dirk at FHEM forum
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
+
 
 #ifndef _SN_H
 #define _SN_H
@@ -16,7 +18,7 @@
 class SN {
 	friend class AS;
   
-  private:		//---------------------------------------------------------------------------------------------------------
+private:   //-------------------------------------------------------------------------------------------------------------
 	#define sndLen       this->buf[0]+1															// amount of bytes in the send buffer
 	#define reqACK       this->mBdy.mFlg.BIDI													// check if an ACK is requested
 
@@ -44,28 +46,24 @@ class SN {
 	};
 
 	uint8_t retrCnt;						// variable to count how often a message was already send
-	uint8_t maxRetr;						// how often a message has to be send until ACK
-	uint8_t lastMsgCnt;						// store of message counter, needed to identify ACK
+	uint8_t retrSnd;						// needed to differentiate between ack required or not
+	uint8_t lastMsgCnt;						// store message counter, needed to identify ACK
 
-	//class AS *pHM;							// pointer to main class for function calls
 
-  protected:	//---------------------------------------------------------------------------------------------------------
-  public:		//---------------------------------------------------------------------------------------------------------
+public:    //-------------------------------------------------------------------------------------------------------------
 	struct s_msgBody mBdy;					// structure for easier message creation
-	uint8_t *buf;							// cast to byte array
+	uint8_t *buf = (uint8_t*)&mBdy;			// cast to byte array
 
+	uint8_t maxRetr = 3;					// how often a message has to be send until ACK, could be overwritten by hm
 	uint8_t msgCnt;							// message counter for standard sends, while not answering something
 
 	uint8_t active;							// is send module active, 1 indicates yes
 	uint8_t timeOut;						// was last message a timeout
 	uint8_t msgToSign[32];					// store the last sent message for calculating AES signing response. Maximal we need the bytes 1 - 27 of the original message
 
-  public:		//---------------------------------------------------------------------------------------------------------
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
 
+private:   //-------------------------------------------------------------------------------------------------------------
 	SN();
-	//void init(AS *ptrMain);
 	void poll(void);
 	void cleanUp(void);
 };

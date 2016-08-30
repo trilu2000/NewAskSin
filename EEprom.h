@@ -150,11 +150,13 @@ class EE {
 
   public:		//---------------------------------------------------------------------------------------------------------
 	uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
-	uint8_t  setList(s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);					// if we know the channel table index already
+	uint8_t  setList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);				// if we know the channel table index already
+
 	uint8_t  setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
 	uint8_t  setListArray(uint8_t cnlTblIdx, uint8_t idx, uint8_t len, uint8_t *buf);
 
 	uint8_t  getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in to a given buffer
+	uint8_t  getList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);				// if we know the channel table index already
 	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 
 

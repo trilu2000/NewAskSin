@@ -10,12 +10,12 @@
 #define _NAS_H
 
 #include "Defines.h"
+#include "cmMaster.h" 
 #include "HAL.h"
 #include "CC1101.h"
 #include "EEprom.h"
 #include "Send.h"
 #include "Receive.h"
-#include "Registrar.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
@@ -47,13 +47,11 @@ const uint8_t empty_4_byte[] = { 0,0,0,0, };					// need it all time to get an e
 class AS {
 	friend class SN;
 	friend class RV;
-	friend class RG;
 	friend class PW;
 
   public:		//---------------------------------------------------------------------------------------------------------
 	EE ee;				///< eeprom module
 	CC cc;				///< load communication module
-	RG rg;				///< user module registrar
 	SN sn;				///< send module
 	RV rv;				///< receive module
 	LD ld;				///< status led
@@ -234,6 +232,9 @@ class AS {
 
 
 };
+
+extern class cmMaster *pcnlModule[];
+
 
 extern const uint8_t devIdnt[];
 extern const uint8_t cnlAddr[];

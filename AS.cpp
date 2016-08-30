@@ -58,9 +58,11 @@ void AS::init(void) {
 	memcpy_P(HMSR, HMSerialData+3, 10);															// set HMSerial from pgmspace
 
 	initMillis();																				// start the millis counter
-
 	initRandomSeed();
 
+	for (uint8_t i = 0; i <= cnl_max; i++) {													// fill the channel tables of all registered user modules
+		ee.getList(pcnlModule[i]->cT, 0, pcnlModule[i]->chnl_list);
+	}
 	// everything is setuped, enable RF functionality
 }
 
@@ -104,7 +106,11 @@ void AS::poll(void) {
 	}
 
 	// regular polls
-	rg.poll();																					// poll the channel module handler
+	for (uint8_t i = 0; i <= cnl_max; i++) {													// poll the channel modules
+		pcnlModule[i]->poll();
+	}
+
+
 	confButton.poll();																			// poll the config button
 	ld.poll();																					// poll the led's
 	bt.poll();																					// poll the battery check
@@ -1007,13 +1013,14 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
  */
 inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
 	// check if a module is registered and send the information, otherwise report an empty status
-	RG::s_modTable *pModTbl = &modTbl[by10];													// pointer to the respective line in the module table
+	//RG::s_modTable *pModTbl = &modTbl[by10];													// pointer to the respective line in the module table
 
-	if (pModTbl->isActive) {
-			pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen - 11);
-	} else {
-		sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);
-	}
+	//if (pModTbl->isActive) {
+		//pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen - 11);
+	pcnlModule[by10]->request_pair_status();
+	//} else {
+	//	sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);
+	//}
 }
 
 /*
@@ -1163,7 +1170,8 @@ inline uint8_t AS::configPeerAdd() {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerRemove() {
-	return ee.remPeers(rv.mBdy.by10,rv.buf+12);													// call the remPeer function
+	uint8_t ackOk = ee.remPeers(rv.mBdy.by10,rv.buf+12);													// call the remPeer function
+	return ackOk;																				// return the status
 }
 
 /**
@@ -1197,7 +1205,7 @@ inline void AS::configStart() {
  * 10 04 A0 01 63 19 63 01 02 04 01 06
  */
 inline void AS::configEnd() {
-	RG::s_modTable *pModTbl = &modTbl[cFlag.channel];											// pointer to the respective line in the module table
+	//RG::s_modTable *pModTbl = &modTbl[cFlag.channel];											// pointer to the respective line in the module table
 
 	cFlag.active = 0;																			// set inactive
 	if ( (cFlag.channel == 0) && (cFlag.idx_peer == 0) ) {
@@ -1205,16 +1213,18 @@ inline void AS::configEnd() {
 	}
 	// remove message id flag to config in send module
 
-	if ( (cFlag.channel > 0) && ( pModTbl->isActive) ) {
+	//if ( (cFlag.channel > 0) && ( pModTbl->isActive) ) {
 		/*
 		 * Check if a new list1 was written and reload.
 		 * No need for reload list3/4 because they will be loaded on an peer event.
 		 */
 		if (cFlag.list == 1) {
-			ee.getList(cFlag.channel, 1, cFlag.idx_peer, pModTbl->lstCnl); 						// load list1 in the respective buffer
+			//ee.getList(cFlag.channel, 1, cFlag.idx_peer, pModTbl->lstCnl); 						// load list1 in the respective buffer
+			ee.getList(cFlag.channel, 1, cFlag.idx_peer, pcnlModule[cFlag.channel]->chnl_list); 	// load list1 in the respective buffer
 		}
-		pModTbl->mDlgt(0x01, 0, 0x06, NULL, 0);													// inform the module of the change
-	}
+		pcnlModule[cFlag.channel]->info_config_change();
+		//pModTbl->mDlgt(0x01, 0, 0x06, NULL, 0);													// inform the module of the change
+	//}
 }
 
 /**
@@ -1276,10 +1286,7 @@ void AS::processMessageAction11() {
 		 *             Sender__ Receiver type actionType channel data
 		 * 0E 5E B0 11 63 19 63 1F B7 4A 02   01         01      C8 00 00 00 00
 		 */
-		RG::s_modTable *pModTbl = &modTbl[rv.mBdy.by11];										// pointer to the respective line in the module table
-		if (pModTbl->isActive) {
-			pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
-		}
+		pcnlModule[rv.mBdy.by11]->message_trigger11( rv.buf[12], (rv.mBdy.mLen > 13) ? rv.buf + 13 : NULL, (rv.mBdy.mLen > 15) ? rv.buf + 15 : NULL );
 	}
 }
 
@@ -1287,29 +1294,18 @@ void AS::processMessageAction11() {
  * @brief Process all action (3E, 3F, 40, 41, ...) messages
  * 
  * Within the function we load the respective list3/4 into the
- * list pointer in module table registered. Identification of the list
- * is done by a lookup in the peertable and following the plink into the 
- * the respective line in the channel table.
- *
+ * byte array provided by the channel module master. 
+ * Answer is an ACK_INFO and has to be send from the respective channel module
  */
 void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
-	// check if a module is registered and send the information, otherwise report an empty status
-	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
-	EE::s_peerTbl *pPeerTbl = (EE::s_peerTbl*)&peerTbl[ cnl ];
-	EE::s_cnlTbl *pCnlTbl = (EE::s_cnlTbl*)&cnlTbl[ pPeerTbl->pLink ];
+	cmMaster *pCM = pcnlModule[cnl];															// short hand for the channel module pointer
 
-	if (pModTbl->isActive) {
+	ee.getList(pCM->cT->cnl, pCM->cT->lst, pIdx, pCM->peer_list);								// get list3 or list4 loaded into the user module
 
-		//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
-		ee.getList( pCnlTbl->cnl, pCnlTbl->lst, pIdx, pModTbl->lstPeer);						// get list3 or list4 loaded into the user module
-
-		// call the user module
-		pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf + 10, rv.mBdy.mLen - 9);
-
-	} else {
-		sendACK();
-
-	}
+	if      (rv.mBdy.mTyp == 0x3E) pCM->message_trigger3E(rv.buf[14], rv.buf[15]);				// call the user module
+	else if (rv.mBdy.mTyp == 0x40) pCM->message_trigger40((rv.buf[10] & 0x7f), rv.buf[11]);
+	else if (rv.mBdy.mTyp == 0x41) pCM->message_trigger41((rv.buf[10] & 0x7f), rv.buf[11], rv.buf[12]);
+	else sendACK();
 }
 
 /**
