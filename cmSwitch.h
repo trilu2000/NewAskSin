@@ -2,33 +2,39 @@
 *  AskSin driver implementation
 *  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 * - -----------------------------------------------------------------------------------------------------------------------
-* - AskSin registrar functions --------------------------------------------------------------------------------------------
+* - AskSin registrar functions -----------------------------------------------------------------------------------------------
 * - with a lot of support from martin876 at FHEM forum
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
 #ifndef _cmSwitch_H
 #define _cmSwitch_H
+#define CLASS_NAME cmSwitch
 
-#include "cmMaster.h"
+#include "AS.h"
+#include "HAL.h"
 
 
 // default settings are defined in cmSwitch.cpp - updatePeerDefaults
 
-#define NOT_USED 255
-enum ACTION { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
-enum JT { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, ON = 0x03, OFFDELAY = 0x04, OFF = 0x06 };
-enum CT { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
-enum INFO { NOTHING, ACK_STATUS, ACTUATOR_STATUS };
 
+class cmSwitch {
 
-class cmSwitch : public cmMaster {
-private:  //---------------------------------------------------------------------------------------------------------------
+//- user code here --------------------------------------------------------------------------------------------------------
+public://------------------------------------------------------------------------------------------------------------------
+	cmSwitch(){}																				// class constructor
 
-	struct s_l1 {
+	#define NOT_USED 255
+	enum ACTION { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
+	enum JT { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, ON = 0x03, OFFDELAY = 0x04, OFF = 0x06 };
+	enum CT { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
+	enum INFO {NOTHING, ACK_STATUS, ACTUATOR_STATUS};
+
+	struct s_lstCnl {
 		uint8_t AES_ACTIVE           : 1;  // 0x08.0, s:1   d: false  
 		uint8_t                      : 7;  // 0x08.1, s:7   d:   
-	} *l1;  
+	  } lstCnl; 
+
 
 	struct s_lstPeer {
 		uint8_t SHORT_CT_ONDELAY     : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO  ----------------------------------------
@@ -48,8 +54,8 @@ private:  //--------------------------------------------------------------------
 		uint8_t SHORT_JT_ON          : 4;  // 0x0b.0, s:4   d: OFF  
 		uint8_t SHORT_JT_OFF         : 4;  // 0x0b.4, s:4   d: OFF  
 		uint8_t SHORT_JT_ONDELAY     : 4;  // 0x0c.0, s:4   d: OFF  
-		uint8_t SHORT_JT_OFFDELAY    : 4;  // 0x0c.4, s:4   d: OFF                 ----------------------------------------
-		uint8_t LONG_CT_ONDELAY      : 4;  // 0x82.0, s:4   d: X GE COND_VALUE_LO  ---------------------------------------- 
+		uint8_t SHORT_JT_OFFDELAY    : 4;  // 0x0c.4, s:4   d: OFF                 ----------------------------------------------
+		uint8_t LONG_CT_ONDELAY      : 4;  // 0x82.0, s:4   d: X GE COND_VALUE_LO  ---------------------------------------------- 
 		uint8_t LONG_CT_OFFDELAY     : 4;  // 0x82.4, s:4   d: X GE COND_VALUE_LO  
 		uint8_t LONG_CT_ON           : 4;  // 0x83.0, s:4   d: X GE COND_VALUE_LO  
 		uint8_t LONG_CT_OFF          : 4;  // 0x83.4, s:4   d: X GE COND_VALUE_LO  
@@ -67,8 +73,8 @@ private:  //--------------------------------------------------------------------
 		uint8_t LONG_JT_ON           : 4;  // 0x8b.0, s:4   d: OFF  
 		uint8_t LONG_JT_OFF          : 4;  // 0x8b.4, s:4   d: OFF  
 		uint8_t LONG_JT_ONDELAY      : 4;  // 0x8c.0, s:4   d: OFF  
-		uint8_t LONG_JT_OFFDELAY     : 4;  // 0x8c.4, s:4   d: OFF                 ----------------------------------------
-	} *l3F;
+		uint8_t LONG_JT_OFFDELAY     : 4;  // 0x8c.4, s:4   d: OFF                 ----------------------------------------------
+	} lstPeer;
 
 	struct s_l3 {
 		uint8_t CT_ONDELAY           : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO   -- ctDlyOn             :4;     // 0x02, 0x82, s:0, e:4
@@ -91,14 +97,12 @@ private:  //--------------------------------------------------------------------
 		uint8_t JT_ONDELAY           : 4;  // 0x0c.0, s:4   d: OFF                  -- jtDlyOn             :4;     // 0x0c, 0x8c, s:0, e:4
 		uint8_t JT_OFFDELAY          : 4;  // 0x0c.4, s:4   d: OFF                  -- jtDlyOff            :4;     // 0x0c, 0x8c, s:4, e:8
 	} *l3;
+	
 
+public://------------------------------------------------------------------------------------------------------------------
+//- user defined functions ------------------------------------------------------------------------------------------------
 	static void initSwitch(uint8_t channel);												// functions in user sketch needed
 	static void switchSwitch(uint8_t channel, uint8_t status);
-
-
-public:  //----------------------------------------------------------------------------------------------------------------
-
-	cmSwitch(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl);				// constructor
 
 	uint8_t   active_tr11;																	// trigger 11 active
 	uint8_t   value_tr11;																	// trigger 11 set value
@@ -114,25 +118,37 @@ public:  //---------------------------------------------------------------------
 	waitTimer delayTmr;																		// delay timer for relay
 	uint8_t   setStat;																		// status to set on the Relay channel
 
-	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// what happens while a trigger11 message arrive
-	virtual void message_trigger3E(uint8_t msgLng, uint8_t msgCnt);							// same for switch messages
-	virtual void message_trigger40(uint8_t msgLng, uint8_t msgCnt);							// same for peer messages
-	virtual void message_trigger41(uint8_t msgLng, uint8_t msgCnt, uint8_t msgVal);			// same for sensor messages
+
+	inline void config(void);																// set up of module specific settings, called by regInHM
+
+	inline void trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);				// what happens while a trigger11 message arrive
+	inline void trigger40(uint8_t msgLng, uint8_t msgCnt);									// same for peer messages
+	inline void trigger41(uint8_t msgBLL, uint8_t msgCnt, uint8_t msgVal);					// same for sensor messages
 
 	inline void adjustStatus(void);															// setting of relay status
 	inline void sendStatus(void);															// help function to send status messages
 
+	inline void pollModule(void);															// polling function
 
 
+//- mandatory functions for every new module to communicate within AS protocol stack --------------------------------------
 	uint8_t     modStat;																	// module status byte, needed for list3 modules to answer status requests
 	uint8_t     modDUL;																		// module down up low battery byte
+	uint8_t     regCnl;																		// holds the channel for the module
 
-	virtual void request_peer_defaults(uint8_t pIdx, uint8_t pCnl1, uint8_t pCnl2);			// add peer channel defaults to list3/4
-	virtual void request_pair_status(void);													// event on status request
+	inline void setToggle(void);															// toggle the module initiated by config button
+	inline void configCngEvent(void);														// list1 on registered channel had changed
+	inline void pairSetEvent(uint8_t *data, uint8_t len);									// pair message to specific channel, handover information for value, ramp time and so on
+	inline void pairStatusReq(void);														// event on status request
+	inline void peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len);						// peer message was received on the registered channel, handover the message bytes and length
+	inline void peerAddEvent(uint8_t *data, uint8_t len);									// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
 
-	virtual void poll(void);																// poll function, driven by HM loop
-	virtual void set_toggle(void);															// toggle the module initiated by config button
+	inline void poll(void);																	// poll function, driven by HM loop
+	inline void updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len);				// add peer channel defaults to list3/4
 
+	//- predefined, no reason to touch ------------------------------------------------------------------------------------
+	void        regInHM(uint8_t cnl);														// registers the module in the module table
+	void        hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
 };
 
 #endif

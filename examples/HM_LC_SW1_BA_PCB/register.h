@@ -8,8 +8,6 @@
 	#include <Registrar.h>
 	#include "hardware.h"
 	#include "hmkey.h"
-	//#include <cmSwitch_old.h> 
-
 	#include <cmSwitch.h> 
 
 	/**
@@ -25,10 +23,8 @@
 	* void cmSwitch::initSwitch(uint8_t channel);
 	* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
 	*/
-	cmMaster *pcnlModule[2] = { 
-		new cmMaster(&cnlTbl[0], &cnlTbl[0]),
-		new cmSwitch(&cnlTbl[1], &cnlTbl[2]),
-	};
+	cmSwitch cm_Switch[1];
+
 
 	/*
 	 * @brief HMID, Serial number, HM-Default-Key, Key-Index
@@ -142,7 +138,7 @@
 	 * Within this register table all user modules are registered to make
 	 * them accessible for the AskSin library
 	 */
-	//RG::s_modTable modTbl[cnl_max + 1];
+	RG::s_modTable modTbl[cnl_max + 1];
 
 	/**
 	 * @brief Regular start function
@@ -157,6 +153,7 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);
 		hm.bt.set(30, 3600000);
 		// channel 1 section 
+		cm_Switch[0].regInHM(1);
 	}
 
 	/**
@@ -179,11 +176,11 @@
 		#endif
 
 		// fill register with default values, peer registers are not filled while done in usermodules
-		//hm.ee.setList(0, 0, 0, (uint8_t*)&cnlDefs[0]);
-		//hm.ee.setList(1, 1, 0, (uint8_t*)&cnlDefs[6]);
+		hm.ee.setList(0, 0, 0, (uint8_t*)&cnlDefs[0]);
+		hm.ee.setList(1, 1, 0, (uint8_t*)&cnlDefs[6]);
 
 		// format peer db
-		//hm.ee.clearPeers();
+		hm.ee.clearPeers();
 	}
 #endif
 

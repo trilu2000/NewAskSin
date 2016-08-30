@@ -4,12 +4,6 @@
 #include "register.h"																			// configuration sheet
 #include <AS.h>																					// ask sin framework
 
-#ifdef SER_DBG
-#define DBG(text)   dbg << text 
-#else
-#define DBG(text)   NULL 
-#endif
-
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
@@ -20,9 +14,9 @@ void setup() {
 	EIMSK = 0;																					// disable external interrupts
 	ADCSRA = 0;																					// ADC off
 	power_all_disable();																		// and everything else
-
-	//DDRB = DDRC = DDRD = 0x00;																	// everything as input
-	//PORTB = PORTC = PORTD = 0x00;																// pullup's off
+	
+	DDRB = DDRC = DDRD = 0x00;																	// everything as input
+	PORTB = PORTC = PORTD = 0x00;																// pullup's off
 
 	// todo: timer0 and SPI should enable internally
 	power_timer0_enable();
@@ -30,25 +24,26 @@ void setup() {
 
 	// enable only what is really needed
 
+	#ifdef SER_DBG																				// some debug
 	dbgStart();																					// serial setup
-	DBG( F("HM_LC_SW1_BA_PCB\n") );
-	DBG( F(LIB_VERSION_STRING) );
+	dbg << F("HM_LC_SW1_BA_PCB\n");	
+	dbg << F(LIB_VERSION_STRING);
+	//_delay_ms (50);																			// ...and some information
+	#endif
 
-
-// - AskSin related ---------------------------------------
+	
+	// - AskSin related ---------------------------------------
 	hm.init();																					// init the asksin framework
 	sei();																						// enable interrupts
 
 	// - user related -----------------------------------------
-	/*DBG( F("HMID: ") << _HEX(HMID, 3) << F(", MAID: ") << _HEX(MAID, 3) << F("\n\n") );			// some debug
+	#ifdef SER_DBG
+		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
+	#endif
 
-	// check the pointer to cnlTbl content in channel modules and the loaded default values in chnl list 
-	DBG( F("Channel Module:\n");
-	for (uint8_t i = 0; i <= cnl_max; i++) {
-		dbg << F("cnl ") << i << F(": cT: cnl:") << pcnlModule[i]->cT->cnl << F(", lst:") << pcnlModule[i]->cT->lst << F(", pT: cnl:") << pcnlModule[i]->pT->cnl << F(", lst:") << pcnlModule[i]->pT->lst << '\n';
-		dbg << F("cnl ") << i << F(": chnl_list: ") << _HEX(pcnlModule[i]->chnl_list, pcnlModule[i]->cT->sLen) << '\n';
-	} );*/
-
+	//uint8_t xtemp[] = {0x33,0x11,0x22,0x01,0x02,0x00,0x00};
+	//hm.ee.addPeers(1, xtemp, xtemp+5);
+	//dbg << "x:" << _HEX(xtemp, 7) << "\n";
 }
 
 void loop() {
@@ -62,20 +57,24 @@ void loop() {
 
 //- user functions --------------------------------------------------------------------------------------------------------
 void cmSwitch::initSwitch(uint8_t channel) {
-	// setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
-	DBG(F("initSwitch: ") << channel << "\n");
-
+// setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
+	#ifdef SER_DBG
+		dbg << F("initRly: ") << channel << "\n";
+	#endif
+	
 	SET_PIN_OUTPUT(PIN_D3);																		// init the relay pins
 	SET_PIN_LOW(PIN_D3);																		// set relay pin to ground
 }
+
 void cmSwitch::switchSwitch(uint8_t channel, uint8_t status) {
-	// switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
-	DBG(F("switchSwitch: ") << channel << ", " << status << "\n");
+// switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
+	#ifdef SER_DBG
+		dbg << F("switchRly: ") << channel << ", " << status << "\n";
+	#endif
 
 	if (status) SET_PIN_HIGH(PIN_D3);															// check status and set relay pin accordingly
 	else SET_PIN_LOW(PIN_D3);
 }
-
 
 
 //- predefined functions --------------------------------------------------------------------------------------------------
