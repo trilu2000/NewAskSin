@@ -16,11 +16,6 @@
 
 
 // default settings are defined in cmSwitch.cpp - updatePeerDefaults
-#define NOT_USED 255
-enum ACTION { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
-enum JT { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, ON = 0x03, OFFDELAY = 0x04, OFF = 0x06 };
-enum CT { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
-enum INFO { NOTHING, ACK_STATUS, ACTUATOR_STATUS };
 
 
 class cmSwitch {
@@ -28,6 +23,12 @@ class cmSwitch {
 //- user code here --------------------------------------------------------------------------------------------------------
 public://------------------------------------------------------------------------------------------------------------------
 	cmSwitch(){}																				// class constructor
+
+	#define NOT_USED 255
+	enum ACTION { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
+	enum JT { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, ON = 0x03, OFFDELAY = 0x04, OFF = 0x06 };
+	enum CT { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
+	enum INFO {NOTHING, ACK_STATUS, ACTUATOR_STATUS};
 
 	struct s_lstCnl {
 		uint8_t AES_ACTIVE           : 1;  // 0x08.0, s:1   d: false  
@@ -142,12 +143,12 @@ public://-----------------------------------------------------------------------
 	inline void peerMsgEvent(uint8_t type, uint8_t *data, uint8_t len);						// peer message was received on the registered channel, handover the message bytes and length
 	inline void peerAddEvent(uint8_t *data, uint8_t len);									// peer was added to the specific channel, 1st and 2nd byte shows peer channel, third and fourth byte shows peer index
 
+	inline void poll(void);																	// poll function, driven by HM loop
 	inline void updatePeerDefaults(uint8_t by11, uint8_t *data, uint8_t len);				// add peer channel defaults to list3/4
 
 	//- predefined, no reason to touch ------------------------------------------------------------------------------------
 	void        regInHM(uint8_t cnl);														// registers the module in the module table
-	inline void poll(void);																	// poll function, driven by HM loop
-	inline void hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
+	void        hmEventCol(uint8_t by3, uint8_t by10, uint8_t by11, uint8_t *data, uint8_t len);// call back address for HM for informing on events
 };
 
 #endif
