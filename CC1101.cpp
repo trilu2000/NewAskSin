@@ -125,7 +125,7 @@ void    CC::init(void) {																// initialize CC1101
 * Length identification is done by byte[0] which holds the needed info.
 *
 */
-uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet via RF
+void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet via RF
 
 	// Going from RX to TX does not work if there was a reception less than 0.5
 	// sec ago. Due to CCA? Using IDLE helps to shorten this period(?)
@@ -144,8 +144,24 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 		_delay_ms(1);																	// wait a short time to set TX mode
 	}
 
-	writeBurst(CC1101_TXFIFO, buf, buf[0]+1);											// write in TX FIFO
+	// former writeburst function, now done here while hm encoding included
+	ccSelect();																			// select CC1101
+	ccSendByte(CC1101_TXFIFO | WRITE_BURST);											// send register address
+	ccSendByte(buf[0]);																	// send byte 0
 
+	uint8_t prev = (~buf[1]) ^ 0x89;													// prepare byte 1
+	ccSendByte(prev);																	// send byte 1
+
+	uint8_t buf2 = buf[2];																// remember byte 2, we need it on the end of string
+
+	for (uint8_t i = 2; i < buf[0]; i++) {												// process the string starting with byte 2
+		prev = (prev + 0xDC) ^ buf[i];													// encode current (i) byte
+		ccSendByte(prev);																// write it into the module buffer
+	}
+	ccSendByte( buf[buf[0] +1] ^ buf2);													// process the last byte
+	ccDeselect();																		// deselect CC1101
+
+	// write is done, cleanup buffer and wait for finishing the transmition
 	strobe(CC1101_SFRX);																// flush the RX buffer
 	strobe(CC1101_STX);																	// send a burst
 
@@ -167,19 +183,19 @@ uint8_t CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	#endif
 
 	//dbg << "rx\n";
-	return true;
+	//return true;
 }
 /**
 * @brief Receive function for the cc1101 rf module
 *
 * @param *buf A pointer to a byte array to store the received bytes
-* @return A byte indicating the bytes which were written into the buffer
+* @return Nothing, len of the received bytes is the first byte in the receive buffer
 * 
 * Additionally the cc module holds a further information regarding signal quality,
 * which can be checked within the cc.rssi byte variable.
 * Received strings are automatically checked for their crc consistence.
 */
-uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIFO
+void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIFO
 	uint8_t rxBytes = readReg(CC1101_RXBYTES, CC1101_STATUS);							// how many bytes are in the buffer
 	//dbg << rxBytes << ' ';
 
@@ -191,7 +207,8 @@ uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 			
 		} else {
 			readBurst(&buf[1], CC1101_RXFIFO, buf[0]);									// read data packet
-			
+			decode(buf);																// decode the buffer
+
 			rssi = readReg(CC1101_RXFIFO, CC1101_CONFIG);								// read RSSI
 			
 			if (rssi >= 128) rssi = 255 - rssi;
@@ -214,8 +231,6 @@ uint8_t CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	#ifdef CC_DBG																		// only if cc debug is set
 	if (buf[0] > 0) dbg << _HEX(buf, buf[0]+1) << '\n';//pTime();
 	#endif
-
-	return buf[0];																		// return the data buffer
 }
 
 /**
@@ -325,7 +340,6 @@ void   CC::strobe(uint8_t cmd) {														// send command strobe to the CC11
 */
 void   CC::readBurst(uint8_t *buf, uint8_t regAddr, uint8_t len) {						// read burst data from CC1101 via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr | READ_BURST);													// send register address
 	for(uint8_t i=0 ; i<len ; i++) {
 		buf[i] = ccSendByte(0x00);														// read result byte by byte
@@ -341,11 +355,11 @@ void   CC::readBurst(uint8_t *buf, uint8_t regAddr, uint8_t len) {						// read 
 * @param len  Byte variable with the amount of bytes to write from *buf
 *
 */
-void   CC::writeBurst(uint8_t regAddr, uint8_t *buf, uint8_t len) {
+void   CC::writeBurst(uint8_t *buf, uint8_t regAddr, uint8_t len) {
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
+																						//waitMiso();																		// wait until MISO goes low
 	ccSendByte(regAddr | WRITE_BURST);													// send register address
-	for(uint8_t i=0 ; i<len ; i++) ccSendByte(buf[i]);									// send value
+	for (uint8_t i = 0; i<len; i++) ccSendByte(buf[i]);									// send value
 	ccDeselect();																		// deselect CC1101
 }
 /**
@@ -378,3 +392,23 @@ void    CC::writeReg(uint8_t regAddr, uint8_t val) {									// write single reg
 	ccSendByte(val);																	// send value
 	ccDeselect();																		// deselect CC1101
 }
+/**
+* @brief Decode the incoming messages
+*        Note: this is no encryption!
+*
+* @param buf   pointer to buffer
+*/
+void    CC::decode(uint8_t *buf) {
+	uint8_t prev = buf[1];
+	buf[1] = (~buf[1]) ^ 0x89;
+
+	uint8_t i, t;
+	for (i = 2; i < buf[0]; i++) {
+		t = buf[i];
+		buf[i] = (prev + 0xDC) ^ buf[i];
+		prev = t;
+	}
+
+	buf[i] ^= buf[2];
+}
+

@@ -9,9 +9,9 @@
 /*
  * Comment out to disable AES support
  */
- #define SUPPORT_AES
+#define SUPPORT_AES
 
-/*
+ /*
  * On device reset the watchdog hart reset the entire device.
  * Comment out to disable this.
  */
@@ -20,6 +20,9 @@
 //#define AS_DBG
 //#define RV_DBG_EX
 //#define AES_DBG
+
+
+
 
 #include "AS.h"
 #include <avr/wdt.h>
@@ -33,20 +36,23 @@ waitTimer cnfTmr;																				// config timer functionality
 waitTimer pairTmr;																				// pair timer functionality
 
 
-																								// public:		//---------------------------------------------------------------------------------------------------------
+uint8_t rcv_PEER_CNL;
+uint8_t rcv_PEER_ID[4];
+u_Message rcv;																					// receive union with byte buffer
+u_Message snd;																					// send union with byte buffer
+
+
+// public:		//---------------------------------------------------------------------------------------------------------
 AS::AS()  {
-//AS::AS() : rg(this) {
-	//RG(this);
+	dbg << F("AS.\n");																			// ...and some information
+	//Serial.print("test ","\n");
+	//DBG( "foobar()" );
 }
 
 /**
  * @brief Initialize the AskSin Module
  */
 void AS::init(void) {
-	#ifdef AS_DBG																				// only if cc debug is set
-	dbgStart();																					// serial setup
-	dbg << F("AS.\n");																			// ...and some information
-	#endif
 
 	initLeds();																					// initialize the leds
 	initConfKey();																				// initialize the port for getting config key interrupts
@@ -60,21 +66,20 @@ void AS::init(void) {
 	initMillis();																				// start the millis counter
 
 	initRandomSeed();
-
-	// everything is setuped, enable RF functionality
 }
 
 /**
  * @brief Cyclic poll all related functions
  */
 void AS::poll(void) {
-	if (ccGetGDO0()) {																			// check if something was received
-		cc.rcvData(rv.buf);																		// copy the data into the receiver module
-		if (rv.hasData) decode(rv.buf);															// decode the string
-	}
 
-	// handle send and receive buffer
-	if (rv.hasData) rv.poll();																	// check if there is something in the received buffer
+	/* copy the decoded data into the receiver module if something was received
+	*  and poll the received buffer, it checks if something is in the queue 
+	*/
+	if ( ccGetGDO0() ) cc.rcvData( rcv.buf );
+	rv.poll();
+
+	// handle the send module
 	if (sn.active) sn.poll();																	// check if there is something to send
 
 	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
@@ -104,7 +109,10 @@ void AS::poll(void) {
 	}
 
 	// regular polls
-	rg.poll();																					// poll the channel module handler
+	for (uint8_t i = 0; i <= cnl_max; i++) {													// poll the channel modules
+		pcnlModule[i]->poll();
+	}
+
 	confButton.poll();																			// poll the config button
 	ld.poll();																					// poll the led's
 	bt.poll();																					// poll the battery check
@@ -122,19 +130,19 @@ void AS::poll(void) {
  */
 void AS::sendDEVICE_INFO(void) {
 	uint8_t msgCount;
-	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL)) {
-		msgCount = rv.mBdy.mLen;																// send counter - is it an answer or a initial message
+	if ((rcv.msgBody.FLAG.CFG == AS_MESSAGE_CONFIG) && (rcv.msgBody.BY11 == AS_CONFIG_PAIR_SERIAL)) {
+		msgCount = rcv.msgBody.MSG_CNT;															// send counter - is it an answer or a initial message
 	} else {
 		msgCount = sn.msgCnt++;
 	}
 
-	sn.mBdy.mLen = 0x1A;
-	sn.mBdy.mFlg.CFG = 1;
-	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
+	snd.msgBody.MSG_LEN = 0x1A;
+	snd.msgBody.FLAG.CFG = 1;
+	snd.msgBody.FLAG.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 
-	memcpy_P(sn.buf+10, devIdnt, 3);
-	memcpy(sn.buf+13, HMSR, 10);
-	memcpy_P(sn.buf+23, devIdnt+3, 4);
+	memcpy_P(snd.buf+10, devIdnt, 3);
+	memcpy(snd.buf+13, HMSR, 10);
+	memcpy_P(snd.buf+23, devIdnt+3, 4);
 
 	prepareToSend(msgCount, AS_MESSAGE_DEVINFO, MAID);
 
@@ -147,7 +155,7 @@ void AS::sendDEVICE_INFO(void) {
  * @brief Check if ACK required and send ACK or NACK
  */
 void AS::checkSendACK(uint8_t ackOk) {
-	if (rv.ackRq) {
+	if (rcv_ackRq) {
 		if (ackOk) {
 			sendACK();
 		} else {
@@ -164,12 +172,12 @@ void AS::checkSendACK(uint8_t ackOk) {
  * 0A 24 80 02 1F B7 4A 63 19 63 00
  */
 void AS::sendACK(void) {
-	if (rv.mBdy.mFlg.BIDI) {																	// prevent answer for requests from a user class on repeated key press
-		sn.mBdy.mLen = 0x0A;
-		sn.mBdy.mFlg.CFG = 0;
-		sn.mBdy.mFlg.BIDI = 0;
-		sn.mBdy.by10 = 0x00;
-		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+	if (rcv.msgBody.FLAG.BIDI) {																// prevent answer for requests from a user class on repeated key press
+		snd.msgBody.MSG_LEN = 0x0A;
+		snd.msgBody.FLAG.CFG = 0;
+		snd.msgBody.FLAG.BIDI = 0;
+		snd.msgBody.BY10 = 0x00;
+		prepareToSend(rcv.msgBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv.msgBody.SND_ID);
 	}
 }
 
@@ -181,9 +189,9 @@ void AS::sendACK(void) {
  * 0A 24 80 02 1F B7 4A 63 19 63 80
  */
 inline void AS::sendNACK(void) {
-	sn.mBdy.mLen = 0x0A;
-	sn.mBdy.by10 = AS_RESPONSE_NACK;
-	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+	snd.msgBody.MSG_LEN = 0x0A;
+	snd.msgBody.BY10 = AS_RESPONSE_NACK;
+	prepareToSend(rcv.msgBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv.msgBody.SND_ID);
 }
 
 #ifdef SUPPORT_AES
@@ -197,13 +205,13 @@ inline void AS::sendNACK(void) {
 	 * @param data pointer to aes ack data
 	 */
 	inline void AS::sendAckAES(uint8_t *data) {
-		sn.mBdy.mLen = 0x0E;
-		sn.mBdy.mFlg.BIDI = 0;
-		sn.mBdy.by10 = AS_RESPONSE_ACK;
-		sn.mBdy.by11 = data[0];
-		memcpy(sn.mBdy.pyLd, data+1, 3);
+		snd.msgBody.MSG_LEN = 0x0E;
+		snd.msgBody.FLAG.BIDI = 0;
+		snd.msgBody.BY10 = AS_RESPONSE_ACK;
+		snd.msgBody.BY11 = data[0];
+		memcpy(snd.msgBody.PAYLOAD, data+1, 3);
 
-		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+		prepareToSend(rcv.msgBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv.msgBody.SND_ID);
 	}
 #endif
 
@@ -222,15 +230,15 @@ inline void AS::sendNACK(void) {
  * @param action
  */
 void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
-	if (rv.mBdy.mFlg.BIDI) {																	// prevent answer for requests from a user class on repeated key press
-		sn.mBdy.mLen      = 0x0E;
-		sn.mBdy.mFlg.BIDI = 0;
-		sn.mBdy.by10      = 0x01;
-		sn.mBdy.by11      = channel;
-		sn.mBdy.pyLd[0]   = state;
-		sn.mBdy.pyLd[1]   = action | (bt.getStatus() << 7);
-		sn.mBdy.pyLd[2]   = cc.rssi;
-		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+	if (rcv.msgBody.FLAG.BIDI) {																	// prevent answer for requests from a user class on repeated key press
+		snd.msgBody.MSG_LEN = 0x0E;
+		snd.msgBody.FLAG.BIDI = 0;
+		snd.msgBody.BY10 = 0x01;
+		snd.msgBody.BY11 = channel;
+		snd.msgBody.PAYLOAD[0]   = state;
+		snd.msgBody.PAYLOAD[1]   = action | (bt.getStatus() << 7);
+		snd.msgBody.PAYLOAD[2]   = cc.rssi;
+		prepareToSend(rcv.msgBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv.msgBody.SND_ID);
 	}
 }
 
@@ -244,9 +252,9 @@ void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
  * 0A 24 80 02 1F B7 4A 63 19 63 84
  */
 void AS::sendNACK_TARGET_INVALID(void) {
-	sn.mBdy.mLen = 0x0A;
-	sn.mBdy.by10 = AS_RESPONSE_NACK_TARGET_INVALID;
-	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+	snd.msgBody.MSG_LEN = 0x0A;
+	snd.msgBody.BY10 = AS_RESPONSE_NACK_TARGET_INVALID;
+	prepareToSend(rcv.msgBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv.msgBody.SND_ID);
 }
 
 /**
@@ -261,29 +269,29 @@ void AS::sendNACK_TARGET_INVALID(void) {
  * @param flag: TODO: to be specified
  */
 void AS::sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag) {
-	sn.mBdy.mLen = 0x0E;
+	snd.msgBody.MSG_LEN = 0x0E;
 	uint8_t cnt = sn.msgCnt++;
 
-	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) {
-		cnt = rv.mBdy.mCnt;
+	if ((rcv.msgBody.MSG_TYP == AS_MESSAGE_CONFIG) && (rcv.msgBody.BY11 == AS_CONFIG_STATUS_REQUEST)) {
+		cnt = rcv.msgBody.MSG_CNT;
 	}
 
-	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
-	sn.mBdy.by10      = AS_INFO_ACTUATOR_STATUS;
-	sn.mBdy.by11      = channel;
-	sn.mBdy.pyLd[0]   = state;
-	sn.mBdy.pyLd[1]   = flag; // | (bt.getStatus() << 7);
-	sn.mBdy.pyLd[2]   = cc.rssi;
+	snd.msgBody.FLAG.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
+	snd.msgBody.BY10 = AS_INFO_ACTUATOR_STATUS;
+	snd.msgBody.BY11 = channel;
+	snd.msgBody.PAYLOAD[0]   = state;
+	snd.msgBody.PAYLOAD[1]   = flag; // | (bt.getStatus() << 7);
+	snd.msgBody.PAYLOAD[2]   = cc.rssi;
 
 	prepareToSend(cnt, AS_MESSAGE_INFO, MAID);
 }
 
 void AS::sendINFO_POWER_EVENT(uint8_t *data) {
-	sn.mBdy.mLen = 15; // 15, 16 works somehow but 12 + 6 = 18
+	snd.msgBody.MSG_LEN = 15; // 15, 16 works somehow but 12 + 6 = 18
 	uint8_t cnt;
 
-	if ((rv.mBdy.mTyp == AS_MESSAGE_CONFIG) && (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST)) {
-		cnt = rv.mBdy.mCnt;
+	if ((rcv.msgBody.MSG_TYP == AS_MESSAGE_CONFIG) && (rcv.msgBody.BY11 == AS_CONFIG_STATUS_REQUEST)) {
+		cnt = rcv.msgBody.MSG_CNT;
 	} else {
 		cnt = sn.msgCnt++;
 	}
@@ -295,15 +303,15 @@ void AS::sendINFO_POWER_EVENT(uint8_t *data) {
 	//char* myBytes = reinterpret_cast<char*>(sn.mBdy.pyLd);
 
 
-	sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3))?0:1;
+	snd.msgBody.FLAG.BIDI = (isEmpty(MAID,3))?0:1;
 	//sn.mBdy.by10      = AS_MESSAGE_POWER_EVENT_CYCLIC;
 
 	// set payload
-	sn.mBdy.by10      = data[0];
-	sn.mBdy.by11      = data[1]; // first byte of payload
+	snd.msgBody.BY10 = data[0];
+	snd.msgBody.BY11 = data[1]; // first byte of payload
 	for (uint8_t i = 2; i < 6; i++){
 		//dbg << "AS::sendINFO_POWER_EVENT BYTES: ("<< i <<" " << _HEXB(myBytes[i]) << " = " <<_HEXB(sn.mBdy.pyLd[i]) << "\n";
-		sn.mBdy.pyLd[i-2] = data[i];
+		snd.msgBody.PAYLOAD[i-2] = data[i];
 	}
 	//sn.mBdy.pyLd[0]   = state;
 	//sn.mBdy.pyLd[1]   = flag; // | (bt.getStatus() << 7);
@@ -487,13 +495,13 @@ inline void AS::sendSliceList(void) {
 	if (sn.active) return;																		// check if send function has a free slot, otherwise return
 
 	if        (stcSlice.peer) {			// INFO_PEER_LIST
-		cnt = ee.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, sn.buf+11);						// get the slice and the amount of bytes
+		cnt = ee.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, snd.buf+11);						// get the slice and the amount of bytes
 		sendINFO_PEER_LIST(cnt);																// create the body
 		stcSlice.curSlc++;																		// increase slice counter
 		//dbg << "peer slc: " << _HEX(sn.buf,sn.buf[0]+1) << '\n';								// write to send buffer
 
 	} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
-		cnt = ee.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, sn.buf+11); // get the slice and the amount of bytes
+		cnt = ee.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, snd.buf+11); // get the slice and the amount of bytes
 		//dbg << "cnt: " << cnt << '\n';
 		sendINFO_PARAM_RESPONSE_PAIRS(cnt);
 		stcSlice.curSlc++;																		// increase slice counter
@@ -589,7 +597,7 @@ inline void AS::sendPeerMsg(void) {
 	
 	preparePeerMessage(tmp_peer, 1);
 	
-	if (!sn.mBdy.mFlg.BIDI) {
+	if (!snd.msgBody.FLAG.BIDI) {
 		stcPeer.slot[stcPeer.idx_cur >> 3] &=  ~(1<<(stcPeer.idx_cur & 0x07));					// clear bit, because it is a message without need to be repeated
 	}
 
@@ -610,20 +618,20 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
 	// LONG   = bit 6
 	// LOWBAT = bit 7
 
-	sn.mBdy.mLen       = stcPeer.len_payload + 9;												// set message length
-	sn.mBdy.mFlg.CFG   = 1;
-	sn.mBdy.mFlg.BIDI  = stcPeer.bidi;															// message flag
-	sn.mBdy.mFlg.BURST = l4_0x01.s.peerNeedsBurst;
+	snd.msgBody.MSG_LEN = stcPeer.len_payload + 9;												// set message length
+	snd.msgBody.FLAG.CFG   = 1;
+	snd.msgBody.FLAG.BIDI  = stcPeer.bidi;															// message flag
+	snd.msgBody.FLAG.BURST = l4_0x01.s.peerNeedsBurst;
 	
 	prepareToSend(sn.msgCnt, stcPeer.msg_type, xPeer);
 
-	if (sn.mBdy.mTyp == 0x41) {
-		sn.mBdy.by10 = stcPeer.channel;
-		sn.mBdy.by10 |= (bt.getStatus() << 7);													// battery bit
-		memcpy(sn.buf+11, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
-		sn.mBdy.mLen++;
+	if (snd.msgBody.MSG_TYP == 0x41) {
+		snd.msgBody.BY10 = stcPeer.channel;
+		snd.msgBody.BY10 |= (bt.getStatus() << 7);													// battery bit
+		memcpy(snd.buf+11, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
+		snd.msgBody.MSG_LEN++;
 	} else {
-		memcpy(sn.buf+10, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
+		memcpy(snd.buf+10, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
 	}
 	sn.maxRetr = retries;																		// send only one time
 }
@@ -632,43 +640,43 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
  * @brief Receive handler: Process received messages
  */
 void AS::processMessage(void) {
-	uint8_t by10 = rv.mBdy.by10 - 1;
+	uint8_t by10 = rcv.msgBody.BY10 - 1;
 
 	// check which type of message was received
-	if        (rv.mBdy.mTyp == AS_MESSAGE_DEVINFO) {
+	if        (rcv.msgBody.MSG_TYP == AS_MESSAGE_DEVINFO) {
 		//TODO: do something with the information
 
-	} else if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
+	} else if (rcv.msgBody.MSG_TYP == AS_MESSAGE_CONFIG) {
 
-		if (rv.mBdy.by11        == AS_CONFIG_PEER_LIST_REQ) {
+		if (rcv.msgBody.BY11    == AS_CONFIG_PEER_LIST_REQ) {
 			processMessageConfigPeerListReq();
 
-		} else if (rv.mBdy.by11 == AS_CONFIG_PARAM_REQ) {
+		} else if (rcv.msgBody.BY11 == AS_CONFIG_PARAM_REQ) {
 			processMessageConfigParamReq();
 
-		} else if (rv.mBdy.by11 == AS_CONFIG_SERIAL_REQ) {
+		} else if (rcv.msgBody.BY11 == AS_CONFIG_SERIAL_REQ) {
 			processMessageConfigSerialReq();
 
-		} else if (rv.mBdy.by11 == AS_CONFIG_PAIR_SERIAL) {
+		} else if (rcv.msgBody.BY11 == AS_CONFIG_PAIR_SERIAL) {
 			processMessageConfigPairSerial();
 
-		} else if (rv.mBdy.by11 == AS_CONFIG_STATUS_REQUEST) {
+		} else if (rcv.msgBody.BY11 == AS_CONFIG_STATUS_REQUEST) {
 			processMessageConfigStatusRequest(by10);
 
 		} else {
 			processMessageConfigAESProtected();
 		}
 
-	} else if (rv.mBdy.mTyp == AS_MESSAGE_RESPONSE) {
+	} else if (rcv.msgBody.MSG_TYP == AS_MESSAGE_RESPONSE) {
 		/*
 		 * This is an response (ACK) to an active message.
 		 * In exception of AS_RESPONSE_AES_CHALLANGE message, we set retrCnt to 0xFF
 		 */
-		if ((sn.active) && (rv.mBdy.mCnt == sn.lastMsgCnt) && (rv.mBdy.by10 != AS_RESPONSE_AES_CHALLANGE)) {
+		if ((sn.active) && (rcv.msgBody.MSG_CNT == sn.lastMsgCnt) && (rcv.msgBody.BY10 != AS_RESPONSE_AES_CHALLANGE)) {
 			sn.retrCnt = 0xFF;
 		}
 
-		if (rv.mBdy.by10 == AS_RESPONSE_ACK) {
+		if (rcv.msgBody.BY10 == AS_RESPONSE_ACK) {
 			/*
 			 * Message description:
 			 *             Sender__ Receiver ACK
@@ -676,7 +684,7 @@ void AS::processMessage(void) {
 			 */
 			// nothing to do yet
 
-		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK_STATUS) {
+		} else if (rcv.msgBody.BY10 == AS_RESPONSE_ACK_STATUS) {
 			/*
 			 * Message description:
 			 *             Sender__ Receiver ACK Channel State Action RSSI
@@ -686,144 +694,145 @@ void AS::processMessage(void) {
 			 */
 			// nothing to do yet
 
-		} else if (rv.mBdy.by10 == AS_RESPONSE_ACK2) {
+		} else if (rcv.msgBody.BY10 == AS_RESPONSE_ACK2) {
 			// nothing to do yet
 
 		#ifdef SUPPORT_AES
-			} else if (rv.mBdy.by10 == AS_RESPONSE_AES_CHALLANGE) {
-				processMessageResponseAES_Challenge();
+		} else if (rcv.msgBody.BY10 == AS_RESPONSE_AES_CHALLANGE) {
+			processMessageResponseAES_Challenge();
 
-				memcpy(sn.buf+10, sn.msgToSign, 16);
-				prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE_AES, rv.mBdy.reID);
+			memcpy(snd.buf+10, sn.msgToSign, 16);
+			prepareToSend(rcv.msgBody.MSG_CNT, AS_MESSAGE_RESPONSE_AES, rcv.msgBody.SND_ID);
 		#endif
 
-		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK) {
+		} else if (rcv.msgBody.BY10 == AS_RESPONSE_NACK) {
 			// nothing to do yet
 
-		} else if (rv.mBdy.by10 == AS_RESPONSE_NACK_TARGET_INVALID) {
+		} else if (rcv.msgBody.BY10 == AS_RESPONSE_NACK_TARGET_INVALID) {
 			// nothing to do yet
 
 		}
 
 	#ifdef SUPPORT_AES
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_RESPONSE_AES)) {
-			/*
-			 * Message description:
-			 *             Sender__ Receiver AES-Response-Data
-			 * 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
-			 */
-			sn.cleanUp();																		// cleanup send module data;
+	} else if ((rcv.msgBody.MSG_TYP == AS_MESSAGE_RESPONSE_AES)) {
+		/*
+		 * Message description:
+		 *             Sender__ Receiver AES-Response-Data
+		 * 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
+		 */
+		sn.cleanUp();																		// cleanup send module data;
 
-			uint8_t iv[16];																		// 16 bytes initial vector
-			memset(iv, 0x00, 16);																// fill IV with 0x00;
-			memcpy(iv, rv.prevBuf+11, rv.prevBuf[0]-10);
-			aes128_dec(rv.buf+10, &ctx);														// decrypt payload with temporarily key first time
+		uint8_t iv[16];																		// 16 bytes initial vector
+		memset(iv, 0x00, 16);																// fill IV with 0x00;
+		memcpy(iv, rv.prevBuf+11, rv.prevBuf[0]-10);
+		aes128_dec(rcv.buf+10, &ctx);														// decrypt payload with temporarily key first time
 
-			for (uint8_t i = 0; i < 16; i++) rv.buf[i+10] ^= iv[i];								// xor encrypted payload with iv
+		for (uint8_t i = 0; i < 16; i++) rcv.buf[i+10] ^= iv[i];							// xor encrypted payload with iv
 
-			uint8_t authAck[4];
-			authAck[0] = rv.buf[10];
-			authAck[1] = rv.buf[11];
-			authAck[2] = rv.buf[12];
-			authAck[3] = rv.buf[13];
+		uint8_t authAck[4];
+		//memcpy(authAck, rcv.buf + 10, 4);
+		authAck[0] = rcv.buf[10];
+		authAck[1] = rcv.buf[11];
+		authAck[2] = rcv.buf[12];
+		authAck[3] = rcv.buf[13];
 
-			aes128_dec(rv.buf+10, &ctx);														// decrypt payload with temporarily key again
+		aes128_dec(rcv.buf+10, &ctx);														// decrypt payload with temporarily key again
 
-			/**
-			 * Compare decrypted message with original message
-			 */
+		/**
+		 * Compare decrypted message with original message
+		 */
+		#ifdef AES_DBG
+		dbg << F(">>> compare: ") << _HEX(rcv.buf+10, 16) << " | "<< _HEX(rv.prevBuf, 11) << '\n';
+		#endif
+
+		// memcmp returns 0 if compare true
+		if (!memcmp(rcv.buf+16, rv.prevBuf+1, 10)) {										// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
 			#ifdef AES_DBG
-				dbg << F(">>> compare: ") << _HEX(rv.buf+10, 16) << " | "<< _HEX(rv.prevBuf, 11) << '\n';
+			dbg << F("Signature check OK\n");
 			#endif
 
-			// memcmp returns 0 if compare true
-			 if (!memcmp(rv.buf+16, rv.prevBuf+1, 10)) {										// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
-				#ifdef AES_DBG
-					dbg << F("Signature check OK\n");
-				#endif
+			sendAckAES(authAck);															// send AES-Ack
 
-				sendAckAES(authAck);															// send AES-Ack
+			if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
+				memcpy(rcv.buf, rv.prevBuf, rv.prevBuf[0]+1);								// restore the last received message for processing from saved buffer
+				rv.prevBufUsed = 0;
 
-				if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
-					memcpy(rv.buf, rv.prevBuf, rv.prevBuf[0]+1);								// restore the last received message for processing from saved buffer
-					rv.prevBufUsed = 0;
+				if (rcv.msgBody.MSG_TYP == AS_MESSAGE_CONFIG) {
+					processMessageConfig();
 
-					if (rv.mBdy.mTyp == AS_MESSAGE_CONFIG) {
-						processMessageConfig();
+				} else if (rcv.msgBody.MSG_TYP == AS_MESSAGE_ACTION) {
+					processMessageAction11();
 
-					} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {
-						processMessageAction11();
-
-					} else if (rv.mBdy.mTyp >= AS_MESSAGE_SWITCH_EVENT) {
-						uint8_t pIdx;
-						uint8_t cnl = getChannelFromPeerDB(&pIdx);
-						if (cnl > 0) {
-							processMessageAction3E(cnl, pIdx);
-						}
+				} else if (rcv.msgBody.MSG_TYP >= AS_MESSAGE_SWITCH_EVENT) {
+					uint8_t pIdx;
+					uint8_t cnl = getChannelFromPeerDB(&pIdx);
+					if (cnl > 0) {
+						processMessageAction3E(cnl, pIdx);
 					}
-
-				} else if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE2) {
-					setEEPromBlock(15, 16, newHmKey);											// store HMKEY
-					getEEPromBlock(15, 16, HMKEY);
-					setEEPromBlock(14, 1, newHmKeyIndex);										// store used key index
-					hmKeyIndex[0] = newHmKeyIndex[0];
-					#ifdef AES_DBG
-						dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << '\n';
-					#endif
-
-					keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 				}
 
-			 } else {
+			} else if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE2) {
+				setEEPromBlock(15, 16, newHmKey);											// store HMKEY
+				getEEPromBlock(15, 16, HMKEY);
+				setEEPromBlock(14, 1, newHmKeyIndex);										// store used key index
+				hmKeyIndex[0] = newHmKeyIndex[0];
 				#ifdef AES_DBG
-					 dbg << F("Signature check FAIL\n");
+				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << '\n';
 				#endif
 
-				// ToDo: Check if needed.
-				sendNACK();
+				keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 			}
 
-		} else if ((rv.mBdy.mTyp == AS_MESSAGE_KEY_EXCHANGE)) {									// AES Key Exchange
+		 } else {
+			#ifdef AES_DBG
+			dbg << F("Signature check FAIL\n");
+			#endif
+
+			// ToDo: Check if needed.
+			sendNACK();
+		}
+
+	} else if ((rcv.msgBody.MSG_TYP == AS_MESSAGE_KEY_EXCHANGE)) {									// AES Key Exchange
 			processMessageKeyExchange();
 
 	#endif
 
-	} else if (rv.mBdy.mTyp == AS_MESSAGE_ACTION) {												// action message
+	} else if (rcv.msgBody.MSG_TYP == AS_MESSAGE_ACTION) {												// action message
 		#ifdef SUPPORT_AES
 
-			uint8_t aesActiveForReset = 0;
-			if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {						// device reset requested
-				aesActiveForReset = checkAnyChannelForAES();									// check if AES activated for any channel			}
-			}
+		uint8_t aesActiveForReset = 0;
+		if (rcv.msgBody.BY10 == AS_ACTION_RESET && rcv.msgBody.BY11 == 0x00) {						// device reset requested
+			aesActiveForReset = checkAnyChannelForAES();									// check if AES activated for any channel			}
+		}
 
-			// check if AES for the current channel active or aesActiveForReset @see above
-			if (ee.getRegAddr(rv.mBdy.by11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
-				sendSignRequest(1);
+		// check if AES for the current channel active or aesActiveForReset @see above
+		if (ee.getRegAddr(rcv.msgBody.BY11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
+			sendSignRequest(1);
 
-			} else {
+		} else {
 		#endif
 
-				processMessageAction11();
-				if (rv.ackRq || resetStatus == AS_RESET) {
-					if (ee.getRegListIdx(1,3) == 0xFF || resetStatus == AS_RESET) {
-						sendACK();
-					} else {
-						uint8_t channel = rv.mBdy.by11;
-						if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {
-							channel = 1;
-						}
-						sendACK_STATUS(channel, 0, 0);
+			processMessageAction11();
+			if (rcv_ackRq || resetStatus == AS_RESET) {
+				if (ee.getRegListIdx(1,3) == 0xFF || resetStatus == AS_RESET) {
+					sendACK();
+				} else {
+					uint8_t channel = rcv.msgBody.BY11;
+					if (rcv.msgBody.BY10 == AS_ACTION_RESET && rcv.msgBody.BY11 == 0x00) {
+						channel = 1;
 					}
+					sendACK_STATUS(channel, 0, 0);
 				}
+			}
 
 		#ifdef SUPPORT_AES
-			}
+		}
 		#endif
 
-	} else if  (rv.mBdy.mTyp == AS_MESSAGE_HAVE_DATA) {											// HAVE_DATA
+	} else if  (rcv.msgBody.MSG_TYP == AS_MESSAGE_HAVE_DATA) {											// HAVE_DATA
 		// TODO: Make ready
 
-	} else if  (rv.mBdy.mTyp >= AS_MESSAGE_SWITCH_EVENT) {
+	} else if  (rcv.msgBody.MSG_TYP >= AS_MESSAGE_SWITCH_EVENT) {
 		/*
 		 * used by message type 3E (SWITCH), 3F (TIMESTAMP), 40 (REMOTE), 41 (SENSOR_EVENT),
 		 *                      53 (SENSOR_DATA), 58 (CLIMATE_EVENT), 70 (WEATHER_EVENT)
@@ -849,17 +858,17 @@ void AS::processMessage(void) {
 
 		if (cnl > 0) {
 			#ifdef SUPPORT_AES
-				// check if AES for the current channel active
-				if (ee.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
-					sendSignRequest(1);
-
-				} else {
+			// check if AES for the current channel active
+			if (ee.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
+				sendSignRequest(1);
+				
+			} else {
 			#endif
 
-					processMessageAction3E(cnl, pIdx);
+			processMessageAction3E(cnl, pIdx);
 
 			#ifdef SUPPORT_AES
-				}
+			}
 			#endif
 		}
 
@@ -879,19 +888,19 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	uint8_t tmp;
 
 	// check if we have the peer in the database to get the channel
-	if ((rv.mBdy.mTyp == AS_MESSAGE_SWITCH_EVENT) && (rv.mBdy.mLen == 0x0F)) {
-		tmp = rv.buf[13];																		// save byte13, because we will replace it
-		rv.buf[13] = rv.buf[14];																// copy the channel byte to the peer
-		cnl = ee.isPeerValid(rv.buf+10);														// check with the right part of the string
+	if ((rcv.msgBody.MSG_TYP == AS_MESSAGE_SWITCH_EVENT) && (rcv.msgBody.MSG_LEN == 0x0F)) {
+		tmp = rcv.buf[13];																		// save byte13, because we will replace it
+		rcv.buf[13] = rcv.buf[14];																// copy the channel byte to the peer
+		cnl = ee.isPeerValid(rcv.buf+10);														// check with the right part of the string
 		if (cnl) {
-			*pIdx = ee.getIdxByPeer(cnl, rv.buf+10);											// get the index of the respective peer in the channel store
+			*pIdx = ee.getIdxByPeer(cnl, rcv.buf+10);											// get the index of the respective peer in the channel store
 		}
-		rv.buf[13] = tmp;																		// get it back
+		rcv.buf[13] = tmp;																		// get it back
 
 	} else {
-		cnl = ee.isPeerValid(rv.peerId);
+		cnl = ee.isPeerValid(rcv_PEER_ID);
 		if (cnl) {
-			*pIdx = ee.getIdxByPeer(cnl, rv.peerId);											// get the index of the respective peer in the channel store
+			*pIdx = ee.getIdxByPeer(cnl, rcv_PEER_ID);											// get the index of the respective peer in the channel store
 		}
 	}
 
@@ -921,23 +930,23 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
 	 */
 	inline void AS::processMessageKeyExchange(void) {
-		memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);												// remember this message
+		memcpy(rv.prevBuf, rcv.buf, rcv.buf[0]+1);												// remember this message
 //		rv.prevBufUsed = 1;																		// ToDo: check if we need this here
 
 		aes128_init(HMKEY, &ctx);																// load HMKEY
-		aes128_dec(rv.buf+10, &ctx);															// decrypt payload width HMKEY first time
+		aes128_dec(rcv.buf+10, &ctx);															// decrypt payload width HMKEY first time
 
 		#ifdef AES_DBG
 			dbg << F("decrypted buf: ") << _HEX(rv.buf+10, 16) << '\n';
 		#endif
 
-		if (rv.buf[10] == 0x01) {																// the decrypted data must start with 0x01
-			keyPartIndex = (rv.buf[11] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
+		if (rcv.buf[10] == 0x01) {																// the decrypted data must start with 0x01
+			keyPartIndex = (rcv.buf[11] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
 			if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE1) {
-				newHmKeyIndex[0] = rv.buf[11];
+				newHmKeyIndex[0] = rcv.buf[11];
 			}
 
-			memcpy(newHmKey + keyPartIndex, rv.buf+12, 8);
+			memcpy(newHmKey + keyPartIndex, rcv.buf+12, 8);
 
 			#ifdef AES_DBG
 				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << '\n';
@@ -974,7 +983,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 		initPseudoRandomNumberGenerator();
 
 		uint8_t challenge[6];
-		memcpy(challenge, rv.buf+11, 6);														// get challenge
+		memcpy(challenge, rcv.buf+11, 6);														// get challenge
 
 		makeTmpKey(challenge);																	// Build the temporarily key from challenge
 
@@ -994,7 +1003,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 		}
 
 		aes128_enc(sn.msgToSign, &ctx);															// encrypt payload again
-		sn.mBdy.mLen = 0x19;
+		snd.msgBody.MSG_LEN = 0x19;
 	}
 #endif
 
@@ -1007,13 +1016,15 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
  */
 inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
 	// check if a module is registered and send the information, otherwise report an empty status
-	RG::s_modTable *pModTbl = &modTbl[by10];													// pointer to the respective line in the module table
+	//RG::s_modTable *pModTbl = &modTbl[by10];													// pointer to the respective line in the module table
 
-	if (pModTbl->isActive) {
-			pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen - 11);
-	} else {
-		sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);
-	}
+	//if (pModTbl->isActive) {
+	//		pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.mBdy.pyLd, rv.mBdy.mLen - 11);
+	//} else {
+	//	sendINFO_ACTUATOR_STATUS(rv.mBdy.by10, 0, 0);
+	//}
+	pcnlModule[by10]->request_pair_status();
+
 }
 
 /*
@@ -1024,7 +1035,7 @@ inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
  * 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
  */
 inline void AS::processMessageConfigPairSerial(void) {
-	if (!memcmp(rv.buf+12, HMSR, 10)) {															// compare serial and send device info
+	if (!memcmp(rcv.buf+12, HMSR, 10)) {															// compare serial and send device info
 		sendDEVICE_INFO();
 	}
 }
@@ -1049,17 +1060,17 @@ inline void AS::processMessageConfigSerialReq(void) {
  * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
  */
 inline void AS::processMessageConfigParamReq(void) {
-	if ((rv.buf[16] == 0x03) || (rv.buf[16] == 0x04)) {											// only list 3 and list 4 needs an peer id and idx
-		stcSlice.idx = ee.getIdxByPeer(rv.mBdy.by10, rv.buf+12);								// get peer index
+	if ((rcv.buf[16] == 0x03) || (rcv.buf[16] == 0x04)) {										// only list 3 and list 4 needs an peer id and idx
+		stcSlice.idx = ee.getIdxByPeer(rcv.msgBody.BY10, rcv.buf+12);							// get peer index
 	} else {
 		stcSlice.idx = 0;																		// otherwise peer index is 0
 	}
 
-	stcSlice.totSlc = ee.countRegListSlc(rv.mBdy.by10, rv.buf[16]);								// how many slices are need
-	stcSlice.mCnt = rv.mBdy.mCnt;																// remember the message count
-	memcpy(stcSlice.toID, rv.mBdy.reID, 3);
-	stcSlice.cnl = rv.mBdy.by10;																// send input to the send peer function
-	stcSlice.lst = rv.buf[16];																	// send input to the send peer function
+	stcSlice.totSlc = ee.countRegListSlc(rcv.msgBody.BY10, rcv.buf[16]);						// how many slices are need
+	stcSlice.mCnt = rcv.msgBody.MSG_CNT;														// remember the message count
+	memcpy(stcSlice.toID, rcv.msgBody.SND_ID, 3);
+	stcSlice.cnl = rcv.msgBody.BY10;															// send input to the send peer function
+	stcSlice.lst = rcv.buf[16];																	// send input to the send peer function
 	stcSlice.reg2 = 1;																			// set the type of answer
 
 	#ifdef AS_DBG
@@ -1082,10 +1093,10 @@ inline void AS::processMessageConfigParamReq(void) {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
  */
 inline void AS::processMessageConfigPeerListReq(void) {
-	stcSlice.totSlc = ee.countPeerSlc(rv.mBdy.by10);											// how many slices are need
-	stcSlice.mCnt = rv.mBdy.mCnt;																// remember the message count
-	memcpy(stcSlice.toID, rv.mBdy.reID, 3);
-	stcSlice.cnl = rv.mBdy.by10;																// send input to the send peer function
+	stcSlice.totSlc = ee.countPeerSlc(rcv.msgBody.BY10);										// how many slices are need
+	stcSlice.mCnt = rcv.msgBody.MSG_CNT;														// remember the message count
+	memcpy(stcSlice.toID, rcv.msgBody.SND_ID, 3);
+	stcSlice.cnl = rcv.msgBody.BY10;															// send input to the send peer function
 	stcSlice.peer = 1;																			// set the type of answer
 	stcSlice.active = 1;																		// start the send function
 	// answer will send from sendsList(void)
@@ -1114,19 +1125,19 @@ inline void AS::processMessageConfigAESProtected() {
 uint8_t AS::processMessageConfig() {
 	uint8_t ackOk = 1;
 
-	if (rv.mBdy.by11 == AS_CONFIG_PEER_ADD) {													// CONFIG_PEER_ADD
+	if (rcv.msgBody.BY11 == AS_CONFIG_PEER_ADD) {													// CONFIG_PEER_ADD
 		ackOk = configPeerAdd();
 
-	} else if (rv.mBdy.by11 == AS_CONFIG_PEER_REMOVE) {											// CONFIG_PEER_REMOVE
+	} else if (rcv.msgBody.BY11 == AS_CONFIG_PEER_REMOVE) {											// CONFIG_PEER_REMOVE
 		ackOk = configPeerRemove();
 
-	} else if (rv.mBdy.by11 == AS_CONFIG_START) {												// CONFIG_START
+	} else if (rcv.msgBody.BY11 == AS_CONFIG_START) {												// CONFIG_START
 		configStart();
 
-	} else if (rv.mBdy.by11 == AS_CONFIG_END) {													// CONFIG_END
+	} else if (rcv.msgBody.BY11 == AS_CONFIG_END) {													// CONFIG_END
 		configEnd ();
 
-	} else if (rv.mBdy.by11 == AS_CONFIG_WRITE_INDEX) {											// CONFIG_WRITE_INDEX
+	} else if (rcv.msgBody.BY11 == AS_CONFIG_WRITE_INDEX) {											// CONFIG_WRITE_INDEX
 		configWriteIndex();
 
 	}
@@ -1146,7 +1157,7 @@ uint8_t AS::processMessageConfig() {
 inline uint8_t AS::configPeerAdd() {
 
 	// set the peers in the peerdatabase
-	uint8_t ackOk = ee.addPeers(rv.mBdy.by10, rv.buf+12);										// send to addPeer function
+	uint8_t ackOk = ee.addPeers(rcv.msgBody.BY10, rcv.buf+12);									// send to addPeer function
 
 	#ifdef AS_DBG																				// only if ee debug is set
 	dbg << F("configPeerAdd, cnl:") << _HEXB(rv.buf[11]) << F(", data:") << _HEX(rv.buf + 12, 5) << '\n';
@@ -1163,7 +1174,7 @@ inline uint8_t AS::configPeerAdd() {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerRemove() {
-	return ee.remPeers(rv.mBdy.by10,rv.buf+12);													// call the remPeer function
+	return ee.remPeers(rcv.msgBody.BY10, rcv.buf+12);											// call the remPeer function
 }
 
 /**
@@ -1174,10 +1185,10 @@ inline uint8_t AS::configPeerRemove() {
  * 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
  */
 inline void AS::configStart() {
-	cFlag.channel = rv.mBdy.by10;																// fill structure to remember where to write
-	cFlag.list = rv.buf[16];
+	cFlag.channel = rcv.msgBody.BY10;															// fill structure to remember where to write
+	cFlag.list = rcv.buf[16];
 	if ((cFlag.list == 3) || (cFlag.list == 4)) {
-		cFlag.idx_peer = ee.getIdxByPeer(rv.mBdy.by10, rv.buf + 12);
+		cFlag.idx_peer = ee.getIdxByPeer(rcv.msgBody.BY10, rcv.buf + 12);
 	} else {
 		cFlag.idx_peer = 0;
 	}
@@ -1197,24 +1208,31 @@ inline void AS::configStart() {
  * 10 04 A0 01 63 19 63 01 02 04 01 06
  */
 inline void AS::configEnd() {
-	RG::s_modTable *pModTbl = &modTbl[cFlag.channel];											// pointer to the respective line in the module table
 
 	cFlag.active = 0;																			// set inactive
-	if ( (cFlag.channel == 0) && (cFlag.idx_peer == 0) ) {
-		ee.getMasterID();
+	if ((cFlag.list == 0) || (cFlag.list == 1)) {
+		ee.getList(pcnlModule[cFlag.channel]->cT, 0, pcnlModule[cFlag.channel]->chnl_list);
+		pcnlModule[cFlag.channel]->info_config_change();
 	}
+
+	//if ( (cFlag.channel == 0) && (cFlag.idx_peer == 0) ) {
+	//	ee.getMasterID();
+	//}
 	// remove message id flag to config in send module
 
-	if ( (cFlag.channel > 0) && ( pModTbl->isActive) ) {
+	//if ( (cFlag.channel > 0) && ( pModTbl->isActive) ) {
 		/*
 		 * Check if a new list1 was written and reload.
 		 * No need for reload list3/4 because they will be loaded on an peer event.
 		 */
-		if (cFlag.list == 1) {
-			ee.getList(cFlag.channel, 1, cFlag.idx_peer, pModTbl->lstCnl); 						// load list1 in the respective buffer
-		}
-		pModTbl->mDlgt(0x01, 0, 0x06, NULL, 0);													// inform the module of the change
-	}
+		//if (cFlag.list == 1) {
+		//	ee.getList(cFlag.channel, 1, cFlag.idx_peer, pcnlModule[cFlag.channel]->chnl_list); 	// load list1 in the respective buffer
+		//}
+		//pcnlModule[cFlag.channel]->info_config_change();
+		//	ee.getList(cFlag.channel, 1, cFlag.idx_peer, pModTbl->lstCnl); 						// load list1 in the respective buffer
+		//}
+		//pModTbl->mDlgt(0x01, 0, 0x06, NULL, 0);													// inform the module of the change
+	//}
 }
 
 /**
@@ -1225,13 +1243,13 @@ inline void AS::configEnd() {
  * 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
  */
  inline void AS::configWriteIndex(void) {
-	if ((cFlag.active) && (cFlag.channel == rv.mBdy.by10)) {									// check if we are in config mode and if the channel fit
-		ee.setListArray(cFlag.channel, cFlag.list, cFlag.idx_peer, rv.buf[0]-11, rv.buf+12);			// write the string to EEprom
+	if ((cFlag.active) && (cFlag.channel == rcv.msgBody.BY10)) {									// check if we are in config mode and if the channel fit
+		ee.setListArray(cFlag.channel, cFlag.list, cFlag.idx_peer, rcv.buf[0]-11, rcv.buf+12);		// write the string to EEprom
 
-		if ((cFlag.channel == 0) && (cFlag.list == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
+		/*if ((cFlag.channel == 0) && (cFlag.list == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 			uint8_t maIdFlag = 0;
-			for (uint8_t i = 0; i < (rv.buf[0]+1-12); i+=2) {
-				if (rv.buf[12+i] == 0x0A) maIdFlag = 1;
+			for (uint8_t i = 0; i < (rcv.buf[0]+1-12); i+=2) {
+				if (rcv.buf[12+i] == 0x0A) maIdFlag = 1;
 				#ifdef AS_DBG
 					dbg << "x" << i << " :" << _HEXB(rv.buf[12+i]) << '\n';
 				#endif
@@ -1242,7 +1260,7 @@ inline void AS::configEnd() {
 					dbg << "new masterid\n" << '\n';
 				#endif
 			}
-		}
+		}*/
 	}
 }
 
@@ -1250,7 +1268,7 @@ inline void AS::configEnd() {
  * @brief Process all action (11) messages
  */
 void AS::processMessageAction11() {
-	if (rv.mBdy.by10 == AS_ACTION_RESET && rv.mBdy.by11 == 0x00) {								// RESET
+	if (rcv.msgBody.BY10 == AS_ACTION_RESET && rcv.msgBody.BY11 == 0x00) {								// RESET
 		/*
 		 * Message description:
 		 *             Sender__ Receiver
@@ -1258,7 +1276,7 @@ void AS::processMessageAction11() {
 		 */
 		resetStatus = AS_RESET_CLEAR_EEPROM;													// schedule a device reset with clear eeprom
 
-	} else if (rv.mBdy.by10 == AS_ACTION_ENTER_BOOTLOADER) {									// We should enter the Bootloader
+	} else if (rcv.msgBody.BY10 == AS_ACTION_ENTER_BOOTLOADER) {								// We should enter the Bootloader
 		dbg << "AS_ACTION_ENTER_BOOTLOADER\n";
 		/*
 		 * Message description:
@@ -1266,7 +1284,7 @@ void AS::processMessageAction11() {
 		 * 0B 1C B0 11 63 19 63 1F B7 4A CA
 		 */
 		resetStatus = AS_RESET;																	// schedule a device reset without eeprom
-		rv.ackRq = 1;
+		rcv_ackRq = 1;
 
 	} else {
 		/*
@@ -1276,10 +1294,11 @@ void AS::processMessageAction11() {
 		 *             Sender__ Receiver type actionType channel data
 		 * 0E 5E B0 11 63 19 63 1F B7 4A 02   01         01      C8 00 00 00 00
 		 */
-		RG::s_modTable *pModTbl = &modTbl[rv.mBdy.by11];										// pointer to the respective line in the module table
-		if (pModTbl->isActive) {
-			pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
-		}
+		//RG::s_modTable *pModTbl = &modTbl[rv.mBdy.by11];										// pointer to the respective line in the module table
+		//if (pModTbl->isActive) {
+		//	pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf+12, rv.mBdy.mLen-11);
+		//}
+		pcnlModule[rcv.msgBody.BY11]->message_trigger11(rcv.buf[12], (rcv.msgBody.MSG_LEN > 13) ? rcv.buf + 13 : NULL, (rcv.msgBody.MSG_LEN > 15) ? rcv.buf + 15 : NULL);
 	}
 }
 
@@ -1293,23 +1312,28 @@ void AS::processMessageAction11() {
  *
  */
 void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
-	// check if a module is registered and send the information, otherwise report an empty status
-	RG::s_modTable *pModTbl = &modTbl[cnl];													// pointer to the respective line in the module table
-	EE::s_peerTbl *pPeerTbl = (EE::s_peerTbl*)&peerTbl[ cnl ];
-	EE::s_cnlTbl *pCnlTbl = (EE::s_cnlTbl*)&cnlTbl[ pPeerTbl->pLink ];
 
-	if (pModTbl->isActive) {
+	cmMaster *pCM = pcnlModule[cnl];															// short hand for the channel module pointer
+	ee.getList(pCM->cPT, pIdx, pCM->peer_list);													// get list3 or list4 loaded into the user module
 
-		//dbg << "pIdx:" << pIdx << ", cnl:" << cnl << '\n';
-		ee.getList( pCnlTbl->cnl, pCnlTbl->lst, pIdx, pModTbl->lstPeer);						// get list3 or list4 loaded into the user module
+	struct structFlag {
+		uint8_t CNL : 4;
+		uint8_t UP : 1; // 0x10
+		uint8_t DOWN : 1; // 0x20
+		uint8_t LONG : 1; // 0x40
+		uint8_t LOWBAT : 1; // 0x80
+		uint8_t COUNT;
+		uint8_t VALUE;
+	} sF;
 
-		// call the user module
-		pModTbl->mDlgt(rv.mBdy.mTyp, rv.mBdy.by10, rv.mBdy.by11, rv.buf + 10, rv.mBdy.mLen - 9);
+	uint8_t *buf = (rcv.msgBody.MSG_TYP == 0x3E) ? rcv.buf + 14 : rcv.buf + 10;
+	memcpy( &sF, buf, 3);
 
-	} else {
-		sendACK();
-
-	}
+	if      (rcv.msgBody.MSG_TYP == 0x3E) pCM->message_trigger3E(sF.LONG, sF.COUNT);		// call the user module
+	else if (rcv.msgBody.MSG_TYP == 0x40) pCM->message_trigger40(sF.LONG, sF.COUNT);
+	else if (rcv.msgBody.MSG_TYP == 0x41) pCM->message_trigger41(sF.LONG, sF.COUNT, sF.VALUE);
+	else sendACK();
+// 21878
 }
 
 /**
@@ -1319,8 +1343,8 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
  */
 void AS::deviceReset(uint8_t clearEeprom) {
 	if (clearEeprom == AS_RESET_CLEAR_EEPROM) {
-		firstTimeStart();
-		ee.getMasterID();
+		clearEEPromBlock(0, 2);
+		ee.init();
 
 		#ifdef SUPPORT_AES
 		ee.initHMKEY();
@@ -1342,10 +1366,10 @@ void AS::deviceReset(uint8_t clearEeprom) {
  * 14 77 80 10 1E 7A AD 63 19 63 00 4A 45 51 30 37 33 31 39 30 35
  */
 inline void AS::sendINFO_SERIAL(void) {
-	sn.mBdy.mLen = 0x14;
-	sn.mBdy.by10 = AS_INFO_SERIAL;
-	memcpy(sn.buf+11, HMSR, 10);
-	prepareToSend(rv.mBdy.mLen, AS_MESSAGE_INFO, rv.mBdy.reID);
+	snd.msgBody.MSG_LEN = 0x14;
+	snd.msgBody.BY10 = AS_INFO_SERIAL;
+	memcpy(snd.buf+11, HMSR, 10);
+	prepareToSend(rcv.msgBody.MSG_LEN, AS_MESSAGE_INFO, rcv.msgBody.SND_ID);
 }
 
 /**
@@ -1358,9 +1382,9 @@ inline void AS::sendINFO_SERIAL(void) {
  * @param length
  */
 inline void AS::sendINFO_PEER_LIST(uint8_t length) {
-	sn.mBdy.mLen = length + 10;
-	sn.mBdy.mFlg.BIDI = 1;
-	sn.mBdy.by10 = AS_INFO_PEER_LIST;															//stcSlice.cnl;
+	snd.msgBody.MSG_LEN = length + 10;
+	snd.msgBody.FLAG.BIDI = 1;
+	snd.msgBody.BY10 = AS_INFO_PEER_LIST;															//stcSlice.cnl;
 	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
 
@@ -1374,9 +1398,9 @@ inline void AS::sendINFO_PEER_LIST(uint8_t length) {
  * @param length
  */
 inline void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
-	sn.mBdy.mLen = length + 10;
-	sn.mBdy.mFlg.BIDI = 1;
-	sn.mBdy.by10 = (length < 3) ? AS_INFO_PARAM_RESPONSE_SEQ : AS_INFO_PARAM_RESPONSE_PAIRS;
+	snd.msgBody.MSG_LEN = length + 10;
+	snd.msgBody.FLAG.BIDI = 1;
+	snd.msgBody.BY10 = (length < 3) ? AS_INFO_PARAM_RESPONSE_SEQ : AS_INFO_PARAM_RESPONSE_PAIRS;
 	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
 
@@ -1391,12 +1415,12 @@ inline void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
 void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
 	uint8_t i;
 
-	sn.mBdy.mCnt = mCounter;
-	sn.mBdy.mTyp = mType;
-	sn.mBdy.reID[0] = HMID[0];
-	sn.mBdy.reID[1] = HMID[1];
-	sn.mBdy.reID[2] = HMID[2];
-	memcpy(sn.mBdy.toID, receiverAddr, 3);
+	snd.msgBody.MSG_CNT = mCounter;
+	snd.msgBody.MSG_TYP = mType;
+	snd.msgBody.SND_ID[0] = HMID[0];
+	snd.msgBody.SND_ID[1] = HMID[1];
+	snd.msgBody.SND_ID[2] = HMID[2];
+	memcpy(snd.msgBody.RCV_ID, receiverAddr, 3);
 
 	sn.active = 1;																				// remember to fire the message
 }
@@ -1639,33 +1663,33 @@ void AS::encode(uint8_t *buf) {
 	 */
 	void AS::sendSignRequest(uint8_t rememberBuffer) {
 		if (rememberBuffer) {
-			memcpy(rv.prevBuf, rv.buf, rv.buf[0]+1);											// remember the message from buffer
+			memcpy(rv.prevBuf, rcv.buf, rcv.buf[0]+1);											// remember the message from buffer
 			rv.prevBufUsed = 1;
 		}
 
-		sn.mBdy.mLen      = 0x11;
-		sn.mBdy.mFlg.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
-		sn.mBdy.by10      = AS_RESPONSE_AES_CHALLANGE;											// AES Challenge
+		snd.msgBody.MSG_LEN = 0x11;
+		snd.msgBody.FLAG.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
+		snd.msgBody.BY10 = AS_RESPONSE_AES_CHALLANGE;											// AES Challenge
 
 		initPseudoRandomNumberGenerator();
 
 		uint8_t i = 0;
 		for (i = 0; i < 6; i++) {																// random bytes to the payload
-			sn.buf[11 + i] = (uint8_t)rand();
+			snd.buf[11 + i] = (uint8_t)rand();
 		}
-		sn.buf[17] = hmKeyIndex[0];																// the 7th byte is the key index
+		snd.buf[17] = hmKeyIndex[0];																// the 7th byte is the key index
 
 		/*
 		 * Here we make a temporarily key with the challenge and the HMKEY.
 		 * We need this for later signature verification.
 		 */
-		makeTmpKey(sn.buf+11);
+		makeTmpKey(snd.buf+11);
 
 		#ifdef AES_DBG
 			dbg << F(">>> signingRequestData  : ") << _HEX(sn.buf+10, 7) << F(" <<<") << '\n';
 		#endif
 
-		prepareToSend(rv.mBdy.mCnt, AS_MESSAGE_RESPONSE, rv.mBdy.reID);
+		prepareToSend(rcv.msgBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv.msgBody.SND_ID);
 	}
 
 	/**

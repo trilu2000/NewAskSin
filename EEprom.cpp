@@ -6,12 +6,20 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
+
+#include "00_debug-flag.h"
+#ifdef EE_DBG
+#define DBG(...) Serial ,__VA_ARGS__
+#else
+#define DBG(...) 
+#endif
+
 //#define EE_DBG
 //#define EE_DBG_TEST
 #include "EEprom.h"
 #include "AS.h"
 
-uint8_t MAID[3];
+uint8_t *MAID;
 uint8_t HMID[3];
 uint8_t HMSR[10];
 uint8_t HMKEY[16];
@@ -35,14 +43,24 @@ uint8_t hmKeyIndex[1];
 */
 uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 
-	if (idx > peerTbl[cnl].pMax) return 0;												// peerdb index out of range
-	s_cnlTbl *pCnlTbl = getRegListStruct(cnl, lst);										// get the corresponding line in cnlTbl
-	if (!pCnlTbl) return 0;																// respective line in cnlTbl not found
-
-	getEEPromBlock( pCnlTbl->pAddr + ( pCnlTbl->sLen * idx), pCnlTbl->sLen, buf);		// get the eeprom content
-	return 1;																			// return success
+	const s_cnlTbl *cnlTblPtr = getRegListStruct(cnl, lst);
+	return getList(cnlTblPtr, idx, buf);
 }
+uint8_t  EE::getList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf) {
 
+	if (!cnlTblPtr) return 0;
+
+	if (idx > peerTbl[cnlTblPtr->cnl].pMax) return 0;									// index out of range
+
+	uint16_t pAddr = cnlTblPtr->pAddr + (cnlTblPtr->sLen * idx);						// calculate the address
+	getEEPromBlock(pAddr, cnlTblPtr->sLen, buf);										// get the eeprom content
+
+	#ifdef EE_DBG																		// only if ee debug is set
+	//dbg << F("setListByTblIdx, cnl:") << cnlTbl[cnlTblIdx].cnl << F(", lst:") << cnlTbl[cnlTblIdx].lst << F(", idx:") << idx << F(", tblRow:") << cnlTblIdx << F(", addr:") << pAddr << '\n';
+	//dbg << F("data:") << _HEX(buf, cnlTbl[cnlTblIdx].sLen) << '\n';
+	#endif
+	return 1;																			// report everything ok
+}
 /**
  * @brief Write arbitrary data as list content to EEprom
  *
@@ -99,14 +117,14 @@ uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
  */
 uint8_t  EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
 
-	s_cnlTbl *cnlTblPtr = getRegListStruct(cnl, lst);
+	const s_cnlTbl *cnlTblPtr = getRegListStruct(cnl, lst);
 	return setList(cnlTblPtr, idx, buf);
 
 	//uint8_t xI = getRegListIdx(cnl, lst);												// get the respective line in cnlTbl
 	//dbg << F("setList, cnl:") << cnl << F(", lst:") << lst << F(", idx:") << idx << F(", cnlTbl:") << xI << '\n';
 	//return setList(xI, idx, buf);												// call setlist shortend
 }
-uint8_t  EE::setList(s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf) {
+uint8_t  EE::setList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf) {
 
 	if (!cnlTblPtr) return 0;
 	//dbg << F("setListByTblIdx, cnlTblIdx:") << cnlTblIdx << F(", idx:") << idx << '\n';
@@ -119,8 +137,8 @@ uint8_t  EE::setList(s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf) {
 	//setEEPromBlock(pAddr, cnlTbl[cnlTblIdx].sLen, buf);									// set the eeprom content
 
 	#ifdef EE_DBG																		// only if ee debug is set
-	dbg << F("setListByTblIdx, cnl:") << cnlTbl[cnlTblIdx].cnl << F(", lst:") << cnlTbl[cnlTblIdx].lst << F(", idx:") << idx << F(", tblRow:") << cnlTblIdx << F(", addr:") << pAddr << '\n';
-	dbg << F("data:") << _HEX(buf, cnlTbl[cnlTblIdx].sLen) << '\n';
+	//dbg << F("setListByTblIdx, cnl:") << cnlTbl[cnlTblIdx].cnl << F(", lst:") << cnlTbl[cnlTblIdx].lst << F(", idx:") << idx << F(", tblRow:") << cnlTblIdx << F(", addr:") << pAddr << '\n';
+	//dbg << F("data:") << _HEX(buf, cnlTbl[cnlTblIdx].sLen) << '\n';
 	#endif
 	return 1;																			// report everything ok
 }
@@ -234,7 +252,7 @@ uint8_t  EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
 	//}
 
 	if (idx > peerTbl[cnl].pMax) return 0;												// peerdb index out of range
-	s_cnlTbl *cnlTblPtr = getRegListStruct(cnl, lst);
+	const s_cnlTbl *cnlTblPtr = getRegListStruct(cnl, lst);
 	if (!cnlTblPtr) return 0;
 
 	uint16_t eIdx = cnlTblPtr->pAddr + (cnlTblPtr->sLen * idx);
@@ -264,36 +282,65 @@ EE::EE() {
 
 // general functions
 void     EE::init(void) {
-	#ifdef EE_DBG																		// only if ee debug is set
-		dbgStart();																			// serial setup
-		dbg << F("EE.\n");																// ...and some information
-	#endif
+	DBG( F("EE:init\n"));																// some debug
 
 	initEEProm();																		// init function if a i2c eeprom is used
 
-	// check for first time run by checking magic byte, if yes then prepare eeprom and set magic byte
-	uint16_t eepromCRC = 0;																// eMagicByte in EEprom
-	uint16_t flashCRC = 0;																// define variable for storing crc
-	uint8_t  *p = (uint8_t*)cnlTbl;														// cast devDef to char
+	/*
+	* @brief First time start check is done via comparing a magic number at the start of the eeprom
+	*        with the CRC of the cnlTbl information. The idea behind is, that every time there was a
+	*        change in the cnlTbl some addresses are changed and we have to rewrite the eeprom content.
+	*/
+	uint16_t eepromCRC, flashCRC;														// define two variables to compare the CRC
+	uint8_t  *p = (uint8_t*)cnlTbl;														// cast the cnlTbl to char
 
 	for (uint8_t i = 0; i < ( cnl_tbl_max * sizeof(s_cnlTbl)); i++) {					// step through all bytes of the channel table
 		flashCRC = crc16(flashCRC, p[i]);												// calculate the 16bit checksum for the table
 	}
 	getEEPromBlock(0,2,(void*)&eepromCRC);												// get magic byte from eeprom
-
-	#ifdef EE_DBG																		// only if ee debug is set
-	dbg << F("crc, flash: ") << flashCRC << F(", eeprom: ") << eepromCRC << '\n';		// ...and some information
-	#endif
+	DBG( F("EE:crc, flash:"), flashCRC, F(", eeprom: "), eepromCRC, '\n');				// some debug
 
 	if(flashCRC != eepromCRC) {															// first time detected, format eeprom, load defaults and write magicByte
-		// write magic byte
-		#ifdef EE_DBG																	// only if ee debug is set
-		dbg << F("writing magic byte\n");												// ...and some information
-		#endif
+		DBG( F("writing new magic byte\n") );											// some debug
 		setEEPromBlock(0, 2, (void*)&flashCRC);											// write eMagicByte to eeprom
 
-		firstTimeStart();																// function to be placed in register.h, to setup default values on first time start
+		/*
+		* @brief Write the defaults defined in register.h into the respective slot in the eeprom.
+		*        We have to write only list0 or list 1 content, while list 3 or list 4 is written at the peering process
+		*        Content is defined in cnlDefs as PROGMEM. So we have to copy the content first into the channel modules
+		*        and write it back to the eeprom.
+		*/
+		for (uint8_t i = 0; i <= cnl_max; i++) {										// write the defaults in respective list0/1
+			cmMaster *pCM = pcnlModule[i];												// short hand to respective channel master	
+			memcpy_P( pCM->chnl_list, cnlDefs + pCM->cT->sIdx, pCM->cT->sLen );			// copy from progmem into array
+			setList( pCM->cT, 0, pCM->chnl_list );										// write it into the eeprom
+			DBG(F("EE:write defaults, cnl:"), pCM->cT->cnl, F(", lst:"), pCM->cT->lst, F(", sIdx:"), pCM->cT->sIdx, F(", sLen:"), pCM->cT->sLen, F(", data:"), _HEX( pCM->chnl_list, pCM->cT->sLen), '\n');
+		}
+
+		/*
+		* @brief Format the peer db
+		*/
+		clearPeers();
+
+		/*
+		* @brief Function to be placed in register.h, to setup default values on first time start
+		*/
+		firstTimeStart();
 	}
+
+
+	/*
+	* @brief Read the defaults from the respective slot in the eeprom and store it in the channel module space.
+	*        We have to read only list0 or list 1 content, while list 3 or list 4 is read while received a peer message.
+	*        After loading the defaults we inform the modules of this by calling the info_config_change function.
+	*/
+	for (uint8_t i = 0; i <= cnl_max; i++) {											// step through all channels
+		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+		getList(pCM->cT, 0, pCM->chnl_list );											// read the defaults in respective list0/1
+		pCM->info_config_change();														// inform the channel modules
+		DBG(F("EE:read defaults, cnl:"), pCM->cT->cnl, F(", lst:"), pCM->cT->lst, F(", sIdx:"), pCM->cT->sIdx, F(", sLen:"), pCM->cT->sLen, F(", data:"), _HEX(pCM->chnl_list, pCM->cT->sLen), '\n');
+	}
+
 
 	getEEPromBlock(15, 16, HMKEY);														// get HMKEY from EEprom
 	getEEPromBlock(14, 1, hmKeyIndex);													// get hmKeyIndex from EEprom
@@ -301,24 +348,20 @@ void     EE::init(void) {
 		initHMKEY();
 	}
 
-	// load the master id
-	getMasterID();
-
-	everyTimeStart();																	// add this function in register.h to setup default values every start
+	/*
+	* @brief Add this function in register.h to setup default values every start
+	*/
+	everyTimeStart();
 }
 
 void     EE::initHMKEY(void) {
 	memcpy_P(HMKEY, HMSerialData+13, 16);												// get default HMKEY
-	EE:setEEPromBlock(15, 16, HMKEY);													// store default HMKEY to EEprom
-	memcpy_P(hmKeyIndex, HMSerialData+29, 1);												// get default HMKEY
+	setEEPromBlock(15, 16, HMKEY);														// store default HMKEY to EEprom
+	memcpy_P(hmKeyIndex, HMSerialData+29, 1);											// get default HMKEY
 	setEEPromBlock(14, 1, hmKeyIndex);													// get hmKeyIndex from EEprom
 }
 
-void     EE::getMasterID(void) {
-	MAID[0] = getRegAddr(0, 0, 0, 0x0a);
-	MAID[1] = getRegAddr(0, 0, 0, 0x0b);
-	MAID[2] = getRegAddr(0, 0, 0, 0x0c);
-}
+
 void     EE::testModul(void) {															// prints register.h content on console
 	#ifdef EE_DBG_TEST																		// only if ee debug is set
 	dbg << '\n' << pLine;
@@ -417,28 +460,7 @@ void     EE::testModul(void) {															// prints register.h content on con
 
 	#endif
 }
-inline uint8_t  EE::isHMIDValid(uint8_t *toID) {
-	//dbg << "t: " << _HEX(toID, 3) << ", h: " << _HEX(HMID, 3) << '\n';
-	return (!memcmp(toID, HMID, 3));
-}
-inline uint8_t  EE::isPairValid (uint8_t *reID) {
-	return (!memcmp(reID, MAID, 3));
-}
-inline uint8_t  EE::isBroadCast(uint8_t *toID) {
-	return isEmpty(toID, 3);
-}
-uint8_t  EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
-	if (isBroadCast(toId)) return 'b';													// broadcast message
-	if (!isHMIDValid(toId)) return 'l';													// not for us, only show as log message
 
-	if (isPairValid(reId)) return 'm';													// coming from master
-	if (isPeerValid(peId)) return 'p';													// coming from a peer
-	if (isHMIDValid(reId)) return 'i';													// we were the sender, internal message
-
-	// now it could be a message from the master to us, but master is unknown because we are not paired
-	if ((isHMIDValid(toId)) && isEmpty(MAID,3)) return 'x';
-	return 'u';																			// should never happens
-}
 
 // peer functions
 /**
@@ -449,14 +471,9 @@ uint8_t  EE::getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId) {
 */
 void     EE::clearPeers(void) {
 	for (uint8_t i = 0; i <= cnl_max; i++) {											// step through all channels
-		EE::s_peerTbl  *pPeerTbl = (s_peerTbl*)&peerTbl[i];								// pointer to the peer table line
-
-		//setEEPromBlock(peerTbl[i].pAddr, peerTbl[i].pMax * 4, EMPTY4BYTE);
+		s_peerTbl  *pPeerTbl = (s_peerTbl*)&peerTbl[i];									// pointer to the peer table line
 		clearEEPromBlock( pPeerTbl->pAddr, pPeerTbl->pMax * 4);
-
-		#ifdef EE_DBG																	// only if ee debug is set
-		dbg << F("clearPeers, addr:") << pPeerTbl->pAddr << F(", len ") << (pPeerTbl->pMax * 4) << '\n';																	// ...and some information
-		#endif
+		DBG( F("EE:clearPeers, addr:"), pPeerTbl->pAddr, F(", len:"), (pPeerTbl->pMax * 4), '\n' );																	// ...and some information
 	}
 }
 
@@ -474,9 +491,7 @@ uint8_t  EE::isPeerValid (uint8_t *peer) {
 		if (getIdxByPeer(i, peer) != 0xff) retByte = i;									// if a valid peer is found return the respective channel
 	}
 
-	#ifdef EE_DBG																		// only if ee debug is set
-	dbg << F("isPeerValid:") << _HEX(peer, 4) << F(", ret:") << retByte << '\n';
-	#endif
+	DBG( F("EE:isPeerValid:"), _HEX(peer, 4), F(", ret:"), retByte, '\n' );
 	return retByte;																		// otherwise 0
 }
 
@@ -491,16 +506,14 @@ uint8_t  EE::isPeerValid (uint8_t *peer) {
 uint8_t  EE::countFreeSlots(uint8_t cnl) {
 	uint8_t lPeer[4];																	// temp byte array to load peer addresses
 	uint8_t bCounter = 0;																// set counter to zero
-	EE::s_peerTbl  *pPeerTbl = (s_peerTbl*)&peerTbl[cnl];								// pointer to the peer table line
+	s_peerTbl  *pPeerTbl = (s_peerTbl*)&peerTbl[cnl];									// pointer to the peer table line
 
 	for (uint8_t i = 0; i < pPeerTbl->pMax; i++) {										// step through the possible peer slots
 		getPeerByIdx(cnl, i, lPeer);													// get peer from eeprom
 		if (isEmpty(lPeer, 4)) bCounter++;												// increase counter if peer slot is empty
 	}
 
-	#ifdef EE_DBG																		// only if ee debug is set
-	dbg << F("countFreeSlots, cnl:") << cnl << F(", total:") << peerTbl[cnl].pMax << F(", free:") << bCounter << '\n';
-	#endif
+	DBG( F("EE:countFreeSlots, cnl:"), cnl, F(", total:"), peerTbl[cnl].pMax, F(", free:"), bCounter, '\n' );
 	return bCounter;																	// return the counter
 }
 
@@ -562,7 +575,7 @@ void     EE::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer) {
 */
 uint8_t  EE::addPeers(uint8_t cnl, uint8_t *peer) {
 	uint8_t retByte = 0;
-	RG::s_modTable *pModTbl = &modTbl[cnl];												// pointer to the respective line in the module table
+//	RG::s_modTable *pModTbl = &modTbl[cnl];												// pointer to the respective line in the module table
 	EE::s_peerTbl  *pPeerTbl = (s_peerTbl*)&peerTbl[cnl];								// pointer to the peer table line
 	EE::s_cnlTbl   *pCnlTbl  = (s_cnlTbl*)&cnlTbl[ pPeerTbl->pLink ];					// easier to work with a pointer to the channel table
 
@@ -593,18 +606,22 @@ uint8_t  EE::addPeers(uint8_t cnl, uint8_t *peer) {
 		*/
 
 		// check if we have a registered channel module, otherwise write only defaults from register.h
-		if (pModTbl->isActive) {														// copy the respective defaults from cnlDefs into the list3/4 of the usermodule
-			memcpy(pModTbl->lstPeer, (uint8_t*)&cnlDefs[ pCnlTbl->sIdx ], pCnlTbl->sLen); // ask to update the peer list
-			pModTbl->mDlgt(0x00, 0x02, peer[3 + i], peer + 3, 2);						// contact the user module
-
-		} else pModTbl->lstPeer = (uint8_t*)&cnlDefs[ pCnlTbl->sIdx ];					// no channel module, therefore we use the definition string in register.h
+		//if (pModTbl->isActive) {														// copy the respective defaults from cnlDefs into the list3/4 of the usermodule
+		//	memcpy(pModTbl->lstPeer, (uint8_t*)&cnlDefs[ pCnlTbl->sIdx ], pCnlTbl->sLen); // ask to update the peer list
+		//	pModTbl->mDlgt(0x00, 0x02, peer[3 + i], peer + 3, 2);						// contact the user module
+		//
+		//} else pModTbl->lstPeer = (uint8_t*)&cnlDefs[ pCnlTbl->sIdx ];					// no channel module, therefore we use the definition string in register.h
+		memcpy(pcnlModule[cnl]->peer_list, (uint8_t*)&cnlDefs[pCnlTbl->sIdx], pCnlTbl->sLen); // ask to update the peer list
+		pcnlModule[cnl]->request_peer_defaults(peer[3 + i], peer[3], peer[4]);			// ask the channel module to update the respective peer list
 
 		//dbg << "cnl: " << cnl << ", sLen: " << sLen << ", x: " << _HEX(pModTbl->lstPeer, sLen) << '\n';
-		setList(pCnlTbl, free_idx, pModTbl->lstPeer);									// set defaults in the respective list 
+		//setList(pCnlTbl, free_idx, pModTbl->lstPeer);									// set defaults in the respective list 
+		setList(pCnlTbl, free_idx, pcnlModule[cnl]->peer_list);							// set defaults in the respective list 
 		retByte++;																		// increase our return byte
 	}
 
-	if (pModTbl->isActive) pModTbl->mDlgt(0x01, 0x00, 0x01, peer, 5);					// inform user module
+	//if (pModTbl->isActive) pModTbl->mDlgt(0x01, 0x00, 0x01, peer, 5);					// inform user module
+	pcnlModule[cnl]->info_peer_add(peer, 5);											// inform user module
 
 	#ifdef EE_DBG																		// only if ee debug is set
 	dbg << F("addPeers, cnl:") << cnl << F(", peer:") << _HEX(peer, 5) << '\n';
@@ -763,7 +780,9 @@ EE::s_cnlTbl* EE::getRegListStruct(uint8_t cnl, uint8_t lst) {
 		EE::s_cnlTbl *pCnlTbl = (s_cnlTbl*)&cnlTbl[i];									// get the corresponding line in cnlTbl
 		if (pCnlTbl->cnl != cnl) continue;												// next if channel not fit
 		if (pCnlTbl->lst != lst) continue;												// next if list not fit
-		return (s_cnlTbl*)&cnlTbl[i];													// if we are here we found a line which fits
+		dbg << "ls:" << i << '\n';
+		return pCnlTbl;													// if we are here we found a line which fits
+		//return (s_cnlTbl*)&cnlTbl[i];													// if we are here we found a line which fits
 	}
 	return NULL;																		// respective line not found
 }
@@ -786,7 +805,7 @@ inline uint16_t crc16(uint16_t crc, uint8_t a) {
 uint8_t  isEmpty(void *ptr, uint8_t len) {
 	while (len > 0) {
 		len--;
-		if (*((uint8_t*)ptr+len) != 0) return 0;
+		if ( *((uint8_t*)ptr+len) ) return 0;
 	}
 	return 1;
 }

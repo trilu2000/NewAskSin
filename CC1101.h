@@ -21,7 +21,7 @@ class CC {
 	friend class PW;
   
 private:  //--------------------------------------------------------------------------------------------------------------
-	#define CC1101_DATA_LEN          60										// maximum length of received bytes
+	#define CC1101_DATA_LEN         40										// maximum length of received bytes
 
 	// CC1101 config register												// Reset  Description
 	#define CC1101_IOCFG2           0x00									// (0x29) GDO2 Output Pin Configuration
@@ -158,8 +158,8 @@ private:  //--------------------------------------------------------------------
 
 public:    //-------------------------------------------------------------------------------------------------------------
 	void    init();															// initialize CC1101
-	uint8_t sndData(uint8_t *buf, uint8_t burst);							// send data packet via RF
-	uint8_t rcvData(uint8_t *buf);											// read data packet from RX FIFO
+	void    sndData(uint8_t *buf, uint8_t burst);							// send data packet via RF
+	void    rcvData(uint8_t *buf);											// read data packet from RX FIFO
 
 	void    setIdle(void);													// put CC1101 into power-down state
 	uint8_t detectBurst(void);												// detect burst signal, sleep while no signal, otherwise stay awake
@@ -171,32 +171,16 @@ private:  //--------------------------------------------------------------------
 	
 	inline void    strobe(uint8_t cmd);										// send command strobe to the CC1101 IC via SPI
 	inline void    readBurst(uint8_t * buf, uint8_t regAddr, uint8_t len);	// read burst data from CC1101 via SPI
-	inline void    writeBurst(uint8_t regAddr, uint8_t* buf, uint8_t len);	// write multiple registers into the CC1101 IC via SPI
+	inline void    writeBurst(uint8_t* buf, uint8_t regAddr, uint8_t len);	// write multiple registers into the CC1101 IC via SPI
 	inline uint8_t readReg(uint8_t regAddr, uint8_t regType);				// read CC1101 register via SPI
 	inline void    writeReg(uint8_t regAddr, uint8_t val);					// write single register into the CC1101 IC via SPI
-	
+
+	inline void    decode(uint8_t *buf);									// decodes the message
+
 };
 
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*void    ccInitChip(void);																	// initialize the RF chip
 

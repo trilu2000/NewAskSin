@@ -17,9 +17,9 @@
 
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------
-	const EE::s_cnlTbl *cT, *pT;															// pointer to channel table for list0/1 and list3/4 information
-	uint8_t *chnl_list, *peer_list;															// array for list0/1 and list3/4
 
+	const EE::s_cnlTbl *cT, *cPT;															// pointer to channel table for list0/1 and list3/4 information
+	uint8_t *chnl_list, *peer_list;															// array for list0/1 and list3/4
 	cmMaster(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl);				// constructor
 
 	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// pair set message

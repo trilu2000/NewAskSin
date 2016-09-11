@@ -72,12 +72,15 @@
 
 	// template to enable dbg << "some text" << '\n' 
 	template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; }
+	// template to enable DBG, "sometext", $a, '\n';
+	template<class T> inline Print &operator ,(Print &obj, T arg) { obj.print(arg); return obj; }
 
 	struct _HEXB {
 		uint8_t val;
 		_HEXB(uint8_t v) : val(v) {}
 	};
 	inline Print &operator <<(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
+	inline Print &operator  ,(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
 
 	struct _HEX {
 		uint8_t *val;
@@ -85,11 +88,13 @@
 		_HEX(uint8_t *v, uint8_t l) : val(v), len(l) {}
 	};
 	inline Print &operator <<(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i + 1<arg.len) obj.print(' '); }; return obj; }
+	inline Print &operator  ,(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i + 1<arg.len) obj.print(' '); }; return obj; }
 
 	enum _eTIME { _TIME };
 	inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(getMillis()); obj.print(')'); return obj; }
+	inline Print &operator  ,(Print &obj, _eTIME arg) { obj.print('('); obj.print(getMillis()); obj.print(')'); return obj; }
 
-	//extern void    dbgStart(void);
+	// initialize the serial interface
 	void    dbgStart(void);
 	//- -----------------------------------------------------------------------------------------------------------------------
 

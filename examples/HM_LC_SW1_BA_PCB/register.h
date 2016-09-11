@@ -5,9 +5,9 @@
 	 * @brief Libraries needed to run AskSin library
 	 */
 	#include <AS.h> 
-	#include <Registrar.h>
 	#include "hardware.h"
 	#include "hmkey.h"
+	#include <cmMaintenance.h> 
 	#include <cmSwitch.h> 
 
 	/**
@@ -23,8 +23,10 @@
 	* void cmSwitch::initSwitch(uint8_t channel);
 	* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
 	*/
-	cmSwitch cm_Switch[1];
-
+	cmMaster *pcnlModule[2] = {
+		new cmMaintenance(&cnlTbl[0], &cnlTbl[0]),
+		new cmSwitch(&cnlTbl[1], &cnlTbl[2]),
+	};
 
 	/*
 	 * @brief HMID, Serial number, HM-Default-Key, Key-Index
@@ -86,7 +88,7 @@
 	 * This values are the defined default values and should be set
 	 * in the first start function.
 	 */
-	const uint8_t cnlDefs[] = {
+	const uint8_t cnlDefs[] PROGMEM = {
 		// channel: 0, list: 0
 		0x80,0x00,0x00,0x00,0x1e,0x00,
 		// channel: 1, list: 1
@@ -134,13 +136,6 @@
 	const uint8_t cnl_tbl_max = 3;
 
 	/**
-	 * @brief Sizing of the user module register table.
-	 * Within this register table all user modules are registered to make
-	 * them accessible for the AskSin library
-	 */
-	RG::s_modTable modTbl[cnl_max + 1];
-
-	/**
 	 * @brief Regular start function
 	 * This function is called by the main function every time when the device starts,
 	 * here we can setup everything which is needed for a proper device operation
@@ -153,7 +148,6 @@
 		hm.pw.setMode(POWER_MODE_NO_SLEEP);
 		hm.bt.set(30, 3600000);
 		// channel 1 section 
-		cm_Switch[0].regInHM(1);
 	}
 
 	/**
@@ -176,11 +170,9 @@
 		#endif
 
 		// fill register with default values, peer registers are not filled while done in usermodules
-		hm.ee.setList(0, 0, 0, (uint8_t*)&cnlDefs[0]);
-		hm.ee.setList(1, 1, 0, (uint8_t*)&cnlDefs[6]);
+		//hm.ee.setList(0, 0, 0, (uint8_t*)&cnlDefs[0]);
+		//hm.ee.setList(1, 1, 0, (uint8_t*)&cnlDefs[6]);
 
-		// format peer db
-		hm.ee.clearPeers();
 	}
 #endif
 

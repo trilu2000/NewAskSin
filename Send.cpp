@@ -14,23 +14,11 @@ waitTimer sndTmr;																			// send timer functionality
 
 SN::SN() {
 	#ifdef SN_DBG																			// only if ee debug is set
-	dbgStart();																			// serial setup
 	dbg << F("SN.\n");																	// ...and some information
 	#endif
 
-	//pHM = ptrMain;
-	buf = (uint8_t*)&mBdy;
 }
 
-//void SN::init(AS *ptrMain) {
-//	#ifdef SN_DBG																			// only if ee debug is set
-//		dbgStart();																			// serial setup
-//		dbg << F("SN.\n");																	// ...and some information
-//	#endif
-
-//	pHM = ptrMain;
-//	buf = (uint8_t*)&mBdy;
-//}
 
 void SN::poll(void) {
 	#define maxRetries    3
@@ -38,7 +26,7 @@ void SN::poll(void) {
 	
 	// set right amount of retries
 	if (!this->maxRetr) {																	// first time run, check message type and set retries
-		if (reqACK) {
+		if (snd_ackRq) {
 			this->maxRetr = maxRetries;														// if BIDI is set, we have three retries
 		} else {
 			this->maxRetr = 1;
@@ -51,15 +39,15 @@ void SN::poll(void) {
 	if ((this->retrCnt < this->maxRetr) && (sndTmr.done() )) {								// not all sends done and timing is OK
 
 		// some sanity
-		this->mBdy.mFlg.RPTEN = 1;															// every message need this flag
+		snd.msgBody.FLAG.RPTEN = 1;															// every message need this flag
 		//if (pHM->cFlag.active) this->mBdy.mFlg.CFG = pHM->cFlag.active;					// set the respective flag while we are in config mode
 		this->timeOut = 0;																	// not timed out because just started
-		this->lastMsgCnt = this->mBdy.mCnt;													// copy the message count to identify the ACK
+		this->lastMsgCnt = snd.msgBody.MSG_CNT;												// copy the message count to identify the ACK
 		this->retrCnt++;																	// increase counter while send out
 
 		// check if we should send an internal message
-		if (!memcmp(this->mBdy.toID, HMID, 3)) {
-			memcpy(hm.rv.buf, this->buf, sndLen);											// copy send buffer to received buffer
+		if (!memcmp( snd.msgBody.RCV_ID, HMID, 3)) {
+			memcpy(rcv.buf, snd.buf, snd_sndLen);												// copy send buffer to received buffer
 			this->retrCnt = 0xFF;															// ACK not required, because internal
 						
 			#ifdef SN_DBG																	// only if AS debug is set
@@ -67,7 +55,7 @@ void SN::poll(void) {
 			#endif
 
 		} else {																			// send it external
-			uint8_t tBurst = this->mBdy.mFlg.BURST;											// get burst flag, while string will get encoded
+			uint8_t tBurst = snd.msgBody.FLAG.BURST;										// get burst flag, while string will get encoded
 
 			/*
 			 * Copy the complete message to msgToSign. We need them for later AES signing.
@@ -75,15 +63,15 @@ void SN::poll(void) {
 			 * The bytes 0-5 remain free. These 5 bytes and the first byte of the copied message
 			 * will fill with 6 bytes random data later.
 			 */
-			memcpy(this->msgToSign+5, this->buf, (sndLen > 27) ? 27 : sndLen);
+			memcpy(this->msgToSign+5, snd.buf, (snd_sndLen > 27) ? 27 : snd_sndLen);
 
-			hm.encode(this->buf);															// encode the string
+			//hm.encode(this->buf);															// encode the string
 
-			hm.cc.sndData(this->buf, tBurst);												// send to communication module
+			hm.cc.sndData(snd.buf, tBurst);												// send to communication module
 
-			hm.decode(this->buf);															// decode the string, so it is readable next time
+			//hm.decode(this->buf);															// decode the string, so it is readable next time
 			
-			if (reqACK) {
+			if (snd_ackRq) {
 				sndTmr.set(maxTime);														// set the time out for the message
 			}
 			
@@ -97,7 +85,7 @@ void SN::poll(void) {
 		}
 		
 		#ifdef SN_DBG																		// only if AS debug is set
-			dbg << _HEX(this->buf, sndLen) << ' ' << _TIME << '\n';
+			dbg << _HEX(snd.buf, snd_sndLen) << ' ' << _TIME << '\n';
 		#endif
 
 	} else if ((this->retrCnt >= this->maxRetr) && (sndTmr.done() )) {						// max retries achieved, but seems to have no answer
@@ -105,7 +93,7 @@ void SN::poll(void) {
 		this->maxRetr = 0;
 		this->active = 0;
 
-		if (!reqACK) {
+		if (!snd_ackRq) {
 			return;
 		}
 		

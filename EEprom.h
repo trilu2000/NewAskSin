@@ -150,11 +150,13 @@ class EE {
 
   public:		//---------------------------------------------------------------------------------------------------------
 	uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
-	uint8_t  setList(s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);					// if we know the channel table index already
+	uint8_t  setList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);				// if we know the channel table index already
 	uint8_t  setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
-	uint8_t  setListArray(uint8_t cnlTblIdx, uint8_t idx, uint8_t len, uint8_t *buf);
+	uint8_t  setListArray(const uint8_t cnlTblIdx, uint8_t idx, uint8_t len, uint8_t *buf);
 
 	uint8_t  getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in to a given buffer
+	uint8_t  getList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);				// if we know the channel table index already
+
 	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 
 
@@ -164,15 +166,10 @@ class EE {
 	EE();																				// class constructor
 	void     init(void);
 	void     initHMKEY(void);
-	void     getMasterID(void);
 	void     testModul(void);															// prints register.h definition on console
-	inline uint8_t  isHMIDValid(uint8_t *toID);											// ok, check if a valid pair was given
-	inline uint8_t  isPairValid(uint8_t *reID);											// ok, check if a valid pair was given
-	inline uint8_t  isBroadCast(uint8_t *reID);
-	uint8_t  getIntend(uint8_t *reId, uint8_t *toId, uint8_t *peId);
 
 	// peer functions
-	void     clearPeers(void);															// ok, clears complete peer database
+	inline void clearPeers(void);														// ok, clears complete peer database
 	uint8_t  isPeerValid (uint8_t *peer);												// ok, checks if a valid peer was given
 
 	uint8_t  countFreeSlots(uint8_t cnl);												// ok, counts the free peer slots of a channel
@@ -247,7 +244,7 @@ extern const EE::s_peerTbl peerTbl[];															// initial register.h
  * Serial << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");
  * @endcode
  */
-extern uint8_t MAID[];
+extern uint8_t *MAID;
 
 /**
  * @brief Global definition of device HMSerialData. Must be declared in user space.
@@ -294,6 +291,7 @@ extern uint8_t hmKeyIndex[];
 //- some helpers ----------------------------------------------------------------------------------------------------------
 inline uint16_t crc16(uint16_t crc, uint8_t a);											// crc function
 uint8_t  isEmpty(void *p1, uint8_t len);												// check if a byte array is empty
+#define isEqual(p1,p2,len) memcmp(p1, p2, len)?0:1										// check if a byte array is equal
 void print_channel_table(void);
 
 #endif

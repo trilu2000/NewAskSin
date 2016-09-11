@@ -1,4 +1,6 @@
+//- define debuggers ------------------------------------------------------------------------------------------------------
 #define SER_DBG																					// serial debug messages
+
 
 //- load library's --------------------------------------------------------------------------------------------------------
 #include "register.h"																			// configuration sheet
@@ -15,8 +17,8 @@ void setup() {
 	ADCSRA = 0;																					// ADC off
 	power_all_disable();																		// and everything else
 	
-	DDRB = DDRC = DDRD = 0x00;																	// everything as input
-	PORTB = PORTC = PORTD = 0x00;																// pullup's off
+//	DDRB = DDRC = DDRD = 0x00;																	// everything as input
+//	PORTB = PORTC = PORTD = 0x00;																// pullup's off
 
 	// todo: timer0 and SPI should enable internally
 	power_timer0_enable();
@@ -44,6 +46,7 @@ void setup() {
 	//uint8_t xtemp[] = {0x33,0x11,0x22,0x01,0x02,0x00,0x00};
 	//hm.ee.addPeers(1, xtemp, xtemp+5);
 	//dbg << "x:" << _HEX(xtemp, 7) << "\n";
+	
 }
 
 void loop() {
@@ -78,9 +81,9 @@ void cmSwitch::switchSwitch(uint8_t channel, uint8_t status) {
 
 
 //- predefined functions --------------------------------------------------------------------------------------------------
-void serialEvent() {
-	#ifdef SER_DBG
-	
+static void serialEvent() {
+#ifdef SER_DBG
+
 	static uint8_t i = 0;																		// it is a high byte next time
 	while (Serial.available()) {
 		uint8_t inChar = (uint8_t)Serial.read();												// read a byte
@@ -88,16 +91,16 @@ void serialEvent() {
 			i = 0;
 			hm.sn.active = 1;
 		}
-		
-		if      ((inChar>96) && (inChar<103)) inChar-=87;										// a - f
-		else if ((inChar>64) && (inChar<71))  inChar-=55;										// A - F
-		else if ((inChar>47) && (inChar<58))  inChar-=48;										// 0 - 9
+
+		if ((inChar>96) && (inChar<103)) inChar -= 87;										// a - f
+		else if ((inChar>64) && (inChar<71))  inChar -= 55;										// A - F
+		else if ((inChar>47) && (inChar<58))  inChar -= 48;										// 0 - 9
 		else continue;
-		
-		if (i % 2 == 0) hm.sn.buf[i/2] = inChar << 4;											// high byte
-		else hm.sn.buf[i/2] |= inChar;															// low byte
-		
+
+		if (i % 2 == 0) snd.buf[i / 2] = inChar << 4;											// high byte
+		else snd.buf[i / 2] |= inChar;															// low byte
+
 		i++;
 	}
-	#endif
+#endif
 }

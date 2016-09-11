@@ -102,7 +102,7 @@ void CB::poll(void) {
 }
 
 void CB::outSignal(uint8_t mode) {
-	RG::s_modTable *pModTbl = &modTbl[1];													// pointer to the respective line in the module table
+	//RG::s_modTable *pModTbl = &modTbl[1];													// pointer to the respective line in the module table
 
 	hm.pw.stayAwake(500);																	// stay awake to fulfill the action
 	hm.ld.blinkRed();																		// show via led that we have some action in place
@@ -119,7 +119,8 @@ void CB::outSignal(uint8_t mode) {
 
 	if        (mode == 1) {					// keyShortSingle
 		if (scn == 1) hm.sendDEVICE_INFO();													// send pairing string
-		else if (scn == 2) if (pModTbl->isActive) pModTbl->mDlgt(TOOGLE);					// send toggle to user module registered on channel 1
+		else if (scn == 2) pcnlModule[1]->set_toggle();										// send toggle to user module registered on channel 1
+		//else if (scn == 2) if (pModTbl->isActive) pModTbl->mDlgt(TOOGLE);					// send toggle to user module registered on channel 1
 		
 	} else if (mode == 2) {					// keyShortDouble
 		
