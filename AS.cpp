@@ -1738,46 +1738,9 @@ inline void AS::initRandomSeed() {
 
 
 
-/**
- * @brief Query if the timer has expired
- *
- * @return 0 if timer is still running, 1 if not.
- *         If the timer was never set(), return value is 1
- */
-uint8_t  waitTimer::done(void) {
-	if (!armed) return 1;																		// not armed, so nothing to do
-	if ( (getMillis() - startTime) < checkTime ) return 0;										// not ready yet
-
-	checkTime = armed = 0;																		// if we are here, timeout was happened, next loop status 1 will indicated
-	return 1;
-}
-
-/**
- * @brief Start the timer
- *
- * @param ms Time until timer is done() (unit: ms)
- */
-void     waitTimer::set(uint32_t ms) {
-	armed = ms ? 1 : 0;
-	if (armed) {
-		startTime = getMillis();
-		checkTime = ms;
-	}
-}
-
-/**
- * @brief Query the remaing time until the timer is done
- *
- * @return Time until timer is done() (unit: ms)
- */
-uint32_t waitTimer::remain(void) {
-	if (!armed) return 0;
-	return (checkTime - (getMillis() - startTime));
-}
-
 uint32_t byteTimeCvt(uint8_t tTime) {
-	const uint16_t c[8] = {1,10,50,100,600,3000,6000,36000};
-	return (uint32_t)(tTime & 0x1F) * c[tTime >> 5]*100;
+	const uint16_t c[8] = { 1,10,50,100,600,3000,6000,36000 };
+	return (uint32_t)(tTime & 0x1F) * c[tTime >> 5] * 100;
 }
 
 uint32_t intTimeCvt(uint16_t iTime) {

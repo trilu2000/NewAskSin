@@ -7,7 +7,7 @@
 
 //#define LD_DBG
 #include "StatusLed.h"
-#include "AS.h"
+#include "wait_timer.h"
 
 waitTimer ledTmr;																				// config timer functionality
 

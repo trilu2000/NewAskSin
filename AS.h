@@ -9,20 +9,22 @@
 #ifndef _NAS_H
 #define _NAS_H
 
-#include "cmMaster.h"
 #include "message_union.h"
 #include "Defines.h"
+#include "macros.h"
+#include "Version.h"
 #include "HAL.h"
+#include "wait_timer.h"
+
+#include "cmMaster.h"
 #include "CC1101.h"
-#include "EEprom.h"
 #include "Send.h"
 #include "Receive.h"
+#include "EEprom.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
 #include "Battery.h"
-#include "Version.h"
-#include "macros.h"
 
 //const uint8_t empty_4_byte[] = { 0,0,0,0, };					// need it all time to get an empty peer slot or for compare... 
 //#define EMPTY4BYTE (uint8_t*)empty_4_byte
@@ -46,21 +48,7 @@
 
 
 class AS {
-	//friend class SN;
-	//friend class RV;
-	//friend class PW;
-
-  public:		//---------------------------------------------------------------------------------------------------------
-	//EE ee;				///< eeprom module
-	//CC cc;				///< load communication module
-	//SN sn;				///< send module
-	//RV rv;				///< receive module
-	//LD ld;				///< status led
-	//CB confButton;		///< config button
-	//BT bt;				///< battery status
-	//PW pw;				///< power management
-	//cmMaster *pcnlModule[];
-
+public:		//---------------------------------------------------------------------------------------------------------
 
 	/** @brief Helper structure for keeping track of active config mode */
 	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
@@ -249,50 +237,10 @@ extern const uint8_t cnl_tbl_max;
 
 extern AS hm;
 
-
-
-/**
- * @short Timer class for non-blocking delays
- *
- * The following examples shows how to use the waitTimer class to
- * perform an action every 500ms. Note that the first time loop()
- * is called, delay.done() will return true and the action will
- * be performed. The example also shows how to avoid the execution
- * time of the action to influence the new delay time by setting 
- * the delay before performing the action.
- * @code
- * void loop()
- * {
- *     static waitTimer delay;
- *     if (delay.done()) {
- *         delay.set(500); // perform next action after 500ms
- *         // do something now
- *     }
- * }
- * @endcode
- *
- * @attention The waitTimer can only make sure a minimum time passes
- * between set() and done(). If calls to done() are delayed due to other
- * actions, more time may pass. Also, actual delay times strongly depend 
- * on the behaviour of the system clock.
- *
- * @see http://www.gammon.com.au/forum/?id=12127
- */
-class waitTimer {
-
-  private:		//---------------------------------------------------------------------------------------------------------
-	uint8_t  armed;
-	uint32_t checkTime;
-	uint32_t startTime;
-
-  public:		//---------------------------------------------------------------------------------------------------------
-	uint8_t  done(void);
-	void     set(uint32_t ms);
-	uint32_t remain(void);
-};
-
 uint32_t byteTimeCvt(uint8_t tTime);
 uint32_t intTimeCvt(uint16_t iTime);
+
+
 
 #endif
 

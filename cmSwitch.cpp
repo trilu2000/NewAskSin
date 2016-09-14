@@ -319,13 +319,14 @@ void cmSwitch::request_pair_status(void) {
 * ADDRESS  02 03 04 05 06 07 08 09 0a 0b 0c 82 83 84 85 86 87 88 89 8a 8b 8c
 * DEFAULT  00 00 32 64 00 ff 00 ff 01 44 44 00 00 32 64 00 ff 00 ff 21 44 44
 * to Change                           14 63                            14 63
-* OFF                                 64 66                            64  66
-* ON                                  13 33                            13  33
+* OFF                                 64 66                            64 66
+* ON                                  13 33                            13 33
 * TOGGLE   0B 14  0C 63  8B 14  8C 63
 * As we have to change only 4 bytes, we can map the struct to a byte array point
 * and address/change the bytes direct. EEprom gets updated by the eeprom class
 * automatically.
 */
+
 void cmSwitch::request_peer_defaults(uint8_t pIdx, uint8_t pCnl1, uint8_t pCnl2) {
 
 	// if both peer channels are given, peer channel 01 default is the off dataset, peer channel 02 default is the on dataset
