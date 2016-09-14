@@ -18,12 +18,12 @@
 
 
 //public://------------------------------------------------------------------------------------------------------------------
-cmMaster::cmMaster(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl) : cT(ptr_cnlTbl), cPT(ptr_peerTbl) {
-	chnl_list = new uint8_t[cT->sLen];
+cmMaster::cmMaster(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB) : cLT(ptr_cnlTbl), cPT(ptr_peerTbl), pDB(ptr_peerDB) {
+	chnl_list = new uint8_t[cLT->sLen];
 	//if ((uint16_t)&*pT) peer_list = new uint8_t[pT->sLen];									// array only needed if there is a list3/4
 	peer_list = new uint8_t[cPT->sLen];															// doesn't matter, list0 is normally 6 to 8 byte
 
-	DBG( F("cmM, cnl/lst: "), cT->cnl, '/', cT->lst, F(", cnl/lst: "), cPT->cnl, '/', cPT->lst, '\n' );
+	DBG( F("cmM, cnl/lst: "), cLT->cnl, '/', cLT->lst, F(", cnl/lst: "), cPT->cnl, '/', cPT->lst, '\n' );
 }
 
 void cmMaster::message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {

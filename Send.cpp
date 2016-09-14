@@ -1,32 +1,38 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin send function --------------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
-//- -----------------------------------------------------------------------------------------------------------------------
+/*- -----------------------------------------------------------------------------------------------------------------------
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin send function --------------------------------------------------------------------------------------------------
+* - with some support from martin876 at FHEM forum, AES implementation from Dirk
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
 
-#define SN_DBG
+#include "00_debug-flag.h"
+#ifdef SN_DBG
+#define DBG(...) Serial ,__VA_ARGS__
+#else
+#define DBG(...) 
+#endif
+
+
 #include "Send.h"
 #include "AS.h"
 
+
 waitTimer sndTmr;																			// send timer functionality
 
+
 SN::SN() {
-	#ifdef SN_DBG																			// only if ee debug is set
-	dbg << F("SN.\n");																	// ...and some information
-	#endif
-
+	DBG( F("SN.\n") );																		// ...some debug
 }
-
 
 void SN::poll(void) {
 	#define maxRetries    3
 	#define maxTime       300
-	
+
 	// set right amount of retries
 	if (!this->maxRetr) {																	// first time run, check message type and set retries
-		if (snd_ackRq) {
+		if (sndAckReq) {
 			this->maxRetr = maxRetries;														// if BIDI is set, we have three retries
 		} else {
 			this->maxRetr = 1;
@@ -39,23 +45,21 @@ void SN::poll(void) {
 	if ((this->retrCnt < this->maxRetr) && (sndTmr.done() )) {								// not all sends done and timing is OK
 
 		// some sanity
-		snd.msgBody.FLAG.RPTEN = 1;															// every message need this flag
+		msg.mBody.FLAG.RPTEN = 1;															// every message need this flag
 		//if (pHM->cFlag.active) this->mBdy.mFlg.CFG = pHM->cFlag.active;					// set the respective flag while we are in config mode
 		this->timeOut = 0;																	// not timed out because just started
-		this->lastMsgCnt = snd.msgBody.MSG_CNT;												// copy the message count to identify the ACK
+		prevMSG_CNT = msg.mBody.MSG_CNT;												// copy the message count to identify the ACK
 		this->retrCnt++;																	// increase counter while send out
 
 		// check if we should send an internal message
-		if (!memcmp( snd.msgBody.RCV_ID, HMID, 3)) {
-			memcpy(rcv.buf, snd.buf, snd_sndLen);												// copy send buffer to received buffer
+		if (!memcmp( msg.mBody.RCV_ID, HMID, 3)) {
+			memcpy( rcv.buf, buf, sndStrLen );												// copy send buffer to received buffer
 			this->retrCnt = 0xFF;															// ACK not required, because internal
 						
-			#ifdef SN_DBG																	// only if AS debug is set
-				dbg << F("<i ");
-			#endif
+			DBG( F("<i ") );
 
 		} else {																			// send it external
-			uint8_t tBurst = snd.msgBody.FLAG.BURST;										// get burst flag, while string will get encoded
+			uint8_t tBurst = msg.mBody.FLAG.BURST;										// get burst flag, while string will get encoded
 
 			/*
 			 * Copy the complete message to msgToSign. We need them for later AES signing.
@@ -63,55 +67,46 @@ void SN::poll(void) {
 			 * The bytes 0-5 remain free. These 5 bytes and the first byte of the copied message
 			 * will fill with 6 bytes random data later.
 			 */
-			memcpy(this->msgToSign+5, snd.buf, (snd_sndLen > 27) ? 27 : snd_sndLen);
+			memcpy( prev_buf + 5, buf, (sndStrLen > 27) ? 27 : sndStrLen);
 
-			//hm.encode(this->buf);															// encode the string
-
-			hm.cc.sndData(snd.buf, tBurst);												// send to communication module
-
-			//hm.decode(this->buf);															// decode the string, so it is readable next time
+			cc.sndData(buf, tBurst);													// send to communication module
 			
-			if (snd_ackRq) {
+			if (sndAckReq) {
 				sndTmr.set(maxTime);														// set the time out for the message
 			}
 			
-			#ifdef SN_DBG																	// only if AS debug is set
-				dbg << F("<- ");
-			#endif
+			DBG( F("<- ") );
 		}
 		
-		if (!hm.ld.active) {
-			hm.ld.set(send);																// fire the status led
+		if (!led.active) {
+			led.set(send);																// fire the status led
 		}
 		
-		#ifdef SN_DBG																		// only if AS debug is set
-			dbg << _HEX(snd.buf, snd_sndLen) << ' ' << _TIME << '\n';
-		#endif
+		DBG( _HEX( buf, sndStrLen), ' ', _TIME, '\n' );
+
 
 	} else if ((this->retrCnt >= this->maxRetr) && (sndTmr.done() )) {						// max retries achieved, but seems to have no answer
 		this->retrCnt = 0;
 		this->maxRetr = 0;
 		this->active = 0;
 
-		if (!snd_ackRq) {
+		if (!sndAckReq) {
 			return;
 		}
 		
 		this->timeOut = 1;																	// set the time out only while an ACK or answer was requested
-		hm.pw.stayAwake(100);
-		hm.ld.set(noack);
+		pom.stayAwake(100);
+		led.set(noack);
 		
-		#ifdef SN_DBG																		// only if AS debug is set
-		dbg << F("  timed out") << ' ' << _TIME << '\n';
-		#endif
+		DBG( F("  timed out"), ' ', _TIME, '\n' );
 	}
 
 	if (this->retrCnt == 0xFF) {															// answer was received, clean up the structure
 //		dbg << F(">>> clear timer") << _TIME << "\n";
 
 		this->cleanUp();
-		hm.pw.stayAwake(100);
-		if (!hm.ld.active) hm.ld.set(ack);												// fire the status led
+		pom.stayAwake(100);
+		if (!led.active) led.set(ack);														// fire the status led
 	}
 }
 

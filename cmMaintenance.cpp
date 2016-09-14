@@ -26,7 +26,7 @@
 */
 #include "cmMaintenance.h"
 
-cmMaintenance::cmMaintenance(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl) : cmMaster(ptr_cnlTbl, ptr_peerTbl) {
+cmMaintenance::cmMaintenance(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB) : cmMaster(ptr_cnlTbl, ptr_peerTbl, ptr_peerDB) {
 	DBG(F("cmMaint, cnl: "), cT->cnl, '\n');
 }
 
@@ -37,8 +37,8 @@ cmMaintenance::cmMaintenance(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl 
 */
 void cmMaintenance::info_config_change(void) {
 	// get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it
-	for (uint8_t i = 0; i < cT->sLen; i++) {
-		if (_PGM_BYTE(cnlAddr[i + cT->sIdx]) == 0x0a) MAID = &chnl_list[i];
+	for (uint8_t i = 0; i < cLT->sLen; i++) {
+		if (_PGM_BYTE(cnlAddr[i + cLT->sIdx]) == 0x0a) MAID = &chnl_list[i];
 	}
 
 	DBG( F("cmMaint, config_change - MAID:"), _HEX(MAID,3), '\n' );

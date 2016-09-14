@@ -60,7 +60,7 @@ void PW::poll(void) {
 	if (checkWakeupPin()) return;															// wakeup pin active
 	
 	// some communication still active, jump out
-	if ((hm.sn.active) || (hm.stcSlice.active) || (hm.cFlag.active) || (hm.pairActive) || (hm.confButton.armFlg)) return;
+	if ((snd.active) || (hm.stcSlice.active) || (hm.cFlag.active) || (hm.pairActive) || (btn.armFlg)) return;
 	
 	#ifdef PW_DBG																			// only if pw debug is set
 	dbg << '.';																				// ...and some information
@@ -71,7 +71,7 @@ void PW::poll(void) {
 
 	if (pwrMode == POWER_MODE_WAKEUP_ONRADIO) {												// check communication on power mode 1
 
-		tmpCCBurst = hm.cc.detectBurst();
+		tmpCCBurst = cc.detectBurst();
 		if ((tmpCCBurst) && (!chkCCBurst)) {												// burst detected for the first time
 			chkCCBurst = 1;																	// set the flag
 			
@@ -99,8 +99,8 @@ void PW::poll(void) {
 	}
 
 	// if we are here, we could go sleep. set cc module idle, switch off led's and sleep
-	hm.cc.setIdle();																		// set communication module to idle
-	hm.ld.set(nothing);																	// switch off all led's
+	cc.setIdle();																		// set communication module to idle
+	led.set(nothing);																	// switch off all led's
 
 	// start the respective watchdog timers
 	cli();

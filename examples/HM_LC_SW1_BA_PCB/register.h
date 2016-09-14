@@ -18,14 +18,15 @@
 	 * to be defined in the user sketch.
 	 */
 	AS hm;
+
 	/*
 	* cmSwitch requires this functions in the user sketch:
 	* void cmSwitch::initSwitch(uint8_t channel);
 	* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
 	*/
 	cmMaster *pcnlModule[2] = {
-		new cmMaintenance(&cnlTbl[0], &cnlTbl[0]),
-		new cmSwitch(&cnlTbl[1], &cnlTbl[2]),
+		new cmMaintenance( &cnlTbl[0], &cnlTbl[0], &peerTbl[0] ),
+		new cmSwitch(&cnlTbl[1], &cnlTbl[2], &peerTbl[1] ),
 	};
 
 	/*
@@ -143,10 +144,10 @@
 	void everyTimeStart(void) {
 
 		// channel 0 section 
-		hm.ld.set(welcome);
-		hm.confButton.config(2);
-		hm.pw.setMode(POWER_MODE_NO_SLEEP);
-		hm.bt.set(30, 3600000);
+		led.set(welcome);
+		btn.config(2);
+		pom.setMode(POWER_MODE_NO_SLEEP);
+		bat.set(30, 3600000);
 		// channel 1 section 
 	}
 

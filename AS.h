@@ -9,6 +9,7 @@
 #ifndef _NAS_H
 #define _NAS_H
 
+#include "cmMaster.h"
 #include "message_union.h"
 #include "Defines.h"
 #include "HAL.h"
@@ -16,8 +17,6 @@
 #include "EEprom.h"
 #include "Send.h"
 #include "Receive.h"
-#include "cmMaster.h"
-//#include "Registrar.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
@@ -25,8 +24,8 @@
 #include "Version.h"
 #include "macros.h"
 
-const uint8_t empty_4_byte[] = { 0,0,0,0, };					// need it all time to get an empty peer slot or for compare... 
-#define EMPTY4BYTE (uint8_t*)empty_4_byte
+//const uint8_t empty_4_byte[] = { 0,0,0,0, };					// need it all time to get an empty peer slot or for compare... 
+//#define EMPTY4BYTE (uint8_t*)empty_4_byte
 
 
 /**
@@ -47,23 +46,20 @@ const uint8_t empty_4_byte[] = { 0,0,0,0, };					// need it all time to get an e
 
 
 class AS {
-	friend class SN;
-	friend class RV;
-	friend class PW;
+	//friend class SN;
+	//friend class RV;
+	//friend class PW;
 
   public:		//---------------------------------------------------------------------------------------------------------
-	EE ee;				///< eeprom module
-	CC cc;				///< load communication module
-	SN sn;				///< send module
-	RV rv;				///< receive module
-	LD ld;				///< status led
-	CB confButton;		///< config button
-	BT bt;				///< battery status
-	PW pw;				///< power management
-
-
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
+	//EE ee;				///< eeprom module
+	//CC cc;				///< load communication module
+	//SN sn;				///< send module
+	//RV rv;				///< receive module
+	//LD ld;				///< status led
+	//CB confButton;		///< config button
+	//BT bt;				///< battery status
+	//PW pw;				///< power management
+	//cmMaster *pcnlModule[];
 
 
 	/** @brief Helper structure for keeping track of active config mode */
@@ -175,7 +171,7 @@ class AS {
 
 
 
-  private:		//---------------------------------------------------------------------------------------------------------
+  //private:		//---------------------------------------------------------------------------------------------------------
 
 	inline void processMessageSwitchEvent();
 
@@ -234,7 +230,6 @@ class AS {
 
 
 };
-extern class cmMaster *pcnlModule[];
 
 extern const uint8_t devIdnt[];
 extern const uint8_t cnlAddr[];
@@ -247,20 +242,12 @@ extern const uint8_t cnl_max;
 extern const uint8_t cnl_tbl_max;
 
 
-#define rcv_bufLen   rcv.msgBody.MSG_LEN+1												// natural len of received bytes
-#define rcv_hasData  rcv.buf[0]?1:0														// check if something is in the received buffer
-#define rcv_ackRq    rcv.msgBody.FLAG.BIDI												// check if an ACK is requested
-extern uint8_t rcv_PEER_CNL;															// if message comes from a registered peer, rv class stores the registered channel here, declaration in AS.cpp
-extern uint8_t rcv_PEER_ID[];															// if message comes from a registered peer, rv class stores the peer id with cleaned peer channel here, declaration in AS.cpp
-extern u_Message rcv;																	// union for the received string
-
-#define snd_sndLen   snd.msgBody.MSG_LEN+1												// amount of bytes in the send buffer
-#define snd_ackRq    snd.msgBody.FLAG.BIDI												// check if an ACK is requested
-extern u_Message snd;																	// union for the send string
-
+//extern uint8_t rcv_PEER_CNL;															// if message comes from a registered peer, rv class stores the registered channel here, declaration in AS.cpp
+//extern uint8_t rcv_PEER_ID[];															// if message comes from a registered peer, rv class stores the peer id with cleaned peer channel here, declaration in AS.cpp
+//extern u_Message rcv;																	// union for the received string
+//extern u_Message snd;																	// union for the send string
 
 extern AS hm;
-
 
 
 

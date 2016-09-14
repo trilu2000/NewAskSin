@@ -13,24 +13,20 @@
 
 
 class BT {
-	friend class AS;
+public:		//---------------------------------------------------------------------------------------------------------
 
-	private:    //---------------------------------------------------------------------------------------------------------
+	uint8_t  checkTenthVolt;												// holds the proof point
+	uint8_t  measureTenthVolt;												// variable to hold last measured value
+	uint8_t  bState        :1;												// holds status bit
+	uint8_t  bMode         :2;												// mode variable
+	uint32_t bDuration;														// duration for the next check
 	
-	uint8_t  checkTenthVolt;					// holds the proof point
-	uint8_t  measureTenthVolt;					// variable to hold last measured value
-	uint8_t  bState        :1;					// holds status bit
-	uint8_t  bMode         :2;					// mode variable
-	uint32_t bDuration;							// duration for the next check
-	
-	public:		//---------------------------------------------------------------------------------------------------------
 	BT();
-	void set(uint8_t tenthVolt, uint32_t duration);
-		
-	private:    //---------------------------------------------------------------------------------------------------------
+	void    set(uint8_t tenthVolt, uint32_t duration);
 	void    poll(void);
 	uint8_t getStatus(void);
 };
 
+extern BT bat;																// declaration in AS.cpp
 
 #endif

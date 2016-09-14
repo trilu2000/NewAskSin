@@ -40,7 +40,7 @@ void CB::poll(void) {
 	if (btn == 2) {																			// button was just pressed
 		//dbg << "armed \n";
 		btnTmr.set(detectLong);																// set timer to detect a long
-		hm.pw.stayAwake(detectLong+500);													// stay awake to check button status
+		pom.stayAwake(detectLong+500);													// stay awake to check button status
 		armFlg = 1;																			// set it armed
 		return;
 	}
@@ -53,7 +53,7 @@ void CB::poll(void) {
 		//dbg << "3 lstLng:" << lstLng << " dblLng:" << dblLng << " lngRpt:" << lngRpt << " lstSht:" << lstSht << '\n';
 
 		btnTmr.set(timeoutDouble);															// set timer to clear the repeated flags
-		hm.pw.stayAwake(timeoutDouble+500);													// stay awake to check button status
+		pom.stayAwake(timeoutDouble+500);													// stay awake to check button status
 		
 		if       ((lstLng) && (lngRpt)) {			// keyLongRelease
 			outSignal(5);
@@ -75,7 +75,7 @@ void CB::poll(void) {
 	} else if ((btn == 0) && (btnTmr.done() )) {	// button is still pressed, but timed out, seems to be a long
 		//dbg << "0 lstLng:" << lstLng << " dblLng:" << dblLng << " lngRpt:" << lngRpt << " lstSht:" << lstSht << '\n';
 
-		hm.pw.stayAwake(detectLong+500);													// stay awake to check button status
+		pom.stayAwake(detectLong+500);													// stay awake to check button status
 
 		if (lstLng) {								// keyLongRepeat
 			btnTmr.set(repeatedLong);														// set timer to detect a repeated long
@@ -104,8 +104,8 @@ void CB::poll(void) {
 void CB::outSignal(uint8_t mode) {
 	//RG::s_modTable *pModTbl = &modTbl[1];													// pointer to the respective line in the module table
 
-	hm.pw.stayAwake(500);																	// stay awake to fulfill the action
-	hm.ld.blinkRed();																		// show via led that we have some action in place
+	pom.stayAwake(500);																	// stay awake to fulfill the action
+	led.blinkRed();																		// show via led that we have some action in place
 	
 	#ifdef CB_DBG																			// only if ee debug is set
 		if (mode == 1) dbg << F("keyShortSingle\n");										// ...and some information
@@ -125,19 +125,19 @@ void CB::outSignal(uint8_t mode) {
 	} else if (mode == 2) {					// keyShortDouble
 		
 	} else if (mode == 3) {					// keyLongSingle
-		if      (scn == 1) hm.ld.set(key_long);
+		if      (scn == 1) led.set(key_long);
 		else if (scn == 2) hm.sendDEVICE_INFO();											// send pairing string
 
 	} else if (mode == 4) {					// keyLongRepeat
-		hm.ld.set(nothing);
+		led.set(nothing);
 
 	} else if (mode == 5) {					// keyLongRelease
 
 	} else if (mode == 6) {					// keyLongDouble
-		hm.ld.set(nothing);
+		led.set(nothing);
 
 		// TODO: 0x18 localResDis available, take care of it
-		uint8_t localResDis = hm.ee.getRegAddr(0,0,0,0x18);									// get register address
+		uint8_t localResDis = ee.getRegAddr(0,0,0,0x18);									// get register address
 		//dbg << "x:" << localResDis <<'\n';
 		if (!localResDis) 																	// if local reset is not disabled, reset
 			hm.deviceReset(AS_RESET_CLEAR_EEPROM);

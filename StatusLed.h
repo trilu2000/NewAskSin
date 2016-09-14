@@ -20,30 +20,19 @@
 enum ledStat { pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, welcome, key_long, nothing = 255 };
 
 class LD {
-	friend class AS;
-  
-  public:		//---------------------------------------------------------------------------------------------------------
-	uint8_t active;								// something active
+public:		//---------------------------------------------------------------------------------------------------------
+	uint8_t active;															// something active
 
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
+	struct s_blPat blPtr;													// empty blink pattern struct
+	uint8_t lCnt;															// counter for positioning inside of blink string
+	uint8_t dCnt;															// duration counter
 	
-	class AS *pHM;								// standard, but not needed here. pointer to main class for function calls
-	struct s_blPat blPtr;						// empty blink pattern struct
-
-	uint8_t lCnt;								// counter for positioning inside of blink string
-	uint8_t dCnt;								// duration counter
-	
-  public:		//---------------------------------------------------------------------------------------------------------
-	//void init(AS *ptrMain);						// init function, to be called by AskSin main class
-	void set(ledStat stat);						// function to set the blink pattern
-	void blinkRed(void);						// blocking blink pattern, not processed via poll
-	
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
-	LD();										// class constructor
-	void poll(void);							// poll function to process blink pattern
+	LD();																	// class constructor
+	void poll(void);														// poll function to process blink pattern
+	void set(ledStat stat);													// function to set the blink pattern
+	void blinkRed(void);													// blocking blink pattern, not processed via poll
 };
 
+extern LD led;																// declaration is in AS.cpp
 
 #endif

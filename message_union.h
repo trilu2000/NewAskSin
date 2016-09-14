@@ -82,9 +82,9 @@ typedef union u_Message {
 
 	/*
 	* @brief GENERIC message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -102,14 +102,14 @@ typedef union u_Message {
 		uint8_t       BY10;					// by10 - type of message
 		uint8_t       BY11;					// by10 - type of message
 		uint8_t       PAYLOAD[MaxDataLen - 12];// payload
-	} msgBody; // GENERIC message
+	} mBody; // GENERIC message
 
 
 	/*
 	* @brief DEVICE_INFO message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -135,14 +135,14 @@ typedef union u_Message {
 		uint8_t       PEER_CNL_A;			// by24 - peer channel 1
 		uint8_t       PEER_CNL_B;			// by25 - peer channel 2
 		uint8_t : 8;						// by26 - unknown
-	} msg00xxxx; // DEVICE_INFO message
+	} m00xxxx; // DEVICE_INFO message
 
 
 	/*
 	* @brief CONFIG_PEER_ADD message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -164,13 +164,13 @@ typedef union u_Message {
 		uint8_t	      PEER_ID[3];			// by12 - peer address
 		uint8_t       PEER_CNL_A;			// by15 - peer channel 1
 		uint8_t       PEER_CNL_B;			// by16 - peer channel 2
-	} msg01xx01; // CONFIG_PEER_ADD message
+	} m01xx01; // CONFIG_PEER_ADD message
 
 	/*
 	* @brief CONFIG_PEER_REMOVE message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -192,13 +192,13 @@ typedef union u_Message {
 		uint8_t	      PEER_ID[3];			// by12 - peer address
 		uint8_t       PEER_CNL_A;			// by15 - peer channel 1
 		uint8_t       PEER_CNL_B;			// by16 - peer channel 2
-	} msg01xx02; // CONFIG_PEER_REMOVE message
+	} m01xx02; // CONFIG_PEER_REMOVE message
 
 	/*
 	* @brief CONFIG_PEER_LIST_REQ message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -214,13 +214,13 @@ typedef union u_Message {
 		uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 		uint8_t       MSG_CNL;				// by10 - message channel
 		uint8_t       BY11;					// by11 - message type
-	} msg01xx03; // CONFIG_PEER_LIST_REQ message
+	} m01xx03; // CONFIG_PEER_LIST_REQ message
 
 	/*
 	* @brief CONFIG_PARAM_REQ message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -242,13 +242,13 @@ typedef union u_Message {
 		uint8_t       PEER_ID[3];			// by12 - peer address
 		uint8_t       PEER_CNL;				// by15 - peer channel
 		uint8_t       PARAM_LIST;			// by16 - parameter list 0, 1, 3, 4, etc.
-	} msg01xx04; // CONFIG_PARAM_REQ message
+	} m01xx04; // CONFIG_PARAM_REQ message
 
 	/*
 	* @brief CONFIG_START message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -270,13 +270,13 @@ typedef union u_Message {
 		uint8_t       PEER_ID[3];			// by12 - peer address
 		uint8_t       PEER_CNL;				// by15 - peer channel
 		uint8_t       PARAM_LIST;			// by16 - parameter list 0, 1, 3, 4, etc.
-	} msg01xx05; // CONFIG_START message
+	} m01xx05; // CONFIG_START message
 
 	/*
 	* @brief CONFIG_END message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -292,13 +292,13 @@ typedef union u_Message {
 		uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 		uint8_t       MSG_CNL;				// by10 - message channel
 		uint8_t       BY11;					// by11 - message type
-	} msg01xx06; // CONFIG_END message
+	} m01xx06; // CONFIG_END message
 
 	/*
 	* @brief CONFIG_WRITE_INDEX message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -318,13 +318,13 @@ typedef union u_Message {
 		uint8_t       BY11;					// by11 - message type
 		uint8_t       ADDR;					// by12 - address for data
 		uint8_t       DATA[MaxDataLen - 13];// by13 - data, start register in address, remaining data
-	} msg01xx07; // CONFIG_WRITE_INDEX message
+	} m01xx07; // CONFIG_WRITE_INDEX message
 
 	/*
 	* @brief CONFIG_WRITE_INDEX message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -342,13 +342,13 @@ typedef union u_Message {
 		uint8_t       MSG_CNL;				// by10 - message channel
 		uint8_t       BY11;					// by11 - message type
 		uint8_t       DATA[MaxDataLen - 12];// by12 - data, 1 byte register, 1 byte data, ...
-	} msg01xx08; // CONFIG_WRITE_INDEX message
+	} m01xx08; // CONFIG_WRITE_INDEX message
 
 	/*
 	* @brief CONFIG_SERIAL_REQ message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -366,13 +366,13 @@ typedef union u_Message {
 		uint8_t       MSG_CNL;				// by10 - message channel
 		uint8_t       BY11;					// by11 - message type
 		uint8_t       DATA[MaxDataLen - 12];// by12 - data, 1 byte register, 1 byte data, ...
-	} msg01xx09; // CONFIG_SERIAL_REQ message
+	} m01xx09; // CONFIG_SERIAL_REQ message
 
 	/*
 	* @brief PAIR_SERIAL message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -390,13 +390,13 @@ typedef union u_Message {
 		uint8_t       MSG_CNL;				// by10 - message channel
 		uint8_t       BY11;					// by11 - message type
 		uint8_t       SERIALNO[10];			// by12 - 10 byte serial number
-	} msg01xx0a; // PAIR_SERIAL message
+	} m01xx0a; // PAIR_SERIAL message
 
 	/*
 	* @brief CONFIG_STATUS_REQUEST message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -412,14 +412,14 @@ typedef union u_Message {
 		uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 		uint8_t       MSG_CNL;				// by10 - message channel
 		uint8_t       BY11;					// by11 - message type
-	} msg01xx0e; // CONFIG_STATUS_REQUEST message
+	} m01xx0e; // CONFIG_STATUS_REQUEST message
 
 
 	/*
 	* @brief ACK message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -433,13 +433,13 @@ typedef union u_Message {
 		uint8_t       SND_ID[3];			// by04 - sender ID
 		uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 		uint8_t       BY10;					// by10 - message type
-	} msg0200xx; // ACK message
+	} m0200xx; // ACK message
 
 	/*
 	* @brief ACK_STATUS message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -467,13 +467,13 @@ typedef union u_Message {
 			uint8_t	 LOWBAT : 1;	// & 0x80
 		} MSG_FLAG;							// by13 - message flags
 		uint8_t      MSG_RSSI;				// by14 - recording of device
-	} msg0201xx; // ACK_STATUS message
+	} m0201xx; // ACK_STATUS message
 
 	/*
 	* @brief ACK2 message
-	* byte 00, MSG_LEN  - message length
-	* byte 01, MSG_CNT  - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-	* byte 02, FLAG     - see structure of message flags
+	* byte 00, MSG_LEN - message length
+	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+	* byte 02, FLAG - see structure of message flags
 	* byte 03, BY03 - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
@@ -487,7 +487,7 @@ typedef union u_Message {
 		uint8_t       SND_ID[3];			// by04 - sender ID
 		uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 		uint8_t       BY10;					// by10 - message channel
-	} msg0202xx; // ACK2 message
+	} m0202xx; // ACK2 message
 
 				 /*
 	* 02, 04, xx, ACK_PROC, msg0204xx
@@ -535,11 +535,7 @@ typedef union u_Message {
 		uint8_t       : 8;					// by13 - unknown
 		uint8_t       P_CNL;				// by14 - peer channel
 		uint8_t       P_CNT;				// by15 - peer count
-	} msg3Exxxx; // SWITCH message
-
-
-	uint8_t buf[MaxDataLen];
-
+	} m3Exxxx; // SWITCH message
 } u_Message;
 
 

@@ -11,16 +11,18 @@
 #define _cmMaster_H
 
 #include "AS.h"
-#include "Eeprom.h"
+#include "EEprom.h"
 #include "HAL.h"
 
 
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------
 
-	const EE::s_cnlTbl *cT, *cPT;															// pointer to channel table for list0/1 and list3/4 information
+	const EE::s_cnlTbl *cLT, *cPT;															// pointer to channel table for list0/1 and list3/4 information
+	const EE::s_peerTbl *pDB;																// pointer to the peer database table in register.h
+
 	uint8_t *chnl_list, *peer_list;															// array for list0/1 and list3/4
-	cmMaster(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl);				// constructor
+	cmMaster(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB);// constructor
 
 	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// pair set message
 	virtual void message_trigger3E(uint8_t msgLng, uint8_t msgCnt);							// switch message, also config test button in HM
@@ -37,6 +39,8 @@ public://-----------------------------------------------------------------------
 	virtual void set_toggle(void);															// toggle the module initiated by config button
 
 };
+
+extern cmMaster *pcnlModule[];
 
 
 

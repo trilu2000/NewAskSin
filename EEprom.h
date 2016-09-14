@@ -94,9 +94,10 @@ class EE {
 	friend class RV;
 	friend class CB;
 
+
   public:		//---------------------------------------------------------------------------------------------------------
 
-    /**
+	/**
      * @brief Channel Table Entry
      *
      * This structure is used in the channels definition, where all existing channels
@@ -162,24 +163,28 @@ class EE {
 
   protected:	//---------------------------------------------------------------------------------------------------------
   public:		//--------------------------------------------------------------------------------------------------------
-  //private:	//---------------------------------------------------------------------------------------------------------
+
 	EE();																				// class constructor
 	void     init(void);
 	void     initHMKEY(void);
 	void     testModul(void);															// prints register.h definition on console
 
-	// peer functions
-	inline void clearPeers(void);														// ok, clears complete peer database
-	uint8_t  isPeerValid (uint8_t *peer);												// ok, checks if a valid peer was given
 
-	uint8_t  countFreeSlots(uint8_t cnl);												// ok, counts the free peer slots of a channel
-	uint8_t  getIdxByPeer(uint8_t cnl, uint8_t *peer);									// ok, find the index of the respective peer
+	// peer functions
+	uint8_t  isPeerValid(uint8_t *peer);												// ok, checks if a valid peer was given
 	void     getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);						// ok, returns the respective peer of the given index
+
 	uint8_t  addPeers(uint8_t cnl, uint8_t *peer);										// ok, writes a peer in the database on first free slot
 	uint8_t  remPeers(uint8_t cnl, uint8_t *peer);										// ok, writes a zero to the respective slot
+
 	uint8_t  countPeerSlc(uint8_t cnl);													// ok, count the slices for function getPeerListSlc
 	uint8_t  getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);					// ok, returns the whole peer database as a string
-	//uint8_t  getPeerSlots(uint8_t cnl);													// ok, returns max peers per channel
+
+	uint8_t  countFreeSlots(uint8_t cnl);												// ok, counts the free peer slots of a channel
+
+	inline void    clearPeers(void);													// ok, clears complete peer database
+	inline uint8_t getIdxByPeer(uint8_t cnl, uint8_t *peer);							// ok, find the index of the respective peer
+
 
 	// register functions
 	uint8_t  countRegListSlc(uint8_t cnl, uint8_t lst);									// ok, counts the slices for a complete regs transmition

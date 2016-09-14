@@ -13,22 +13,28 @@
 *        for the module/class you want to see debug messages
 */
 
+//#define CC_DBG				// Communication class (CC1101.cpp)
+#define SN_DBG					// Send class (Send.cpp)
 #define RV_DBG					// Receive class (Receive.cpp)
 //#define RV_DBG_EX				// Further explanation of received messages (Receive.cpp)
 
-#define EE_DBG					// EEprom class (EEprom.cpp)
+//#define EE_DBG				// EEprom class (EEprom.cpp)
 
 //#define CM_DBG				// Channel Master module (cmMaster.cpp)
-//#define MN_DBG					// Maintenance channel module (cmMaintenance.cpp)
+//#define MN_DBG				// Maintenance channel module (cmMaintenance.cpp)
 //#define SW_DBG				// Switsch channel module (cmSwitch.cpp)
 
 
 /*
 * @brief This macro has to be in every .cpp file to enable the DBG() message.
 *        Replace the XX_DBG with your choosen abbreviation.
+*
+
+#include "00_debug-flag.h"
+#ifdef XX_DBG
+#define DBG(...) Serial ,__VA_ARGS__
+#else
+#define DBG(...) 
+#endif
+
 */
-//#ifdef XX_DBG
-//#define DBG(...) Serial ,__VA_ARGS__
-//#else
-//#define DBG(...) 
-//#endif

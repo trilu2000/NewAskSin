@@ -12,14 +12,8 @@
 #define _CC_H
 
 #include "HAL.h"
-#include <util/delay.h>
 
 class CC {
-	friend class AS;
-	friend class SN;
-	friend class RV;
-	friend class PW;
-  
 private:  //--------------------------------------------------------------------------------------------------------------
 	#define CC1101_DATA_LEN         40										// maximum length of received bytes
 
@@ -150,13 +144,50 @@ private:  //--------------------------------------------------------------------
 	#define PA_Normal                0x50									// PATABLE values
 	#define PA_MaxPower			     0xC0
 
-	uint8_t crc_ok;															// CRC OK for received message
+	// explanation of CC1101_STATUS byte
+	union u_ccStatus {
+		struct s_ccStatus {
+			uint8_t GDO0    : 1;	//	0 current GDO0 value       1
+			uint8_t         : 1;	//	1 reserved                 2
+			uint8_t GDO2    : 1;	//	2 GDO2                     4
+			uint8_t SYNC    : 1;	//	3 sync word found          8
+			uint8_t CLEAR   : 1;	//	4 channel is clear         10
+			uint8_t QALITY  : 1;	//	5 preamble quality reached 20
+			uint8_t CARRIER : 1;	//	6 carrier sense            40
+			uint8_t CRC_OK  : 1;	//	7 CRC ok                   80
+		} FLAGS;
+		uint8_t VAL;
+	};
+
+	// explanation of CC1101_RXBYTES byte
+	union u_rxStatus {
+		struct s_rxStatus {
+			uint8_t WAITING  : 7;	//	&7F
+			uint8_t OVERFLOW : 1;	//	&80
+		} FLAGS;
+		uint8_t VAL;
+	};
+
+	// explanation of CC1101_CONFIG byte
+	union u_rvStatus {
+		struct s_rvStatus {
+			uint8_t LQI : 7;	//	&7F
+			uint8_t CRC : 1;	//	&80
+		} FLAGS;
+		uint8_t VAL;
+	};
+
+
+public:    //-------------------------------------------------------------------------------------------------------------
 	uint8_t rssi;															// signal strength
-	uint8_t	lqi;															// link quality
+	//uint8_t crc_ok;														// CRC OK for received message
+	//uint8_t	lqi;														// link quality
 	uint8_t pwr_down;														// module sleeping (power down)
 
 
 public:    //-------------------------------------------------------------------------------------------------------------
+	CC() {}																	// constructor
+
 	void    init();															// initialize CC1101
 	void    sndData(uint8_t *buf, uint8_t burst);							// send data packet via RF
 	void    rcvData(uint8_t *buf);											// read data packet from RX FIFO
@@ -165,7 +196,6 @@ public:    //-------------------------------------------------------------------
 	uint8_t detectBurst(void);												// detect burst signal, sleep while no signal, otherwise stay awake
 
 private:  //--------------------------------------------------------------------------------------------------------------
-	CC() {}																	// constructor
 		
 	inline void    setActive(void);											// get the cc1101 back to active state
 	
@@ -179,6 +209,7 @@ private:  //--------------------------------------------------------------------
 
 };
 
+extern CC cc;
 
 #endif
 

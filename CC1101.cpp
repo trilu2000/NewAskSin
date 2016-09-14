@@ -8,11 +8,16 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-//#define CC_DBG																		// debug flag, you will receive debug messages if flag is active
+#include "00_debug-flag.h"
+#ifdef CC_DBG
+#define DBG(...) Serial ,__VA_ARGS__
+#else
+#define DBG(...) 
+#endif
+
 #include "CC1101.h"
 
-//public:    //-----------------------------------------------------------------------------------------------------------
-/**
+/*
 * @brief Initialize the cc1101 rf modul
 * 
 * First of all we initialize the interface to the rf module, SPI and some additional lines
@@ -23,11 +28,7 @@
 *
 */
 void    CC::init(void) {																// initialize CC1101
-	#ifdef CC_DBG																		// only if cc debug is set
-	dbg.begin(57600);																	// dbg setup
-	dbg << F("\n....\n");																// ...and some information
-	dbg << F("CC.\n");																	// ...and some information
-	#endif
+	DBG( F("CC.\n") );																	// debug message
 	
 	ccInitHw();																			// init the hardware to get access to the RF modul
 
@@ -42,9 +43,7 @@ void    CC::init(void) {																// initialize CC1101
 	_delay_ms(10);
 	pwr_down = 0;
 
-	#ifdef CC_DBG																		// only if cc debug is set
-	dbg << '1';
-	#endif
+	DBG( '1');
 
 	// define init settings for TRX868
 	static const uint8_t initVal[] PROGMEM = {
@@ -86,35 +85,28 @@ void    CC::init(void) {																// initialize CC1101
 		CC1101_TEST1,   0x35,
 		CC1101_PATABLE, 0xC3,
 	};
-	for (uint8_t i=0; i<sizeof(initVal); i+=2) {										// write init value to TRX868
+	for (uint8_t i=0; i < sizeof(initVal); i+=2) {										// write init value to TRX868
 		writeReg(_PGM_BYTE(initVal[i]), _PGM_BYTE(initVal[i+1]));
 		//dbg << i << ": " << _HEXB(_PGM_BYTE(initVal[i])) << ' ' << _HEXB(_PGM_BYTE(initVal[i+1])) << '\n';
 	}
 
-	#ifdef CC_DBG																		// only if cc debug is set
-	dbg << '2';
-	#endif
+	DBG( '2' );
 
 	strobe(CC1101_SCAL);																// calibrate frequency synthesizer and turn it off
 	while (readReg(CC1101_MARCSTATE, CC1101_STATUS) != 1) {								// waits until module gets ready
 		_delay_us(1);
-		#ifdef CC_DBG																	// only if cc debug is set
-		dbg << '.';
-		#endif
+		DBG( '.' );
 	}
 
-	#ifdef CC_DBG																		// only if cc debug is set
-	dbg << '3';
-	#endif
+	DBG( '3' );
 
 	writeReg(CC1101_PATABLE, PA_MaxPower);												// configure PATABLE
 	strobe(CC1101_SRX);																	// flush the RX buffer
 	strobe(CC1101_SWORRST);																// reset real time clock
 
-	#ifdef CC_DBG																		// only if cc debug is set
-	dbg << F(" - ready\n");
-	#endif
+	DBG( F(" - ready\n") );
 }
+
 /**
 * @brief Function to send data via the cc1101 rf module
 * 
@@ -149,6 +141,7 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	ccSendByte(CC1101_TXFIFO | WRITE_BURST);											// send register address
 	ccSendByte(buf[0]);																	// send byte 0
 
+	// we write the given string encoded in the buffer of the communication module
 	uint8_t prev = (~buf[1]) ^ 0x89;													// prepare byte 1
 	ccSendByte(prev);																	// send byte 1
 
@@ -178,13 +171,9 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 		_delay_us(10);
 	}
 
-	#ifdef CC_DBG																		// only if cc debug is set
-	dbg << F("<- ") << _HEXB(buf[0]) << _HEXB(buf[1]) << '\n';//pTime();
-	#endif
-
-	//dbg << "rx\n";
-	//return true;
+	DBG( F("<c "), _HEX(buf, buf[0] + 1), '\n' );
 }
+
 /**
 * @brief Receive function for the cc1101 rf module
 *
@@ -196,28 +185,28 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 * Received strings are automatically checked for their crc consistence.
 */
 void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIFO
-	uint8_t rxBytes = readReg(CC1101_RXBYTES, CC1101_STATUS);							// how many bytes are in the buffer
-	//dbg << rxBytes << ' ';
+	u_rxStatus rxByte;																	// size the rx status byte
+	//u_rvStatus rvByte;																// size the receive status byte
 
-	if ((rxBytes & 0x7F) && !(rxBytes & 0x80)) {										// any byte waiting to be read and no overflow?
+	rxByte.VAL = readReg(CC1101_RXBYTES, CC1101_STATUS);								// how many bytes are in the buffer
+	//dbg << rxByte.VAL << ' ';
+
+	if ((rxByte.FLAGS.WAITING) && !(rxByte.FLAGS.OVERFLOW)) {							// any byte waiting to be read and no overflow?
 		buf[0] = readReg(CC1101_RXFIFO, CC1101_CONFIG);									// read data length
 		
 		if (buf[0] > CC1101_DATA_LEN) {													// if packet is too long
 			buf[0] = 0;																	// discard packet
 			
 		} else {
-			readBurst(&buf[1], CC1101_RXFIFO, buf[0]);									// read data packet
+			readBurst( buf + 1, CC1101_RXFIFO, buf[0]);									// read data packet
 			decode(buf);																// decode the buffer
 
 			rssi = readReg(CC1101_RXFIFO, CC1101_CONFIG);								// read RSSI
-			
-			if (rssi >= 128) rssi = 255 - rssi;
+			if (rssi >= 128) rssi = 255 - rssi;											// and normalize the value
 			rssi /= 2; rssi += 72;
 			
-			uint8_t val = readReg(CC1101_RXFIFO, CC1101_CONFIG);						// read LQI and CRC_OK
-			lqi = val & 0x7F;
-			crc_ok = bitRead(val, 7);
-	
+			// as we are not checking LQI and CRC
+			//rvByte.VAL = readReg(CC1101_RXFIFO, CC1101_CONFIG);							// read LQI and CRC_OK
 		}
 
 	} else buf[0] = 0;																	// nothing to do, or overflow
@@ -228,9 +217,7 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	strobe(CC1101_SWORRST);																// reset real time clock
 	//	trx868.rfState = RFSTATE_RX;													// declare to be in Rx state
 
-	#ifdef CC_DBG																		// only if cc debug is set
-	if (buf[0] > 0) dbg << _HEX(buf, buf[0]+1) << '\n';//pTime();
-	#endif
+	DBG( F("c> "), _HEX(buf, buf[0] + 1), '\n' );
 }
 
 /**
@@ -289,13 +276,13 @@ uint8_t CC::detectBurst(void) {
 		_delay_us(10);
 	}
 
-	uint8_t bTmp;
+	u_ccStatus ccStat;
 	for (uint8_t i = 0; i < 200; i++) {													// check if we are in RX mode
-		bTmp = readReg(CC1101_PKTSTATUS, CC1101_STATUS);								// read the status of the line
-		if ((bTmp & 0x10) || (bTmp & 0x40)) break;										// check for channel clear, or carrier sense
+		ccStat.VAL = readReg(CC1101_PKTSTATUS, CC1101_STATUS);							// read the status of the line
+		if ( (ccStat.FLAGS.CLEAR) || (ccStat.FLAGS.CARRIER) ) break;					// check for channel clear, or carrier sense
 		_delay_us(10);																	// wait a bit
 	}
-	return (bTmp & 0x40) ? 1 : 0;															// return carrier sense bit
+	return ccStat.FLAGS.CARRIER;														// return carrier sense bit
 }
 
 //private:  //------------------------------------------------------------------------------------------------------------
@@ -325,7 +312,6 @@ void   CC::setActive() {																// put CC1101 into active state
 */
 void   CC::strobe(uint8_t cmd) {														// send command strobe to the CC1101 IC via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																		// wait until MISO goes low
 	ccSendByte(cmd);																	// send strobe command
 	ccDeselect();																		// deselect CC1101
 }
@@ -372,7 +358,6 @@ void   CC::writeBurst(uint8_t *buf, uint8_t regAddr, uint8_t len) {
 */
 uint8_t CC::readReg(uint8_t regAddr, uint8_t regType) {									// read CC1101 register via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr | regType);														// send register address
 	uint8_t val = ccSendByte(0x00);														// read result
 	ccDeselect();																		// deselect CC1101
@@ -387,7 +372,6 @@ uint8_t CC::readReg(uint8_t regAddr, uint8_t regType) {									// read CC1101 r
 */
 void    CC::writeReg(uint8_t regAddr, uint8_t val) {									// write single register into the CC1101 IC via SPI
 	ccSelect();																			// select CC1101
-	//waitMiso();																			// wait until MISO goes low
 	ccSendByte(regAddr);																// send register address
 	ccSendByte(val);																	// send value
 	ccDeselect();																		// deselect CC1101

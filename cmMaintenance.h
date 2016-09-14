@@ -17,7 +17,7 @@ private:  //--------------------------------------------------------------------
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	cmMaintenance(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl);			// constructor
+	cmMaintenance(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB);// constructor
 
 	virtual void info_config_change(void);													// list1 on registered channel had changed
 	//virtual void poll(void);																// poll function, driven by HM loop

@@ -26,7 +26,7 @@
 */
 #include "cmSwitch.h"
 
-cmSwitch::cmSwitch(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl) : cmMaster(ptr_cnlTbl, ptr_peerTbl) {
+cmSwitch::cmSwitch(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB) : cmMaster(ptr_cnlTbl, ptr_peerTbl, ptr_peerDB) {
 
 	l1 = (s_l1*)&chnl_list;																	// set list structures to something useful
 	l3 = (s_l3*)&peer_list;																	// reduced l3, description in cmSwitch.h at struct declaration
@@ -34,7 +34,7 @@ cmSwitch::cmSwitch(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerT
 
 	l3->ACTION_TYPE = ACTION(INACTIVE);														// and secure that no action will happened in polling function
 
-	initSwitch(cT->cnl);																	// call external init function to set the output pins
+	initSwitch(cLT->cnl);																	// call external init function to set the output pins
 
 	modStat = setStat = 0;																	// output to 0
 	curStat = JT(OFF);																		// initialize the jump table value
@@ -182,7 +182,7 @@ void cmSwitch::adjustStatus(void) {
 	//dbg << "m" << modStat << " s" << setStat << '\n';
 
 	setStat = modStat;																		// follow action
-	switchSwitch(cT->cnl, setStat);															// calling the external function to make it happen
+	switchSwitch(cLT->cnl, setStat);														// calling the external function to make it happen
 
 	msgTmr.set(0);																			// send status was set before, 0 the timer to send the status
 }
@@ -199,8 +199,8 @@ void cmSwitch::sendStatus(void) {
 	if (!delayTmr.done() )       modDUL |= 0x40;
 	
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      ( sendStat == INFO(ACK_STATUS) )      hm.sendACK_STATUS(cT->cnl, modStat, modDUL);	
-	else if ( sendStat == INFO(ACTUATOR_STATUS) ) hm.sendINFO_ACTUATOR_STATUS(cT->cnl, modStat, modDUL);
+	if      ( sendStat == INFO(ACK_STATUS) )      hm.sendACK_STATUS(cLT->cnl, modStat, modDUL);	
+	else if ( sendStat == INFO(ACTUATOR_STATUS) ) hm.sendINFO_ACTUATOR_STATUS(cLT->cnl, modStat, modDUL);
 
 	// check if it is a stable status, otherwise schedule next info message
 	if (modDUL)  {																			// status is currently changing
@@ -301,7 +301,7 @@ void cmSwitch::request_pair_status(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	DBG( F("request_pair_status\n") );
 	
-	sendStat = INFO::ACTUATOR_STATUS;														// send next time a info status message
+	sendStat = INFO(ACTUATOR_STATUS);														// send next time a info status message
 	msgTmr.set(10);																			// wait a short time to set status
 
 }

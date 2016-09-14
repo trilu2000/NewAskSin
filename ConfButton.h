@@ -52,37 +52,25 @@
  * and hand over of the respective bit number within this byte
  */
 class CB {
-  friend class AS;
-  
   public:		//---------------------------------------------------------------------------------------------------------
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
-	//class AS *pHM;							// pointer to main class for function calls
 
-  public:		//---------------------------------------------------------------------------------------------------------
-	uint8_t scn;							// scenario indicator
-	uint8_t btn;							// result of chkPCINT
+	uint8_t scn;															// scenario indicator
+	uint8_t btn;															// result of chkPCINT
 
-	uint8_t armFlg;							// armed flag, will be set on first touch
+	uint8_t armFlg;															// armed flag, will be set on first touch
 
-	uint8_t lstLng;							// remember a long press
-	uint8_t lngRpt;							// remember last key press to detect double or long
-	uint8_t dblLng;							// check for a double long
+	uint8_t lstLng;															// remember a long press
+	uint8_t lngRpt;															// remember last key press to detect double or long
+	uint8_t dblLng;															// check for a double long
 
-	uint8_t lstSht;							// remember that last key was a short
+	uint8_t lstSht;															// remember that last key was a short
 
-
-  public:		//---------------------------------------------------------------------------------------------------------
-	void config(uint8_t mode);
-	CB();
-
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
-	
-	//void init(AS *ptrMain);
-	void poll(void);
-	
-	void outSignal(uint8_t mode);
+	CB();																	// constructor 
+	void config(uint8_t mode);												// config of button mode
+	void poll(void);														// poll to process status of button
+	inline void outSignal(uint8_t mode);									// function to drive the output signal
 };
+
+extern CB btn;																// declaration done in AS.cpp
 
 #endif 
