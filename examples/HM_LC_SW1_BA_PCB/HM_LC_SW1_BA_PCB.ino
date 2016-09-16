@@ -110,5 +110,9 @@ void serialEvent() {
 void dumpEEprom() {
 #ifdef SER_DBG
 	DBG("hab dich\n");
+	// print eeprom content, cnl by cnl
+	for (uint8_t i = 0; i <= cnl_max; i++) {
+
+	}
 #endif
 }
