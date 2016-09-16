@@ -12,7 +12,7 @@
 
 
 #include "HAL.h"
-#include "message_union.h"
+#include "AS_typedefs.h"
 
 
 class SN {

@@ -8,8 +8,61 @@
 
 #include "HAL.h"
 
-#ifndef _MESSAGE_UNION_H
-#define _MESSAGE_UNION_H
+#ifndef _AS_TYPEDEFS_H
+#define _AS_TYPEDEFS_H
+
+
+/**
+* @brief Channel Table Entry
+*
+* This structure is used in the channels definition, where all existing channels
+* are assigned with channel slice address information and EEprom addresses, where
+* actual register data is to be stored.
+*
+* For each channel
+*
+* @include docs/snippets/register-h-cnlTblAddr.cpp
+*
+* @note The number of entries in the list @c EE::s_cnlTbl @c cnlTbl must match
+* the number of channels specified in @c EE::s_devDef @c devDef.
+*
+* For other configuration data stored in EEprom memory, see s_peerTbl.
+*/
+typedef struct ts_cnlTbl {	// channel table holds all information regarding channels and lists
+	const uint8_t cnl;     ///< Channel
+	const uint8_t lst;     ///< List within the channel
+	const uint8_t sIdx;    ///< Index of first entry in channel slice address definition
+	const uint8_t sLen;    ///< Number of registers
+	const uint8_t vis;     ///< Visibility of channel
+	const uint16_t pAddr;  ///< Address of first byte in EEprom memory
+} s_cnlTbl;
+
+
+/*
+* @brief Peer Device Table Entry
+*
+* This structure is used to specify the number of possible peers per channel and
+* assign corresponding EEprom memory sections where peer information is to be stored.
+*
+* For each channel and peered device, 4 bytes are written to EEprom memory denoting the
+* peer device HMID (3 bytes) and peer device channel (1 byte). Consequently, the following
+* definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory,
+* starting at address 0x0098:
+*
+* @include docs/snippets/register-h-peerTbl.cpp
+*
+* @note The number of entries in the list @c EE::s_peerTbl @c peerTbl must match
+* the number of lists specified in @c EE::s_devDef @c devDef.
+*
+* For other configuration data stored in EEprom memory, see s_cnlTbl.
+*/
+typedef struct ts_peerTbl {	// peer table holds information were to find peers in eeprom
+	const uint8_t  pMax;					//< Maximum number of peer devices
+	const uint8_t  pLink;					//< Link to channel table row
+	const uint16_t pAddr;					//< Address of configuration data in EEprom memory
+} s_peerTbl;
+
+
 
 #define MaxDataLen   40						// maximum length of received bytes
 

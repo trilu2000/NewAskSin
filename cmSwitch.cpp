@@ -26,7 +26,7 @@
 */
 #include "cmSwitch.h"
 
-cmSwitch::cmSwitch(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB) : cmMaster(ptr_cnlTbl, ptr_peerTbl, ptr_peerDB) {
+cmSwitch::cmSwitch(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB) : cmMaster(ptr_cnlTbl, ptr_peerTbl, ptr_peerDB) {
 
 	l1 = (s_l1*)&chnl_list;																	// set list structures to something useful
 	l3 = (s_l3*)&peer_list;																	// reduced l3, description in cmSwitch.h at struct declaration

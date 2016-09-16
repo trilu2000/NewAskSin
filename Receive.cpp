@@ -78,7 +78,7 @@ uint8_t RV::getIntend() {
 	uint8_t buf10 = buf[10];															// get the channel byte seperate
 	if (prevBufUsed) buf10 = prevBuf[10];													// if AES is active, we must get buf[10] from prevBuf[10]
 	PEER_ID[3] = buf10 & 0x3f;															// mask out long and battery low
-	PEER_CNL = ee.isPeerValid(PEER_ID);
+	PEER_CNL = ee_peer.isPeerValid(PEER_ID);
 	if (PEER_CNL ) return 'p';															// check if it is coming from a peer
 
 	// message is for us, but not from pair or peer, check if we were the sender and flag it as internal

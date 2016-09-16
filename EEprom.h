@@ -10,6 +10,7 @@
 #define _EE_H
 
 #include "HAL.h"
+#include "AS_typedefs.h"
 #define maxMsgLen 16																		// define max message length in byte
 
 /**
@@ -24,7 +25,7 @@
  *
  * This function is called when AS has started and before the main loop runs.
  */
-extern void everyTimeStart(void);															// add this function in register.h to setup default values every start
+extern void everyTimeStart(void);
 
 /**
  * @fn void firstTimeStart()
@@ -34,9 +35,9 @@ extern void everyTimeStart(void);															// add this function in register
  * set the data of complete Lists with EE::setList() or single registers using
  * EE::setListArray()
  */
-extern void firstTimeStart(void);															// only on first start of the device
+extern void firstTimeStart(void);
 
-//- class definition ------------------------------------------------------------------------------------------------------
+
 /**
  * @brief Helper class for providing access to non-volatile data in the EEprom.
  *
@@ -87,71 +88,11 @@ extern void firstTimeStart(void);															// only on first start of the de
  * |    N    | | | chanN_list3_len | | peers_chan2 * chan1_list3_len  | actor     |
  * |    N    | | | | chanN_list4_len | peers_chan2 * chan1_list4_len  | sensor    |
  *
- * @todo Insert description of peerTbl here
  */
 class EE {
-	friend class AS;
-	friend class RV;
-	friend class CB;
-
-
-  public:		//---------------------------------------------------------------------------------------------------------
-
-	/**
-     * @brief Channel Table Entry
-     *
-     * This structure is used in the channels definition, where all existing channels
-     * are assigned with channel slice address information and EEprom addresses, where
-     * actual register data is to be stored.
-     *
-     * For each channel
-     *
-     * @include docs/snippets/register-h-cnlTblAddr.cpp
-     *
-     * @note The number of entries in the list @c EE::s_cnlTbl @c cnlTbl must match
-     * the number of channels specified in @c EE::s_devDef @c devDef.
-     *
-     * For other configuration data stored in EEprom memory, see s_peerTbl.
-     */
-	struct s_cnlTbl {	// channel table holds all information regarding channels and lists
-		const uint8_t cnl;     ///< Channel
-		const uint8_t lst;     ///< List within the channel
-		const uint8_t sIdx;    ///< Index of first entry in channel slice address definition
-		const uint8_t sLen;    ///< Number of registers
-		const uint8_t vis;     ///< Visibility of channel
-		const uint16_t pAddr;  ///< Address of first byte in EEprom memory
-	};
-
-    /**
-     * @brief Peer Device Table Entry
-     *
-     * This structure is used to specify the number of possible peers per channel and
-     * assign corresponding EEprom memory sections where peer information is to be stored.
-     *
-     * For each channel and peered device, 4 bytes are written to EEprom memory denoting the
-     * peer device HMID (3 bytes) and peer device channel (1 byte). Consequently, the following
-     * definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory,
-     * starting at address 0x0098:
-     *
-     * @include docs/snippets/register-h-peerTbl.cpp
-     *
-     * @note The number of entries in the list @c EE::s_peerTbl @c peerTbl must match
-     * the number of lists specified in @c EE::s_devDef @c devDef.
-     *
-     * For other configuration data stored in EEprom memory, see s_cnlTbl.
-     */
-	struct s_peerTbl {	// peer table holds information were to find peers in eeprom
-		const uint8_t pMax;    ///< Maximum number of peer devices
-		const uint8_t pLink;    ///< Link to channel table row
-		const uint16_t pAddr;  ///< Address of configuration data in EEprom memory
-	};
-
-  protected:	//---------------------------------------------------------------------------------------------------------
-  private:		//---------------------------------------------------------------------------------------------------------
-
-  public:		//---------------------------------------------------------------------------------------------------------
+public:		//---------------------------------------------------------------------------------------------------------
 	uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
-	uint8_t  setList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);				// if we know the channel table index already
+	uint8_t  setList(const s_cnlTbl *cnlTblPtr, uint8_t idx, uint8_t *buf);				// if we know the channel table index already
 	uint8_t  setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
 	uint8_t  setListArray(const uint8_t cnlTblIdx, uint8_t idx, uint8_t len, uint8_t *buf);
 
@@ -161,29 +102,12 @@ class EE {
 	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 
 
-  protected:	//---------------------------------------------------------------------------------------------------------
-  public:		//--------------------------------------------------------------------------------------------------------
-
 	EE();																				// class constructor
 	void     init(void);
 	void     initHMKEY(void);
 	void     testModul(void);															// prints register.h definition on console
 
 
-	// peer functions
-	uint8_t  isPeerValid(uint8_t *peer);												// ok, checks if a valid peer was given
-	void     getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *peer);						// ok, returns the respective peer of the given index
-
-	uint8_t  addPeers(uint8_t cnl, uint8_t *peer);										// ok, writes a peer in the database on first free slot
-	uint8_t  remPeers(uint8_t cnl, uint8_t *peer);										// ok, writes a zero to the respective slot
-
-	uint8_t  countPeerSlc(uint8_t cnl);													// ok, count the slices for function getPeerListSlc
-	uint8_t  getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf);					// ok, returns the whole peer database as a string
-
-	uint8_t  countFreeSlots(uint8_t cnl);												// ok, counts the free peer slots of a channel
-
-	inline void    clearPeers(void);													// ok, clears complete peer database
-	inline uint8_t getIdxByPeer(uint8_t cnl, uint8_t *peer);							// ok, find the index of the respective peer
 
 
 	// register functions
@@ -202,31 +126,12 @@ extern EE ee;
 
 extern const uint8_t devIdnt[];
 extern const uint8_t cnlAddr[];
-/**
-* @brief Array with channel defaults. Index and length are hold in the channel table array.
-*        Must be declared in user space.
-*/
-extern const uint8_t cnlDefs[];
 extern const uint8_t cnl_max;
 extern const uint8_t cnl_tbl_max;
 
 
-/**
- * @brief Global device register channel table definition. Must be declared in user space.
- *
- *
- *
- */
-extern  const EE::s_cnlTbl cnlTbl[];															// initial register.h
 
-/**
- * @brief Global peer table definition. Must be declared in user space.
- *
- *
- * @todo Insert description and example for peerTbl
- */
-extern const EE::s_peerTbl peerTbl[];															// initial register.h
-
+	
 /**
  * @brief Global device definition. Must be declared in user space.
  *
@@ -292,6 +197,8 @@ extern uint8_t HMKEY[];
  *
  */
 extern uint8_t hmKeyIndex[];
+
+
 
 //- some helpers ----------------------------------------------------------------------------------------------------------
 inline uint16_t crc16(uint16_t crc, uint8_t a);											// crc function

@@ -26,7 +26,7 @@
 */
 #include "cmMaintenance.h"
 
-cmMaintenance::cmMaintenance(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB) : cmMaster(ptr_cnlTbl, ptr_peerTbl, ptr_peerDB) {
+cmMaintenance::cmMaintenance(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB) : cmMaster(ptr_cnlTbl, ptr_peerTbl, ptr_peerDB) {
 	DBG(F("cmMaint, cnl: "), cT->cnl, '\n');
 }
 

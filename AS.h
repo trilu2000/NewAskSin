@@ -9,7 +9,7 @@
 #ifndef _NAS_H
 #define _NAS_H
 
-#include "message_union.h"
+#include "AS_typedefs.h"
 #include "Defines.h"
 #include "macros.h"
 #include "Version.h"
@@ -20,14 +20,16 @@
 #include "CC1101.h"
 #include "Send.h"
 #include "Receive.h"
+#include "EEprom_peer.h"
 #include "EEprom.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
 #include "Battery.h"
 
-//const uint8_t empty_4_byte[] = { 0,0,0,0, };					// need it all time to get an empty peer slot or for compare... 
-//#define EMPTY4BYTE (uint8_t*)empty_4_byte
+
+
+
 
 
 /**
@@ -45,8 +47,6 @@
  *
  * All send functions are used by sensor or actor classes like THSensor or Dimmer.
  */
-
-
 class AS {
 public:		//---------------------------------------------------------------------------------------------------------
 
@@ -230,10 +230,16 @@ extern const uint8_t cnl_max;
 extern const uint8_t cnl_tbl_max;
 
 
-//extern uint8_t rcv_PEER_CNL;															// if message comes from a registered peer, rv class stores the registered channel here, declaration in AS.cpp
-//extern uint8_t rcv_PEER_ID[];															// if message comes from a registered peer, rv class stores the peer id with cleaned peer channel here, declaration in AS.cpp
-//extern u_Message rcv;																	// union for the received string
-//extern u_Message snd;																	// union for the send string
+/*
+* @brief Global peer table definition. Must be declared in user space.
+*/
+extern const s_peerTbl peerTbl[];
+
+/*
+* @brief Global channel table definition. Must be declared in user space.
+*/
+extern const s_cnlTbl cnlTbl[];
+
 
 extern AS hm;
 

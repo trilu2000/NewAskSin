@@ -98,7 +98,7 @@ private:  //--------------------------------------------------------------------
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	cmSwitch(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB);	// constructor
+	cmSwitch(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB);	// constructor
 
 	uint8_t   active_tr11;																	// trigger 11 active
 	uint8_t   value_tr11;																	// trigger 11 set value

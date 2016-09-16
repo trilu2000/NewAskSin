@@ -111,6 +111,7 @@ void SN::poll(void) {
 }
 
 void SN::cleanUp(void) {
+	buf[0] = 0;
 	this->timeOut = 0;
 	this->retrCnt = 0;
 	this->maxRetr = 0;

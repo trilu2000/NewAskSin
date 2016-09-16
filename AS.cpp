@@ -36,6 +36,7 @@ waitTimer cnfTmr;																				// config timer functionality
 waitTimer pairTmr;																				// pair timer functionality
 
 EE ee;				///< eeprom module
+EE_PEER ee_peer;	///< eeprom module
 CC cc;				///< load communication module
 SN snd;				///< send module
 RV rcv;				///< receive module
@@ -497,7 +498,7 @@ inline void AS::sendSliceList(void) {
 	if (snd.active) return;																		// check if send function has a free slot, otherwise return
 
 	if        (stcSlice.peer) {			// INFO_PEER_LIST
-		cnt = ee.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, snd.buf+11);						// get the slice and the amount of bytes
+		cnt = ee_peer.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, snd.buf+11);						// get the slice and the amount of bytes
 		sendINFO_PEER_LIST(cnt);																// create the body
 		stcSlice.curSlc++;																		// increase slice counter
 		//dbg << "peer slc: " << _HEX(snd.buf,snd.buf[0]+1) << '\n';								// write to send buffer
@@ -531,7 +532,7 @@ inline void AS::sendPeerMsg(void) {
 		stcPeer.idx_max = peerTbl[stcPeer.channel].pMax;										// get amount of messages of peer channel
 		//stcPeer.idx_max = ee.getPeerSlots(stcPeer.channel);									// get amount of messages of peer channel
 
-		if (stcPeer.idx_max == ee.countFreeSlots(stcPeer.channel) ) {							// check if at least one peer exist in db, otherwise send to master and stop function
+		if (stcPeer.idx_max == ee_peer.countFreeSlots(stcPeer.channel) ) {						// check if at least one peer exist in db, otherwise send to master and stop function
 			preparePeerMessage(MAID, retries_max);
 			snd.MSG_CNT++;																		// increase the send message counter
 			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
@@ -573,7 +574,7 @@ inline void AS::sendPeerMsg(void) {
 	}
 
 	uint8_t tmp_peer[4];																		// get the respective peer address
-	ee.getPeerByIdx(stcPeer.channel, stcPeer.idx_cur, tmp_peer);
+	ee_peer.getPeerByIdx(stcPeer.channel, stcPeer.idx_cur, tmp_peer);
 	
 	#ifdef AS_DBG
 		dbg << "a: " << stcPeer.idx_cur << " m " << stcPeer.idx_max << '\n';
@@ -893,16 +894,16 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	if ((rcv.msg.mBody.MSG_TYP == AS_MESSAGE_SWITCH_EVENT) && (rcv.msg.mBody.MSG_LEN == 0x0F)) {
 		tmp = rcv.buf[13];																		// save byte13, because we will replace it
 		rcv.buf[13] = rcv.buf[14];																// copy the channel byte to the peer
-		cnl = ee.isPeerValid(rcv.buf+10);														// check with the right part of the string
+		cnl = ee_peer.isPeerValid(rcv.buf+10);													// check with the right part of the string
 		if (cnl) {
-			*pIdx = ee.getIdxByPeer(cnl, rcv.buf+10);											// get the index of the respective peer in the channel store
+			*pIdx = ee_peer.getIdxByPeer(cnl, rcv.buf+10);										// get the index of the respective peer in the channel store
 		}
 		rcv.buf[13] = tmp;																		// get it back
 
 	} else {
-		cnl = ee.isPeerValid(rcv.PEER_ID);
+		cnl = ee_peer.isPeerValid(rcv.PEER_ID);
 		if (cnl) {
-			*pIdx = ee.getIdxByPeer(cnl, rcv.PEER_ID);											// get the index of the respective peer in the channel store
+			*pIdx = ee_peer.getIdxByPeer(cnl, rcv.PEER_ID);										// get the index of the respective peer in the channel store
 		}
 	}
 
@@ -1063,7 +1064,7 @@ inline void AS::processMessageConfigSerialReq(void) {
  */
 inline void AS::processMessageConfigParamReq(void) {
 	if ((rcv.buf[16] == 0x03) || (rcv.buf[16] == 0x04)) {										// only list 3 and list 4 needs an peer id and idx
-		stcSlice.idx = ee.getIdxByPeer(rcv.msg.mBody.BY10, rcv.buf+12);							// get peer index
+		stcSlice.idx = ee_peer.getIdxByPeer(rcv.msg.mBody.BY10, rcv.buf+12);					// get peer index
 	} else {
 		stcSlice.idx = 0;																		// otherwise peer index is 0
 	}
@@ -1095,7 +1096,7 @@ inline void AS::processMessageConfigParamReq(void) {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
  */
 inline void AS::processMessageConfigPeerListReq(void) {
-	stcSlice.totSlc = ee.countPeerSlc(rcv.msg.mBody.BY10);										// how many slices are need
+	stcSlice.totSlc = ee_peer.countPeerSlc(rcv.msg.mBody.BY10);									// how many slices are need
 	stcSlice.mCnt = rcv.msg.mBody.MSG_CNT;														// remember the message count
 	memcpy(stcSlice.toID, rcv.msg.mBody.SND_ID, 3);
 	stcSlice.cnl = rcv.msg.mBody.BY10;															// send input to the send peer function
@@ -1159,7 +1160,7 @@ uint8_t AS::processMessageConfig() {
 inline uint8_t AS::configPeerAdd() {
 
 	// set the peers in the peerdatabase
-	uint8_t ackOk = ee.addPeers(rcv.msg.mBody.BY10, rcv.buf+12);									// send to addPeer function
+	uint8_t ackOk = ee_peer.addPeers(rcv.msg.mBody.BY10, rcv.buf+12);							// send to addPeer function
 
 	#ifdef AS_DBG																				// only if ee debug is set
 	dbg << F("configPeerAdd, cnl:") << _HEXB(rcv.buf[11]) << F(", data:") << _HEX(rcv.buf + 12, 5) << '\n';
@@ -1176,7 +1177,7 @@ inline uint8_t AS::configPeerAdd() {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01      1F A6 5C 06            05
  */
 inline uint8_t AS::configPeerRemove() {
-	return ee.remPeers(rcv.msg.mBody.BY10, rcv.buf+12);											// call the remPeer function
+	return ee_peer.remPeers(rcv.msg.mBody.BY10, rcv.buf+12);									// call the remPeer function
 }
 
 /**
@@ -1190,7 +1191,7 @@ inline void AS::configStart() {
 	cFlag.channel = rcv.msg.mBody.BY10;															// fill structure to remember where to write
 	cFlag.list = rcv.buf[16];
 	if ((cFlag.list == 3) || (cFlag.list == 4)) {
-		cFlag.idx_peer = ee.getIdxByPeer(rcv.msg.mBody.BY10, rcv.buf + 12);
+		cFlag.idx_peer = ee_peer.getIdxByPeer(rcv.msg.mBody.BY10, rcv.buf + 12);
 	} else {
 		cFlag.idx_peer = 0;
 	}

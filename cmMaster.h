@@ -18,11 +18,11 @@
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------
 
-	const EE::s_cnlTbl *cLT, *cPT;															// pointer to channel table for list0/1 and list3/4 information
-	const EE::s_peerTbl *pDB;																// pointer to the peer database table in register.h
+	const s_cnlTbl *cLT, *cPT;															// pointer to channel table for list0/1 and list3/4 information
+	const s_peerTbl *pDB;																	// pointer to the peer database table in register.h
 
 	uint8_t *chnl_list, *peer_list;															// array for list0/1 and list3/4
-	cmMaster(const EE::s_cnlTbl *ptr_cnlTbl, const EE::s_cnlTbl *ptr_peerTbl, const EE::s_peerTbl *ptr_peerDB);// constructor
+	cmMaster(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB);// constructor
 
 	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// pair set message
 	virtual void message_trigger3E(uint8_t msgLng, uint8_t msgCnt);							// switch message, also config test button in HM

@@ -13,11 +13,13 @@
 *        for the module/class you want to see debug messages
 */
 
+#define SER_DBG					// Main sketch debug function and messages
 //#define CC_DBG				// Communication class (CC1101.cpp)
 #define SN_DBG					// Send class (Send.cpp)
 #define RV_DBG					// Receive class (Receive.cpp)
 //#define RV_DBG_EX				// Further explanation of received messages (Receive.cpp)
 
+//#define EP_DBG				// EEprom peer class (EEprom_peer.cpp)
 //#define EE_DBG				// EEprom class (EEprom.cpp)
 
 //#define CM_DBG				// Channel Master module (cmMaster.cpp)
@@ -38,3 +40,6 @@
 #endif
 
 */
+
+
+

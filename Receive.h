@@ -11,7 +11,7 @@
 #define _RV_H
 
 #include "HAL.h"										// hardware abstraction layer
-#include "message_union.h"
+#include "AS_typedefs.h"
 
 
 class RV  {
