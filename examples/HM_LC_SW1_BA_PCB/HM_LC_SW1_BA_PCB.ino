@@ -41,6 +41,8 @@ void setup() {
 	// - user related -----------------------------------------
 	DBG( F("HMID: "), _HEX(HMID,3), F(", MAID: "), _HEX(MAID,3), F("\n\n") );					// some debug
 	
+	//dbg << "test: " << _HEX((uint8_t*)pcnlModule[0]->cListReg, 5) << '\n';
+	//DBG("test:", sizeof(pcnlModule) / sizeof(pcnlModule[0]), '\n'; );
 }
 
 void loop() {
@@ -73,13 +75,13 @@ void cmSwitch::switchSwitch(uint8_t channel, uint8_t status) {
 
 
 //- predefined functions --------------------------------------------------------------------------------------------------
+#ifdef SER_DBG
 /*
 * @brief Serial debug function to enter byte strings in the serial console.
 *        They are forwarded to the send/receive function and processed like
 *		 the cc1101 buffer
 */
 void serialEvent() {
-#ifdef SER_DBG
 
 	static uint8_t i = 0;																		// it is a high byte next time
 	while (Serial.available()) {
@@ -88,7 +90,8 @@ void serialEvent() {
 		if (inChar == 'x') {
 			dumpEEprom();
 			return;
-		} else if (inChar == 's') {
+		}
+		else if (inChar == 's') {
 			snd.active = 1;
 			i = 0;
 			return;
@@ -104,15 +107,61 @@ void serialEvent() {
 
 		i++;
 	}
-#endif
 }
 
 void dumpEEprom() {
-#ifdef SER_DBG
-	DBG("hab dich\n");
-	// print eeprom content, cnl by cnl
+
+	DBG(F("\nEEPROM content\n\n"));
+
 	for (uint8_t i = 0; i <= cnl_max; i++) {
+		cmMaster *pCM = pcnlModule[i];															// shorthand to channel module
+
+		printList( &pCM->lstC, &pCM->peer );
+		if (!i) continue;
+		printList( &pCM->lstP, &pCM->peer);
+	}
+}
+
+void printList( s_list_table *lstP, s_peer_table *peer ) {
+	uint8_t *x = new uint8_t[lstP->len];
+	uint8_t *p = new uint8_t[4];
+	uint16_t pAddr;
+
+	DBG(F("cnl:"), _HEXB(lstP->cnl), F(", lst:"), _HEXB(lstP->lst), F(", sLen:"), _HEXB(lstP->len), F(", pAddr:"), lstP->ee_addr, '\n');
+
+	memcpy_P(x, lstP->reg , lstP->len );
+	DBG(F("register:  "), _HEX(x, lstP->len), '\n');
+
+	memcpy_P(x, lstP->def, lstP->len );
+	DBG(F("default:   "), _HEX(x, lstP->len), '\n');
+
+	DBG(F("cmModul:   "), _HEX(lstP->val, lstP->len), '\n');
+
+	if ((lstP->lst == 3) || (lstP->lst == 4)) {
+		DBG('\n');
+
+		for (uint8_t i = 0; i < peer->max; i++) {
+
+			// process peer
+			pAddr = peer->ee_addr + (i * 4);
+			getEEPromBlock(pAddr, 4, p);
+			DBG(F("peer   "), _HEXB(i), F(": "), _HEX(p, 4), F(" ("), pAddr, F(")\n"));
+
+			// process list
+			pAddr = lstP->ee_addr + (i * lstP->len);
+			getEEPromBlock(pAddr, lstP->len, x);
+			DBG(F("eeprom "), _HEXB(i), F(": "), _HEX(x, lstP->len), F(" ("), pAddr, F(")\n"));
+		}
 
 	}
-#endif
+	else {
+		getEEPromBlock(lstP->ee_addr, lstP->len, x);
+		DBG(F("eeprom:    "), _HEX(x, lstP->len), '\n');
+
+	}
+	DBG('\n');
+
 }
+
+
+#endif

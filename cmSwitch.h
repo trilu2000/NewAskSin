@@ -12,8 +12,14 @@
 
 #include "cmMaster.h"
 
-
 // default settings are defined in cmSwitch.cpp - updatePeerDefaults
+
+
+const uint8_t cmSwitch_ChnlReg[] PROGMEM = { 0x08, };
+const uint8_t cmSwitch_ChnlDef[] PROGMEM = { 0x00, };
+
+const uint8_t cmSwitch_PeerReg[] PROGMEM = { 0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c, };
+const uint8_t cmSwitch_PeerDef[] PROGMEM = { 0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x01,0x44,0x44,0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x21,0x44,0x44, };
 
 #define NOT_USED 255
 enum ACTION { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
@@ -95,10 +101,9 @@ private:  //--------------------------------------------------------------------
 	static void initSwitch(uint8_t channel);												// functions in user sketch needed
 	static void switchSwitch(uint8_t channel, uint8_t status);
 
-
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	cmSwitch(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB);	// constructor
+	cmSwitch(const uint8_t peer_max);														// constructor
 
 	uint8_t   active_tr11;																	// trigger 11 active
 	uint8_t   value_tr11;																	// trigger 11 set value

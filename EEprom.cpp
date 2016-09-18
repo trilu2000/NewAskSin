@@ -42,24 +42,18 @@ const cmMaster *pCM;
 * The specified channel, list and index are used to identify the eeprom section to read from
 * (see @ref section_eeprom_memory_layout).
 */
-uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
+uint8_t  EE::getList(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t *buf) {
+	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
+	s_list_table *list;																	// short hand to the appropiate list
 
-	const s_cnlTbl *cnlTblPtr = getRegListStruct(cnl, lst);
-	return getList(cnlTblPtr, idx, buf);
-}
-uint8_t  EE::getList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf) {
+	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
+	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
+	else return 0;																		// if not, return
 
-	if (!cnlTblPtr) return 0;
+	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);							// calculate the appropiate address
+	getEEPromBlock(pAddr, list->len, buf);												// get the eeprom content
 
-	if (idx > peerTbl[cnlTblPtr->cnl].pMax) return 0;									// index out of range
-
-	uint16_t pAddr = cnlTblPtr->pAddr + (cnlTblPtr->sLen * idx);						// calculate the address
-	getEEPromBlock(pAddr, cnlTblPtr->sLen, buf);										// get the eeprom content
-
-	#ifdef EE_DBG																		// only if ee debug is set
-	//dbg << F("setListByTblIdx, cnl:") << cnlTbl[cnlTblIdx].cnl << F(", lst:") << cnlTbl[cnlTblIdx].lst << F(", idx:") << idx << F(", tblRow:") << cnlTblIdx << F(", addr:") << pAddr << '\n';
-	//dbg << F("data:") << _HEX(buf, cnlTbl[cnlTblIdx].sLen) << '\n';
-	#endif
+	DBG( F("EE:getList cnl:"), list->cnl, F(", lst:"), list->lst, F(", idx:"), idx, F(", addr:"), pAddr, F(", data:"), _HEX(buf, list->len), '\n' );
 	return 1;																			// report everything ok
 }
 /**
@@ -116,31 +110,18 @@ uint8_t  EE::getList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf) {
  *
  * @see setListArray(), firstTimeStart()
  */
-uint8_t  EE::setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf) {
+uint8_t  EE::setList(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t *buf) {
+	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
+	s_list_table *list;																	// short hand to the appropiate list
 
-	const s_cnlTbl *cnlTblPtr = getRegListStruct(cnl, lst);
-	return setList(cnlTblPtr, idx, buf);
+	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
+	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
+	else return 0;																		// if not, return
 
-	//uint8_t xI = getRegListIdx(cnl, lst);												// get the respective line in cnlTbl
-	//dbg << F("setList, cnl:") << cnl << F(", lst:") << lst << F(", idx:") << idx << F(", cnlTbl:") << xI << '\n';
-	//return setList(xI, idx, buf);												// call setlist shortend
-}
-uint8_t  EE::setList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf) {
+	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);							// calculate the appropiate address
+	setEEPromBlock(pAddr, list->len, buf);												// get the eeprom content
 
-	if (!cnlTblPtr) return 0;
-	//dbg << F("setListByTblIdx, cnlTblIdx:") << cnlTblIdx << F(", idx:") << idx << '\n';
-
-	if (idx > peerTbl[cnlTblPtr->cnl ].pMax) return 0;									// index out of range
-
-	uint16_t pAddr = cnlTblPtr->pAddr + (cnlTblPtr->sLen * idx);						// calculate the address
-	setEEPromBlock(pAddr, cnlTblPtr->sLen, buf);										// set the eeprom content
-	//uint16_t pAddr = cnlTbl[cnlTblIdx].pAddr + (cnlTbl[cnlTblIdx].sLen * idx);			// calculate the address
-	//setEEPromBlock(pAddr, cnlTbl[cnlTblIdx].sLen, buf);									// set the eeprom content
-
-	#ifdef EE_DBG																		// only if ee debug is set
-	//dbg << F("setListByTblIdx, cnl:") << cnlTbl[cnlTblIdx].cnl << F(", lst:") << cnlTbl[cnlTblIdx].lst << F(", idx:") << idx << F(", tblRow:") << cnlTblIdx << F(", addr:") << pAddr << '\n';
-	//dbg << F("data:") << _HEX(buf, cnlTbl[cnlTblIdx].sLen) << '\n';
-	#endif
+	DBG(F("EE:setList cnl:"), list->cnl, F(", lst:"), list->lst, F(", idx:"), idx, F(", addr:"), pAddr, F(", data:"), _HEX(buf, list->len), '\n');
 	return 1;																			// report everything ok
 }
 
@@ -197,25 +178,22 @@ uint8_t  EE::setList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf) {
 *
 * @todo Add references to related methods
 */
-uint8_t  EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf) {
+uint8_t  EE::setListArray(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t len, uint8_t *buf) {
+	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
+	s_list_table *list;																	// short hand to the appropiate list
 
-	uint8_t xI = getRegListIdx(cnl, lst);												// get the respective line in cnlTbl
-	//dbg << F("setListArray, cnl:") << cnl << F(", lst:") << lst << F(", idx:") << idx << F(", cnlTbl:") << xI << '\n';
-	return setListArray(xI, idx, len, buf);												// call setlist shortend
-}
-uint8_t  EE::setListArray(uint8_t cnlTblIdx, uint8_t idx, uint8_t len, uint8_t *buf) {
+	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
+	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
+	else return 0;																		// if not, return
 
-	//dbg << F("setListArray, cnlTblIdx:") << cnlTblIdx << F(", idx:") << idx << '\n';
-
-	if (idx > peerTbl[ cnlTbl[cnlTblIdx].cnl ].pMax) return 0;							// index out of range
-	if (cnlTblIdx >= cnl_tbl_max) return 0;												// respective line not found
-
-	uint16_t eIdx = cnlTbl[cnlTblIdx].pAddr + (cnlTbl[cnlTblIdx].sLen * idx);
+	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);							// calculate the appropiate address
 
 	for (uint8_t i = 0; i < len; i += 2) {												// step through the input array
-		for (uint8_t j = 0; j < cnlTbl[cnlTblIdx].sLen; j++) {							// search for the matching address in cnlAddr
-			if (_PGM_BYTE( cnlAddr[ cnlTbl[cnlTblIdx].sIdx + j ]) == buf[i] ) {			// if byte found
-				setEEPromBlock(eIdx + j, 1, (void*)&buf[i + 1]);						// add the eeprom content
+
+		for (uint8_t j = 0; j < list->len; j++) {										// search for the matching address in cnlAddr
+
+			if ( _PGM_BYTE( list->reg[j]) == buf[i] ) {									// if byte found
+				setEEPromBlock( pAddr + j, 1, (void*)&buf[i + 1]);						// add the eeprom content
 				// dbg << "eI:" << _HEXB(eIdx + j) << ", " << _HEXB(buf[i+1]) << '\n';
 				break;																	// go to the next i
 			}
@@ -234,48 +212,36 @@ uint8_t  EE::setListArray(uint8_t cnlTblIdx, uint8_t idx, uint8_t len, uint8_t *
  * TODO: maybe we return 0xFF if value not found?
  * @return the value or 0 if not found
  */
-uint8_t  EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr) {
-	uint8_t retByte;
-	//uint8_t sIdx = getRegListIdx(cnl, lst);												// the register list index
+uint8_t  EE::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t addr) {
+	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
+	s_list_table *list;																	// short hand to the appropiate list
+	uint8_t retByte = 0;																// set the return byte to default
 
-	//if (sIdx > cnl_tbl_max) {
-	//	#ifdef EE_DBG
-	//	dbg << F("EE: sIdx ") << _HEXB(sIdx) << F (" not found\n");
-	//	#endif
-	//	return 0x00;																	// given list not found
-	//}
+	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
+	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
+	else return retByte;																		// if not, return
 
-	//if (!checkIndex(cnl, lst, idx)) {
-	//	#ifdef EE_DBG
-	//	dbg << F("EE: idx ") << _HEXB(idx) << F (" out of range\n");
-	//	#endif
-	//	return 0x00;																	// check if peer index is in range
-	//}
+	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);							// calculate the appropiate address
 
-	if (idx > peerTbl[cnl].pMax) return 0;												// peerdb index out of range
-	const s_cnlTbl *cnlTblPtr = getRegListStruct(cnl, lst);
-	if (!cnlTblPtr) return 0;
 
-	uint16_t eIdx = cnlTblPtr->pAddr + (cnlTblPtr->sLen * idx);
-	//uint16_t eIdx = cnlTbl[sIdx].pAddr + (cnlTbl[sIdx].sLen * idx);
 
-	for (uint8_t i = 0; i < cnlTblPtr->sLen; i++) {										// search for the right address in cnlAddr
-	//for (uint8_t i = 0; i < cnlTbl[sIdx].sLen; i++) {									// search for the right address in cnlAddr
-		if (_PGM_BYTE(cnlAddr[cnlTblPtr->sIdx] + i) == addr) {							// if byte fits
-	//	if (_PGM_BYTE(cnlAddr[cnlTbl[sIdx].sIdx] + i) == addr) {						// if byte fits
-			getEEPromBlock(eIdx + i, 1, (void*)&retByte);								// get the respective byte from eeprom
-			return retByte;																// and exit
+	for (uint8_t i = 0; i < list->len; i++) {											// step through the register bytes and search for the right address
+		if (_PGM_BYTE( list->reg[i] ) == addr ) {										// compare the bytes till we found the right one
+			getEEPromBlock(pAddr + i, 1, (void*)&retByte);								// get the respective byte from eeprom
+			break;																		// and exit the for counter
 		}
 	}
 
-	#ifdef EE_DBG
-	dbg << F("EE: address ") << _HEXB(addr) << (" not fount in list ") << _HEXB(lst) << (" for channel ") << _HEXB(cnl) << F("\n");
-	#endif
+	DBG( F("EE:getRegAddr cnl:"), list->cnl, F(", lst:"), list->lst, F(", idx:"), peer_idx, F(", addr:"), pAddr, F(", reg:"), addr, F(", ret:"), retByte, '\n' );
 
-	return 0;
+	return retByte;
 }
 
 
+template<typename T, size_t SIZE>
+size_t getSize(T(&)[SIZE]) {
+	return SIZE;
+}
 
 // private:		//---------------------------------------------------------------------------------------------------------
 EE::EE() {
@@ -293,13 +259,16 @@ void     EE::init(void) {
 	*        change in the cnlTbl some addresses are changed and we have to rewrite the eeprom content.
 	*/
 	uint16_t eepromCRC, flashCRC;														// define two variables to compare the CRC
-	uint8_t  *p = (uint8_t*)cnlTbl;														// cast the cnlTbl to char
+//	uint8_t  *p = (uint8_t*)cnlTbl;														// cast the cnlTbl to char
 
-	for (uint8_t i = 0; i < ( cnl_tbl_max * sizeof(s_cnlTbl)); i++) {					// step through all bytes of the channel table
-		flashCRC = crc16(flashCRC, p[i]);												// calculate the 16bit checksum for the table
-	}
-	getEEPromBlock(0,2,(void*)&eepromCRC);												// get magic byte from eeprom
-	DBG( F("EE:crc, flash:"), flashCRC, F(", eeprom: "), eepromCRC, '\n');				// some debug
+	cmMaster *pCM = (cmMaster*)pcnlModule;
+	dbg << "test: " << sizeof(&pCM) << '\n';
+
+	//	for (uint8_t i = 0; i < ( cnl_tbl_max * sizeof(s_cnlTbl)); i++) {					// step through all bytes of the channel table
+//		flashCRC = crc16(flashCRC, p[i]);												// calculate the 16bit checksum for the table
+//	}
+//	getEEPromBlock(0,2,(void*)&eepromCRC);												// get magic byte from eeprom
+//	DBG( F("EE:crc, flash:"), flashCRC, F(", eeprom: "), eepromCRC, '\n');				// some debug
 
 	if(flashCRC != eepromCRC) {															// first time detected, format eeprom, load defaults and write magicByte
 		DBG( F("writing new magic byte\n") );											// some debug
@@ -313,9 +282,10 @@ void     EE::init(void) {
 		*/
 		for (uint8_t i = 0; i <= cnl_max; i++) {										// write the defaults in respective list0/1
 			cmMaster *pCM = pcnlModule[i];												// short hand to respective channel master	
-			memcpy_P( pCM->chnl_list, cnlDefs + pCM->cLT->sIdx, pCM->cLT->sLen );		// copy from progmem into array
-			setList( pCM->cLT, 0, pCM->chnl_list );										// write it into the eeprom
-			DBG(F("EE:write defaults, cnl:"), pCM->cLT->cnl, F(", lst:"), pCM->cLT->lst, F(", sIdx:"), pCM->cLT->sIdx, F(", sLen:"), pCM->cLT->sLen, F(", data:"), _HEX( pCM->chnl_list, pCM->cLT->sLen), '\n');
+			memcpy_P( pCM->lstC.val, pCM->lstC.def, pCM->lstC.len );					// copy from progmem into array
+			setEEPromBlock(pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val);			// write it into the eeprom
+			//setList( pCM->cLT, 0, pCM->lstC.val);										// write it into the eeprom
+			DBG(F("EE:write defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", sLen:"), pCM->lstC.len, F(", data:"), _HEX( pCM->chnl_list, pCM->lstC.len), '\n');
 		}
 
 		/*
@@ -331,17 +301,32 @@ void     EE::init(void) {
 
 
 	/*
-	* @brief Read the defaults from the respective slot in the eeprom and store it in the channel module space.
+	* @brief Prepare defaults and read the defaults from the eeprom in the channel module space. 
 	*        We have to read only list0 or list 1 content, while list 3 or list 4 is read while received a peer message.
 	*        After loading the defaults we inform the modules of this by calling the info_config_change function.
 	*/
+	uint16_t pAddr = 0x20;
 	for (uint8_t i = 0; i <= cnl_max; i++) {											// step through all channels
 		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
-		getList(pCM->cLT, 0, pCM->chnl_list );											// read the defaults in respective list0/1
+
+		pCM->lstC.cnl = i;																// write the channel number in the respective list structures
+		pCM->lstP.cnl = i;
+
+		pCM->lstC.ee_addr = pAddr;														// write the eeprom address in the channel list
+		pAddr += pCM->lstC.len;															// create new address by adding the length of the list before
+		pCM->lstP.ee_addr = pAddr;														// write the eeprom address in the peer list
+		pAddr += ( pCM->lstP.len * pCM->peer.max );										// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
+
+		getEEPromBlock(pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val);				// read the defaults in respective list0/1
 		pCM->info_config_change();														// inform the channel modules
 		DBG(F("EE:read defaults, cnl:"), pCM->cLT->cnl, F(", lst:"), pCM->cLT->lst, F(", sIdx:"), pCM->cLT->sIdx, F(", sLen:"), pCM->cLT->sLen, F(", data:"), _HEX(pCM->chnl_list, pCM->cLT->sLen), '\n');
 	}
 
+	for (uint8_t i = 0; i <= cnl_max; i++) {											// step through all channels
+		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+		pCM->peer.ee_addr = pAddr;														// write eeprom address into the peer table
+		pAddr += pCM->peer.max * 4;														// create nwe eeprom start address depending on the space for max peers are used
+	}
 
 	getEEPromBlock(15, 16, HMKEY);														// get HMKEY from EEprom
 	getEEPromBlock(14, 1, hmKeyIndex);													// get hmKeyIndex from EEprom
@@ -463,38 +448,38 @@ void     EE::testModul(void) {															// prints register.h content on con
 }
 
 
-// peer functions
-
 // register functions
 uint8_t  EE::countRegListSlc(uint8_t cnl, uint8_t lst) {
+	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
+	s_list_table *list;																	// short hand to the appropiate list
+	uint8_t needed_slice = 0;															// set the return value to 0
 
-	if (cnl > cnl_max) return 0;														// channel not valid
-	s_cnlTbl *pCnlTbl = getRegListStruct(cnl, lst);									// get the corresponding line in cnlTbl
-	if (!pCnlTbl) return 0;																// respective line in cnlTbl not found
+	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
+	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
+	else return needed_slice;															// if not, return
 
-	int16_t lTmp = pCnlTbl->sLen * 2;													// get the slice len and multiply by 2 because we need regs and content
+	int16_t total_bytes = list->len * 2;												// get the slice len and multiply by 2 because we need regs and content
 
-	uint8_t bMax = 0;
-	while (lTmp > 0) {																	// loop until lTmp gets 0
-		lTmp = lTmp - maxMsgLen;														// reduce by max message len
-		bMax++;																			// count the loops
+	while (total_bytes > 0) {															// loop until total_bytes gets 0
+		total_bytes -= maxMsgLen;														// reduce by max message len
+		needed_slice++;																	// count the slices
 	}
-	return bMax+1;																		// return amount of slices
+	return needed_slice +1;																// return amount of slices
 }
+
 uint8_t  EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf) {
+	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
+	//s_peer_table = &pcnlModule[cnl]->peer;												// short hand to the peer information
+	s_list_table *list;																	// short hand to the appropiate list
 
-	if (cnl > cnl_max) return 0;														// channel not valid
-
-	s_peerTbl *pPeerTbl = (s_peerTbl*)&peerTbl[cnl];									// get the corresponding line in peerTbl
-	if (idx > pPeerTbl->pMax) return 0;													// peerdb index out of range
-
-	s_cnlTbl *pCnlTbl = getRegListStruct(cnl, lst);									// get the corresponding line in cnlTbl
-	if (!pCnlTbl) return 0;																// respective line in cnlTbl not found
+	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
+	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
+	else return 0;																		// if not, return
 
 	uint8_t slcOffset = slc * maxMsgLen;												// calculate the starting offset
 	slcOffset /= 2;																		// divided by to because of mixed message, regs + eeprom content
 
-	int8_t remByte = pCnlTbl->sLen - slcOffset;											// calculate the remaining bytes
+	int8_t remByte = list->len - slcOffset;												// calculate the remaining bytes
 	if (remByte <= 0) {																	// check if we are in the last slice and add terminating zeros
 		*(uint16_t*)buf = 0;															// add them
 		//dbg << slc << ' ' << slcOffset << ' ' << pCnlTbl->sLen << '\n';
@@ -502,13 +487,12 @@ uint8_t  EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, u
 	}
 	if (remByte >= (maxMsgLen/2)) remByte = (maxMsgLen/2);								// shorten remaining bytes if necessary
 
-	uint8_t sIdx  = pCnlTbl->sIdx;
-	uint16_t eIdx = pCnlTbl->pAddr + (pCnlTbl->sLen * idx);
+	uint16_t pAddr = list->ee_addr + (list->len * idx);
 	//dbg << slc << ", sO:" << slcOffset << ", rB:" << remByte << ", sIdx:" << pHexB(sIdx) << ", eIdx:" << pHexB(eIdx) << '\n';
 
 	for (uint8_t i = 0; i < remByte; i++) {												// count through the remaining bytes
-		*buf++ = _PGM_BYTE( cnlAddr[i + sIdx + slcOffset]);								// add the register address
-		getEEPromBlock(i+eIdx+slcOffset, 1, buf++);										// add the eeprom content
+		*buf++ = _PGM_BYTE( list->reg[i + slcOffset]);									// add the register address
+		getEEPromBlock(i + pAddr + slcOffset, 1, buf++);								// add the eeprom content
 		//dbg << (i+eIdx+slcOffset) << '\n';
 	}
 
@@ -517,31 +501,6 @@ uint8_t  EE::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, u
 
 
 
-/**
-* @brief Searches the appropiate line in cnlTbl by comparing cnl and lst
-*        parameter and returns the array index or 0xff if nothing found
-*
-*/
-uint8_t  EE::getRegListIdx(uint8_t cnl, uint8_t lst) {
-	for (uint8_t i = 0; i < cnl_tbl_max; i++) {											// steps through the cnlTbl
-		s_cnlTbl *pCnlTbl = (s_cnlTbl*)&cnlTbl[i];										// get the corresponding line in cnlTbl
-		if (pCnlTbl->cnl != cnl) continue;												// next if channel not fit
-		if (pCnlTbl->lst != lst) continue;												// next if list not fit
-		return i;
-	}
-	return 0xff;
-}
-s_cnlTbl* EE::getRegListStruct(uint8_t cnl, uint8_t lst) {
-	for (uint8_t i = 0; i < cnl_tbl_max; i++) {											// steps through the cnlTbl
-		s_cnlTbl *pCnlTbl = (s_cnlTbl*)&cnlTbl[i];										// get the corresponding line in cnlTbl
-		if (pCnlTbl->cnl != cnl) continue;												// next if channel not fit
-		if (pCnlTbl->lst != lst) continue;												// next if list not fit
-		dbg << "ls:" << i << '\n';
-		return pCnlTbl;																	// if we are here we found a line which fits
-		//return (s_cnlTbl*)&cnlTbl[i];													// if we are here we found a line which fits
-	}
-	return NULL;																		// respective line not found
-}
 
 
 //- some helpers ----------------------------------------------------------------------------------------------------------

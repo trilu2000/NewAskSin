@@ -18,11 +18,27 @@
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------
 
-	const s_cnlTbl *cLT, *cPT;															// pointer to channel table for list0/1 and list3/4 information
-	const s_peerTbl *pDB;																	// pointer to the peer database table in register.h
+	/*
+	* @brief Every channel has two lists, the first list holds the configuration which is required to drive the channel,
+	*        the second list is related to peer messages and holds all information which are required to drive the functionality
+	*        of the channel in combination with peer devices.
+	*        Therefore we have in every channel two lists - lstC and lstP organized in structs
+	*/
+	s_list_table lstC, lstP;
 
-	uint8_t *chnl_list, *peer_list;															// array for list0/1 and list3/4
-	cmMaster(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB);// constructor
+	/*
+	* @brief Peer Device Table Entry
+	*
+	* This structure is used to specify the number of possible peers per channel and
+	* assign corresponding EEprom memory sections where peer information is to be stored.
+	*
+	* For each channel and peered device, 4 bytes are written to EEprom memory denoting the
+	* peer device HMID (3 bytes) and peer device channel (1 byte). Consequently, the following
+	* definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory.
+	*/
+	s_peer_table peer;
+
+	cmMaster(const uint8_t peer_max);														// constructor
 
 	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// pair set message
 	virtual void message_trigger3E(uint8_t msgLng, uint8_t msgCnt);							// switch message, also config test button in HM
@@ -41,7 +57,8 @@ public://-----------------------------------------------------------------------
 };
 
 extern cmMaster *pcnlModule[];
-
+extern const uint8_t cnl_max;
+extern const uint16_t cm_size;
 
 
 #endif

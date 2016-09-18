@@ -12,17 +12,33 @@
 
 #include "cmMaster.h"
 
+
+/**
+* @brief Register definitions
+* The values are adresses in relation to the start adress defines in cnlTbl
+* Register values can found in related Device-XML-File.
+*
+* Spechial register list 0: 0x0A, 0x0B, 0x0C
+* Spechial register list 1: 0x08
+*/
+const uint8_t cmMaintenance_PeerReg[] PROGMEM = { 0 };
+const uint8_t cmMaintenance_PeerDef[] PROGMEM = { 0 };
+
+
 class cmMaintenance : public cmMaster {
-private:  //---------------------------------------------------------------------------------------------------------------
-
 public:  //----------------------------------------------------------------------------------------------------------------
-
-	cmMaintenance(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB);// constructor
+	
+	cmMaintenance(const uint8_t peer_max);													// constructor
 
 	virtual void info_config_change(void);													// list1 on registered channel had changed
 	//virtual void poll(void);																// poll function, driven by HM loop
 
 
 };
+
+extern const uint8_t cmMaintenance_ChnlReg[];
+extern const uint8_t cmMaintenance_ChnlDef[];
+extern const uint8_t cmMaintenance_ChnlLen;
+
 
 #endif

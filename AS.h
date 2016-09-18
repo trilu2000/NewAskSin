@@ -220,27 +220,11 @@ public:		//---------------------------------------------------------------------
 };
 
 extern const uint8_t devIdnt[];
-extern const uint8_t cnlAddr[];
-/**
-* @brief Array with channel defaults. Index and length are hold in the channel table array.
-*        Must be declared in user space.
-*/
-extern const uint8_t cnlDefs[];
 extern const uint8_t cnl_max;
-extern const uint8_t cnl_tbl_max;
 
 
-/*
-* @brief Global peer table definition. Must be declared in user space.
-*/
-extern const s_peerTbl peerTbl[];
 
-/*
-* @brief Global channel table definition. Must be declared in user space.
-*/
-extern const s_cnlTbl cnlTbl[];
-
-
+//extern cmMaster *pcnlModule[];
 extern AS hm;
 
 uint32_t byteTimeCvt(uint8_t tTime);

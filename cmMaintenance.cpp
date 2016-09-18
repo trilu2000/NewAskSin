@@ -26,7 +26,17 @@
 */
 #include "cmMaintenance.h"
 
-cmMaintenance::cmMaintenance(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB) : cmMaster(ptr_cnlTbl, ptr_peerTbl, ptr_peerDB) {
+cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
+	lstC.lst = 0;
+	lstC.reg = (uint8_t*)cmMaintenance_ChnlReg;
+	lstC.def = (uint8_t*)cmMaintenance_ChnlDef;
+	lstC.len = cmMaintenance_ChnlLen;
+
+	lstP.lst = 0;
+	lstP.reg = (uint8_t*)cmMaintenance_PeerReg;
+	lstP.def = (uint8_t*)cmMaintenance_PeerDef;
+	lstP.len = sizeof(cmMaintenance_PeerReg);
+
 	DBG(F("cmMaint, cnl: "), cT->cnl, '\n');
 }
 
@@ -37,8 +47,8 @@ cmMaintenance::cmMaintenance(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_pee
 */
 void cmMaintenance::info_config_change(void) {
 	// get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it
-	for (uint8_t i = 0; i < cLT->sLen; i++) {
-		if (_PGM_BYTE(cnlAddr[i + cLT->sIdx]) == 0x0a) MAID = &chnl_list[i];
+	for (uint8_t i = 0; i < lstC.len; i++) {
+		if (_PGM_BYTE(lstC.reg[i]) == 0x0a) MAID = &lstC.val[i];
 	}
 
 	DBG( F("cmMaint, config_change - MAID:"), _HEX(MAID,3), '\n' );

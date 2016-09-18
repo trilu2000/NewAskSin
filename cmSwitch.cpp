@@ -26,15 +26,27 @@
 */
 #include "cmSwitch.h"
 
-cmSwitch::cmSwitch(const s_cnlTbl *ptr_cnlTbl, const s_cnlTbl *ptr_peerTbl, const s_peerTbl *ptr_peerDB) : cmMaster(ptr_cnlTbl, ptr_peerTbl, ptr_peerDB) {
+cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 
-	l1 = (s_l1*)&chnl_list;																	// set list structures to something useful
-	l3 = (s_l3*)&peer_list;																	// reduced l3, description in cmSwitch.h at struct declaration
-	l3F = (s_lstPeer*)&peer_list;
+	lstC.lst = 1;
+	lstC.reg = (uint8_t*)cmSwitch_ChnlReg;
+	lstC.def = (uint8_t*)cmSwitch_ChnlDef;
+	lstC.len = sizeof(cmSwitch_ChnlReg);
+
+	lstP.lst = 3;
+	lstP.reg = (uint8_t*)cmSwitch_PeerReg;
+	lstP.def = (uint8_t*)cmSwitch_PeerDef;
+	lstP.len = sizeof(cmSwitch_PeerReg);
+
+	l1 = (s_l1*)&lstC.val;																	// set list structures to something useful
+	l3 = (s_l3*)&lstP.val;																	// reduced l3, description in cmSwitch.h at struct declaration
+	l3F = (s_lstPeer*)&lstP.val;
 
 	l3->ACTION_TYPE = ACTION(INACTIVE);														// and secure that no action will happened in polling function
 
-	initSwitch(cLT->cnl);																	// call external init function to set the output pins
+	//cmMaster::cListReg = cmSwitch::cxListReg;
+
+	initSwitch(lstC.cnl);																	// call external init function to set the output pins
 
 	modStat = setStat = 0;																	// output to 0
 	curStat = JT(OFF);																		// initialize the jump table value
@@ -103,7 +115,7 @@ void cmSwitch::message_trigger3E(uint8_t msgLng, uint8_t msgCnt) {
 void cmSwitch::message_trigger40(uint8_t msgLng, uint8_t msgCnt) {
 	//dbg << "x: " << _HEX(peer_list,22) << '\n';
 
-	l3 = (msgLng) ? (s_l3*)peer_list + 11 : (s_l3*)peer_list;								// set short or long struct portion
+	l3 = (msgLng) ? (s_l3*)lstP.val + 11 : (s_l3*)lstP.val;									// set short or long struct portion
 
 	delayTmr.set(0);																		// also delay timer is not needed any more
 	active_tr11 = 0;																		// stop any tr11 processing
@@ -145,7 +157,7 @@ void cmSwitch::message_trigger40(uint8_t msgLng, uint8_t msgCnt) {
 */
 void cmSwitch::message_trigger41(uint8_t msgLng, uint8_t msgCnt, uint8_t msgVal) {
 
-	l3 = (msgLng)?(s_l3*)peer_list +11 :(s_l3*)peer_list;									// set pointer to the right part of the list3, short or long
+	l3 = (msgLng)?(s_l3*)lstP.val +11 :(s_l3*)lstP.val;										// set pointer to the right part of the list3, short or long
 
 	// set condition table in conjunction of the current jump table status
 	uint8_t ctTbl;																			// to select the condition depending on current device status
@@ -182,7 +194,7 @@ void cmSwitch::adjustStatus(void) {
 	//dbg << "m" << modStat << " s" << setStat << '\n';
 
 	setStat = modStat;																		// follow action
-	switchSwitch(cLT->cnl, setStat);														// calling the external function to make it happen
+	switchSwitch(lstC.cnl, setStat);														// calling the external function to make it happen
 
 	msgTmr.set(0);																			// send status was set before, 0 the timer to send the status
 }
@@ -199,8 +211,8 @@ void cmSwitch::sendStatus(void) {
 	if (!delayTmr.done() )       modDUL |= 0x40;
 	
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      ( sendStat == INFO(ACK_STATUS) )      hm.sendACK_STATUS(cLT->cnl, modStat, modDUL);	
-	else if ( sendStat == INFO(ACTUATOR_STATUS) ) hm.sendINFO_ACTUATOR_STATUS(cLT->cnl, modStat, modDUL);
+	if      ( sendStat == INFO(ACK_STATUS) )      hm.sendACK_STATUS(lstC.cnl, modStat, modDUL);	
+	else if ( sendStat == INFO(ACTUATOR_STATUS) ) hm.sendINFO_ACTUATOR_STATUS(lstC.cnl, modStat, modDUL);
 
 	// check if it is a stable status, otherwise schedule next info message
 	if (modDUL)  {																			// status is currently changing
@@ -334,16 +346,16 @@ void cmSwitch::request_peer_defaults(uint8_t pIdx, uint8_t pCnl1, uint8_t pCnl2)
 	if (( pCnl1 ) && ( pCnl2 )) {	// dual peer add
 
 		if (pIdx % 2) {				// odd (1,3,5..) means OFF
-			peer_list[9] = peer_list[20] = 0x64;														// set some byte
-			peer_list[10] = peer_list[21] = 0x66;
+			lstP.val[9] = lstP.val[20] = 0x64;														// set some byte
+			lstP.val[10] = lstP.val[21] = 0x66;
 		} else {					// even (2,4,6..) means ON
-			peer_list[9] = peer_list[20] = 0x13;														// set some byte
-			peer_list[10] = peer_list[21] = 0x33;
+			lstP.val[9] = lstP.val[20] = 0x13;														// set some byte
+			lstP.val[10] = lstP.val[21] = 0x33;
 		}
 
 	} else  {						// toggle peer channel
-		peer_list[9]  = peer_list[20] = 0x14;															// set some byte
-		peer_list[10] = peer_list[21] = 0x63;
+		lstP.val[9]  = lstP.val[20] = 0x14;															// set some byte
+		lstP.val[10] = lstP.val[21] = 0x63;
 	} 
 
 	DBG( F("updatePeerDefaults: pCnl1: "), _HEXB(pCnl1), F(", pCnl2: "), _HEXB(pCnl2), F(", cur_pCnl: "), _HEXB(pIdx), '\n' );

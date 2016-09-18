@@ -45,6 +45,8 @@ CB btn;				///< config button
 BT bat;				///< battery status
 PW pom;				///< power management
 
+
+
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS()  {
 	dbg << F("AS.\n");																			// ...and some information
@@ -521,6 +523,7 @@ inline void AS::sendSliceList(void) {
 }
 
 inline void AS::sendPeerMsg(void) {
+	cmMaster *pCM = pcnlModule[stcPeer.channel];
 	uint8_t retries_max;
 
 	retries_max = (stcPeer.bidi) ? 3 : 1;
@@ -529,8 +532,7 @@ inline void AS::sendPeerMsg(void) {
 	
 	// first run, prepare amount of slots
 	if (!stcPeer.idx_max) {
-		stcPeer.idx_max = peerTbl[stcPeer.channel].pMax;										// get amount of messages of peer channel
-		//stcPeer.idx_max = ee.getPeerSlots(stcPeer.channel);									// get amount of messages of peer channel
+		stcPeer.idx_max = pCM->peer.max;														// get amount of messages of peer channel
 
 		if (stcPeer.idx_max == ee_peer.countFreeSlots(stcPeer.channel) ) {						// check if at least one peer exist in db, otherwise send to master and stop function
 			preparePeerMessage(MAID, retries_max);
@@ -817,7 +819,7 @@ void AS::processMessage(void) {
 
 			processMessageAction11();
 			if (rcvAckReq || resetStatus == AS_RESET) {
-				if (ee.getRegListIdx(1,3) == 0xFF || resetStatus == AS_RESET) {
+				if ( resetStatus == AS_RESET) {   //(ee.getRegListIdx(1, 3) == 0xFF || resetStatus == AS_RESET) {
 					sendACK();
 				} else {
 					uint8_t channel = rcv.msg.mBody.BY11;
@@ -1211,31 +1213,13 @@ inline void AS::configStart() {
  * 10 04 A0 01 63 19 63 01 02 04 01 06
  */
 inline void AS::configEnd() {
-
+	cmMaster *pCM = pcnlModule[cFlag.channel];													// short hand to channel module
 	cFlag.active = 0;																			// set inactive
-	if ((cFlag.list == 0) || (cFlag.list == 1)) {
-		ee.getList(pcnlModule[cFlag.channel]->cLT, 0, pcnlModule[cFlag.channel]->chnl_list);
-		pcnlModule[cFlag.channel]->info_config_change();
+
+	if ( (cFlag.list == 0) || (cFlag.list == 1) ) {												// only list 0 or list 1 to load, while list 3 or list 4 are refreshed with a peer message
+		getEEPromBlock( pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val );						// get the respective eeprom block into the channel module array
+		pCM->info_config_change();																// and inform the module
 	}
-
-	//if ( (cFlag.channel == 0) && (cFlag.idx_peer == 0) ) {
-	//	ee.getMasterID();
-	//}
-	// remove message id flag to config in send module
-
-	//if ( (cFlag.channel > 0) && ( pModTbl->isActive) ) {
-		/*
-		 * Check if a new list1 was written and reload.
-		 * No need for reload list3/4 because they will be loaded on an peer event.
-		 */
-		//if (cFlag.list == 1) {
-		//	ee.getList(cFlag.channel, 1, cFlag.idx_peer, pcnlModule[cFlag.channel]->chnl_list); 	// load list1 in the respective buffer
-		//}
-		//pcnlModule[cFlag.channel]->info_config_change();
-		//	ee.getList(cFlag.channel, 1, cFlag.idx_peer, pModTbl->lstCnl); 						// load list1 in the respective buffer
-		//}
-		//pModTbl->mDlgt(0x01, 0, 0x06, NULL, 0);													// inform the module of the change
-	//}
 }
 
 /**
@@ -1314,10 +1298,11 @@ void AS::processMessageAction11() {
  * the respective line in the channel table.
  *
  */
-void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
+void AS::processMessageAction3E(uint8_t cnl, uint8_t peer_idx) {
 
 	cmMaster *pCM = pcnlModule[cnl];															// short hand for the channel module pointer
-	ee.getList(pCM->cPT, pIdx, pCM->peer_list);													// get list3 or list4 loaded into the user module
+	uint16_t pAddr = pCM->lstP.ee_addr + ( pCM->lstP.len * peer_idx );							// calculate the eeprom address
+	getEEPromBlock( pAddr, pCM->lstP.len, pCM->lstP.val );										// get list3 or list4 loaded into the user module
 
 	struct structFlag {
 		uint8_t CNL : 4;
@@ -1336,7 +1321,6 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t pIdx) {
 	else if (rcv.msg.mBody.MSG_TYP == 0x40) pCM->message_trigger40(sF.LONG, sF.COUNT);
 	else if (rcv.msg.mBody.MSG_TYP == 0x41) pCM->message_trigger41(sF.LONG, sF.COUNT, sF.VALUE);
 	else sendACK();
-// 21878
 }
 
 /**

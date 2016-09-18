@@ -92,12 +92,9 @@ extern void firstTimeStart(void);
 class EE {
 public:		//---------------------------------------------------------------------------------------------------------
 	uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
-	uint8_t  setList(const s_cnlTbl *cnlTblPtr, uint8_t idx, uint8_t *buf);				// if we know the channel table index already
 	uint8_t  setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
-	uint8_t  setListArray(const uint8_t cnlTblIdx, uint8_t idx, uint8_t len, uint8_t *buf);
 
 	uint8_t  getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in to a given buffer
-	uint8_t  getList(const s_cnlTbl* cnlTblPtr, uint8_t idx, uint8_t *buf);				// if we know the channel table index already
 
 	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 
@@ -118,17 +115,15 @@ public:		//---------------------------------------------------------------------
 	//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);
 	//void    setListFromModule(uint8_t cnl, uint8_t peerIdx, uint8_t *data, uint8_t len);
 
-	uint8_t   getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
-	s_cnlTbl* getRegListStruct(uint8_t cnl, uint8_t lst);								// ok, returns the respective line of cnlTbl
+	//uint8_t   getRegListIdx(uint8_t cnl, uint8_t lst);									// ok, returns the respective line of cnlTbl
 	//uint8_t   checkIndex(uint8_t cnl, uint8_t lst, uint8_t idx);
 };
-extern EE ee;
 
 extern const uint8_t devIdnt[];
-extern const uint8_t cnlAddr[];
-extern const uint8_t cnl_max;
-extern const uint8_t cnl_tbl_max;
+//extern const uint8_t cnl_max;
+//extern const uint16_t cm_size;
 
+extern EE ee;
 
 
 	
@@ -204,7 +199,6 @@ extern uint8_t hmKeyIndex[];
 inline uint16_t crc16(uint16_t crc, uint8_t a);											// crc function
 uint8_t  isEmpty(void *p1, uint8_t len);												// check if a byte array is empty
 #define isEqual(p1,p2,len) memcmp(p1, p2, len)?0:1										// check if a byte array is equal
-void print_channel_table(void);
 
 #endif
 

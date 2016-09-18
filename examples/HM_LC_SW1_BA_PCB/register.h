@@ -19,15 +19,25 @@
 	 */
 	AS hm;
 
+
 	/*
 	* cmSwitch requires this functions in the user sketch:
 	* void cmSwitch::initSwitch(uint8_t channel);
 	* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
 	*/
+	const uint8_t cmMaintenance_ChnlReg[] PROGMEM = { 0x02,0x0a,0x0b,0x0c,0x12,0x18, };
+	const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x1e,0x00, };
+	const uint8_t cmMaintenance_ChnlLen = 6;
+
+	const uint8_t cnl_max = 1;
+
 	cmMaster *pcnlModule[2] = {
-		new cmMaintenance( &cnlTbl[0], &cnlTbl[0], &peerTbl[0] ),
-		new cmSwitch(&cnlTbl[1], &cnlTbl[2], &peerTbl[1] ),
+		new cmMaintenance(0),
+		new cmSwitch(10),
 	};
+
+
+
 
 	/*
 	 * @brief HMID, Serial number, HM-Default-Key, Key-Index
@@ -61,80 +71,9 @@
 	};
 
 
-	/**
-	 * @brief Register definitions
-	 * The values are adresses in relation to the start adress defines in cnlTbl
-	 * Register values can found in related Device-XML-File.
-	 *
-	 * Spechial register list 0: 0x0A, 0x0B, 0x0C
-	 * Spechial register list 1: 0x08
-	 *
-	 * @See Defines.h
-	 *
-	 * @See: cnlTbl
-	 */
-	const uint8_t cnlAddr[] PROGMEM = {
-		// channel: 0, list: 0
-		0x02,0x0a,0x0b,0x0c,0x12,0x18,
-		// channel: 1, list: 1
-		0x08,
-		// channel: 1, list: 3
-		0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,
-	}; // 29 byte
-	   
-
-	/**
-	 * @brief Channel, List defaults
-	 * Source of the default values is the respective xml file.
-	 * This values are the defined default values and should be set
-	 * in the first start function.
-	 */
-	const uint8_t cnlDefs[] PROGMEM = {
-		// channel: 0, list: 0
-		0x80,0x00,0x00,0x00,0x1e,0x00,
-		// channel: 1, list: 1
-		0x00,
-		// channel: 1, list: 3
-		0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x01,0x44,0x44,0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x21,0x44,0x44,
-	}; // 29 byte
-
-
-	/**
-	 * @brief Channel - List translation table
-	 * channel, list, startIndex, start address in EEprom, hidden
-	 * do not edit the table, if you need more peers edit the defines accordingly.
-	 */
 	#define PHY_ADDR_START 0x20
 	#define CNL_01_PEERS   10 
 
-	const s_cnlTbl cnlTbl[] = {
-		// cnl, lst, sIdx, sLen, hide, pAddr 
-		{    0,   0,    0,    6,    0, PHY_ADDR_START },
-		{    1,   1,    6,    1,    0, cnlTbl[0].pAddr + cnlTbl[0].sLen },
-		{    1,   3,    7,   22,    0, cnlTbl[1].pAddr + cnlTbl[1].sLen },
-	}; // 21 byte 
-	//	{ 0, 0, 0x00,  6, 0x001f, 0, },
-	//	{ 1, 1, 0x00,  0, 0x0000, 0, },
-	//	{ 1, 3, 0x06, 22, 0x0025, 0, },
-
-
-	/**
-	 * @brief Peer-Device-List-Table
-	 * maximum allowed peers, link to row in cnlTbl, start address in EEprom
-	 */
-	const s_peerTbl peerTbl[] = {
-		//        pMax, pLink, pAddr; 
-		{            0, 0, cnlTbl[2].pAddr + (cnlTbl[2].sLen * CNL_01_PEERS) },
-		{ CNL_01_PEERS, 2, peerTbl[0].pAddr + (peerTbl[0].pMax * 4) },
-	}; // 8 byte
-
-	/**
-	 * @brief Struct with basic information for the AskSin library.
-	 * amount of user channels, amount of lines in the channel table,
-	 * link to devIdent byte array, link to cnlAddr byte array
-	 */
-	const uint8_t cnl_max = 1;
-	const uint8_t cnl_tbl_max = 3;
 
 	/**
 	 * @brief Regular start function
