@@ -29,27 +29,20 @@
 
 #ifdef SUPPORT_AES
 	#include "aes.h"
-	aes128_ctx_t ctx; 																			// the context where the round keys are stored
+	aes128_ctx_t ctx; 																		// the context where the round keys are stored
 #endif
 
-waitTimer cnfTmr;																				// config timer functionality
-waitTimer pairTmr;																				// pair timer functionality
+waitTimer cnfTmr;																			// config timer functionality
+waitTimer pairTmr;																			// pair timer functionality
+
 
 EE ee;				///< eeprom module
-EE_PEER ee_peer;	///< eeprom module
-CC cc;				///< load communication module
-SN snd;				///< send module
-RV rcv;				///< receive module
-LD led;				///< status led
-CB btn;				///< config button
-BT bat;				///< battery status
-PW pom;				///< power management
 
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS()  {
-	dbg << F("AS.\n");																			// ...and some information
+	dbg << F("AS.\n");																		// ...and some information
 	//Serial.print("test ","\n");
 	//DBG( "foobar()" );
 }
@@ -59,16 +52,60 @@ AS::AS()  {
  */
 void AS::init(void) {
 
-	initLeds();																					// initialize the leds
-	initConfKey();																				// initialize the port for getting config key interrupts
+	/*
+	* Initialize the hardware. All this functions are defined in HAL.h and HAL_extern.h
+	*/
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
+	initEEProm();																			// init eeprom function if a i2c eeprom is used
 
-	ee.init();																					// eeprom init
-	cc.init();																					// init the rf module
+	uint16_t pAddr = pcnlModule[0]->prep_default(0x20);										// prepare the defaults incl eeprom address map for the channel modules
+	
+	/*
+	* First time start check is done via comparing a magic number at the start of the eeprom
+	* with the CRC of the different lists in the channel modules. Every time there was a
+	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.
+	*/
+	uint16_t flashCRC = pcnlModule[0]->calc_crc();
 
-	memcpy_P(HMID, HMSerialData+0, 3);															// set HMID from pgmspace
-	memcpy_P(HMSR, HMSerialData+3, 10);															// set HMSerial from pgmspace
+	uint16_t eepromCRC;																		// define the eeprom value
+	getEEPromBlock(0, 2, (void*)&eepromCRC);												// and get magic byte from eeprom
+	
+	dbg << F("EE:crc, flash:") << flashCRC << F(", eeprom: ") << eepromCRC << '\n';			// some debug
+	//DBG( F("EE:crc, flash:"), flashCRC, F(", eeprom: "), eepromCRC, '\n');				// some debug
 
-	initMillis();																				// start the millis counter
+	if (flashCRC != eepromCRC) {															// first time detected, format eeprom, load defaults and write magicByte
+		//DBG( F("writing new magic byte\n") );												// some debug
+		setEEPromBlock(0, 2, (void*)&flashCRC);												// write eMagicByte to eeprom
+
+		for (uint8_t i = 0; i < cnl_max; i++) {												// write the defaults in respective list0/1
+			cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+			memcpy_P(pCM->lstC.val, pCM->lstC.def, pCM->lstC.len);							// copy from progmem into array
+			setEEPromBlock(pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val);				// write it into the eeprom
+			//DBG(F("cmM::write_ee_def, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->chnl_list, pCM->lstC.len), '\n');
+		}
+		
+		ee_peer.clearPeers();																// clear peer database
+
+		firstTimeStart();																	// function to be placed in register.h, to setup default values on first time start
+	}
+
+	getEEPromBlock(15, 16, HMKEY);															// get HMKEY from EEprom
+	getEEPromBlock(14, 1, hmKeyIndex);														// get hmKeyIndex from EEprom
+	if (HMKEY[0] == 0x00) {																	// if HMKEY in EEPROM invalid
+		ee.initHMKEY();
+	}
+
+	everyTimeStart();																		// add this function in register.h to setup default values every start
+
+
+
+	cc.init();																				// init the rf module
+
+	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
+	memcpy_P(HMSR, HMSerialData+3, 10);														// set HMSerial from pgmspace
+
+	initMillis();																			// start the millis counter
 
 	initRandomSeed();
 }
@@ -114,7 +151,7 @@ void AS::poll(void) {
 	}
 
 	// regular polls
-	for (uint8_t i = 0; i <= cnl_max; i++) {													// poll the channel modules
+	for (uint8_t i = 0; i < cnl_max; i++) {													// poll the channel modules
 		pcnlModule[i]->poll();
 	}
 
@@ -506,7 +543,7 @@ inline void AS::sendSliceList(void) {
 		//dbg << "peer slc: " << _HEX(snd.buf,snd.buf[0]+1) << '\n';								// write to send buffer
 
 	} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
-		cnt = ee.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, snd.buf+11); // get the slice and the amount of bytes
+		cnt = ee_list.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, snd.buf+11); // get the slice and the amount of bytes
 		//dbg << "cnt: " << cnt << '\n';
 		sendINFO_PARAM_RESPONSE_PAIRS(cnt);
 		stcSlice.curSlc++;																		// increase slice counter
@@ -594,7 +631,7 @@ inline void AS::sendPeerMsg(void) {
 	// get the respective list4 entries and take care while sending the message
 	// peerNeedsBurst  =>{a=>  1.0,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"peer expects burst",lit=>{off=>0,on=>1}},
 	// expectAES       =>{a=>  1.7,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"expect AES"        ,lit=>{off=>0,on=>1}},
-	l4_0x01.ui = ee.getRegAddr(stcPeer.channel, 4, stcPeer.idx_cur, 0x01);
+	l4_0x01.ui = ee_list.getRegAddr(stcPeer.channel, 4, stcPeer.idx_cur, 0x01);
 	// fillLvlUpThr    =>{a=>  4.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level upper threshold"},
 	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
 	//dbg << F("s_l4_0x01=") << _HEXB(l4_0x01.ui) << F("\n");
@@ -811,7 +848,7 @@ void AS::processMessage(void) {
 		}
 
 		// check if AES for the current channel active or aesActiveForReset @see above
-		if (ee.getRegAddr(rcv.msg.mBody.BY11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
+		if (ee_list.getRegAddr(rcv.msg.mBody.BY11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
 			sendSignRequest(1);
 
 		} else {
@@ -864,7 +901,7 @@ void AS::processMessage(void) {
 		if (cnl > 0) {
 			#ifdef SUPPORT_AES
 			// check if AES for the current channel active
-			if (ee.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
+			if (ee_list.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
 				sendSignRequest(1);
 				
 			} else {
@@ -918,8 +955,8 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	 */
 	uint8_t AS::checkAnyChannelForAES(void) {
 		uint8_t i;
-		for (i = 1; i <= cnl_max; i++) {														// check if AES activated for any channel
-			if (ee.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
+		for (i = 1; i < cnl_max; i++) {														// check if AES activated for any channel
+			if (ee_list.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
 				return 1;
 			}
 		}
@@ -1071,7 +1108,7 @@ inline void AS::processMessageConfigParamReq(void) {
 		stcSlice.idx = 0;																		// otherwise peer index is 0
 	}
 
-	stcSlice.totSlc = ee.countRegListSlc(rcv.msg.mBody.BY10, rcv.buf[16]);						// how many slices are need
+	stcSlice.totSlc = ee_list.countRegListSlc(rcv.msg.mBody.BY10, rcv.buf[16]);					// how many slices are need
 	stcSlice.mCnt = rcv.msg.mBody.MSG_CNT;														// remember the message count
 	memcpy(stcSlice.toID, rcv.msg.mBody.SND_ID, 3);
 	stcSlice.cnl = rcv.msg.mBody.BY10;															// send input to the send peer function
@@ -1230,8 +1267,8 @@ inline void AS::configEnd() {
  * 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
  */
  inline void AS::configWriteIndex(void) {
-	if ((cFlag.active) && (cFlag.channel == rcv.msg.mBody.BY10)) {									// check if we are in config mode and if the channel fit
-		ee.setListArray(cFlag.channel, cFlag.list, cFlag.idx_peer, rcv.buf[0]-11, rcv.buf+12);		// write the string to EEprom
+	if ((cFlag.active) && (cFlag.channel == rcv.msg.mBody.BY10)) {								// check if we are in config mode and if the channel fit
+		ee_list.setListArray(cFlag.channel, cFlag.list, cFlag.idx_peer, rcv.buf[0]-11, rcv.buf+12);	// write the string to EEprom
 
 		/*if ((cFlag.channel == 0) && (cFlag.list == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 			uint8_t maIdFlag = 0;
@@ -1698,6 +1735,32 @@ void AS::encode(uint8_t *buf) {
 
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------
+//- some helpers ----------------------------------------------------------------------------------------------------------
+uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf) {
+	for (uint8_t i = 0; i < len; i++) {												// step through all channels
+		crc = crc16( crc, _PGM_BYTE(buf[i]) );
+	}
+	return crc;
+}
+uint16_t crc16(uint16_t crc, uint8_t a) {
+	uint16_t i;
+
+	crc ^= a;
+	for (i = 0; i < 8; ++i) {
+		if (crc & 1) crc = (crc >> 1) ^ 0xA001;
+		else crc = (crc >> 1);
+	}
+	return crc;
+}
+
+inline uint8_t  isEmpty(void *ptr, uint8_t len) {
+	while (len > 0) {
+		len--;
+		if (*((uint8_t*)ptr + len)) return 0;
+	}
+	return 1;
+}
+//- -----------------------------------------------------------------------------------------------------------------------
 
 /**
  * @brief Initialize the random number generator

@@ -10,8 +10,10 @@
 #include "Power.h"
 #include "AS.h"
 
-// private:		//---------------------------------------------------------------------------------------------------------
+PW pom;																						// declare power management, defined in Power.h
 waitTimer pwrTmr;																			// power timer functionality
+
+// private:		//---------------------------------------------------------------------------------------------------------
 
 /**
 * @brief Initialize the power module

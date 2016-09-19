@@ -17,6 +17,10 @@
 #include "EEprom_peer.h"
 #include "AS.h"
 
+
+EE_PEER ee_peer;																			// defined in ee_peer.h, load it once
+
+
 EE_PEER::EE_PEER() {
 	DBG(F("EE_PEER.\n"));
 }

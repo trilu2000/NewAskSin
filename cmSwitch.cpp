@@ -28,12 +28,12 @@
 
 cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 
-	lstC.lst = 1;
+	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = (uint8_t*)cmSwitch_ChnlReg;
 	lstC.def = (uint8_t*)cmSwitch_ChnlDef;
 	lstC.len = sizeof(cmSwitch_ChnlReg);
 
-	lstP.lst = 3;
+	lstP.lst = 3;																			// setup the peer list with all dependencies
 	lstP.reg = (uint8_t*)cmSwitch_PeerReg;
 	lstP.def = (uint8_t*)cmSwitch_PeerDef;
 	lstP.len = sizeof(cmSwitch_PeerReg);
@@ -44,18 +44,17 @@ cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 
 	l3->ACTION_TYPE = ACTION(INACTIVE);														// and secure that no action will happened in polling function
 
-	//cmMaster::cListReg = cmSwitch::cxListReg;
+	setStat = 0;																			// we start allways with status off
+	modStat = 0;																			// output to 0
+	curStat = JT(OFF);																		// initialize the jump table value
 
 	initSwitch(lstC.cnl);																	// call external init function to set the output pins
-
-	modStat = setStat = 0;																	// output to 0
-	curStat = JT(OFF);																		// initialize the jump table value
 
 	msgDelay = (rand() % 2000) + 1000;														// set message delay
 	msgTmr.set(msgDelay);																	// wait some time to settle the device
 	sendStat = INFO(ACTUATOR_STATUS);														// send the initial status info
 
-	DBG( F("cmSwitch, cnl: "), cT->cnl, '\n');
+	DBG( F("cmSwitch, cnl: "), lstC.cnl, '\n');
 }
 
 

@@ -19,6 +19,9 @@
 #include "AS.h"
 
 
+RV rcv;																						// declare receive module, defined in receive.h
+
+
 RV::RV() {
 	DBG( F("RV.\n") );																		// ...and some information
 }

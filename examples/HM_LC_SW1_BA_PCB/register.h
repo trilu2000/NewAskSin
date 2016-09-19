@@ -1,3 +1,4 @@
+
 #ifndef _REGISTER_h
 	#define _REGISTER_h
 
@@ -28,8 +29,6 @@
 	const uint8_t cmMaintenance_ChnlReg[] PROGMEM = { 0x02,0x0a,0x0b,0x0c,0x12,0x18, };
 	const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x1e,0x00, };
 	const uint8_t cmMaintenance_ChnlLen = 6;
-
-	const uint8_t cnl_max = 1;
 
 	cmMaster *pcnlModule[2] = {
 		new cmMaintenance(0),
@@ -71,9 +70,6 @@
 	};
 
 
-	#define PHY_ADDR_START 0x20
-	#define CNL_01_PEERS   10 
-
 
 	/**
 	 * @brief Regular start function
@@ -98,22 +94,15 @@
 	 * of eeprom variables, or setting a default link in the peer table for 2 channels
 	 */
 	void firstTimeStart(void) {
+		dbg << F("\n\nnew magic!\n\n");
 
-		#ifdef SER_DBG
-		/*// some debug
-		dbg << F("First time start active:\n");
-		dbg << F("cnl\tlst\tsIdx\tsLen\thide\tpAddr\n");
-		for (uint8_t i = 0; i < cnl_tbl_max; i++) {
-			// cnl, lst, sIdx, sLen, hide, pAddr 
-			dbg << cnlTbl[i].cnl << "\t" << cnlTbl[i].lst << "\t" << cnlTbl[i].sIdx << "\t" << cnlTbl[i].sLen << "\t" << cnlTbl[i].vis << "\t" << cnlTbl[i].pAddr << "\n";
-		}*/
-		#endif
-
-		// fill register with default values, peer registers are not filled while done in usermodules
-		//hm.ee.setList(0, 0, 0, (uint8_t*)&cnlDefs[0]);
-		//hm.ee.setList(1, 1, 0, (uint8_t*)&cnlDefs[6]);
 
 	}
+
+
+
+
+
 #endif
 
 /**

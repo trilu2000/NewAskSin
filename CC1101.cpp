@@ -17,6 +17,10 @@
 
 #include "CC1101.h"
 
+
+CC cc;																					// defined in CC1101.h, load it once
+
+
 /*
 * @brief Initialize the cc1101 rf modul
 * 

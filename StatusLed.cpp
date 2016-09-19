@@ -9,6 +9,7 @@
 #include "StatusLed.h"
 #include "wait_timer.h"
 
+LD led;																							// declare status led, defines in StatusLed.h
 waitTimer ledTmr;																				// config timer functionality
 
 // public:		//---------------------------------------------------------------------------------------------------------

@@ -11,7 +11,6 @@
 
 #include "HAL.h"
 #include "AS_typedefs.h"
-#define maxMsgLen 16																		// define max message length in byte
 
 /**
  * @file EEprom.h
@@ -91,12 +90,6 @@ extern void firstTimeStart(void);
  */
 class EE {
 public:		//---------------------------------------------------------------------------------------------------------
-	uint8_t  setList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// set a complete list to the eeprom
-	uint8_t  setListArray(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t len, uint8_t *buf);// ok, set registers from a string
-
-	uint8_t  getList(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t *buf);				// get a complete list in to a given buffer
-
-	uint8_t  getRegAddr(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t addr);			// ok, gets a single register value
 
 
 	EE();																				// class constructor
@@ -107,9 +100,6 @@ public:		//---------------------------------------------------------------------
 
 
 
-	// register functions
-	uint8_t  countRegListSlc(uint8_t cnl, uint8_t lst);									// ok, counts the slices for a complete regs transmition
-	uint8_t  getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);// ok, generates answer to a channel/list request
 
 	//uint8_t getListForMsg3(uint8_t cnl, uint8_t lst, uint8_t *peer, uint8_t *buf);
 	//void    getCnlListByPeerIdx(uint8_t cnl, uint8_t peerIdx);
@@ -120,8 +110,6 @@ public:		//---------------------------------------------------------------------
 };
 
 extern const uint8_t devIdnt[];
-//extern const uint8_t cnl_max;
-//extern const uint16_t cm_size;
 
 extern EE ee;
 
@@ -195,10 +183,6 @@ extern uint8_t hmKeyIndex[];
 
 
 
-//- some helpers ----------------------------------------------------------------------------------------------------------
-inline uint16_t crc16(uint16_t crc, uint8_t a);											// crc function
-uint8_t  isEmpty(void *p1, uint8_t len);												// check if a byte array is empty
-#define isEqual(p1,p2,len) memcmp(p1, p2, len)?0:1										// check if a byte array is equal
 
 #endif
 

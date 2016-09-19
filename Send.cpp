@@ -19,6 +19,7 @@
 #include "AS.h"
 
 
+SN snd;																						// declare send module, defined in send.h
 waitTimer sndTmr;																			// send timer functionality
 
 

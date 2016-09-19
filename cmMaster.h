@@ -39,6 +39,8 @@ public://-----------------------------------------------------------------------
 	s_peer_table peer;
 
 	cmMaster(const uint8_t peer_max);														// constructor
+	uint16_t prep_default(uint16_t ee_start_addr);											// prepare the defaults incl eeprom address mapping
+	uint16_t calc_crc(void);																// calculate the crc for lists in the modules
 
 	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// pair set message
 	virtual void message_trigger3E(uint8_t msgLng, uint8_t msgCnt);							// switch message, also config test button in HM
@@ -56,9 +58,11 @@ public://-----------------------------------------------------------------------
 
 };
 
+/* as there is no way to get the channel by setting up the pointer array for channel modules we use this
+*  byte to identify the channel we are actually setting up, increased in the constructor...
+   the overall amount will be kept for runtime to step through the different instances. */
+extern uint8_t cnl_max;
 extern cmMaster *pcnlModule[];
-extern const uint8_t cnl_max;
-extern const uint16_t cm_size;
 
 
 #endif

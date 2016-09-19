@@ -10,8 +10,8 @@
 #define _NAS_H
 
 #include "AS_typedefs.h"
-#include "Defines.h"
 #include "macros.h"
+#include "Defines.h"
 #include "Version.h"
 #include "HAL.h"
 #include "wait_timer.h"
@@ -20,8 +20,9 @@
 #include "CC1101.h"
 #include "Send.h"
 #include "Receive.h"
-#include "EEprom_peer.h"
 #include "EEprom.h"
+#include "EEprom_list.h"
+#include "EEprom_peer.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
@@ -220,12 +221,24 @@ public:		//---------------------------------------------------------------------
 };
 
 extern const uint8_t devIdnt[];
-extern const uint8_t cnl_max;
 
 
 
-//extern cmMaster *pcnlModule[];
 extern AS hm;
+
+
+
+
+
+
+//- some helpers ----------------------------------------------------------------------------------------------------------
+uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf);
+uint16_t crc16(uint16_t crc, uint8_t a);
+inline uint8_t  isEmpty(void *ptr, uint8_t len);
+#define isEqual(p1,p2,len) memcmp(p1, p2, len)?0:1										// check if a byte array is equal
+
+//- -----------------------------------------------------------------------------------------------------------------------
+
 
 uint32_t byteTimeCvt(uint8_t tTime);
 uint32_t intTimeCvt(uint16_t iTime);

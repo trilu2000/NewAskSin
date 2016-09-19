@@ -113,7 +113,7 @@ void dumpEEprom() {
 
 	DBG(F("\nEEPROM content\n\n"));
 
-	for (uint8_t i = 0; i <= cnl_max; i++) {
+	for (uint8_t i = 0; i < cnl_max; i++) {
 		cmMaster *pCM = pcnlModule[i];															// shorthand to channel module
 
 		printList( &pCM->lstC, &pCM->peer );
@@ -160,7 +160,6 @@ void printList( s_list_table *lstP, s_peer_table *peer ) {
 
 	}
 	DBG('\n');
-
 }
 
 
