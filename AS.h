@@ -1,26 +1,27 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin protocol functions ---------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
-//- -----------------------------------------------------------------------------------------------------------------------
+/**
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin framework main class -------------------------------------------------------------------------------------------
+* - with a lot of support from many people at FHEM forum
+*   thanks a lot to martin876, dirk, pa-pa, martin, Dietmar63 and all i have not personal named here
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
 
 #ifndef _NAS_H
 #define _NAS_H
 
 #include "AS_typedefs.h"
-#include "macros.h"
-#include "Defines.h"
-#include "Version.h"
 #include "HAL.h"
+#include "macros.h"
+#include "defines.h"
+#include "version.h"
 #include "wait_timer.h"
 
 #include "cmMaster.h"
 #include "CC1101.h"
 #include "Send.h"
 #include "Receive.h"
-#include "EEprom.h"
 #include "EEprom_list.h"
 #include "EEprom_peer.h"
 #include "ConfButton.h"
@@ -51,14 +52,6 @@
 class AS {
 public:		//---------------------------------------------------------------------------------------------------------
 
-	/** @brief Helper structure for keeping track of active config mode */
-	struct s_confFlag {						// - remember that we are in config mode, for config start message receive
-		uint8_t  active;					//< indicates status, 1 if config mode is active
-		uint8_t  channel;					//< channel
-		uint8_t  list;						//< list
-		uint8_t  idx_peer;					//< peer index
-	} cFlag;
-
 	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
 		uint8_t active;						// indicates status of poll routine, 1 is active
 		uint8_t peer;						// is it a peer list message
@@ -74,10 +67,11 @@ public:		//---------------------------------------------------------------------
 	} stcSlice;
 
 	struct s_stcPeer {
-		uint8_t active; //   :1;			// indicates status of poll routine, 1 is active
-		uint8_t retries; //    :3;			// send retries
-		uint8_t burst; //    :1;			// burst flag for send function
-		uint8_t bidi; //     :1;			// ack required
+		uint8_t active;//    :1;			// indicates status of poll routine, 1 is active
+		uint8_t retries;//     :3;			// send retries
+		uint8_t burst;//     :1;			// burst flag for send function
+		uint8_t bidi;//      :1;			// ack required
+		//uint8_t :2;
 		uint8_t msg_type;					// message type to build the right message
 		uint8_t *ptr_payload;				// pointer to payload
 		uint8_t len_payload;				// length of payload
@@ -96,16 +90,14 @@ public:		//---------------------------------------------------------------------
 		uint8_t	ui;
 	} l4_0x01;
 
-	uint8_t pairActive;
 
-	uint8_t keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
-
-	uint8_t  signingRequestData[6];
-	uint8_t  tempHmKey[16];
-	uint8_t  newHmKey[16];
-	uint8_t  newHmKeyIndex[1];
-	uint16_t randomSeed = 0;
-	uint8_t  resetStatus = 0;
+	//uint8_t keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
+	//uint8_t  signingRequestData[6];
+	//uint8_t  tempHmKey[16];
+	//uint8_t  newHmKey[16];
+	//uint8_t  newHmKeyIndex[1];
+	//uint16_t randomSeed = 0;
+	//uint8_t  resetStatus = 0;
 
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
@@ -211,8 +203,8 @@ public:		//---------------------------------------------------------------------
 	
   protected:	//---------------------------------------------------------------------------------------------------------
 	// - homematic specific functions ------------------
-	void decode(uint8_t *buf);																// decodes the message
-	void encode(uint8_t *buf);																// encodes the message
+	//void decode(uint8_t *buf);																// decodes the message
+	//void encode(uint8_t *buf);																// encodes the message
 	void explainMessage(uint8_t *buf);														// explains message content, part of debug functions
 
 	// - some helpers ----------------------------------
@@ -220,28 +212,103 @@ public:		//---------------------------------------------------------------------
 
 };
 
-extern const uint8_t devIdnt[];
+/*
+* @brief Helper struct for all AES relevant variables
+*/
+extern s_aes aes;
 
+/*
+* @brief Global definition of a struct to hold the device identification related information.
+*
+* First bytes of eeprom holds all device specific information for identification. Struct is used
+* to hold this information in memory on hand.
+*  2 byte - magic byte
+*  3 byte - homematic id
+* 10 byte - serial number
+*  1 byte - aes key index
+* 16 byte - homematic aes key
+*/
+extern s_ee_start dev_ident;
+/*
+* @brief Global definition of master HM-ID (paired central).
+*
+* MAID is valid after initialization of AS with AS::init(). While not paired to a central,
+* MAID equals the broadcast address 000000. This is the case after first upload of a firmware
+* when an unconfigured EEprom is encountered (EEprom magic number does not match) or after a
+* reset of the device (RESET command sent by paired central or initiated by means of the
+* config button).
+*
+* The following example shows how HMID can be used for debugging purposes in user space:
+* @code
+* Serial << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");
+* @endcode
+*/
+extern uint8_t *MAID;
+
+/*
+* @brief Helper structure for keeping track of active pairing mode
+*/
+extern s_pair_mode pair_mode;
+/*
+* @brief Helper structure for keeping track of active config mode
+*/
+extern s_config_mode config_mode;
+
+/*
+* @brief Global definition of device HMSerialData. Must be declared in user space.
+*
+* The HMSerialData holds the default HMID, HMSerial and HMKEY.
+* At every start, values of HMID and HMSerial was copied to related variables.
+* The HKEY was only copied at initial sketch start in the EEprom
+*/
+extern const uint8_t HMSerialData[] PROGMEM;
+/*
+* @brief Settings of HM device
+* firmwareVersion: The firmware version reported by the device
+*                  Sometimes this value is important for select the related device-XML-File
+*
+* modelID:         Important for identification of the device.
+*                  @See Device-XML-File /device/supported_types/type/parameter/const_value
+*
+* subType:         Identifier if device is a switch or a blind or a remote
+* DevInfo:         Sometimes HM-Config-Files are referring on byte 23 for the amount of channels.
+*                  Other bytes not known.
+*                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
+*/
+extern const uint8_t dev_static[] PROGMEM;
+
+/*
+* @fn void everyTimeStart()
+* @brief Callback for actions after bootup
+*
+* This function is called when AS has started and before the main loop runs.
+*/
+extern void everyTimeStart(void);
+/*
+* @fn void firstTimeStart()
+* @brief Callback for actions after EEprom deletion
+*
+* This function needs to be defined in the user code space. It can be used to
+* set the data of complete Lists with EE::setList() or single registers using
+* EE::setListArray()
+*/
+extern void firstTimeStart(void);
 
 
 extern AS hm;
 
 
 
-
-
-
 //- some helpers ----------------------------------------------------------------------------------------------------------
-uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf);
-uint16_t crc16(uint16_t crc, uint8_t a);
-inline uint8_t  isEmpty(void *ptr, uint8_t len);
+uint32_t byteTimeCvt(uint8_t tTime);
+uint32_t intTimeCvt(uint16_t iTime);
+
+inline uint8_t  isEmpty(void *ptr, uint8_t len);										// check if a byte array is empty
 #define isEqual(p1,p2,len) memcmp(p1, p2, len)?0:1										// check if a byte array is equal
 
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-uint32_t byteTimeCvt(uint8_t tTime);
-uint32_t intTimeCvt(uint16_t iTime);
 
 
 

@@ -17,10 +17,9 @@
 
 #include "CC1101.h"
 
-
 CC cc;																					// defined in CC1101.h, load it once
 
-
+//public:   //------------------------------------------------------------------------------------------------------------
 /*
 * @brief Initialize the cc1101 rf modul
 * 
@@ -31,7 +30,7 @@ CC cc;																					// defined in CC1101.h, load it once
 * Main intent of this function is to write the default values into the communication register on cc1101.
 *
 */
-void    CC::init(void) {																// initialize CC1101
+void    CC::init(void) {																	// initialize CC1101
 	DBG( F("CC.\n") );																	// debug message
 	
 	ccInitHw();																			// init the hardware to get access to the RF modul
@@ -110,7 +109,6 @@ void    CC::init(void) {																// initialize CC1101
 
 	DBG( F(" - ready\n") );
 }
-
 /**
 * @brief Function to send data via the cc1101 rf module
 * 
@@ -177,7 +175,6 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 
 	DBG( F("<c "), _HEX(buf, buf[0] + 1), '\n' );
 }
-
 /**
 * @brief Receive function for the cc1101 rf module
 *

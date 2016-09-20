@@ -75,6 +75,7 @@ public:		//---------------------------------------------------------------------
 	uint8_t  countRegListSlc(uint8_t cnl, uint8_t lst);									// ok, counts the slices for a complete regs transmition
 	uint8_t  getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf);// ok, generates answer to a channel/list request
 
+	s_list_table* find_list(uint8_t cnl, uint8_t lst);
 };
 
 extern EE_LIST ee_list;

@@ -49,18 +49,18 @@ void SN::poll(void) {
 		msg.mBody.FLAG.RPTEN = 1;															// every message need this flag
 		//if (pHM->cFlag.active) this->mBdy.mFlg.CFG = pHM->cFlag.active;					// set the respective flag while we are in config mode
 		this->timeOut = 0;																	// not timed out because just started
-		prevMSG_CNT = msg.mBody.MSG_CNT;												// copy the message count to identify the ACK
+		prevMSG_CNT = msg.mBody.MSG_CNT;													// copy the message count to identify the ACK
 		this->retrCnt++;																	// increase counter while send out
 
 		// check if we should send an internal message
-		if (!memcmp( msg.mBody.RCV_ID, HMID, 3)) {
+		if (!memcmp( msg.mBody.RCV_ID, dev_ident.HMID, 3)) {
 			memcpy( rcv.buf, buf, sndStrLen );												// copy send buffer to received buffer
 			this->retrCnt = 0xFF;															// ACK not required, because internal
 						
 			DBG( F("<i ") );
 
 		} else {																			// send it external
-			uint8_t tBurst = msg.mBody.FLAG.BURST;										// get burst flag, while string will get encoded
+			uint8_t tBurst = msg.mBody.FLAG.BURST;											// get burst flag, while string will get encoded
 
 			/*
 			 * Copy the complete message to msgToSign. We need them for later AES signing.
@@ -70,7 +70,7 @@ void SN::poll(void) {
 			 */
 			memcpy( prev_buf + 5, buf, (sndStrLen > 27) ? 27 : sndStrLen);
 
-			cc.sndData(buf, tBurst);													// send to communication module
+			cc.sndData(buf, tBurst);														// send to communication module
 			
 			if (sndAckReq) {
 				sndTmr.set(maxTime);														// set the time out for the message
@@ -80,7 +80,7 @@ void SN::poll(void) {
 		}
 		
 		if (!led.active) {
-			led.set(send);																// fire the status led
+			led.set(send);																	// fire the status led
 		}
 		
 		DBG( _HEX( buf, sndStrLen), ' ', _TIME, '\n' );

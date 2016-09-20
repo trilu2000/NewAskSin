@@ -32,7 +32,7 @@
 
 	cmMaster *pcnlModule[2] = {
 		new cmMaintenance(0),
-		new cmSwitch(10),
+		new cmSwitch(11),
 	};
 
 
@@ -44,8 +44,8 @@
 	const uint8_t HMSerialData[] PROGMEM = {
 		/* HMID */            0x33,0x11,0x22,
 		/* Serial number */   'H','B','s','w','i','t','c','h','0','1',		// HBswitch01 
-		/* Default-Key */     HM_DEVICE_AES_KEY,
 		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
+		/* Default-Key */     HM_DEVICE_AES_KEY,
 	};
 
 
@@ -62,7 +62,7 @@
 	 *                  Other bytes not known.
 	 *                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
 	 */
-	const uint8_t devIdnt[] PROGMEM = {               // testID 
+	const uint8_t dev_static[] PROGMEM = {             // testID 
 		/* firmwareVersion 1 byte */  0x10,           // or GE 
 		/* modelID         2 byte */  0x00,0x6c,
 		/* subTypeID       1 byte */  0x00,           // replace __ by a valid type id 

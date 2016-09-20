@@ -1,10 +1,19 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de>, <dirk@hfma.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin protocol functions ---------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
-//- -----------------------------------------------------------------------------------------------------------------------
+/**
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin framework main class -------------------------------------------------------------------------------------------
+* - with a lot of support from many people at FHEM forum
+*   thanks a lot to martin876, dirk, pa-pa, martin, Dietmar63 and all i have not personal named here 
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
+
+#include "00_debug-flag.h"
+#ifdef AS_DBG
+#define DBG(...) Serial ,__VA_ARGS__
+#else
+#define DBG(...) 
+#endif
 
 /*
  * Comment out to disable AES support
@@ -32,82 +41,82 @@
 	aes128_ctx_t ctx; 																		// the context where the round keys are stored
 #endif
 
-waitTimer cnfTmr;																			// config timer functionality
-waitTimer pairTmr;																			// pair timer functionality
 
+s_aes aes;																					// helper struct for all AES relevant variables
 
-EE ee;				///< eeprom module
+s_pair_mode pair_mode;																		// helper structure for keeping track of active pairing mode
+s_config_mode config_mode;																	// helper structure for keeping track of active config mode
+
+s_ee_start dev_ident;																		// struct to hold the device identification related information									
+uint8_t *MAID;																				// pointer to the master id, which is hold in cmMaintenance
 
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS()  {
 	dbg << F("AS.\n");																		// ...and some information
-	//Serial.print("test ","\n");
-	//DBG( "foobar()" );
 }
 
 /**
  * @brief Initialize the AskSin Module
  */
 void AS::init(void) {
+	aes.key_part_index = AS_STATUS_KEYCHANGE_INACTIVE;
 
-	/*
-	* Initialize the hardware. All this functions are defined in HAL.h and HAL_extern.h
-	*/
-	initLeds();																				// initialize the leds
-	initConfKey();																			// initialize the port for getting config key interrupts
-	initEEProm();																			// init eeprom function if a i2c eeprom is used
+	/* - init eeprom function if a i2c eeprom is used and 
+	* prepare the defaults incl eeprom address map for the channel modules */
+	initEEProm();		
+	uint16_t pAddr = cm_prep_default(sizeof(dev_ident));
 
-	uint16_t pAddr = pcnlModule[0]->prep_default(0x20);										// prepare the defaults incl eeprom address map for the channel modules
-	
-	/*
-	* First time start check is done via comparing a magic number at the start of the eeprom
+	/* - First time start check is done via comparing a magic number at the start of the eeprom
 	* with the CRC of the different lists in the channel modules. Every time there was a
-	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.
-	*/
-	uint16_t flashCRC = pcnlModule[0]->calc_crc();
+	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.	*/
+	uint16_t flashCRC = cm_calc_crc();														// calculate the crc of all channel module list0/1, list3/4
+	getEEPromBlock(0, sizeof(dev_ident), (void*)&dev_ident);								// get magic byte and all other information from eeprom
 
-	uint16_t eepromCRC;																		// define the eeprom value
-	getEEPromBlock(0, 2, (void*)&eepromCRC);												// and get magic byte from eeprom
-	
-	dbg << F("EE:crc, flash:") << flashCRC << F(", eeprom: ") << eepromCRC << '\n';			// some debug
-	//DBG( F("EE:crc, flash:"), flashCRC, F(", eeprom: "), eepromCRC, '\n');				// some debug
+	dbg << F("AS:init crc- flash:") << flashCRC << F(", eeprom: ") << dev_ident.MAGIC << '\n';// some debug
+	DBG(F("AS:init crc- flash:"), flashCRC, F(", eeprom: "), dev_ident.MAGIC, '\n');		// some debug
 
-	if (flashCRC != eepromCRC) {															// first time detected, format eeprom, load defaults and write magicByte
-		//DBG( F("writing new magic byte\n") );												// some debug
-		setEEPromBlock(0, 2, (void*)&flashCRC);												// write eMagicByte to eeprom
+	if (flashCRC != dev_ident.MAGIC) {	
 
+		/* - First time detected
+		* get the homematic id, serial number, aes key index and homematic aes key from flash and copy it into the eeprom
+		* order in HMSerialData[]                 * HMID *, * Serial number *, * Default-Key *, * Key-Index *   
+		* order in dev_ident struct   *	MAGIC *, * HMID[3] *, * SERIAL_NR[10] *, * HMKEY[16] *, * HMKEY_INDEX *
+		* we can copy the complete struct with a 2 byte offset in regards to the magic byte */
+		memcpy_P( (void*)&dev_ident + 2, HMSerialData, sizeof(dev_ident) - 2);				// copy from PROGMEM
+		dev_ident.MAGIC = flashCRC;															// set new magic number
+		setEEPromBlock( 0, sizeof(dev_ident), (void*)&dev_ident);							// store defaults to EEprom
+		dbg << F("writing new magic byte\n");												// some debug
+		DBG( F("writing new magic byte\n") );												// some debug
+
+
+		/* - Write the defaults into the respective lists in eeprom and clear the peer database.
+		* defaults are read from channel modules PROGMEM section, copied into the value byte array
+		* and written to the eeprom. nothing to do any more, while defaults are in the value arrays 
+		* with the same information as in the eeprom */
 		for (uint8_t i = 0; i < cnl_max; i++) {												// write the defaults in respective list0/1
 			cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
 			memcpy_P(pCM->lstC.val, pCM->lstC.def, pCM->lstC.len);							// copy from progmem into array
 			setEEPromBlock(pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val);				// write it into the eeprom
 			//DBG(F("cmM::write_ee_def, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->chnl_list, pCM->lstC.len), '\n');
 		}
-		
-		ee_peer.clearPeers();																// clear peer database
+		ee_peer.clearPeers();
 
-		firstTimeStart();																	// function to be placed in register.h, to setup default values on first time start
+		/* - function to be placed in register.h, to setup default values on first time start */
+		firstTimeStart();				
 	}
 
-	getEEPromBlock(15, 16, HMKEY);															// get HMKEY from EEprom
-	getEEPromBlock(14, 1, hmKeyIndex);														// get hmKeyIndex from EEprom
-	if (HMKEY[0] == 0x00) {																	// if HMKEY in EEPROM invalid
-		ee.initHMKEY();
-	}
-
-	everyTimeStart();																		// add this function in register.h to setup default values every start
-
-
-
+	/* - Initialize the hardware. All this functions are defined in HAL.h and HAL_extern.h 	*/
+	initLeds();																				// initialize the leds
+	initConfKey();																			// initialize the port for getting config key interrupts
+	initMillis();																			// start the millis counter
 	cc.init();																				// init the rf module
 
-	memcpy_P(HMID, HMSerialData+0, 3);														// set HMID from pgmspace
-	memcpy_P(HMSR, HMSerialData+3, 10);														// set HMSerial from pgmspace
-
-	initMillis();																			// start the millis counter
-
 	initRandomSeed();
+
+	/* - add this function in register.h to setup default values every start */
+	everyTimeStart();
 }
 
 /**
@@ -124,8 +133,8 @@ void AS::poll(void) {
 	// handle the send module
 	if (snd.active) snd.poll();																	// check if there is something to send
 
-	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
-		deviceReset(resetStatus);
+	if (aes.resetStatus == AS_RESET || aes.resetStatus == AS_RESET_CLEAR_EEPROM) {
+		deviceReset(aes.resetStatus);
 	}
 
 	// handle the slice send functions
@@ -138,14 +147,14 @@ void AS::poll(void) {
 	}
 	
 	// time out the config flag
-	if (cFlag.active) {																			// check only if we are still in config mode
-		if (cnfTmr.done()) cFlag.active = 0;													// when timer is done, set config flag to inactive
+	if (config_mode.active) {																	// check only if we are still in config mode
+		if ( config_mode.timer.done() ) config_mode.active = 0;									// when timer is done, set config flag to inactive
 	}
 
 	// time out the pairing timer
-	if (pairActive) { 
-		if (pairTmr.done()) {
-			pairActive = 0;
+	if (pair_mode.active) { 
+		if (pair_mode.timer.done()) {
+			pair_mode.active = 0;
 			isEmpty(MAID, 3)? led.set(pair_err) : led.set(pair_suc);	
 		}
 	}
@@ -182,14 +191,14 @@ void AS::sendDEVICE_INFO(void) {
 	snd.msg.mBody.FLAG.CFG = 1;
 	snd.msg.mBody.FLAG.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 
-	memcpy_P(snd.buf+10, devIdnt, 3);
-	memcpy(snd.buf+13, HMSR, 10);
-	memcpy_P(snd.buf+23, devIdnt+3, 4);
+	memcpy_P(snd.buf+10, dev_static, 3);
+	memcpy(snd.buf+13, dev_ident.SERIAL_NR, 10);
+	memcpy_P(snd.buf+23, dev_static +3, 4);
 
 	prepareToSend(msgCount, AS_MESSAGE_DEVINFO, MAID);
 
-	pairActive = 1;																				// set pairing flag
-	pairTmr.set(20000);																			// set pairing time
+	pair_mode.active = 1;																		// set pairing flag
+	pair_mode.timer.set(20000);															// set pairing time
 	led.set(pairing);																			// and visualize the status
 }
 
@@ -795,7 +804,7 @@ void AS::processMessage(void) {
 
 			sendAckAES(authAck);															// send AES-Ack
 
-			if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
+			if (aes.key_part_index == AS_STATUS_KEYCHANGE_INACTIVE) {
 				memcpy(rcv.buf, rcv.prevBuf, rcv.prevBuf[0]+1);								// restore the last received message for processing from saved buffer
 				rcv.prevBufUsed = 0;
 
@@ -813,16 +822,16 @@ void AS::processMessage(void) {
 					}
 				}
 
-			} else if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE2) {
-				setEEPromBlock(15, 16, newHmKey);											// store HMKEY
-				getEEPromBlock(15, 16, HMKEY);
-				setEEPromBlock(14, 1, newHmKeyIndex);										// store used key index
-				hmKeyIndex[0] = newHmKeyIndex[0];
+			} else if (aes.key_part_index == AS_STATUS_KEYCHANGE_ACTIVE2) {
+				setEEPromBlock(15, 16, aes.new_hmkey );											// store HMKEY
+				getEEPromBlock(15, 16, dev_ident.HMKEY);
+				setEEPromBlock(14, 1, aes.new_hmkey_index);										// store used key index
+				dev_ident.HMKEY_INDEX = aes.new_hmkey_index[0];
 				#ifdef AES_DBG
 				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << '\n';
 				#endif
 
-				keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
+				aes.key_part_index = AS_STATUS_KEYCHANGE_INACTIVE;
 			}
 
 		 } else {
@@ -855,8 +864,8 @@ void AS::processMessage(void) {
 		#endif
 
 			processMessageAction11();
-			if (rcvAckReq || resetStatus == AS_RESET) {
-				if ( resetStatus == AS_RESET) {   //(ee.getRegListIdx(1, 3) == 0xFF || resetStatus == AS_RESET) {
+			if (rcvAckReq || aes.resetStatus == AS_RESET) {
+				if ( aes.resetStatus == AS_RESET) {   //(ee.getRegListIdx(1, 3) == 0xFF || resetStatus == AS_RESET) {
 					sendACK();
 				} else {
 					uint8_t channel = rcv.msg.mBody.BY11;
@@ -975,7 +984,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 		memcpy(rcv.prevBuf, rcv.buf, rcv.buf[0]+1);												// remember this message
 //		rcv.prevBufUsed = 1;																		// ToDo: check if we need this here
 
-		aes128_init(HMKEY, &ctx);																// load HMKEY
+		aes128_init(dev_ident.HMKEY, &ctx);																// load HMKEY
 		aes128_dec(rcv.buf+10, &ctx);															// decrypt payload width HMKEY first time
 
 		#ifdef AES_DBG
@@ -983,12 +992,12 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 		#endif
 
 		if (rcv.buf[10] == 0x01) {																// the decrypted data must start with 0x01
-			keyPartIndex = (rcv.buf[11] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
-			if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE1) {
-				newHmKeyIndex[0] = rcv.buf[11];
+			aes.key_part_index = (rcv.buf[11] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
+			if (aes.key_part_index == AS_STATUS_KEYCHANGE_ACTIVE1) {
+				aes.new_hmkey_index[0] = rcv.buf[11];
 			}
 
-			memcpy(newHmKey + keyPartIndex, rcv.buf+12, 8);
+			memcpy(aes.new_hmkey + aes.key_part_index, rcv.buf+12, 8);
 
 			#ifdef AES_DBG
 				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << '\n';
@@ -997,7 +1006,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 			sendSignRequest(0);
 
 		} else {
-			keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
+			aes.key_part_index = AS_STATUS_KEYCHANGE_INACTIVE;
 		}
 	}
 
@@ -1077,7 +1086,7 @@ inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
  * 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
  */
 inline void AS::processMessageConfigPairSerial(void) {
-	if (!memcmp(rcv.buf+12, HMSR, 10)) {															// compare serial and send device info
+	if (isEqual(rcv.buf+12, dev_ident.SERIAL_NR, 10)) {															// compare serial and send device info
 		sendDEVICE_INFO();
 	}
 }
@@ -1227,17 +1236,17 @@ inline uint8_t AS::configPeerRemove() {
  * 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
  */
 inline void AS::configStart() {
-	cFlag.channel = rcv.msg.mBody.BY10;															// fill structure to remember where to write
-	cFlag.list = rcv.buf[16];
-	if ((cFlag.list == 3) || (cFlag.list == 4)) {
-		cFlag.idx_peer = ee_peer.getIdxByPeer(rcv.msg.mBody.BY10, rcv.buf + 12);
+	config_mode.cnl = rcv.msg.mBody.BY10;															// fill structure to remember where to write
+	config_mode.lst = rcv.buf[16];
+	if ((config_mode.lst == 3) || (config_mode.lst == 4)) {
+		config_mode.idx_peer = ee_peer.getIdxByPeer(rcv.msg.mBody.BY10, rcv.buf + 12);
 	} else {
-		cFlag.idx_peer = 0;
+		config_mode.idx_peer = 0;
 	}
 
-	if (cFlag.idx_peer != 0xFF) {
-		cFlag.active = 1;																		// set active if there is no error on index
-		cnfTmr.set(20000);																		// set timeout time, will be checked in poll function
+	if (config_mode.idx_peer != 0xFF) {
+		config_mode.active = 1;																		// set active if there is no error on index
+		config_mode.timer.set(20000);																		// set timeout time, will be checked in poll function
 		// TODO: set message id flag to config in send module
 	}
 }
@@ -1250,10 +1259,10 @@ inline void AS::configStart() {
  * 10 04 A0 01 63 19 63 01 02 04 01 06
  */
 inline void AS::configEnd() {
-	cmMaster *pCM = pcnlModule[cFlag.channel];													// short hand to channel module
-	cFlag.active = 0;																			// set inactive
+	cmMaster *pCM = pcnlModule[config_mode.cnl];													// short hand to channel module
+	config_mode.active = 0;																			// set inactive
 
-	if ( (cFlag.list == 0) || (cFlag.list == 1) ) {												// only list 0 or list 1 to load, while list 3 or list 4 are refreshed with a peer message
+	if ( (config_mode.lst == 0) || (config_mode.lst == 1) ) {												// only list 0 or list 1 to load, while list 3 or list 4 are refreshed with a peer message
 		getEEPromBlock( pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val );						// get the respective eeprom block into the channel module array
 		pCM->info_config_change();																// and inform the module
 	}
@@ -1267,8 +1276,8 @@ inline void AS::configEnd() {
  * 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
  */
  inline void AS::configWriteIndex(void) {
-	if ((cFlag.active) && (cFlag.channel == rcv.msg.mBody.BY10)) {								// check if we are in config mode and if the channel fit
-		ee_list.setListArray(cFlag.channel, cFlag.list, cFlag.idx_peer, rcv.buf[0]-11, rcv.buf+12);	// write the string to EEprom
+	if ((config_mode.active) && (config_mode.cnl == rcv.msg.mBody.BY10)) {								// check if we are in config mode and if the channel fit
+		ee_list.setListArray(config_mode.cnl, config_mode.lst, config_mode.idx_peer, rcv.buf[0]-11, rcv.buf+12);	// write the string to EEprom
 
 		/*if ((cFlag.channel == 0) && (cFlag.list == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 			uint8_t maIdFlag = 0;
@@ -1298,7 +1307,7 @@ void AS::processMessageAction11() {
 		 *             Sender__ Receiver
 		 * 0B 1C B0 11 63 19 63 1F B7 4A 04 00
 		 */
-		resetStatus = AS_RESET_CLEAR_EEPROM;													// schedule a device reset with clear eeprom
+		aes.resetStatus = AS_RESET_CLEAR_EEPROM;													// schedule a device reset with clear eeprom
 
 	} else if (rcv.msg.mBody.BY10 == AS_ACTION_ENTER_BOOTLOADER) {								// We should enter the Bootloader
 		dbg << "AS_ACTION_ENTER_BOOTLOADER\n";
@@ -1307,7 +1316,7 @@ void AS::processMessageAction11() {
 		 *             Sender__ Receiver
 		 * 0B 1C B0 11 63 19 63 1F B7 4A CA
 		 */
-		resetStatus = AS_RESET;																	// schedule a device reset without eeprom
+		aes.resetStatus = AS_RESET;																	// schedule a device reset without eeprom
 		rcvAckReq = 1;
 
 	} else {
@@ -1368,16 +1377,12 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t peer_idx) {
 void AS::deviceReset(uint8_t clearEeprom) {
 	if (clearEeprom == AS_RESET_CLEAR_EEPROM) {
 		clearEEPromBlock(0, 2);
-		ee.init();
-
-		#ifdef SUPPORT_AES
-		ee.initHMKEY();
-		#endif
 	}
 
 	#ifdef WDT_RESET_ON_RESET
 		wdt_enable(WDTO_15MS);																	// configure the watchdog so the reset sould trigger in 15ms
 	#else
+		init();
 		ld.set(welcome);
 	#endif
 }
@@ -1392,7 +1397,7 @@ void AS::deviceReset(uint8_t clearEeprom) {
 inline void AS::sendINFO_SERIAL(void) {
 	snd.msg.mBody.MSG_LEN = 0x14;
 	snd.msg.mBody.BY10 = AS_INFO_SERIAL;
-	memcpy(snd.buf+11, HMSR, 10);
+	memcpy(snd.buf+11, dev_ident.SERIAL_NR, 10);
 	prepareToSend(rcv.msg.mBody.MSG_LEN, AS_MESSAGE_INFO, rcv.msg.mBody.SND_ID);
 }
 
@@ -1441,9 +1446,9 @@ void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
 
 	snd.msg.mBody.MSG_CNT = mCounter;
 	snd.msg.mBody.MSG_TYP = mType;
-	snd.msg.mBody.SND_ID[0] = HMID[0];
-	snd.msg.mBody.SND_ID[1] = HMID[1];
-	snd.msg.mBody.SND_ID[2] = HMID[2];
+	snd.msg.mBody.SND_ID[0] = dev_ident.HMID[0];
+	snd.msg.mBody.SND_ID[1] = dev_ident.HMID[1];
+	snd.msg.mBody.SND_ID[2] = dev_ident.HMID[2];
 	memcpy(snd.msg.mBody.RCV_ID, receiverAddr, 3);
 
 	snd.active = 1;																				// remember to fire the message
@@ -1478,7 +1483,7 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
  *
  * @param buf   pointer to buffer
  */
-void AS::decode(uint8_t *buf) {
+/*void AS::decode(uint8_t *buf) {
 	uint8_t prev = buf[1];
 	buf[1] = (~buf[1]) ^ 0x89;
 
@@ -1490,7 +1495,7 @@ void AS::decode(uint8_t *buf) {
 	}
 
 	buf[i] ^= buf[2];
-}
+}*/
 
 /**
  * @brief Encode the outgoing messages
@@ -1498,7 +1503,7 @@ void AS::decode(uint8_t *buf) {
  *
  * @param buf   pointer to buffer
  */
-void AS::encode(uint8_t *buf) {
+/*void AS::encode(uint8_t *buf) {
 	buf[1] = (~buf[1]) ^ 0x89;
 	uint8_t buf2 = buf[2];
 	uint8_t prev = buf[1];
@@ -1510,7 +1515,7 @@ void AS::encode(uint8_t *buf) {
 	}
 
 	buf[i] ^= buf2;
-}
+}*/
 
 #ifdef RV_DBG_EX																				// only if extended AS debug is set
 	/**
@@ -1701,7 +1706,7 @@ void AS::encode(uint8_t *buf) {
 		for (i = 0; i < 6; i++) {																// random bytes to the payload
 			snd.buf[11 + i] = (uint8_t)rand();
 		}
-		snd.buf[17] = hmKeyIndex[0];																// the 7th byte is the key index
+		snd.buf[17] = dev_ident.HMKEY_INDEX;																// the 7th byte is the key index
 
 		/*
 		 * Here we make a temporarily key with the challenge and the HMKEY.
@@ -1724,10 +1729,10 @@ void AS::encode(uint8_t *buf) {
 	 */
 	void AS::makeTmpKey(uint8_t *challenge) {
 		for (uint8_t i = 0; i < 16; i++) {
-			this->tempHmKey[i] = (i<6) ? (HMKEY[i] ^ challenge[i]) : HMKEY[i];
+			aes.temp_hmkey[i] = (i<6) ? (dev_ident.HMKEY[i] ^ challenge[i]) : dev_ident.HMKEY[i];
 		}
 
-		aes128_init(this->tempHmKey, &ctx);														// generating the round keys from the 128 bit key
+		aes128_init(aes.temp_hmkey, &ctx);														// generating the round keys from the 128 bit key
 	}
 
 #endif
@@ -1736,22 +1741,7 @@ void AS::encode(uint8_t *buf) {
 // - some helpers ----------------------------------
 // public:		//---------------------------------------------------------------------------------------------------------
 //- some helpers ----------------------------------------------------------------------------------------------------------
-uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf) {
-	for (uint8_t i = 0; i < len; i++) {												// step through all channels
-		crc = crc16( crc, _PGM_BYTE(buf[i]) );
-	}
-	return crc;
-}
-uint16_t crc16(uint16_t crc, uint8_t a) {
-	uint16_t i;
 
-	crc ^= a;
-	for (i = 0; i < 8; ++i) {
-		if (crc & 1) crc = (crc >> 1) ^ 0xA001;
-		else crc = (crc >> 1);
-	}
-	return crc;
-}
 
 inline uint8_t  isEmpty(void *ptr, uint8_t len) {
 	while (len > 0) {
@@ -1766,7 +1756,7 @@ inline uint8_t  isEmpty(void *ptr, uint8_t len) {
  * @brief Initialize the random number generator
  */
 void AS::initPseudoRandomNumberGenerator() {
-	srand(this->randomSeed ^ uint16_t (millis() & 0xFFFF));
+	srand(aes.randomSeed ^ uint16_t (millis() & 0xFFFF));
 }
 
 /**
@@ -1777,7 +1767,7 @@ inline void AS::initRandomSeed() {
 	uint16_t *p = (uint16_t*) (RAMEND + 1);
 	extern uint16_t __heap_start;
 	while (p >= &__heap_start + 1) {
-		this->randomSeed ^= * (--p);
+		aes.randomSeed ^= * (--p);
 	}
 
 	initPseudoRandomNumberGenerator();

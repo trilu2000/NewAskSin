@@ -41,18 +41,15 @@ EE_LIST::EE_LIST() {
 * (see @ref section_eeprom_memory_layout).
 */
 uint8_t EE_LIST::getList(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t *buf) {
-	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
-	s_list_table *list;																	// short hand to the appropiate list
 
-	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
-	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
-	else return 0;																		// if not, return
+	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
+	if (!list) return 0;																	// return if not found
 
-	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);							// calculate the appropiate address
-	getEEPromBlock(pAddr, list->len, buf);												// get the eeprom content
+	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);								// calculate the appropiate address
+	getEEPromBlock(pAddr, list->len, buf);													// get the eeprom content
 
 	DBG(F("EE:getList cnl:"), list->cnl, F(", lst:"), list->lst, F(", idx:"), idx, F(", addr:"), pAddr, F(", data:"), _HEX(buf, list->len), '\n');
-	return 1;																			// report everything ok
+	return 1;																				// report everything ok
 }
 
 /*
@@ -66,22 +63,18 @@ uint8_t EE_LIST::getList(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t *bu
 * @return the value or 0 if not found
 */
 uint8_t EE_LIST::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t addr) {
-	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
-	s_list_table *list;																	// short hand to the appropiate list
-	uint8_t retByte = 0;																// set the return byte to default
 
-	if		(pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
-	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
-	else return retByte;																// if not, return
+	uint8_t retByte = 0;																	// set the return byte to default
 
-	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);							// calculate the appropiate address
+	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
+	if (!list) return retByte;																// return if not found
 
-
-
-	for (uint8_t i = 0; i < list->len; i++) {											// step through the register bytes and search for the right address
-		if (_PGM_BYTE(list->reg[i]) == addr) {											// compare the bytes till we found the right one
-			getEEPromBlock(pAddr + i, 1, (void*)&retByte);								// get the respective byte from eeprom
-			break;																		// and exit the for counter
+	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);								// calculate the appropiate address
+	
+	for (uint8_t i = 0; i < list->len; i++) {												// step through the register bytes and search for the right address
+		if (_PGM_BYTE(list->reg[i]) == addr) {												// compare the bytes till we found the right one
+			getEEPromBlock(pAddr + i, 1, (void*)&retByte);									// get the respective byte from eeprom
+			break;																			// and exit the for counter
 		}
 	}
 
@@ -141,18 +134,15 @@ uint8_t EE_LIST::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t 
 * @see setListArray(), firstTimeStart()
 */
 uint8_t EE_LIST::setList(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t *buf) {
-	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
-	s_list_table *list;																	// short hand to the appropiate list
 
-	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
-	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
-	else return 0;																		// if not, return
+	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
+	if (!list) return 0;																	// return if not found
 
-	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);							// calculate the appropiate address
-	setEEPromBlock(pAddr, list->len, buf);												// get the eeprom content
+	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);								// calculate the appropiate address
+	setEEPromBlock(pAddr, list->len, buf);													// get the eeprom content
 
 	DBG(F("EE:setList cnl:"), list->cnl, F(", lst:"), list->lst, F(", idx:"), idx, F(", addr:"), pAddr, F(", data:"), _HEX(buf, list->len), '\n');
-	return 1;																			// report everything ok
+	return 1;																				// report everything ok
 }
 
 /*
@@ -209,25 +199,22 @@ uint8_t EE_LIST::setList(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t *bu
 * @todo Add references to related methods
 */
 uint8_t EE_LIST::setListArray(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t len, uint8_t *buf) {
-	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
-	s_list_table *list;																	// short hand to the appropiate list
 
-	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
-	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
-	else return 0;																		// if not, return
+	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
+	if (!list) return 0;																	// return if not found
 
-	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);							// calculate the appropiate address
+	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);								// calculate the appropiate address
 
 	DBG( F("EE:setList cnl:"), cnl, F(", lst:"), lst, F(", idx:"), peer_idx, F(", data:"), _HEX(buf, len), '\n' );
 
-	for (uint8_t i = 0; i < len; i += 2) {												// step through the input array
+	for (uint8_t i = 0; i < len; i += 2) {													// step through the input array
 
-		for (uint8_t j = 0; j < list->len; j++) {										// search for the matching address in cnlAddr
+		for (uint8_t j = 0; j < list->len; j++) {											// search for the matching address in cnlAddr
 
-			if (_PGM_BYTE(list->reg[j]) == buf[i]) {									// if byte found
-				setEEPromBlock(pAddr + j, 1, (void*)&buf[i + 1]);						// add the eeprom content
+			if (_PGM_BYTE(list->reg[j]) == buf[i]) {										// if byte found
+				setEEPromBlock(pAddr + j, 1, (void*)&buf[i + 1]);							// add the eeprom content
 				DBG( F("reg:"), _HEXB(buf[i]), F(", val:"), _HEXB(buf[i]), F(", addr:"), pAddr + j, '\n');
-				break;																	// go to the next i
+				break;																		// go to the next i
 			}
 		}
 	}
@@ -243,55 +230,63 @@ uint8_t EE_LIST::setListArray(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_
 * @return The amount of slices
 */
 uint8_t  EE_LIST::countRegListSlc(uint8_t cnl, uint8_t lst) {
-	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
-	s_list_table *list;																	// short hand to the appropiate list
-	uint8_t needed_slice = 0;															// set the return value to 0
+	uint8_t needed_slice = 0;																// set the return value to 0
 
-	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
-	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
-	else return needed_slice;															// if not, return
+	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
+		if (!list) return 0;																// return if not found
 
-	int16_t total_bytes = list->len * 2;												// get the slice len and multiply by 2 because we need regs and content
+	int16_t total_bytes = list->len * 2;													// get the slice len and multiply by 2 because we need regs and content
 
-	while (total_bytes > 0) {															// loop until total_bytes gets 0
-		total_bytes -= maxMsgLen;														// reduce by max message len
-		needed_slice++;																	// count the slices
+	while (total_bytes > 0) {																// loop until total_bytes gets 0
+		total_bytes -= maxMsgLen;															// reduce by max message len
+		needed_slice++;																		// count the slices
 	}
 	needed_slice++;
 	DBG( F("EE:countRegListSlc cnl:"), cnl, F(", lst:"), lst, F(", slc:"), needed_slice, '\n');
-	return needed_slice;																// return amount of slices
+	return needed_slice;																	// return amount of slices
 }
 
 uint8_t  EE_LIST::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf) {
-	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
-	s_list_table *list;																	// short hand to the appropiate list
 
-	if      (pCM->lstC.lst == lst) list = &pCM->lstC;									// check if required list is available
-	else if (pCM->lstP.lst == lst) list = &pCM->lstP;									// and set the pointer to it
-	else return 0;																		// if not, return
+	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
+	if (!list) return 0;																	// return if not found
 
-	uint8_t slcOffset = slc * maxMsgLen;												// calculate the starting offset
-	slcOffset /= 2;																		// divided by to because of mixed message, regs + eeprom content
+	uint8_t slcOffset = slc * maxMsgLen;													// calculate the starting offset
+	slcOffset /= 2;																			// divided by to because of mixed message, regs + eeprom content
 
-	int8_t remByte = list->len - slcOffset;												// calculate the remaining bytes
-	if (remByte <= 0) {																	// check if we are in the last slice and add terminating zeros
-		*(uint16_t*)buf = 0;															// add them
-		//dbg << slc << ' ' << slcOffset << ' ' << pCnlTbl->sLen << '\n';
-		return 2;																		// nothing to do anymore
+	int8_t remByte = list->len - slcOffset;													// calculate the remaining bytes
+	if (remByte <= 0) {																		// check if we are in the last slice and add terminating zeros
+		*(uint16_t*)buf = 0;																// add them
+		//dbg << slc << ' ' << slcOffset << ' ' << list->len << '\n';
+		return 2;																			// nothing to do anymore
 	}
-	if (remByte >= (maxMsgLen / 2)) remByte = (maxMsgLen / 2);							// shorten remaining bytes if necessary
+	if (remByte >= (maxMsgLen / 2)) remByte = (maxMsgLen / 2);								// shorten remaining bytes if necessary
 
 	uint16_t pAddr = list->ee_addr + (list->len * idx);
 	//dbg << slc << ", sO:" << slcOffset << ", rB:" << remByte << ", sIdx:" << pHexB(sIdx) << ", eIdx:" << pHexB(eIdx) << '\n';
 
-	for (uint8_t i = 0; i < remByte; i++) {												// count through the remaining bytes
-		*buf++ = _PGM_BYTE(list->reg[i + slcOffset]);									// add the register address
-		getEEPromBlock(i + pAddr + slcOffset, 1, buf++);								// add the eeprom content
+	for (uint8_t i = 0; i < remByte; i++) {													// count through the remaining bytes
+		*buf++ = _PGM_BYTE(list->reg[i + slcOffset]);										// add the register address
+		getEEPromBlock(i + pAddr + slcOffset, 1, buf++);									// add the eeprom content
 		//dbg << (i+eIdx+slcOffset) << '\n';
 	}
 
 	DBG(F("EE:getRegListSlc cnl:"), cnl, F(", lst:"), lst, F(", idx:"), idx, F(", slc:"), slc, F(", data:"), _HEX(buf, remByte * 2), '\n');
 	return remByte * 2;																	// return the byte length
 }
+
+/*
+* @brief Finds and returns the requested channel or peer list.
+*        Helper function for ee_peer and ee_list...
+*/
+s_list_table* EE_LIST::find_list(uint8_t cnl, uint8_t lst) {
+	cmMaster *pCM = pcnlModule[cnl];													// short hand to channel module
+
+	if      (pCM->lstC.lst == lst) return &pCM->lstC;									// check if required list is available
+	else if (pCM->lstP.lst == lst) return &pCM->lstP;									// and set the pointer to it
+
+	return NULL;																		// if not, return
+}
+
 
 

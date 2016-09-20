@@ -32,55 +32,6 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 	DBG( F("cmM, cnl/lst: "), lstC.cnl, '/', lstC.lst, F(", cnl/lst: "), lstP.cnl, '/', lstP.lst, '\n' );
 }
 
-/*
-* @brief Prepare defaults and read the defaults from the eeprom in the channel module space.
-*        We have to read only list0 or list 1 content, while list 3 or list 4 is read while received a peer message.
-*        After loading the defaults we inform the modules of this by calling the info_config_change function.
-*/
-uint16_t cmMaster::prep_default(uint16_t ee_start_addr) {
-
-	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
-
-		pCM->lstC.ee_addr = ee_start_addr;												// write the eeprom address in the channel list
-		ee_start_addr += pCM->lstC.len;													// create new address by adding the length of the list before
-		pCM->lstP.ee_addr = ee_start_addr;												// write the eeprom address in the peer list
-		ee_start_addr += (pCM->lstP.len * pCM->peer.max);								// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
-
-		getEEPromBlock(pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val);				// read the defaults in respective list0/1
-		pCM->info_config_change();														// inform the channel modules
-		DBG( F("cmM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->chnl_list, pCM->lstC.len), '\n');
-	}
-
-	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
-		pCM->peer.ee_addr = ee_start_addr;												// write eeprom address into the peer table
-		ee_start_addr += pCM->peer.max * 4;												// create nwe eeprom start address depending on the space for max peers are used
-	}
-	return ee_start_addr;
-}
-
-/*
-* @brief Calculates and returns the crc number for all channel module lists.
-* This information is needed for the first time check. Within this check, we compare a stored 
-* magic number with the calculated one and if they differ, we have a good indication that something 
-* was changed in the configuration.
-*/
-uint16_t cmMaster::calc_crc(void) {
-	uint16_t flashCRC = 0;																// define and set the return value
-
-	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = pcnlModule[i];													// short hand to channel module
-		flashCRC = crc16_P(flashCRC, pCM->lstC.len, pCM->lstC.reg);						// and calculate the crc - arrays are in PROGMEM
-		flashCRC = crc16_P(flashCRC, pCM->lstC.len, pCM->lstC.def);
-		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.reg);
-		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.def);
-		flashCRC = crc16(flashCRC, pCM->peer.max);
-		DBG(F("cmM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');					// some debug
-	}
-	return flashCRC;
-}
-
 
 void cmMaster::message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
 	DBG( F("cmM, trigger11, setValue:"), value, F(", rampTime:"), intTimeCvt(*(uint16_t*)rampTime), F(", duraTime:"), intTimeCvt(*(uint16_t*)duraTime), '\n' );
@@ -127,3 +78,68 @@ void cmMaster::set_toggle(void) {
 }
 
 
+
+
+//- helpers ---------------------------------------------------------------------------------------------------------------
+/*
+* @brief Prepare defaults and read the defaults from the eeprom in the channel module space.
+*        We have to read only list0 or list 1 content, while list 3 or list 4 is read while received a peer message.
+*        After loading the defaults we inform the modules of this by calling the info_config_change function.
+*/
+uint16_t cm_prep_default(uint16_t ee_start_addr) {
+
+	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
+		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+
+		pCM->lstC.ee_addr = ee_start_addr;												// write the eeprom address in the channel list
+		ee_start_addr += pCM->lstC.len;													// create new address by adding the length of the list before
+		pCM->lstP.ee_addr = ee_start_addr;												// write the eeprom address in the peer list
+		ee_start_addr += (pCM->lstP.len * pCM->peer.max);								// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
+
+		getEEPromBlock(pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val);				// read the defaults in respective list0/1
+		pCM->info_config_change();														// inform the channel modules
+		DBG(F("cmM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->chnl_list, pCM->lstC.len), '\n');
+	}
+
+	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
+		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+		pCM->peer.ee_addr = ee_start_addr;												// write eeprom address into the peer table
+		ee_start_addr += pCM->peer.max * 4;												// create nwe eeprom start address depending on the space for max peers are used
+	}
+	return ee_start_addr;
+}
+
+/*
+* @brief Calculates and returns the crc number for all channel module lists.
+* This information is needed for the first time check. Within this check, we compare a stored
+* magic number with the calculated one and if they differ, we have a good indication that something
+* was changed in the configuration.
+*/
+uint16_t cm_calc_crc(void) {
+	uint16_t flashCRC = 0;																// define and set the return value
+
+	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
+		cmMaster *pCM = pcnlModule[i];													// short hand to channel module
+		flashCRC = crc16_P(flashCRC, pCM->lstC.len, pCM->lstC.reg);						// and calculate the crc - arrays are in PROGMEM
+		flashCRC = crc16_P(flashCRC, pCM->lstC.len, pCM->lstC.def);
+		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.reg);
+		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.def);
+		flashCRC = crc16(flashCRC, pCM->peer.max);
+		DBG(F("cmM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');					// some debug
+	}
+	return flashCRC;
+}
+inline uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf) {
+	for (uint8_t i = 0; i < len; i++) {												// step through all channels
+		crc = crc16(crc, _PGM_BYTE(buf[i]));
+	}
+	return crc;
+}
+inline uint16_t crc16(uint16_t crc, uint8_t a) {
+	crc ^= a;
+	for (uint8_t i = 0; i < 8; ++i) {
+		if (crc & 1) crc = (crc >> 1) ^ 0xA001;
+		else crc = (crc >> 1);
+	}
+	return crc;
+}

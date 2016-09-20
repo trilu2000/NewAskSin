@@ -11,7 +11,6 @@
 #define _cmMaster_H
 
 #include "AS.h"
-#include "EEprom.h"
 #include "HAL.h"
 
 
@@ -39,8 +38,6 @@ public://-----------------------------------------------------------------------
 	s_peer_table peer;
 
 	cmMaster(const uint8_t peer_max);														// constructor
-	uint16_t prep_default(uint16_t ee_start_addr);											// prepare the defaults incl eeprom address mapping
-	uint16_t calc_crc(void);																// calculate the crc for lists in the modules
 
 	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// pair set message
 	virtual void message_trigger3E(uint8_t msgLng, uint8_t msgCnt);							// switch message, also config test button in HM
@@ -64,5 +61,13 @@ public://-----------------------------------------------------------------------
 extern uint8_t cnl_max;
 extern cmMaster *pcnlModule[];
 
+
+
+//- helpers ---------------------------------------------------------------------------------------------------------------
+uint16_t cm_prep_default(uint16_t ee_start_addr);											// prepare the defaults incl eeprom address mapping
+
+uint16_t cm_calc_crc(void);																	// calculate the crc for lists in the modules
+inline uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf);							// calculates the crc for a PROGMEM byte array
+inline uint16_t crc16(uint16_t crc, uint8_t a);												// calculates the crc for a given byte
 
 #endif

@@ -14,10 +14,9 @@
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
-
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
-
+	
 	EIMSK = 0;																					// disable external interrupts
 	ADCSRA = 0;																					// ADC off
 	power_all_disable();																		// and everything else
@@ -33,15 +32,16 @@ void setup() {
 	DBG( F("HM_LC_SW1_BA_PCB\n") );	
 	DBG( F(LIB_VERSION_STRING) );
 
-	
+
 	// - AskSin related ---------------------------------------
 	hm.init();																					// init the asksin framework
 	sei();																						// enable interrupts
 
 	// - user related -----------------------------------------
-	DBG( F("HMID: "), _HEX(HMID,3), F(", MAID: "), _HEX(MAID,3), F("\n\n") );					// some debug
+	DBG( F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(MAID,3), F("\n\n") );			// some debug
 	
-	//dbg << "test: " << _HEX((uint8_t*)pcnlModule[0]->cListReg, 5) << '\n';
+
+	//dbg << "test: " << _HEX((uint8_t*)pcnlModule[0]->lstC.val, 5) << '\n';
 	//DBG("test:", sizeof(pcnlModule) / sizeof(pcnlModule[0]), '\n'; );
 }
 

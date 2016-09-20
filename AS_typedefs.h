@@ -7,9 +7,54 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #include "HAL.h"
+#include "wait_timer.h"
 
 #ifndef _AS_TYPEDEFS_H
 #define _AS_TYPEDEFS_H
+
+/*
+* @brief Helper struct for all AES relevant variables
+*/
+typedef struct ts_aes {
+	uint8_t  key_part_index;		// key part index
+	uint8_t  signing_request[6];	// placeholder for signing request
+	uint8_t  temp_hmkey[16];		// temp hmkey 
+	uint8_t  new_hmkey[16];			// new hmkey for key exchange
+	uint8_t  new_hmkey_index[1];	// new hmkey index
+	uint16_t randomSeed;			// random seed flag
+	uint8_t  resetStatus;			// reset status flag
+} s_aes;
+
+/*
+* @brief Helper struct to remember on the config mode status in asksin main function
+*/
+typedef struct ts_config_mode {
+	uint8_t   active;		// indicates status, 1 if config mode is active
+	uint8_t   cnl;			// channel which was opened by config start message
+	uint8_t   lst;			// list which was opened
+	uint8_t   idx_peer;		// and the peer index
+	waitTimer timer;		// config mode timeout
+} s_config_mode;
+
+/*
+* @brief Helper struct to remember on the pairing mode status in asksin main function
+*/
+typedef struct ts_pair_mode {
+	uint8_t   active;		// indicates status, 1 if config mode is active
+	waitTimer timer;		// pairing mode timeout
+} s_pair_mode;
+
+
+/* 
+* @brief First bytes of eeprom holds all device specific information for identification
+*/
+typedef struct ts_eeprom_start_table {
+	uint16_t MAGIC;			//  2 byte - magic byte
+	uint8_t  HMID[3];		//  3 byte - homematic id
+	uint8_t  SERIAL_NR[10];	// 10 byte - serial number
+	uint8_t  HMKEY_INDEX;	//  1 byte - aes key index
+	uint8_t  HMKEY[16];		// 16 byte - homematic aes key
+} s_ee_start;
 
 
 /*
@@ -43,6 +88,8 @@ typedef struct ts_peer_table {
 	uint8_t  max;					// maximum number of peer devices
 	uint16_t ee_addr;				// address of configuration data in EEprom memory
 } s_peer_table;
+
+
 
 
 

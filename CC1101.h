@@ -11,7 +11,7 @@
 #ifndef _CC_H
 #define _CC_H
 
-#include "HAL.h"
+#include "AS.h"
 
 class CC {
 private:  //--------------------------------------------------------------------------------------------------------------
@@ -144,17 +144,18 @@ private:  //--------------------------------------------------------------------
 	#define PA_Normal                0x50									// PATABLE values
 	#define PA_MaxPower			     0xC0
 
+
 	// explanation of CC1101_STATUS byte
 	union u_ccStatus {
 		struct s_ccStatus {
-			uint8_t GDO0    : 1;	//	0 current GDO0 value       1
-			uint8_t         : 1;	//	1 reserved                 2
-			uint8_t GDO2    : 1;	//	2 GDO2                     4
-			uint8_t SYNC    : 1;	//	3 sync word found          8
-			uint8_t CLEAR   : 1;	//	4 channel is clear         10
-			uint8_t QALITY  : 1;	//	5 preamble quality reached 20
-			uint8_t CARRIER : 1;	//	6 carrier sense            40
-			uint8_t CRC_OK  : 1;	//	7 CRC ok                   80
+			uint8_t GDO0     : 1;	//	0 current GDO0 value       1
+			uint8_t          : 1;	//	1 reserved                 2
+			uint8_t GDO2     : 1;	//	2 GDO2                     4
+			uint8_t SYNC     : 1;	//	3 sync word found          8
+			uint8_t CLEAR    : 1;	//	4 channel is clear         10
+			uint8_t QALITY   : 1;	//	5 preamble quality reached 20
+			uint8_t CARRIER  : 1;	//	6 carrier sense            40
+			uint8_t CRC_OK   : 1;	//	7 CRC ok                   80
 		} FLAGS;
 		uint8_t VAL;
 	};
@@ -171,8 +172,8 @@ private:  //--------------------------------------------------------------------
 	// explanation of CC1101_CONFIG byte
 	union u_rvStatus {
 		struct s_rvStatus {
-			uint8_t LQI : 7;	//	&7F
-			uint8_t CRC : 1;	//	&80
+			uint8_t LQI      : 7;	//	&7F
+			uint8_t CRC      : 1;	//	&80
 		} FLAGS;
 		uint8_t VAL;
 	};
