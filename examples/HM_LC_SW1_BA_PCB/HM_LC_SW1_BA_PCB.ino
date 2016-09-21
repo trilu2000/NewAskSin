@@ -92,7 +92,7 @@ void serialEvent() {
 			return;
 		}
 		else if (inChar == 's') {
-			snd.active = 1;
+			snd.flag.active = 1;
 			i = 0;
 			return;
 		}

@@ -91,13 +91,13 @@ public:		//---------------------------------------------------------------------
 	} l4_0x01;
 
 
-	//uint8_t keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
-	//uint8_t  signingRequestData[6];
-	//uint8_t  tempHmKey[16];
-	//uint8_t  newHmKey[16];
-	//uint8_t  newHmKeyIndex[1];
-	//uint16_t randomSeed = 0;
-	//uint8_t  resetStatus = 0;
+	uint8_t  keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
+	uint8_t  signingRequestData[6];
+	uint8_t  tempHmKey[16];
+	uint8_t  newHmKey[16];
+	uint8_t  newHmKeyIndex[1];
+	uint16_t randomSeed = 0;
+	uint8_t  resetStatus = 0;
 
   public:		//---------------------------------------------------------------------------------------------------------
 	AS();
@@ -212,10 +212,6 @@ public:		//---------------------------------------------------------------------
 
 };
 
-/*
-* @brief Helper struct for all AES relevant variables
-*/
-extern s_aes aes;
 
 /*
 * @brief Global definition of a struct to hold the device identification related information.

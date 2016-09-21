@@ -13,35 +13,62 @@
 #define _AS_TYPEDEFS_H
 
 /*
+* @brief Intent of message, used for receive and send function
+* Types are, valid for send or receive id
+* broadcast  - 0, messgae from or to all, indicated by 00 00 00
+* master     - 1, message to or from HM Central, communication between paired devices
+* peer       - 2, message to or from a known peer
+* internal   - 3, message to or from ourself, will not be transmitted
+* logging    - 4, not for us, show in log only
+* not paired - 5, message addressed to us, but pair or peer not known
+* error      - 6, don't know
+*/
+enum MSG_INTENT { BROADCAST = 0x00, MASTER = 0x01, PEER = 0x02, INTERN = 0x03, LOGGING = 0x04, NOT_PAIRED = 0x05, ERROR = 0x06, };
+
+
+
+/*
+* @brief Helper struct for all send function relevant variables
+*/
+typedef struct ts_send_flags {
+	uint8_t   active;						// is send module active, 1 indicates yes
+	uint8_t   timeout;						// was last message a timeout
+	uint8_t   retr_cnt;						// variable to count how often a message was already send
+	uint8_t   max_retr;						// how often a message has to be send until ACK
+	uint16_t  max_time;						// max time for message timeout timer
+	waitTimer timer;						// send mode timeout
+} s_send_flags;
+
+/*
 * @brief Helper struct for all AES relevant variables
 */
-typedef struct ts_aes {
-	uint8_t  key_part_index;		// key part index
-	uint8_t  signing_request[6];	// placeholder for signing request
-	uint8_t  temp_hmkey[16];		// temp hmkey 
-	uint8_t  new_hmkey[16];			// new hmkey for key exchange
-	uint8_t  new_hmkey_index[1];	// new hmkey index
-	uint16_t randomSeed;			// random seed flag
-	uint8_t  resetStatus;			// reset status flag
-} s_aes;
+/*typedef struct ts_aes {
+	uint8_t  key_part_index;				// key part index
+	uint8_t  signing_request[6];			// placeholder for signing request
+	uint8_t  temp_hmkey[16];				// temp hmkey 
+	uint8_t  new_hmkey[16];					// new hmkey for key exchange
+	uint8_t  new_hmkey_index[1];			// new hmkey index
+	uint16_t randomSeed;					// random seed flag
+	uint8_t  resetStatus;					// reset status flag
+} s_aes;*/
 
 /*
 * @brief Helper struct to remember on the config mode status in asksin main function
 */
 typedef struct ts_config_mode {
-	uint8_t   active;		// indicates status, 1 if config mode is active
-	uint8_t   cnl;			// channel which was opened by config start message
-	uint8_t   lst;			// list which was opened
-	uint8_t   idx_peer;		// and the peer index
-	waitTimer timer;		// config mode timeout
+	uint8_t   active;						// indicates status, 1 if config mode is active
+	uint8_t   cnl;							// channel which was opened by config start message
+	uint8_t   lst;							// list which was opened
+	uint8_t   idx_peer;						// and the peer index
+	waitTimer timer;						// config mode timeout
 } s_config_mode;
 
 /*
 * @brief Helper struct to remember on the pairing mode status in asksin main function
 */
 typedef struct ts_pair_mode {
-	uint8_t   active;		// indicates status, 1 if config mode is active
-	waitTimer timer;		// pairing mode timeout
+	uint8_t   active;						// indicates status, 1 if config mode is active
+	waitTimer timer;						// pairing mode timeout
 } s_pair_mode;
 
 
@@ -49,11 +76,11 @@ typedef struct ts_pair_mode {
 * @brief First bytes of eeprom holds all device specific information for identification
 */
 typedef struct ts_eeprom_start_table {
-	uint16_t MAGIC;			//  2 byte - magic byte
-	uint8_t  HMID[3];		//  3 byte - homematic id
-	uint8_t  SERIAL_NR[10];	// 10 byte - serial number
-	uint8_t  HMKEY_INDEX;	//  1 byte - aes key index
-	uint8_t  HMKEY[16];		// 16 byte - homematic aes key
+	uint16_t MAGIC;							//  2 byte - magic byte
+	uint8_t  HMID[3];						//  3 byte - homematic id
+	uint8_t  SERIAL_NR[10];					// 10 byte - serial number
+	uint8_t  HMKEY_INDEX;					//  1 byte - aes key index
+	uint8_t  HMKEY[16];						// 16 byte - homematic aes key
 } s_ee_start;
 
 
@@ -64,13 +91,13 @@ typedef struct ts_eeprom_start_table {
 *        Therefore we have in every channel two lists - lstC and lstP organized in structs
 */
 typedef struct ts_list_table {
-	uint8_t cnl;		// holds the channel information
-	uint8_t lst;		// holds the list number
-	uint8_t *reg;		// pointer to register values in PROGMEM
-	uint8_t *def;		// pointer to default values in PROGMEM
-	uint8_t *val;		// pointer to value array which is dynamic loaded from eeprom
-	uint8_t len;		// length of register, defaults and value array
-	uint16_t ee_addr;	// start address for channel in eeprom
+	uint8_t cnl;							// holds the channel information
+	uint8_t lst;							// holds the list number
+	uint8_t *reg;							// pointer to register values in PROGMEM
+	uint8_t *def;							// pointer to default values in PROGMEM
+	uint8_t *val;							// pointer to value array which is dynamic loaded from eeprom
+	uint8_t len;							// length of register, defaults and value array
+	uint16_t ee_addr;						// start address for channel in eeprom
 } s_list_table;
 
 
@@ -85,25 +112,126 @@ typedef struct ts_list_table {
 * definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory.
 */
 typedef struct ts_peer_table {
-	uint8_t  max;					// maximum number of peer devices
-	uint16_t ee_addr;				// address of configuration data in EEprom memory
+	uint8_t  max;							// maximum number of peer devices
+	uint16_t ee_addr;						// address of configuration data in EEprom memory
 } s_peer_table;
-
-
-
-
-
 
 
 /*
 * @brief Type of message, Byte 03 translation
+* -------------------------------------------
+* 0x00 ff ff * DEVICE_INFO
+* -------------------------------------------
+* 0x01 ff ff * CONFIG_REQ
+* 0x01 ff 01 * - CONFIG_PEER_ADD 
+* 0x01 ff 02 * - CONFIG_PEER_REMOVE  
+* 0x01 ff 03 * - CONFIG_PEER_LIST_REQ 
+* 0x01 ff 04 * - CONFIG_PARAM_REQ
+* 0x01 ff 05 * - CONFIG_START
+* 0x01 ff 06 * - CONFIG_END
+* 0x01 ff 07 * - CONFIG_WRITE_INDEX1
+* 0x01 ff 08 * - CONFIG_WRITE_INDEX2
+* 0x01 ff 09 * - CONFIG_SERIAL_REQ
+* 0x01 ff 0a * - PAIR_SERIAL
+* 0x01 ff 0e * - CONFIG_STATUS_REQUEST
+* -------------------------------------------
+* 0x02 ff ff * ACK_MSG
+* 0x02 00 ff * - ACK
+* 0x02 01 ff * - ACK_STATUS
+* 0x02 02 ff * - ACK2
+* 0x02 04 ff * - ACK_PROC
+* 0x02 80 ff * - NACK
+* 0x02 84 ff * - NACK_TARGET_INVALID
+* 0x02 FE ff * - ACK_NACK_UNKNOWN, short string no byte 10 value
+* 0x02 FF ff * - REQUEST_AES, no by10 value, some format as ACK
+* -------------------------------------------
+* 0x03 ff ff * AES_REPLY
+* -------------------------------------------
+* 0x04 ff ff * SEND_AES_CODE
+* 0x04 01 ff * - SEND_AES_TO_HMLAN
+* 0x04 ff ff * - SEND_AES_TO_ACTOR, no byte 10, same format as SEND_AES_CODE
+* -------------------------------------------
+* 0x10 ff ff * REPLY_MSG
+* 0x10 00 ff * - INFO_SERIAL
+* 0x10 01 ff * - INFO_PEER_LIST
+* 0x10 02 ff * - INFO_PARAM_RESPONSE_PAIRS
+* 0x10 03 ff * - INFO_PARAM_RESPONSE_SEQ
+* 0x10 04 ff * - INFO_PARAMETER_CHANGE
+* 0x10 06 ff * - INFO_ACTUATOR_STATUS
+* 0x10 0A ff * - INFO_TEMP
+* -------------------------------------------
+* 0x11 ff ff * INSTRUCTION_MSG = 0x11
+* 0x11 02 ff * - INSTRUCTION_SET
+* 0x11 03 ff * - INSTRUCTION_STOP_CHANGE
+* 0x11 04 00 * - INSTRUCTION_RESET
+* 0x11 80 ff * - INSTRUCTION_LED
+* 0x11 81 00 * - INSTRUCTION_LED_ALL
+* 0x11 81 FF * - INSTRUCTION_LEVEL
+* 0x11 82 FF * - INSTRUCTION_SLEEPMODE
+* -------------------------------------------
+* 0x12 ff ff * HAVE_DATA = 0x12
+* -------------------------------------------
+* 0x3e ff ff * SWITCH = 0x3e
+* 0x40 ff ff * REMOTE = 0x40
+* 0x41 ff ff * SENSOR_EVENT = 0x41
+* 0x53 ff ff * SENSOR_DATA = 0x53
+* 0x58 ff ff * CLIMATE_EVENT = 0x58
+* 0x59 ff ff * SET_TEAM_TEMP = 0x59
+* 0x70 ff ff * WEATHER_EVENT = 0x70
+* -------------------------------------------
 */
-enum TYPE_MSG { DEVICE_INFO = 0x00, CONFIG_REQ = 0x01, ACK_MSG = 0x02, AES_REPLY = 0x03, SEND_AES_CODE = 0x04, REPLY_MSG = 0x10, INSTRUCTION_MSG = 0x11, HAVE_DATA = 0x12, SWITCH = 0x3e, REMOTE = 0x40, SENSOR_EVENT = 0x41, SENSOR_DATA = 0x53, CLIMATE_EVENT = 0x58, SET_TEAM_TEMP = 0x59, WEATHER_EVENT = 0x70 };
+enum TYPE_MSG { DEVICE_INFO = 0x00ffff, 
+	CONFIG_REQ = 0x01ffff, 
+	CONFIG_PEER_ADD = 0x01ff01, 
+	CONFIG_PEER_REMOVE = 0x01ff02, 
+	CONFIG_PEER_LIST_REQ = 0x01ff03, 
+	CONFIG_PARAM_REQ = 0x01ff04, 
+	CONFIG_START = 0x01ff05, 
+	CONFIG_END = 0x01ff06, 
+	CONFIG_WRITE_INDEX1 = 0x01ff07, 
+	CONFIG_WRITE_INDEX2 = 0x01ff08, 
+	CONFIG_SERIAL_REQ = 0x01ff09, 
+	PAIR_SERIAL = 0x01ff0a, 
+	CONFIG_STATUS_REQUEST = 0x01ff0e, 
+	ACK_MSG	= 0x02ffff, 
+	ACK = 0x0200ff, 
+	ACK_STATUS = 0x0201ff, 
+	ACK2 = 0x0202ff, 
+	ACK_PROC = 0x0204ff, 
+	NACK = 0x0280ff, 
+	NACK_TARGET_INVALID = 0x0284ff, 
+	ACK_NACK_UNKNOWN = 0x02FEff, 
+	REQUEST_AES = 0x02FFff, 
+	AES_REPLY = 0x03ffff, 
+	SEND_AES_CODE = 0x04ffff, 
+	SEND_AES_TO_HMLAN = 0x0401ff, 
+	SEND_AES_TO_ACTOR = 0x04ffff,
+	REPLY_MSG = 0x10ffff,
+	INFO_SERIAL = 0x1000ff, 
+	INFO_PEER_LIST = 0x1001ff, 
+	INFO_PARAM_RESPONSE_PAIRS = 0x1002ff, 
+	INFO_PARAM_RESPONSE_SEQ = 0x1003ff, 
+	INFO_PARAMETER_CHANGE = 0x1004ff, 
+	INFO_ACTUATOR_STATUS = 0x1006ff, 
+	INFO_TEMP = 0x100Aff, 
+	INSTRUCTION_MSG = 0x11ffff, 
+	INSTRUCTION_SET = 0x1102ff, 
+	INSTRUCTION_STOP_CHANGE = 0x1103ff, 
+	INSTRUCTION_RESET = 0x110400, 
+	INSTRUCTION_LED = 0x1180ff, 
+	INSTRUCTION_LED_ALL = 0x118100, 
+	INSTRUCTION_LEVEL = 0x1181ff, 
+	INSTRUCTION_SLEEPMODE = 0x1182ff, 
+	HAVE_DATA = 0x12ffff, 
+	SWITCH = 0x3effff, 
+	REMOTE = 0x40ffff, 
+	SENSOR_EVENT = 0x41ffff, 
+	SENSOR_DATA = 0x53ffff, 
+	CLIMATE_EVENT = 0x58ffff, 
+	SET_TEAM_TEMP = 0x59ffff, 
+	WEATHER_EVENT = 0x70ffff,
+};
 
-/*
-* @brief Type of message for config request, Byte 03 = 0x01, Byte 11 translation
-*/
-enum CONFIG_REQ { CONFIG_PEER_ADD = 0x01, CONFIG_PEER_REMOVE = 0x02, CONFIG_PEER_LIST_REQ = 0x03, CONFIG_PARAM_REQ = 0x04, CONFIG_START = 0x05, CONFIG_END = 0x06, CONFIG_WRITE_INDEX1 = 0x07, CONFIG_WRITE_INDEX2 = 0x08, CONFIG_SERIAL_REQ = 0x09, PAIR_SERIAL = 0x0a, CONFIG_STATUS_REQUEST = 0x0e };
 
 
 /*
@@ -118,14 +246,14 @@ enum CONFIG_REQ { CONFIG_PEER_ADD = 0x01, CONFIG_PEER_REMOVE = 0x02, CONFIG_PEER
 * 0x80: set in every message. Meaning?
 */
 struct s_mFlg {
-	uint8_t WKUP   : 1;					// 0x01: send initially to keep the device awake
-	uint8_t WKMEUP : 1;					// 0x02: awake - hurry up to send messages
-	uint8_t CFG    : 1;					// 0x04: Device in Config mode
+	uint8_t WKUP   : 1;						// 0x01: send initially to keep the device awake
+	uint8_t WKMEUP : 1;						// 0x02: awake - hurry up to send messages
+	uint8_t CFG    : 1;						// 0x04: Device in Config mode
 	uint8_t        : 1;
-	uint8_t BURST  : 1;					// 0x10: set if burst is required by device
-	uint8_t BIDI   : 1;					// 0x20: response is expected
-	uint8_t RPTED  : 1;					// 0x40: repeated (repeater operation)
-	uint8_t RPTEN  : 1;					// 0x80: set in every message. Meaning?
+	uint8_t BURST  : 1;						// 0x10: set if burst is required by device
+	uint8_t BIDI   : 1;						// 0x20: response is expected
+	uint8_t RPTED  : 1;						// 0x40: repeated (repeater operation)
+	uint8_t RPTEN  : 1;						// 0x80: set in every message. Meaning?
 }; // MESSAGE_FLAGS
 
 

@@ -10,7 +10,6 @@
 #ifndef _SN_H
 #define _SN_H
 
-
 #include "HAL.h"
 #include "AS_typedefs.h"
 
@@ -24,19 +23,25 @@ public:		//---------------------------------------------------------------------
 	uint8_t   *buf = (uint8_t*)&msg;										// map the union to a local byte buffer
 	uint8_t   *prev_buf = new uint8_t[32];									// store the last sent message for calculating AES signing response, bytes 1 - 27 of the original message needed
 
-	uint8_t   MSG_CNT;														// message counter for standard sends, while not answering something
-	uint8_t   prevMSG_CNT;													// store for message counter, needed to identify ACK
-
-	uint8_t   retrCnt;														// variable to count how often a message was already send
-	uint8_t   maxRetr;														// how often a message has to be send until ACK
-
-
-	uint8_t   active;														// is send module active, 1 indicates yes
-	uint8_t   timeOut;														// was last message a timeout
+	/*
+	* @brief Helper struct for all send function relevant variables
+	* structs holds following information:
+	* active       - is send module active, 1 indicates yes
+	* timeout      - was last message a timeout
+	* prev_msg_cnt - store for message counter, needed to identify ACK
+	* retr_cnt     - variable to count how often a message was already send
+	* max_retr     - how often a message has to be send until ACK
+	* timer        - config mode timeout
+	*/
+	s_send_flags flag;	
+	uint8_t      msg_cnt;													// message counter for initial sends
+	uint8_t      prev_msg_cnt;												// store for message counter, needed to identify ACK
 
 	SN();																	// constructor
 	void poll(void);														// poll function, process if something is to send
-	void cleanUp(void);														// todo
+	void cleanUp(void);														// clenup for the send function
+
+
 };
 
 extern SN snd;																// send class is declared in AS.cpp

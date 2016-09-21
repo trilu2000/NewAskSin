@@ -15,12 +15,10 @@
 #endif
 
 
-#include "Send.h"
 #include "AS.h"
-
+#include "Send.h"
 
 SN snd;																						// declare send module, defined in send.h
-waitTimer sndTmr;																			// send timer functionality
 
 
 SN::SN() {
@@ -32,30 +30,30 @@ void SN::poll(void) {
 	#define maxTime       300
 
 	// set right amount of retries
-	if (!this->maxRetr) {																	// first time run, check message type and set retries
+	if (!flag.max_retr) {																	// first time run, check message type and set retries
 		if (sndAckReq) {
-			this->maxRetr = maxRetries;														// if BIDI is set, we have three retries
+			flag.max_retr = maxRetries;														// if BIDI is set, we have three retries
 		} else {
-			this->maxRetr = 1;
+			flag.max_retr = 1;
 		}
 	}
 	
 	//dbg << "x:" << this->retrCnt << " y:" << this->maxRetr << " t:" << sndTmr.done() << '\n';
 	
 	// send something while timer is not busy with waiting for an answer and max tries are not done 
-	if ((this->retrCnt < this->maxRetr) && (sndTmr.done() )) {								// not all sends done and timing is OK
+	if ((flag.retr_cnt < flag.max_retr) && (flag.timer.done() )) {								// not all sends done and timing is OK
 
 		// some sanity
 		msg.mBody.FLAG.RPTEN = 1;															// every message need this flag
 		//if (pHM->cFlag.active) this->mBdy.mFlg.CFG = pHM->cFlag.active;					// set the respective flag while we are in config mode
-		this->timeOut = 0;																	// not timed out because just started
-		prevMSG_CNT = msg.mBody.MSG_CNT;													// copy the message count to identify the ACK
-		this->retrCnt++;																	// increase counter while send out
+		flag.timeout = 0;																	// not timed out because just started
+		prev_msg_cnt = msg.mBody.MSG_CNT;													// copy the message count to identify the ACK
+		flag.retr_cnt++;																	// increase counter while send out
 
 		// check if we should send an internal message
 		if (!memcmp( msg.mBody.RCV_ID, dev_ident.HMID, 3)) {
 			memcpy( rcv.buf, buf, sndStrLen );												// copy send buffer to received buffer
-			this->retrCnt = 0xFF;															// ACK not required, because internal
+			flag.retr_cnt = 0xFF;															// ACK not required, because internal
 						
 			DBG( F("<i ") );
 
@@ -73,7 +71,7 @@ void SN::poll(void) {
 			cc.sndData(buf, tBurst);														// send to communication module
 			
 			if (sndAckReq) {
-				sndTmr.set(maxTime);														// set the time out for the message
+				flag.timer.set(maxTime);														// set the time out for the message
 			}
 			
 			DBG( F("<- ") );
@@ -86,26 +84,24 @@ void SN::poll(void) {
 		DBG( _HEX( buf, sndStrLen), ' ', _TIME, '\n' );
 
 
-	} else if ((this->retrCnt >= this->maxRetr) && (sndTmr.done() )) {						// max retries achieved, but seems to have no answer
-		this->retrCnt = 0;
-		this->maxRetr = 0;
-		this->active = 0;
+	} else if ((flag.retr_cnt >= flag.max_retr) && (flag.timer.done() )) {						// max retries achieved, but seems to have no answer
+		cleanUp();
+		flag.timeout = 1;																	// set the time out only while an ACK or answer was requested
 
 		if (!sndAckReq) {
 			return;
 		}
 		
-		this->timeOut = 1;																	// set the time out only while an ACK or answer was requested
 		pom.stayAwake(100);
 		led.set(noack);
 		
 		DBG( F("  timed out"), ' ', _TIME, '\n' );
 	}
 
-	if (this->retrCnt == 0xFF) {															// answer was received, clean up the structure
+	if (flag.retr_cnt == 0xFF) {															// answer was received, clean up the structure
 //		dbg << F(">>> clear timer") << _TIME << "\n";
 
-		this->cleanUp();
+		cleanUp();
 		pom.stayAwake(100);
 		if (!led.active) led.set(ack);														// fire the status led
 	}
@@ -113,9 +109,26 @@ void SN::poll(void) {
 
 void SN::cleanUp(void) {
 	buf[0] = 0;
-	this->timeOut = 0;
-	this->retrCnt = 0;
-	this->maxRetr = 0;
-	this->active = 0;
-	sndTmr.set(0);
+	flag = {};
 }
+
+/* 
+* @brief Make broadcast, pair and internal messages ready to send
+* Set the right flags for the send poll function. Following flags are set: active, max_retr and timeout
+* Timeout and max_retr could come from the register set of the cmMaintenance class. 
+*
+* Further functions are - set the message counter in the send string accordingly. On an answer we copy from the 
+* received messgae, if we are initiating the message it is taken from send class counter.
+*
+* Sender ID is copied in the string, length of send string is set, while handover is optional
+* Msg flags, like CONFIG, BIDI, and ACK are set. 
+*
+*/
+/*void SN::prep_nonpeer_msg(MSG_INTENT intent, TYPE_MSG type) {
+
+}*/
+
+/*void SN::prep_peer_msg() {
+
+}*/
+
