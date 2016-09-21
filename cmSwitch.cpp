@@ -52,7 +52,7 @@ cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 
 	msgDelay = (rand() % 2000) + 1000;														// set message delay
 	msgTmr.set(msgDelay);																	// wait some time to settle the device
-	sendStat = INFO(ACTUATOR_STATUS);														// send the initial status info
+	sendStat = INFO(SND_ACTUATOR_STATUS);														// send the initial status info
 
 	DBG( F("cmSwitch, cnl: "), lstC.cnl, '\n');
 }
@@ -87,7 +87,7 @@ void cmSwitch::message_trigger11(uint8_t setValue, uint8_t *rampTime, uint8_t *d
 	delayTmr.set( intTimeCvt(rampTme) );													// set the timer accordingly, could be 0 or a time
 	value_tr11 = setValue;																	// forward the value to be set
 
-	sendStat = INFO(ACK_STATUS);															// ACK should be send
+	sendStat = INFO(SND_ACK_STATUS);															// ACK should be send
 	msgTmr.set(10);																			// give some time
 
 	DBG( F("trigger11, setValue:"), setValue, F(", rampTime:"), intTimeCvt(rampTme), F(", duraTime:"), intTimeCvt(duraTme), '\n' );
@@ -140,7 +140,7 @@ void cmSwitch::message_trigger40(uint8_t msgLng, uint8_t msgCnt) {
 		modStat = (msgCnt % 2) ? 0 : 200;													// set the relay status depending on message counter
 	}
 
-	sendStat = INFO(ACK_STATUS);															// send next time a ack info message
+	sendStat = INFO(SND_ACK_STATUS);														// send next time a ack info message
 	msgTmr.set(10);																			// wait a short time to set status
 	
 	DBG( F("trigger40, msgLng:"), msgLng, F(", msgCnt:"), msgCnt, F(",ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), curStat, F(", nxtStat:"), nxtStat, F(", JT_ONDELAY:"), _HEXB(l3->JT_ONDELAY), F(", JT_ON:"), _HEXB(l3->JT_ON), F(", JT_OFFDELAY:"), _HEXB(l3->JT_OFFDELAY), F(", JT_OFF:"), _HEXB(l3->JT_OFF), '\n' );
@@ -210,12 +210,12 @@ void cmSwitch::sendStatus(void) {
 	if (!delayTmr.done() )       modDUL |= 0x40;
 	
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      ( sendStat == INFO(ACK_STATUS) )      hm.sendACK_STATUS(lstC.cnl, modStat, modDUL);	
-	else if ( sendStat == INFO(ACTUATOR_STATUS) ) hm.sendINFO_ACTUATOR_STATUS(lstC.cnl, modStat, modDUL);
+	if      ( sendStat == INFO(SND_ACK_STATUS) )      hm.sendACK_STATUS(lstC.cnl, modStat, modDUL);	
+	else if ( sendStat == INFO(SND_ACTUATOR_STATUS) ) hm.sendINFO_ACTUATOR_STATUS(lstC.cnl, modStat, modDUL);
 
 	// check if it is a stable status, otherwise schedule next info message
 	if (modDUL)  {																			// status is currently changing
-		sendStat = INFO(ACTUATOR_STATUS);													// send next time a info status message
+		sendStat = INFO(SND_ACTUATOR_STATUS);												// send next time a info status message
 		msgTmr.set(delayTmr.remain()+5);
 
 	} else sendStat = INFO(NOTHING);														// no need for next time
@@ -302,7 +302,7 @@ void cmSwitch::set_toggle(void) {
 
 	modStat ^= 200;																			// xor the relay status
 	curStat = (modStat) ? JT(ON) : JT(OFF);
-	sendStat = INFO(ACTUATOR_STATUS);														// send next time a info status message
+	sendStat = INFO(SND_ACTUATOR_STATUS);														// send next time a info status message
 }
 
 
@@ -312,7 +312,7 @@ void cmSwitch::request_pair_status(void) {
 	// we received a status request, appropriate answer is an InfoActuatorStatus message
 	DBG( F("request_pair_status\n") );
 	
-	sendStat = INFO(ACTUATOR_STATUS);														// send next time a info status message
+	sendStat = INFO(SND_ACTUATOR_STATUS);														// send next time a info status message
 	msgTmr.set(10);																			// wait a short time to set status
 
 }
