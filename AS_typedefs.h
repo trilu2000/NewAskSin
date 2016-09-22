@@ -12,23 +12,16 @@
 #ifndef _AS_TYPEDEFS_H
 #define _AS_TYPEDEFS_H
 
-/*
-* @brief Intent of message, used for receive and send function
-* Types are, valid for send or receive id
-* broadcast  - 0, messgae from or to all, indicated by 00 00 00
-* master     - 1, message to or from HM Central, communication between paired devices
-* peer       - 2, message to or from a known peer
-* internal   - 3, message to or from ourself, will not be transmitted
-* logging    - 4, not for us, show in log only
-* not paired - 5, message addressed to us, but pair or peer not known
-* error      - 6, don't know
-*/
-enum MSG_INTENT { BROADCAST = 0x00, MASTER = 0x01, PEER = 0x02, INTERN = 0x03, LOGGING = 0x04, NOT_PAIRED = 0x05, ERROR = 0x06, };
-
-
 
 /*
 * @brief Helper struct for all send function relevant variables
+* structs holds following information:
+* active       - is send module active, 1 indicates yes
+* timeout      - was last message a timeout
+* retr_cnt     - variable to count how often a message was already send
+* max_retr     - how often a message has to be send until ACK
+* max_time     - max time for message timeout timer
+* timer        - config mode timeout
 */
 typedef struct ts_send_flags {
 	uint8_t   active;						// is send module active, 1 indicates yes
@@ -118,20 +111,47 @@ typedef struct ts_peer_table {
 
 
 /*
+* @brief Intent of message, used for receive and send function
+* Types are, valid for send or receive id
+* broadcast  - 0, messgae from or to all, indicated by 00 00 00
+* master     - 1, message to or from HM Central, communication between paired devices
+* peer       - 2, message to or from a known peer
+* internal   - 3, message to or from ourself, will not be transmitted
+* logging    - 4, not for us, show in log only
+* not paired - 5, message addressed to us, but pair or peer not known
+* error      - 6, don't know
+*/
+namespace MSG_INTENT {
+	enum E : uint8_t { BROADCAST = 0x00, MASTER = 0x01, PEER = 0x02, INTERN = 0x03, LOGGING = 0x04, NOT_PAIRED = 0x05, ERROR = 0x06, };
+};
+
+
+/*
+* @brief Reason for sending the message
+* ANSWER  - 0, messgae answers a received string
+* INITIAL - 1, we are informing others
+*/
+namespace MSG_REASON {
+	enum E : uint8_t { ANSWER = 0x00, INITIAL = 0x01,  };
+};
+
+
+/*
 * @brief Type of message, Byte 03 translation
+* by03 10 11 LEN
 * -------------------------------------------
-* 0x00 ff ff * DEVICE_INFO
+* 0x00 ff ff 1a * DEVICE_INFO
 * -------------------------------------------
-* 0x01 ff ff * CONFIG_REQ
-* 0x01 ff 01 * - CONFIG_PEER_ADD 
-* 0x01 ff 02 * - CONFIG_PEER_REMOVE  
-* 0x01 ff 03 * - CONFIG_PEER_LIST_REQ 
-* 0x01 ff 04 * - CONFIG_PARAM_REQ
-* 0x01 ff 05 * - CONFIG_START
-* 0x01 ff 06 * - CONFIG_END
-* 0x01 ff 07 * - CONFIG_WRITE_INDEX1
-* 0x01 ff 08 * - CONFIG_WRITE_INDEX2
-* 0x01 ff 09 * - CONFIG_SERIAL_REQ
+* 0x01 ff ff ff * CONFIG_REQ
+* 0x01 ff 01 10 * - CONFIG_PEER_ADD
+* 0x01 ff 02 10 * - CONFIG_PEER_REMOVE
+* 0x01 ff 03 0a * - CONFIG_PEER_LIST_REQ
+* 0x01 ff 04 10 * - CONFIG_PARAM_REQ
+* 0x01 ff 05 10 * - CONFIG_START
+* 0x01 ff 06 0a * - CONFIG_END
+* 0x01 ff 07 ff * - CONFIG_WRITE_INDEX1, len unspecified
+* 0x01 ff 08 ff * - CONFIG_WRITE_INDEX2, len unspecified
+* 0x01 ff 09 09 * - CONFIG_SERIAL_REQ
 * 0x01 ff 0a * - PAIR_SERIAL
 * 0x01 ff 0e * - CONFIG_STATUS_REQUEST
 * -------------------------------------------
@@ -180,58 +200,60 @@ typedef struct ts_peer_table {
 * 0x70 ff ff * WEATHER_EVENT = 0x70
 * -------------------------------------------
 */
-enum TYPE_MSG { DEVICE_INFO = 0x00ffff, 
-	CONFIG_REQ = 0x01ffff, 
-	CONFIG_PEER_ADD = 0x01ff01, 
-	CONFIG_PEER_REMOVE = 0x01ff02, 
-	CONFIG_PEER_LIST_REQ = 0x01ff03, 
-	CONFIG_PARAM_REQ = 0x01ff04, 
-	CONFIG_START = 0x01ff05, 
-	CONFIG_END = 0x01ff06, 
-	CONFIG_WRITE_INDEX1 = 0x01ff07, 
-	CONFIG_WRITE_INDEX2 = 0x01ff08, 
-	CONFIG_SERIAL_REQ = 0x01ff09, 
-	PAIR_SERIAL = 0x01ff0a, 
-	CONFIG_STATUS_REQUEST = 0x01ff0e, 
-	ACK_MSG	= 0x02ffff, 
-	ACK = 0x0200ff, 
-	ACK_STATUS = 0x0201ff, 
-	ACK2 = 0x0202ff, 
-	ACK_PROC = 0x0204ff, 
-	NACK = 0x0280ff, 
-	NACK_TARGET_INVALID = 0x0284ff, 
-	ACK_NACK_UNKNOWN = 0x02FEff, 
-	REQUEST_AES = 0x02FFff, 
-	AES_REPLY = 0x03ffff, 
-	SEND_AES_CODE = 0x04ffff, 
-	SEND_AES_TO_HMLAN = 0x0401ff, 
-	SEND_AES_TO_ACTOR = 0x04ffff,
-	REPLY_MSG = 0x10ffff,
-	INFO_SERIAL = 0x1000ff, 
-	INFO_PEER_LIST = 0x1001ff, 
-	INFO_PARAM_RESPONSE_PAIRS = 0x1002ff, 
-	INFO_PARAM_RESPONSE_SEQ = 0x1003ff, 
-	INFO_PARAMETER_CHANGE = 0x1004ff, 
-	INFO_ACTUATOR_STATUS = 0x1006ff, 
-	INFO_TEMP = 0x100Aff, 
-	INSTRUCTION_MSG = 0x11ffff, 
-	INSTRUCTION_SET = 0x1102ff, 
-	INSTRUCTION_STOP_CHANGE = 0x1103ff, 
-	INSTRUCTION_RESET = 0x110400, 
-	INSTRUCTION_LED = 0x1180ff, 
-	INSTRUCTION_LED_ALL = 0x118100, 
-	INSTRUCTION_LEVEL = 0x1181ff, 
-	INSTRUCTION_SLEEPMODE = 0x1182ff, 
-	HAVE_DATA = 0x12ffff, 
-	SWITCH = 0x3effff, 
-	REMOTE = 0x40ffff, 
-	SENSOR_EVENT = 0x41ffff, 
-	SENSOR_DATA = 0x53ffff, 
-	CLIMATE_EVENT = 0x58ffff, 
-	SET_TEAM_TEMP = 0x59ffff, 
-	WEATHER_EVENT = 0x70ffff,
-};
-
+namespace MSG_TYPE {
+	enum E : uint32_t {									//    26 |                             26 bytes                                       |
+		DEVICE_INFO = 0x00ffff1A,						// <- 1A 01 84 00 33 11 22 00 00 00 10 00 6C 48 42 73 77 69 74 63 68 30 31 00 41 01 00 
+		CONFIG_REQ = 0x01ffffff,						//                                  00 02 04 06 08 10 12 14 16 18 20 22 24 26 28 30 32/2
+		CONFIG_PEER_ADD = 0x01ff0110,
+		CONFIG_PEER_REMOVE = 0x01ff0210,
+		CONFIG_PEER_LIST_REQ = 0x01ff030a,
+		CONFIG_PARAM_REQ = 0x01ff0410,
+		CONFIG_START = 0x01ff0510,
+		CONFIG_END = 0x01ff060a,
+		CONFIG_WRITE_INDEX1 = 0x01ff07ff,
+		CONFIG_WRITE_INDEX2 = 0x01ff08ff,
+		CONFIG_SERIAL_REQ = 0x01ff0909,
+		PAIR_SERIAL = 0x01ff0a,
+		CONFIG_STATUS_REQUEST = 0x01ff0e,
+		ACK_MSG = 0x02ffff,
+		ACK = 0x0200ff,
+		ACK_STATUS = 0x0201ff,
+		ACK2 = 0x0202ff,
+		ACK_PROC = 0x0204ff,
+		NACK = 0x0280ff,
+		NACK_TARGET_INVALID = 0x0284ff,
+		ACK_NACK_UNKNOWN = 0x02FEff,
+		REQUEST_AES = 0x02FFff,
+		AES_REPLY = 0x03ffff,
+		SEND_AES_CODE = 0x04ffff,
+		SEND_AES_TO_HMLAN = 0x0401ff,
+		SEND_AES_TO_ACTOR = 0x04ffff,
+		REPLY_MSG = 0x10ffff,
+		INFO_SERIAL = 0x1000ff,
+		INFO_PEER_LIST = 0x1001ff,
+		INFO_PARAM_RESPONSE_PAIRS = 0x1002ff,
+		INFO_PARAM_RESPONSE_SEQ = 0x1003ff,
+		INFO_PARAMETER_CHANGE = 0x1004ff,
+		INFO_ACTUATOR_STATUS = 0x1006ff,
+		INFO_TEMP = 0x100Aff,
+		INSTRUCTION_MSG = 0x11ffff,
+		INSTRUCTION_SET = 0x1102ff,
+		INSTRUCTION_STOP_CHANGE = 0x1103ff,
+		INSTRUCTION_RESET = 0x110400,
+		INSTRUCTION_LED = 0x1180ff,
+		INSTRUCTION_LED_ALL = 0x118100,
+		INSTRUCTION_LEVEL = 0x1181ff,
+		INSTRUCTION_SLEEPMODE = 0x1182ff,
+		HAVE_DATA = 0x12ffff,
+		SWITCH = 0x3effff,
+		REMOTE = 0x40ffff,
+		SENSOR_EVENT = 0x41ffff,
+		SENSOR_DATA = 0x53ffff,
+		CLIMATE_EVENT = 0x58ffff,
+		SET_TEAM_TEMP = 0x59ffff,
+		WEATHER_EVENT = 0x70ffff,
+	};
+}
 
 
 /*
@@ -296,7 +318,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, BY10 - message type
@@ -321,7 +343,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, FIRMWARE - firmware version
@@ -354,7 +376,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -367,7 +389,7 @@ typedef union u_Message {
 		uint8_t       MSG_LEN;				// by00 - message length
 		uint8_t       MSG_CNT;				// by01 - message counter
 		struct s_mFlg FLAG;					// by02 - see structure of message flags
-		uint8_t       BY03;					// by03 - type of message
+		uint8_t       MSG_TYP;				// by03 - type of message
 		uint8_t       SND_ID[3];			// by04 - sender ID
 		uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 		uint8_t       MSG_CNL;				// by10 - message channel
@@ -382,7 +404,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -410,7 +432,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -432,7 +454,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -460,7 +482,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -488,7 +510,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -510,7 +532,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -536,7 +558,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -560,7 +582,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -584,7 +606,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -608,7 +630,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, MSG_CNL - message channel
@@ -631,7 +653,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, BY10 - message type
@@ -651,7 +673,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, BY10 - message type
@@ -685,7 +707,7 @@ typedef union u_Message {
 	* byte 00, MSG_LEN - message length
 	* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
 	* byte 02, FLAG - see structure of message flags
-	* byte 03, BY03 - type of message
+	* byte 03, MSG_TYP - type of message
 	* byte 04, SND_ID[3] - sender ID
 	* byte 07, RCV_ID[3] - receiver id, broadcast for 0
 	* byte 10, BY10 - message type
@@ -787,6 +809,9 @@ mode = > '02,2,$val=(hex($val) & 0x3)', } },
 TEMP = > '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 HUM = > '04,2,$val=(hex($val))', } },
 */
+
+
+
 
 
 #endif

@@ -112,6 +112,8 @@ void SN::cleanUp(void) {
 	flag = {};
 }
 
+
+
 /* 
 * @brief Make broadcast, pair and internal messages ready to send
 * Set the right flags for the send poll function. Following flags are set: active, max_retr and timeout
@@ -120,15 +122,65 @@ void SN::cleanUp(void) {
 * Further functions are - set the message counter in the send string accordingly. On an answer we copy from the 
 * received messgae, if we are initiating the message it is taken from send class counter.
 *
-* Sender ID is copied in the string, length of send string is set, while handover is optional
+* Sender ID is copied in the string, length of send string is set
 * Msg flags, like CONFIG, BIDI, and ACK are set. 
 *
 */
-/*void SN::prep_nonpeer_msg(MSG_INTENT intent, TYPE_MSG type) {
+void SN::prep_nonpeer_msg( MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type, uint8_t len, uint8_t max_retr = 3 ) {
+	// todo: max_retr could be taken from respective channel module
+	uint8_t *type_arr = new uint8_t[4];
 
-}*/
+	// intent relevant things
+	if ( (intent == MSG_INTENT::MASTER) && (isEmpty(MAID,3)) )								// check if we have a valid master
+		intent = MSG_INTENT::BROADCAST;														// otherwise set the message to broadcast
+
+	memset(&msg.mBody.FLAG, 0, 1);															// clear the message flag while set later on
+
+	if (intent == MSG_INTENT::BROADCAST) {
+		flag.max_retr = 1;																	// nobody to answer, ack not required
+		msg.mBody.FLAG.BIDI = 0;															// no ack required while broadcast
+		memset(snd.msg.mBody.RCV_ID, 0, 3);													// set receiver to 00 00 00
+
+	} else if (intent == MSG_INTENT::INTERN) {
+		flag.max_retr = 1;																	// internal message, no answer required
+		msg.mBody.FLAG.BIDI = 0;															// no ack required while internal
+		memcpy(snd.msg.mBody.RCV_ID, dev_ident.HMID, 3);									// copy in the HMID as receiver
+
+	} else if (intent == MSG_INTENT::MASTER) {
+		// max_retr is set by default
+		msg.mBody.FLAG.BIDI = 1;															// send to master, ack required
+		memcpy(snd.msg.mBody.RCV_ID, MAID, 3);												// copy in the central hm id as receiver
+	
+	}
+
+	// message type spefic things
+#define BIG_ENDIAN ((1 >> 1 == 0) ? 0 : 1)
+#if BIG_ENDIAN
+	type_arr[0] = type;
+	type_arr[1] = type >> 8;
+	type_arr[2] = type >> 16;
+	type_arr[3] = type >> 24;
+#else
+	type_arr[0] = type >> 24;
+	type_arr[1] = type >> 16;
+	type_arr[2] = type >> 8;
+	type_arr[3] = type;
+#endif
+	msg.mBody.MSG_TYP = type_arr[1];
+	if (type_arr[2] != 0xff) msg.mBody.BY10 = type_arr[2];
+	if (type_arr[3] != 0xff) msg.mBody.BY11 = type_arr[3];
+	//dbg << "i:" << intent << ", t:" << type << ", d:" << _HEX(type_arr, 4) << '\n';
+
+	// general flags
+	if      (reason == MSG_REASON::ANSWER) msg.mBody.MSG_CNT = rcv.msg.mBody.MSG_CNT;		// copy counter from received string
+	else if (reason == MSG_REASON::ANSWER) msg.mBody.MSG_CNT = msg_cnt++;					// copy counter from send function and increase
+	msg.mBody.FLAG.RPTEN = 1;																// set as standard
+	flag.max_time = 300; // todo: link to maintenance channel module
+	flag.active = 1;
+}
 
 /*void SN::prep_peer_msg() {
+// handle internal messages as 
 
 }*/
 

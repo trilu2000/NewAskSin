@@ -39,7 +39,8 @@ void setup() {
 
 	// - user related -----------------------------------------
 	DBG( F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(MAID,3), F("\n\n") );			// some debug
-	
+
+	snd.prep_nonpeer_msg(MSG_REASON::INITIAL, MSG_INTENT::INTERN, MSG_TYPE::ACK, 9, 3);
 
 	//dbg << "test: " << _HEX((uint8_t*)pcnlModule[0]->lstC.val, 5) << '\n';
 	//DBG("test:", sizeof(pcnlModule) / sizeof(pcnlModule[0]), '\n'; );
