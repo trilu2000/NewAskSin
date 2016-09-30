@@ -8,12 +8,6 @@
 */
 
 #include "00_debug-flag.h"
-#ifdef CM_DBG
-#define DBG(...) Serial ,__VA_ARGS__
-#else
-#define DBG(...) 
-#endif
-
 #include "cmMaster.h"
 
 
@@ -26,56 +20,113 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 	lstC.cnl = cnl_max;																			// set the channel to the lists
 	lstP.cnl = cnl_max++;
 
-	lstC.val = new uint8_t[lstC.len];
-	lstP.val = new uint8_t[lstP.len];															// doesn't matter, list0 is normally 6 to 8 byte
-
-	DBG( F("cmM, cnl/lst: "), lstC.cnl, '/', lstC.lst, F(", cnl/lst: "), lstP.cnl, '/', lstP.lst, '\n' );
+	DBG_START(CM, F("CM["), lstC.cnl, F("].\n"));
+	//DBG(CM, F("C-cnl/lst:"), lstC.cnl, '/', lstC.lst, F(", P-cnl/lst:"), lstP.cnl, '/', lstP.lst, '\n');
 }
 
 
 void cmMaster::message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
-	DBG( F("cmM, trigger11, setValue:"), value, F(", rampTime:"), intTimeCvt(*(uint16_t*)rampTime), F(", duraTime:"), intTimeCvt(*(uint16_t*)duraTime), '\n' );
+	DBG(CM, F("CM:trigger11, setValue:"), value, F(", rampTime:"), intTimeCvt(*(uint16_t*)rampTime), F(", duraTime:"), intTimeCvt(*(uint16_t*)duraTime), '\n' );
 }
 
 void cmMaster::message_trigger3E(uint8_t msgLng, uint8_t msgCnt) {
-	DBG( F("cmM, trigger3E, msgLng:"), msgLng, F(", msgCnt:"), msgCnt, '\n' );
+	DBG(CM, F("CM:trigger3E, msgLng:"), msgLng, F(", msgCnt:"), msgCnt, '\n' );
 }
 
 void cmMaster::message_trigger40(uint8_t msgLng, uint8_t msgCnt) {
-	DBG( F("cmM, trigger40, msgLng:"), msgLng, F(", msgCnt:"), msgCnt, '\n' );
+	DBG(CM, F("CM:trigger40, msgLng:"), msgLng, F(", msgCnt:"), msgCnt, '\n' );
 }
 
 void cmMaster::message_trigger41(uint8_t msgLng, uint8_t msgCnt, uint8_t msgVal) {
-	DBG( F("cmM, trigger41, val:"), msgLng, '\n' );
+	DBG(CM, F("CM:trigger41, val:"), msgLng, '\n' );
 }
 
 
 void cmMaster::info_config_change(void) {
-	DBG( F("cmM, config_change\n") );
+	DBG(CM, F("CM:config_change\n") );
 }
 /**
 * we received an peer add event, which means, there was a peer added in this respective channel
 * 1st 3 bytes shows the peer address, 4th and 5th byte gives the peer channel
 * no need for sending an answer here, for information only
 */
-void cmMaster::info_peer_add(uint8_t *data, uint8_t len) {
-	DBG( F("cmM, peer_add: peer: "), _HEX(data, 3), F(", pCnl1: "), _HEXB(data[3]), F(", pCnl2: "), _HEXB(data[4]), '\n' );
+void cmMaster::info_peer_add(s_m01xx01 *buf) {
+	DBG(CM, F("CM:info_peer_add, peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n');
 }
 
 
-void cmMaster::request_peer_defaults(uint8_t pIdx, uint8_t pCnl1, uint8_t pCnl2) {
-	DBG( F("cmM, peer_defaults: peerIndex: "), _HEXB(pIdx), F(", peerCnl1: "), _HEXB(pCnl1), F(", peerCnl2: "), _HEXB(pCnl2), '\n' );
+void cmMaster::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
+	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEXB(idx), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n' );
 }
 void cmMaster::request_pair_status(void) {
-	DBG( F("cmM, pair_status\n") );
+	DBG(CM, F("CM:pair_status\n") );
 }
 
 
 void cmMaster::poll(void) {
 }
 void cmMaster::set_toggle(void) {
-	DBG( F("cmM, toggle\n") );
+	DBG(CM, F("CM:toggle\n") );
 }
+
+
+
+/*
+* @brief Received message handling forwarded by AS::processMessage
+*/
+
+
+void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
+	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
+	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting 
+
+	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
+		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry 
+
+		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
+		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
+
+		uint8_t idx = peer.get_idx(temp_peer);												// search if we have already the peer in the database
+		if (idx == 0xff) idx = peer.get_free_slot();										// not in the in the database, search a free slot
+
+		if (idx != 0xff) {																	// free slot available
+			peer.set_peer(idx, temp_peer);													// write the peer into the database
+
+			lstP.load_default();															// copy the defaults from progmem into the peer list, index doesn't matter
+			request_peer_defaults(idx, buf);												// ask the channel module to load the defaults
+			lstP.save_list(idx);															// and save the list, index is important while more choices in the peer table
+			ret_byte++;																		// increase success
+		}
+	}
+	info_peer_add(buf);																		// inform the user module of the added peer
+
+	DBG(CM, F("CM:CONFIG_PEER_ADD, cnl:"), lstP.cnl, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
+	hm.checkSendACK(ret_byte);
+}
+
+void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
+	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
+	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting 
+
+	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
+		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry 
+
+		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
+		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
+		uint8_t idx = peer.get_idx(temp_peer);												// find the peer in the database
+
+		if (idx != 0xff) {																	// found it
+			peer.clear_peer(idx);															// delete the peer in the database
+			ret_byte++;																		// increase success
+		}
+
+	}
+
+	DBG(CM, F("CM:CONFIG_PEER_REMOVE, cnl:"), lstC.cnl, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n');
+	hm.checkSendACK(ret_byte);
+}
+
+
 
 
 
@@ -90,15 +141,18 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
 		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+	
+		pCM->lstC.val = new uint8_t[pCM->lstC.len];
+		pCM->lstP.val = new uint8_t[pCM->lstP.len];										// doesn't matter, list0 is normally 6 to 8 byte
 
 		pCM->lstC.ee_addr = ee_start_addr;												// write the eeprom address in the channel list
 		ee_start_addr += pCM->lstC.len;													// create new address by adding the length of the list before
 		pCM->lstP.ee_addr = ee_start_addr;												// write the eeprom address in the peer list
 		ee_start_addr += (pCM->lstP.len * pCM->peer.max);								// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
 
-		getEEPromBlock(pCM->lstC.ee_addr, pCM->lstC.len, pCM->lstC.val);				// read the defaults in respective list0/1
+		pCM->lstC.load_list();															// read the defaults in respective list0/1
 		pCM->info_config_change();														// inform the channel modules
-		DBG(F("cmM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->chnl_list, pCM->lstC.len), '\n');
+		DBG(CM, F("CM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->lstC.val, pCM->lstC.len), '\n');
 	}
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
@@ -107,6 +161,18 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		ee_start_addr += pCM->peer.max * 4;												// create nwe eeprom start address depending on the space for max peers are used
 	}
 	return ee_start_addr;
+}
+
+/*
+* @brief Search for a 4 byte peer address in all channel instances and returns
+*        the channel number where the peer was found. Returns 0 if nothing was found.
+*/
+uint8_t  is_peer_valid(uint8_t *peer) {
+	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
+		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+		if (pCM->peer.get_idx(peer) != 0xff) return i;									// ask the peer table to find the peer, if found, return the cnl
+	}
+	return 0;																			// nothing was found, return 0
 }
 
 /*
@@ -125,7 +191,7 @@ uint16_t cm_calc_crc(void) {
 		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.reg);
 		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.def);
 		flashCRC = crc16(flashCRC, pCM->peer.max);
-		DBG(F("cmM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');					// some debug
+		DBG(CM, F("CM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');					// some debug
 	}
 	return flashCRC;
 }

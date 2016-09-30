@@ -75,7 +75,7 @@ void EE_PEER::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *ret_peer) {
 * @return the amount of added peers
 */
 uint8_t EE_PEER::addPeers(uint8_t cnl, uint8_t *add_peer) {
-	uint8_t retByte = 0;
+/*	uint8_t retByte = 0;
 	cmMaster  *pCM = pcnlModule[cnl];
 	s_peer_table *peer = &pcnlModule[cnl]->peer;										// short hand to the peer table in the respective channel module
 	s_list_table *list = &pcnlModule[cnl]->lstP;										// short hand to the respective list
@@ -96,14 +96,14 @@ uint8_t EE_PEER::addPeers(uint8_t cnl, uint8_t *add_peer) {
 		uint16_t pAddr = list->ee_addr + (free_idx * 4);								// calculate the peer address in eeprom
 		setEEPromBlock(pAddr, 3, add_peer);												// write the peer to the eeprom
 		setEEPromBlock(pAddr + 3, 1, add_peer + 3 + i);									// write the peer channel to the eeprom
-
+*/
 		/*
 		* writing defaults take a long time, in case of cmSwitch it is 75ms peer peer list
 		* but writing defaults here and then writing defaults from channel modul
 		* results in a timeout. So we have to ask the channel module for its defaults
 		* combine it in a list and write it to the eeprom once
 		*/
-		memcpy_P(list->val, list->def, list->len);										// copy the defaults from progmem into the peer list
+/*		memcpy_P(list->val, list->def, list->len);										// copy the defaults from progmem into the peer list
 		pCM->request_peer_defaults(add_peer[3 + i], add_peer[3], add_peer[4]);			// ask the channel module to update the respective peer list
 
 		//dbg << "cnl: " << cnl << ", sLen: " << sLen << ", x: " << _HEX(pModTbl->lstPeer, sLen) << '\n';
@@ -115,7 +115,7 @@ uint8_t EE_PEER::addPeers(uint8_t cnl, uint8_t *add_peer) {
 	pCM->info_peer_add(add_peer, 5);													// inform user module
 
 	DBG(F("EE:addPeers, cnl:"), cnl, F(", peer:"), _HEX(add_peer, 5), F(", add:"), retByte, '\n');// some debug
-	return retByte;																		// everything went fine, return success
+	return retByte;	*/																	// everything went fine, return success
 }
 
 /**
@@ -130,7 +130,7 @@ uint8_t EE_PEER::addPeers(uint8_t cnl, uint8_t *add_peer) {
 * @return the amount of removed peers
 */
 uint8_t EE_PEER::remPeers(uint8_t cnl, uint8_t *rem_peer) {
-	s_peer_table *peer = &pcnlModule[cnl]->peer;										// short hand to the peer table in the respective channel module
+	/*	s_peer_table *peer = &pcnlModule[cnl]->peer;										// short hand to the peer table in the respective channel module
 
 	uint8_t *lPeer = new uint8_t[4];													// temp byte array to load peer addresses
 	uint8_t retByte = 0;																// return value set to 0 while nothing removed
@@ -150,7 +150,7 @@ uint8_t EE_PEER::remPeers(uint8_t cnl, uint8_t *rem_peer) {
 	}
 
 	DBG(F("EE:remPeers, cnl:"), cnl, F(", peer:"), _HEX(rem_peer, 5), F(", removed:"), retByte, '\n');
-	return retByte;
+	return retByte;*/
 }
 
 

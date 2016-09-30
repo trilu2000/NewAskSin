@@ -1,10 +1,6 @@
 //- debug functionallity --------------------------------------------------------------------------------------------------
 #include "00_debug-flag.h"
-#ifdef SER_DBG
-#define DBG(...) Serial ,__VA_ARGS__
-#else
-#define DBG(...) 
-#endif
+
 
 
 //- load library's --------------------------------------------------------------------------------------------------------
@@ -28,9 +24,8 @@ void setup() {
 	power_timer0_enable();
 	power_spi_enable();																			// enable only needed functions
 
-	dbgStart();																					// serial setup
-	DBG( F("HM_LC_SW1_BA_PCB\n") );	
-	DBG( F(LIB_VERSION_STRING) );
+	DBG_START( SER, F("HM_LC_SW1_BA_PCB\n") );	
+	DBG(SER, F(LIB_VERSION_STRING) );
 
 
 	// - AskSin related ---------------------------------------
@@ -38,9 +33,18 @@ void setup() {
 	sei();																						// enable interrupts
 
 	// - user related -----------------------------------------
-	DBG( F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(MAID,3), F("\n\n") );			// some debug
+	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(MAID,3), F(", CNL: "), cnl_max, F("\n\n") );	// some debug
 
-	snd.prep_nonpeer_msg(MSG_REASON::INITIAL, MSG_INTENT::INTERN, MSG_TYPE::ACK, 9, 3);
+	//snd.prep_msg(MSG_REASON::INITIAL, MSG_INTENT::INTERN, MSG_TYPE::ACK, 9, 3);
+
+	//dbg << "by03 " << _HEXB(BY03(MSG_TYPE::CONFIG_PARAM_REQ)) << ", by10 " << _HEXB(BY10(MSG_TYPE::CONFIG_PARAM_REQ)) << ", by11 " << _HEXB(BY11(MSG_TYPE::CONFIG_PARAM_REQ)) << ", mlen " << _HEXB(MLEN(MSG_TYPE::CONFIG_PARAM_REQ)) << '\n';
+	//uint8_t *x = pcnlModule[0]->lstC.ptr_to_val(0x0a);
+	//dbg << "test:" << _HEX(x, 3) << '\n';
+	//x[0] = 0x63;
+	//x[1] = 0x19;
+	//x[2] = 0x64;
+	//dbg << "test1:" << _HEX(pcnlModule[0]->lstC.val, pcnlModule[0]->lstC.len) << '\n';
+
 
 	//dbg << "test: " << _HEX((uint8_t*)pcnlModule[0]->lstC.val, 5) << '\n';
 	//DBG("test:", sizeof(pcnlModule) / sizeof(pcnlModule[0]), '\n'; );
@@ -58,7 +62,7 @@ void loop() {
 //- user functions --------------------------------------------------------------------------------------------------------
 void cmSwitch::initSwitch(uint8_t channel) {
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
-	DBG( F("initRly: "), channel, '\n' );
+	DBG(SER, F("initRly: "), channel, '\n' );
 	
 	SET_PIN_OUTPUT(PIN_D3);																		// init the relay pins
 	SET_PIN_LOW(PIN_D3);																		// set relay pin to ground
@@ -66,7 +70,7 @@ void cmSwitch::initSwitch(uint8_t channel) {
 
 void cmSwitch::switchSwitch(uint8_t channel, uint8_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
-	DBG( F("switchRly: "), channel, ", ", status, '\n' );
+	DBG(SER, F("switchRly: "), channel, ", ", status, '\n' );
 
 	if (status) SET_PIN_HIGH(PIN_D3);															// check status and set relay pin accordingly
 	else SET_PIN_LOW(PIN_D3);
@@ -93,7 +97,7 @@ void serialEvent() {
 			return;
 		}
 		else if (inChar == 's') {
-			snd.flag.active = 1;
+			snd_msg.active = 1;
 			i = 0;
 			return;
 		}
@@ -103,8 +107,8 @@ void serialEvent() {
 		else if ((inChar>47) && (inChar<58))  inChar -= 48;										// 0 - 9
 		else continue;
 
-		if (i % 2 == 0) snd.buf[i / 2] = inChar << 4;											// high byte
-		else snd.buf[i / 2] |= inChar;															// low byte
+		if (i % 2 == 0) snd_msg.buf[i / 2] = inChar << 4;											// high byte
+		else snd_msg.buf[i / 2] |= inChar;															// low byte
 
 		i++;
 	}
@@ -112,7 +116,7 @@ void serialEvent() {
 
 void dumpEEprom() {
 
-	DBG(F("\nEEPROM content\n\n"));
+	DBG(SER, F("\nEEPROM content\n\n"));
 
 	for (uint8_t i = 0; i < cnl_max; i++) {
 		cmMaster *pCM = pcnlModule[i];															// shorthand to channel module
@@ -125,43 +129,41 @@ void dumpEEprom() {
 
 void printList( s_list_table *lstP, s_peer_table *peer ) {
 	uint8_t *x = new uint8_t[lstP->len];
-	uint8_t *p = new uint8_t[4];
 	uint16_t pAddr;
 
-	DBG(F("cnl:"), _HEXB(lstP->cnl), F(", lst:"), _HEXB(lstP->lst), F(", sLen:"), _HEXB(lstP->len), F(", pAddr:"), lstP->ee_addr, '\n');
+	DBG(SER, F("cnl:"), _HEXB(lstP->cnl), F(", lst:"), _HEXB(lstP->lst), F(", sLen:"), _HEXB(lstP->len), F(", pAddr:"), lstP->ee_addr, '\n');
 
 	memcpy_P(x, lstP->reg , lstP->len );
-	DBG(F("register:  "), _HEX(x, lstP->len), '\n');
+	DBG(SER, F("register:  "), _HEX(x, lstP->len), '\n');
 
 	memcpy_P(x, lstP->def, lstP->len );
-	DBG(F("default:   "), _HEX(x, lstP->len), '\n');
+	DBG(SER, F("default:   "), _HEX(x, lstP->len), '\n');
 
-	DBG(F("cmModul:   "), _HEX(lstP->val, lstP->len), '\n');
+	DBG(SER, F("cmModul:   "), _HEX(lstP->val, lstP->len), '\n');
 
 	if ((lstP->lst == 3) || (lstP->lst == 4)) {
-		DBG('\n');
+		DBG(SER, '\n');
 
 		for (uint8_t i = 0; i < peer->max; i++) {
 
 			// process peer
-			pAddr = peer->ee_addr + (i * 4);
-			getEEPromBlock(pAddr, 4, p);
-			DBG(F("peer   "), _HEXB(i), F(": "), _HEX(p, 4), F(" ("), pAddr, F(")\n"));
+			uint8_t *p = peer->get_peer(i);
+			DBG(SER, F("peer   "), _HEXB(i), F(": "), _HEX(p, 4), F(" ("), peer->ee_addr+(i*4), F(")\n"));
 
 			// process list
 			pAddr = lstP->ee_addr + (i * lstP->len);
 			getEEPromBlock(pAddr, lstP->len, x);
-			DBG(F("eeprom "), _HEXB(i), F(": "), _HEX(x, lstP->len), F(" ("), pAddr, F(")\n"));
+			DBG(SER, F("eeprom "), _HEXB(i), F(": "), _HEX(x, lstP->len), F(" ("), pAddr, F(")\n"));
 		}
 
-	}
-	else {
+	} else {
 		getEEPromBlock(lstP->ee_addr, lstP->len, x);
-		DBG(F("eeprom:    "), _HEX(x, lstP->len), '\n');
+		DBG(SER, F("eeprom:    "), _HEX(x, lstP->len), '\n');
 
 	}
-	DBG('\n');
+	DBG(SER, '\n');
 }
 
 
 #endif
+

@@ -8,13 +8,6 @@
 */
 
 #include "00_debug-flag.h"
-#ifdef RV_DBG
-#define DBG(...) Serial ,__VA_ARGS__
-#else
-#define DBG(...) 
-#endif
-
-
 #include "Receive.h"
 #include "AS.h"
 
@@ -23,72 +16,76 @@ RV rcv;																						// declare receive module, defined in receive.h
 
 
 RV::RV() {
-	DBG( F("RV.\n") );																		// ...and some information
+	DBG(RV, F("RV.\n") );																	// ...and some information
 }
 
 void RV::poll(void) {
 
 	// checks a received string for validity and intent
-	if (msg.mBody.MSG_LEN < 9) {															// check if the string has all mandatory bytes, if not
-		DBG( F("  too short...\n") );
-		msg.mBody.MSG_LEN = 0;																// clear receive buffer
+	if (rcv_msg.mBody->MSG_LEN < 9) {														// check if the string has all mandatory bytes, if not
+		DBG(RV, F("  too short...\n") );
+		rcv_msg.clear();																	// clear receive buffer
 		return;
 	}
 
 	// check for a repeated string which was already processed
-	if ((msg.mBody.FLAG.RPTED) && (lastMSG_CNT == msg.mBody.MSG_CNT)) {						// check if message was already received
-		DBG( F("  repeated ...\n") );
-		msg.mBody.MSG_LEN = 0;																// clear receive buffer
+	if ((rcv_msg.mBody->FLAG.RPTED) && (rcv_msg.prev_MSG_CNT == rcv_msg.mBody->MSG_CNT)) {	// check if message was already received
+		DBG(RV, F("  repeated ...\n") );
+		rcv_msg.clear();																	// clear receive buffer
 		return;
 	}
-	lastMSG_CNT = msg.mBody.MSG_CNT;														// remember for next time
+	rcv_msg.prev_MSG_CNT = rcv_msg.mBody->MSG_CNT;											// remember for next time
 
 	// get the intend of the message
-	uint8_t bIntend = getIntend();															// no params neccassary while everything is in the rcv union
-
-	DBG( (char)bIntend, F("> "), _HEX( buf, rcvStrLen), ' ', _TIME, '\n' );
+	getIntend();																			// no params neccassary while everything is in the recv struct
+	DBG(RV, (char)rcv_msg.intent, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0]+1), ' ', _TIME, '\n' );
 
 	#ifdef RV_DBG_EX																		// only if extended AS debug is set
 	hm.explainMessage(this->buf);
 	#endif
 
 	// process only messages from master, peer or internal
-	if ((bIntend != 'm') && (bIntend != 'p') && (bIntend != 'i') && (bIntend != 'x')) {
-		msg.mBody.MSG_LEN = 0;																// clear receive buffer
-		PEER_CNL = 0;
-		return;																				// nothing to do any more
-	}
-
-	hm.processMessage();																	// process the message which is in the received buffer
-	msg.mBody.MSG_LEN = 0;																	// everything done, set length byte to 0
-	PEER_CNL = 0;
+	if ((rcv_msg.intent != MSG_INTENT::MASTER) && (rcv_msg.intent != MSG_INTENT::PEER) && (rcv_msg.intent != MSG_INTENT::INTERN) && (rcv_msg.intent != MSG_INTENT::NOT_PAIRED))
+		rcv_msg.clear();																	// nothing to do any more
+	else 
+		rcv_msg.hasdata = 1;																// signalize that something is to do
 }
 
-uint8_t RV::getIntend() {
+
+void RV::getIntend() {
+	// prepare the peer search
+	memcpy(rcv_msg.peer, rcv_msg.mBody->SND_ID, 3);											// peer has 4 byte and the last byte indicates the channel but also lowbat and long message, therefore we copy it together in a seperate byte array
+	uint8_t buf10 = rcv_msg.buf[10];														// get the channel byte seperate
+	if (rcv_msg.use_prev_buf) buf10 = rcv_msg.prev_buf[10];									// if AES is active, we must get buf[10] from prevBuf[10]
+	rcv_msg.peer[3] = buf10 & 0x3f;															// mask out long and battery low
+
 
 	// it could come as a broadcast message - report it only while loging is enabled
-	if ( isEmpty(msg.mBody.RCV_ID, 3)) return 'b';											// broadcast message
+	if (isEmpty(rcv_msg.mBody->RCV_ID, 3))													// broadcast message
+		rcv_msg.intent = MSG_INTENT::BROADCAST;			
 
 	// it could be addressed to a different device - report it only while loging is enabled
 	// memcmp gives 0 if string matches, any other value while no match
-	if ( !isEqual(msg.mBody.RCV_ID, dev_ident.HMID, 3) ) return 'l';						// not for us, only show as log message
+	else if ( !isEqual(rcv_msg.mBody->RCV_ID, dev_ident.HMID, 3) ) 							// not for us, only show as log message
+		rcv_msg.intent = MSG_INTENT::LOGGING;
 
 	// because of the previous check, message is for us, check against master
-	if ( isEqual(msg.mBody.SND_ID, MAID, 3) ) return 'm';									// coming from master
+	else if ( isEqual(rcv_msg.mBody->SND_ID, MAID, 3) )										// coming from master
+		rcv_msg.intent = MSG_INTENT::MASTER;
 
 	// message is for us, but not from master, maybe it is a peer message
-	memcpy( PEER_ID, msg.mBody.SND_ID, 3 );													// peer has 4 byte and the last byte indicates the channel but also lowbat and long message, therefore we copy it together in a seperate byte array
-	uint8_t buf10 = buf[10];																// get the channel byte seperate
-	if (prevBufUsed) buf10 = prevBuf[10];													// if AES is active, we must get buf[10] from prevBuf[10]
-	PEER_ID[3] = buf10 & 0x3f;																// mask out long and battery low
-	PEER_CNL = ee_peer.isPeerValid(PEER_ID);
-	if (PEER_CNL ) return 'p';																// check if it is coming from a peer
+	else if (rcv_msg.cnl = is_peer_valid(rcv_msg.peer))										// check if the peer is known and remember the channel
+		rcv_msg.intent = MSG_INTENT::PEER;
 
 	// message is for us, but not from pair or peer, check if we were the sender and flag it as internal
-	if ( isEqual(msg.mBody.SND_ID, dev_ident.HMID, 3) ) return 'i';							// we were the sender, internal message
+	else if ( isEqual(rcv_msg.mBody->SND_ID, dev_ident.HMID, 3) )							// we were the sender, internal message
+		rcv_msg.intent = MSG_INTENT::INTERN;
 
 	// message is for us, but not from pair or peer or internal - check if we miss the master id because we are not paired
-	if ( isEmpty(MAID, 3)) return 'x';
-	return 'u';																				// should never happens
+	else if ( isEmpty(MAID, 3))																// for us, but pair is empty
+		rcv_msg.intent = MSG_INTENT::NOT_PAIRED;
+
+	else																					// should never happens
+		rcv_msg.intent = MSG_INTENT::ERROR;
 }
 

@@ -22,11 +22,18 @@ const uint8_t cmSwitch_PeerReg[] PROGMEM = { 0x02,0x03,0x04,0x05,0x06,0x07,0x08,
 const uint8_t cmSwitch_PeerDef[] PROGMEM = { 0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x01,0x44,0x44,0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x21,0x44,0x44, };
 
 #define NOT_USED 255
-enum ACTION { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
-enum JT { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, ON = 0x03, OFFDELAY = 0x04, OFF = 0x06 };
-enum CT { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
-enum INFO { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS };
-
+namespace ACTION {
+	enum E : uint8_t { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
+};
+namespace JT {
+	enum E : uint8_t { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, ON = 0x03, OFFDELAY = 0x04, OFF = 0x06 };
+};
+namespace CT {
+	enum E : uint8_t { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
+};
+namespace INFO {
+	enum E : uint8_t { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS };
+}
 
 class cmSwitch : public cmMaster {
 private:  //---------------------------------------------------------------------------------------------------------------
@@ -130,7 +137,7 @@ public:  //---------------------------------------------------------------------
 	inline void adjustStatus(void);															// setting of relay status
 	inline void sendStatus(void);															// help function to send status messages
 
-	virtual void request_peer_defaults(uint8_t pIdx, uint8_t pCnl1, uint8_t pCnl2);			// add peer channel defaults to list3/4
+	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 	virtual void request_pair_status(void);													// event on status request
 
 	virtual void poll(void);																// poll function, driven by HM loop

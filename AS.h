@@ -170,8 +170,8 @@ public:		//---------------------------------------------------------------------
 	inline void processMessageConfigAESProtected();
 
 	inline void actionSwitchEvent();
-	inline uint8_t configPeerAdd();
-	inline uint8_t configPeerRemove();
+	//inline uint8_t configPeerAdd();
+	//inline uint8_t configPeerRemove();
 	inline void configStart();
 	inline void configEnd();
 	inline void configWriteIndex(void);
@@ -212,6 +212,10 @@ public:		//---------------------------------------------------------------------
 
 };
 
+/*
+* @brief Struct to hold the buffer for any received string with some flags for further processing
+*/
+extern s_recv rcv_msg;
 
 /*
 * @brief Global definition of a struct to hold the device identification related information.

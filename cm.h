@@ -7,6 +7,7 @@
 	#define _CM_H
 
 	#include "HAL.h"
+	#include "00_debug-flag.h"	
 
 	#define GET_2_BYTE_VALUE(n) ( ((uint16_t)n >> 8) | ((uint16_t)n << 8) )			// macro for changing byte order for ARV little endian
 

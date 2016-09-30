@@ -9,6 +9,13 @@
 #include "wait_timer.h"
 
 /**
+* @brief Constructor to initialize waittimer
+*/
+waitTimer::waitTimer() {
+	armed = 0;																					// if we are here, timeout was happened, next loop status 1 will indicated
+}
+
+/**
 * @brief Query if the timer has expired
 *
 * @return 0 if timer is still running, 1 if not.
@@ -18,7 +25,8 @@ uint8_t  waitTimer::done(void) {
 	if (!armed) return 1;																		// not armed, so nothing to do
 	if ((getMillis() - startTime) < checkTime) return 0;										// not ready yet
 
-	checkTime = armed = 0;																		// if we are here, timeout was happened, next loop status 1 will indicated
+	checkTime = 0;
+	armed = 0;																					// if we are here, timeout was happened, next loop status 1 will indicated
 	return 1;
 }
 

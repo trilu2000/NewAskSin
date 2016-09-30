@@ -11,7 +11,7 @@
 #include <Defines.h>
 #include <stdint.h>
 #include <AS.h>
-
+#include "00_debug-flag.h"
 
 /**
  * detect power signal

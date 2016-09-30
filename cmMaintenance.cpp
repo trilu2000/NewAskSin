@@ -47,9 +47,8 @@ cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
 */
 void cmMaintenance::info_config_change(void) {
 	// get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it
-	for (uint8_t i = 0; i < lstC.len; i++) {
-		if (_PGM_BYTE(lstC.reg[i]) == 0x0a) MAID = &lstC.val[i];
-	}
+	uint8_t *t = lstC.ptr_to_val(0x0a);
+	if (t) MAID = t;
 
 	DBG( F("cmMaint, config_change - MAID:"), _HEX(MAID,3), '\n' );
 

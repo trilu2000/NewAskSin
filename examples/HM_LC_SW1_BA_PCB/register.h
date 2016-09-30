@@ -1,7 +1,7 @@
 
 #ifndef _REGISTER_h
 	#define _REGISTER_h
-
+	
 	/**
 	 * @brief Libraries needed to run AskSin library
 	 */

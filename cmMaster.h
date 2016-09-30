@@ -12,7 +12,7 @@
 
 #include "AS.h"
 #include "HAL.h"
-
+#include "AS_typedefs.h"
 
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------
@@ -45,13 +45,26 @@ public://-----------------------------------------------------------------------
 	virtual void message_trigger41(uint8_t msgLng, uint8_t msgCnt, uint8_t msgVal);			// sensor messages from peer
 
 	virtual void info_config_change(void);													// list1 on registered channel had changed
-	virtual void info_peer_add(uint8_t *data, uint8_t len);									// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
+	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
 
-	virtual void request_peer_defaults(uint8_t pIdx, uint8_t pCnl1, uint8_t pCnl2);			// add peer channel defaults to list3/4
+	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 	virtual void request_pair_status(void);													// event on status request
 
 	virtual void poll(void);																// poll function, driven by HM loop
 	virtual void set_toggle(void);															// toggle the module initiated by config button
+
+
+	void CONFIG_PEER_ADD(s_m01xx01 *buf);
+	void CONFIG_PEER_REMOVE(s_m01xx02 *buf);
+	virtual void CONFIG_PEER_LIST_REQ() {}
+	virtual void CONFIG_PARAM_REQ() {}
+	virtual void CONFIG_START() {}
+	virtual void CONFIG_END() {}
+	virtual void CONFIG_WRITE_INDEX1() {}
+	virtual void CONFIG_WRITE_INDEX2() {}
+	virtual void CONFIG_SERIAL_REQ() {}
+	virtual void CONFIG_PAIR_SERIAL() {}
+	virtual void CONFIG_STATUS_REQUEST() {}
 
 };
 
@@ -65,6 +78,7 @@ extern cmMaster *pcnlModule[];
 
 //- helpers ---------------------------------------------------------------------------------------------------------------
 uint16_t cm_prep_default(uint16_t ee_start_addr);											// prepare the defaults incl eeprom address mapping
+uint8_t  is_peer_valid(uint8_t *peer);														// search through all instances and ceck if we know the peer, returns the channel
 
 uint16_t cm_calc_crc(void);																	// calculate the crc for lists in the modules
 inline uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf);							// calculates the crc for a PROGMEM byte array

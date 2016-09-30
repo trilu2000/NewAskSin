@@ -12,15 +12,7 @@
 
 // todo: customize baudrate
 // remove mcu dependencies
-void dbgStart(void) {
-	power_serial_enable();														// enable the debuging port
 
-	if (!(UCSR & (1<<RXEN))) {													// check if serial was already set
-		dbg.begin(57600);
-		dbg << F("debug startet...\n");
-		//		_delay_ms(500);
-	}
-}
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
