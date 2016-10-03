@@ -21,7 +21,6 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 	lstP.cnl = cnl_max++;
 
 	DBG_START(CM, F("CM["), lstC.cnl, F("].\n"));
-	//DBG(CM, F("C-cnl/lst:"), lstC.cnl, '/', lstC.lst, F(", P-cnl/lst:"), lstP.cnl, '/', lstP.lst, '\n');
 }
 
 
@@ -141,9 +140,9 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
 		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
-	
-		pCM->lstC.val = new uint8_t[pCM->lstC.len];
-		pCM->lstP.val = new uint8_t[pCM->lstP.len];										// doesn't matter, list0 is normally 6 to 8 byte
+		
+		pCM->lstC.val = new uint8_t[pCM->lstC.len];										// create and allign the value arrays
+		pCM->lstP.val = new uint8_t[pCM->lstP.len];
 
 		pCM->lstC.ee_addr = ee_start_addr;												// write the eeprom address in the channel list
 		ee_start_addr += pCM->lstC.len;													// create new address by adding the length of the list before
@@ -195,7 +194,7 @@ uint16_t cm_calc_crc(void) {
 	}
 	return flashCRC;
 }
-inline uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf) {
+inline uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf) {
 	for (uint8_t i = 0; i < len; i++) {												// step through all channels
 		crc = crc16(crc, _PGM_BYTE(buf[i]));
 	}

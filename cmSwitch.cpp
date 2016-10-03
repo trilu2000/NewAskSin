@@ -24,13 +24,13 @@
 cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
-	lstC.reg = (uint8_t*)cmSwitch_ChnlReg;
-	lstC.def = (uint8_t*)cmSwitch_ChnlDef;
+	lstC.reg = cmSwitch_ChnlReg;
+	lstC.def = cmSwitch_ChnlDef;
 	lstC.len = sizeof(cmSwitch_ChnlReg);
 
 	lstP.lst = 3;																			// setup the peer list with all dependencies
-	lstP.reg = (uint8_t*)cmSwitch_PeerReg;
-	lstP.def = (uint8_t*)cmSwitch_PeerDef;
+	lstP.reg = cmSwitch_PeerReg;
+	lstP.def = cmSwitch_PeerDef;
 	lstP.len = sizeof(cmSwitch_PeerReg);
 
 	l1 = (s_l1*)&lstC.val;																	// set list structures to something useful
@@ -38,6 +38,7 @@ cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 	l3F = (s_lstPeer*)&lstP.val;
 
 	l3->ACTION_TYPE = ACTION::INACTIVE;														// and secure that no action will happened in polling function
+	active_tr11 = 0;
 
 	setStat = 0;																			// we start allways with status off
 	modStat = 0;																			// output to 0

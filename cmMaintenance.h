@@ -24,7 +24,6 @@
 const uint8_t cmMaintenance_PeerReg[] PROGMEM = { 0 };
 const uint8_t cmMaintenance_PeerDef[] PROGMEM = { 0 };
 
-
 class cmMaintenance : public cmMaster {
 public:  //----------------------------------------------------------------------------------------------------------------
 	
@@ -36,9 +35,10 @@ public:  //---------------------------------------------------------------------
 
 };
 
+extern const uint8_t cmMaintenance_ChnlLen;
 extern const uint8_t cmMaintenance_ChnlReg[];
 extern const uint8_t cmMaintenance_ChnlDef[];
-extern const uint8_t cmMaintenance_ChnlLen;
+extern uint8_t cmMaintenance_ChnlVal[];
 
 
 #endif

@@ -30,10 +30,12 @@ void setup() {
 
 	// - AskSin related ---------------------------------------
 	hm.init();																					// init the asksin framework
-	sei();																						// enable interrupts
 
 	// - user related -----------------------------------------
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(MAID,3), F(", CNL: "), cnl_max, F("\n\n") );	// some debug
+
+
+
 
 	//snd.prep_msg(MSG_REASON::INITIAL, MSG_INTENT::INTERN, MSG_TYPE::ACK, 9, 3);
 
@@ -48,6 +50,7 @@ void setup() {
 
 	//dbg << "test: " << _HEX((uint8_t*)pcnlModule[0]->lstC.val, 5) << '\n';
 	//DBG("test:", sizeof(pcnlModule) / sizeof(pcnlModule[0]), '\n'; );
+	sei();																						// enable interrupts
 }
 
 void loop() {
@@ -92,11 +95,14 @@ void serialEvent() {
 	while (Serial.available()) {
 
 		uint8_t inChar = (uint8_t)Serial.read();												// read a byte
+
 		if (inChar == 'x') {
 			dumpEEprom();
+			i = 0;
 			return;
-		}
-		else if (inChar == 's') {
+		} else if (inChar == 's') {
+			DBG(SER, F("con: "), _HEX(snd_msg.buf, snd_msg.buf[0]+1), '\n');
+			snd_msg.temp_max_retr = 1;
 			snd_msg.active = 1;
 			i = 0;
 			return;

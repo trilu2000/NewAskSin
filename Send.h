@@ -23,7 +23,6 @@ public:		//---------------------------------------------------------------------
 
 	SN();																	// constructor
 	void poll(void);														// poll function, process if something is to send
-	void cleanUp(void);														// clenup for the send function
 
 	void prep_msg(MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type, uint8_t len, uint8_t max_retr);
 

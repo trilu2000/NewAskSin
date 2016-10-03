@@ -23,7 +23,8 @@ public://-----------------------------------------------------------------------
 	*        of the channel in combination with peer devices.
 	*        Therefore we have in every channel two lists - lstC and lstP organized in structs
 	*/
-	s_list_table lstC, lstP;
+	s_list_table lstC;
+	s_list_table lstP;
 
 	/*
 	* @brief Peer Device Table Entry
@@ -81,7 +82,7 @@ uint16_t cm_prep_default(uint16_t ee_start_addr);											// prepare the defau
 uint8_t  is_peer_valid(uint8_t *peer);														// search through all instances and ceck if we know the peer, returns the channel
 
 uint16_t cm_calc_crc(void);																	// calculate the crc for lists in the modules
-inline uint16_t crc16_P(uint16_t crc, uint8_t len, uint8_t *buf);							// calculates the crc for a PROGMEM byte array
+inline uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf);						// calculates the crc for a PROGMEM byte array
 inline uint16_t crc16(uint16_t crc, uint8_t a);												// calculates the crc for a given byte
 
 #endif

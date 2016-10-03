@@ -213,9 +213,10 @@ public:		//---------------------------------------------------------------------
 };
 
 /*
-* @brief Struct to hold the buffer for any received string with some flags for further processing
+* @brief Struct to hold the buffer for any send or received string with some flags for further processing
 */
 extern s_recv rcv_msg;
+extern s_send snd_msg;
 
 /*
 * @brief Global definition of a struct to hold the device identification related information.

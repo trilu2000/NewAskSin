@@ -85,8 +85,8 @@ typedef struct ts_eeprom_start_table {
 typedef struct ts_list_table {
 	uint8_t cnl;							// holds the channel information
 	uint8_t lst;							// holds the list number
-	uint8_t *reg;							// pointer to register values in PROGMEM
-	uint8_t *def;							// pointer to default values in PROGMEM
+	const uint8_t *reg;						// pointer to register values in PROGMEM
+	const uint8_t *def;						// pointer to default values in PROGMEM
 	uint8_t *val;							// pointer to value array which is dynamic loaded from eeprom
 	uint8_t len;							// length of register, defaults and value array
 	uint16_t ee_addr;						// start address for channel in eeprom
@@ -122,35 +122,66 @@ typedef struct ts_list_table {
 * definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory.
 */
 typedef struct ts_peer_table {
-	uint8_t  peer[4];						// placeholder for a peer id from or to eeprom
 	uint8_t  max;							// maximum number of peer devices
 	uint16_t ee_addr;						// address of configuration data in EEprom memory
+	uint8_t  dont_use_peer[4];				// placeholder for a peer id from or to eeprom
 
 	uint8_t *get_peer(uint8_t idx) {							// reads a peer address by idx from the database into the struct peer
 		if (idx >= max) return NULL;
-		getEEPromBlock(ee_addr + (idx * 4), 4, peer);
-		return peer;
+		getEEPromBlock(ee_addr + (idx * 4), 4, dont_use_peer);
+		return dont_use_peer;
 	}
+
 	void set_peer(uint8_t idx, uint8_t *buf) {					// writes the peer to the by idx defined place in the database
 		if (idx >= max) return;
 		setEEPromBlock(ee_addr + (idx * 4), 4, buf);
 	}
+
 	void clear_peer(uint8_t idx) {								// clears the peer in the by idx defined place in the database
-		if (idx >= max) return;
-		clearEEPromBlock(ee_addr + (idx * 4), 4);
+		if (idx >= max) return;									// to secure we are in the range
+		clearEEPromBlock(ee_addr + (idx * 4), 4);				// clear the specific eeprom block
 	}
+
 	uint8_t get_idx(uint8_t *buf) {								// returns the idx of the given peer, or 0xff if not found. don't use the peer array of the struct, it will be overwritten!
-		for (uint8_t i = 0; i < max; i++) {
-			if (!memcmp(get_peer(i), buf, 4)) return i;
-		}
+		for (uint8_t i = 0; i < max; i++) if (!memcmp(get_peer(i), buf, 4)) return i;
 		return 0xff;
 	}
+
 	uint8_t get_free_slot() {									// returns the idx of an empty peer, or 0xff if not found. don't use the peer array of the struct, it will be overwritten!
-		for (uint8_t i = 0; i < max; i++) {
-			//dbg << "gp" << i << ":" << _HEX(get_peer(i), 4) << "   " << *(uint32_t*)get_peer(i) << '\n';
-			if (!*(uint32_t*)get_peer(i)) return i;
-		}
+		for (uint8_t i = 0; i < max; i++) if (!*(uint32_t*)get_peer(i)) return i;
 		return 0xff;
+	}
+
+	void clear_all() {											// clear all peers
+		clearEEPromBlock(ee_addr, max * 4);
+	}
+
+	uint8_t used_slots() {										// returns the amount of used slots
+		uint8_t retByte = 0;
+		for (uint8_t i = 0; i < max; i++) if (*(uint32_t*)get_peer(i)) retByte++;
+		return retByte;
+	}
+
+	uint8_t get_nr_slices(uint8_t byte_per_msg = 16) {			// calculates the amount of needed slices to send all peers depending on the given msg length in peers per message
+		uint8_t slices = 0;	uint16_t total = (used_slots() + 1) * 4;		
+		while ((total -= byte_per_msg) > 0) slices++;
+		return ++slices;
+	}
+
+	uint8_t get_slice(uint8_t slice_nr, uint8_t *buf, uint8_t byte_per_msg = 16) {	// cpoies all known peers into the given buffer, as msg length is limited we use multipe messages
+		uint8_t byteCnt = 0, slcCnt = 0;											// start the byte and slice counter
+		for (uint8_t i = 0; i < max; i++) {											// step through the possible peer slots
+			getEEPromBlock(ee_addr + (i * 4), 4, &buf[byteCnt]);					// get the peer
+			if (!*(uint32_t*)&buf[byteCnt]) continue;								// continue if peer is empty
+			byteCnt += 4; 															// increase the byte counter while not empty 
+			if (byteCnt >= byte_per_msg) {											// string is full
+				if (slcCnt == slice_nr) goto end_get_slice;							// and we are in the right slice, return result
+				byteCnt = 0; slcCnt++;												// wrong slice, next slice from beginning
+			}
+		}
+		memset(&buf[byteCnt], 0, 4); byteCnt += 4;									// add the terminating zeros
+		end_get_slice:
+		return byteCnt;																// return the amount of bytes
 	}
 } s_peer_table;
 
@@ -1130,19 +1161,20 @@ typedef struct ts_send {
 
 	uint8_t   timeout;					// was last message a timeout
 	uint8_t   retr_cnt;					// variable to count how often a message was already send
-	uint8_t   max_retr;					// how often a message has to be send until ACK
-	uint16_t  max_time;					// max time for message timeout timer
-	waitTimer timer;					// send mode timeout
+	uint8_t   temp_max_retr;			// is set depending on the BIDI flag and the max_retr value
+	uint8_t   temp_MSG_CNT;				// store for message counter, needed to identify ACK
 
 	uint8_t   MSG_CNT;					// message counter for initial sends
-	uint8_t   prev_MSG_CNT;				// store for message counter, needed to identify ACK
+	uint8_t   max_retr;					// how often a message has to be send until ACK - info is set by cmMaintenance
+	uint16_t  max_time;					// max time for message timeout timer - info is set by  cmMaintenance
+	waitTimer timer;					// send mode timeout
 
 	void clear() {						// function to reset flags
 		active = 0;
 		buf[0] = 0;
 		timeout = 0;
 		retr_cnt = 0;
-		max_retr = 0;
+		temp_max_retr = 0;
 		timer.set(0);
 	}
 } s_send;

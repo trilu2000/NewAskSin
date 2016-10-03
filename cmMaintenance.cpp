@@ -8,11 +8,6 @@
 */
 
 #include "00_debug-flag.h"
-#ifdef MN_DBG
-#define DBG(...) Serial ,__VA_ARGS__
-#else
-#define DBG(...) 
-#endif
 
 
 /**------------------------------------------------------------------------------------------------------------------------
@@ -26,18 +21,20 @@
 */
 #include "cmMaintenance.h"
 
+
+
 cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
+
 	lstC.lst = 0;
-	lstC.reg = (uint8_t*)cmMaintenance_ChnlReg;
-	lstC.def = (uint8_t*)cmMaintenance_ChnlDef;
+	lstC.reg = cmMaintenance_ChnlReg;
+	lstC.def = cmMaintenance_ChnlDef;
 	lstC.len = cmMaintenance_ChnlLen;
 
 	lstP.lst = 0;
-	lstP.reg = (uint8_t*)cmMaintenance_PeerReg;
-	lstP.def = (uint8_t*)cmMaintenance_PeerDef;
+	lstP.reg = cmMaintenance_PeerReg;
+	lstP.def = cmMaintenance_PeerDef;
 	lstP.len = sizeof(cmMaintenance_PeerReg);
-
-	DBG(F("cmMaint, cnl: "), cT->cnl, '\n');
+	DBG(MN, F("MN. cnl: "), lstC.cnl, '\n');
 }
 
 
@@ -49,7 +46,10 @@ void cmMaintenance::info_config_change(void) {
 	// get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it
 	uint8_t *t = lstC.ptr_to_val(0x0a);
 	if (t) MAID = t;
+	
+	snd_msg.max_retr = 3;		//or set TRANSMIT_DEV_TRY_MAX
+	snd_msg.max_time = 300;
 
-	DBG( F("cmMaint, config_change - MAID:"), _HEX(MAID,3), '\n' );
+	DBG(MN, F("MN:config_change - MAID:"), _HEX(MAID,3), '\n' );
 
 }

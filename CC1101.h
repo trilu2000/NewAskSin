@@ -209,6 +209,7 @@ private:  //--------------------------------------------------------------------
 	inline void    writeReg(uint8_t regAddr, uint8_t val);					// write single register into the CC1101 IC via SPI
 
 	inline void    decode(uint8_t *buf);									// decodes the message
+	inline void    encode(uint8_t *buf);									// encodes the message
 
 };
 

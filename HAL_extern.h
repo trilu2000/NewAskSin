@@ -37,7 +37,6 @@ void    ccInitHw(void) {
 uint8_t ccGetGDO0(void) {
 	static uint8_t prev;
 	uint8_t curr = GET_PIN_STATUS(CC_GDO0);														// get the current pin status
-
 	if (prev == curr) return 0;																	// if nothing changed since last request then return a 0
 
 	prev = curr;																				// if we are here, a change was detected, so remember for next time

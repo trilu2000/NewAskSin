@@ -9,11 +9,6 @@
 */
 
 #include "00_debug-flag.h"
-#ifdef CC_DBG
-#define DBG(...) Serial ,__VA_ARGS__
-#else
-#define DBG(...) 
-#endif
 
 #include "CC1101.h"
 
@@ -30,8 +25,8 @@ CC cc;																					// defined in CC1101.h, load it once
 * Main intent of this function is to write the default values into the communication register on cc1101.
 *
 */
-void    CC::init(void) {																	// initialize CC1101
-	DBG( F("CC.\n") );																	// debug message
+void    CC::init(void) {																// initialize CC1101
+	DBG_START(CC, F("CC.\n") );															// debug message
 	
 	ccInitHw();																			// init the hardware to get access to the RF modul
 
@@ -46,7 +41,7 @@ void    CC::init(void) {																	// initialize CC1101
 	_delay_ms(10);
 	pwr_down = 0;
 
-	DBG( '1');
+	DBG(CC, '1');
 
 	// define init settings for TRX868
 	static const uint8_t initVal[] PROGMEM = {
@@ -68,7 +63,7 @@ void    CC::init(void) {																	// initialize CC1101
 		// 868.2895508
 		CC1101_FREQ2,     0x21,
 		CC1101_FREQ1,     0x65,
-		CC1101_FREQ0,     0x50,
+		CC1101_FREQ0,     0x50,//was 50
 
 		CC1101_MDMCFG4,  0xC8,
 		CC1101_MDMCFG3,  0x93,
@@ -93,21 +88,21 @@ void    CC::init(void) {																	// initialize CC1101
 		//dbg << i << ": " << _HEXB(_PGM_BYTE(initVal[i])) << ' ' << _HEXB(_PGM_BYTE(initVal[i+1])) << '\n';
 	}
 
-	DBG( '2' );
+	DBG(CC, '2' );
 
 	strobe(CC1101_SCAL);																// calibrate frequency synthesizer and turn it off
 	while (readReg(CC1101_MARCSTATE, CC1101_STATUS) != 1) {								// waits until module gets ready
 		_delay_us(1);
-		DBG( '.' );
+		DBG(CC, '.' );
 	}
 
-	DBG( '3' );
+	DBG(CC, '3' );
 
 	writeReg(CC1101_PATABLE, PA_MaxPower);												// configure PATABLE
 	strobe(CC1101_SRX);																	// flush the RX buffer
 	strobe(CC1101_SWORRST);																// reset real time clock
 
-	DBG( F(" - ready\n") );
+	DBG(CC, F(" - ready\n") );
 }
 /**
 * @brief Function to send data via the cc1101 rf module
@@ -132,8 +127,8 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 
 	if (burst) {																		// BURST-bit set?
 		strobe(CC1101_STX  );															// send a burst
+		DBG(CC, F("CC:send burst\n"));													// some debug
 		_delay_ms(360);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
-		//dbg << "send burst\n";
 	} else {
 		_delay_ms(1);																	// wait a short time to set TX mode
 	}
@@ -173,7 +168,16 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 		_delay_us(10);
 	}
 
-	DBG( F("<c "), _HEX(buf, buf[0] + 1), '\n' );
+	// back to receive
+	strobe(CC1101_SRX);																	// set RX mode again
+	for (uint8_t i = 0; i < 200; i++) {													// wait for reaching RX state
+		if (readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_RX)
+			break;																		// now in RX mode, good
+		dbg << '.';
+		_delay_us(10);
+	}
+
+	DBG(CC, F("<c "), _HEX(buf, buf[0] + 1), _TIME, '\n');
 }
 /**
 * @brief Receive function for the cc1101 rf module
@@ -187,19 +191,20 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 */
 void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIFO
 	u_rxStatus rxByte;																	// size the rx status byte
-	//u_rvStatus rvByte;																// size the receive status byte
 
 	rxByte.VAL = readReg(CC1101_RXBYTES, CC1101_STATUS);								// how many bytes are in the buffer
-	//dbg << rxByte.VAL << ' ';
+	dbg << "rxs: " << rxByte.VAL << '\n';
+	DBG(CC, F("CC:RXS "), rxByte.FLAGS.VAL, F(" bytes\n"));
 
-	if ((rxByte.FLAGS.WAITING) && !(rxByte.FLAGS.OVERFLOW)) {							// any byte waiting to be read and no overflow?
+	if ((rxByte.FLAGS.WAITING) && (!rxByte.FLAGS.OVERFLOW)) {							// any byte waiting to be read and no overflow?
 		buf[0] = readReg(CC1101_RXFIFO, CC1101_CONFIG);									// read data length
-		
-		if (buf[0] > CC1101_DATA_LEN) {													// if packet is too long
+		DBG(CC, F("CC:RXF "), buf[0], F(" bytes\n"));
+
+		if (buf[0] >= CC1101_DATA_LEN) {												// if packet is too long
 			buf[0] = 0;																	// discard packet
 			
 		} else {
-			readBurst( buf + 1, CC1101_RXFIFO, buf[0]);									// read data packet
+			readBurst( &buf[1], CC1101_RXFIFO, buf[0]);									// read data packet
 			decode(buf);																// decode the buffer
 
 			rssi = readReg(CC1101_RXFIFO, CC1101_CONFIG);								// read RSSI
@@ -218,7 +223,7 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	strobe(CC1101_SWORRST);																// reset real time clock
 	//	trx868.rfState = RFSTATE_RX;													// declare to be in Rx state
 
-	DBG( F("c> "), _HEX(buf, buf[0] + 1), '\n' );
+	DBG(CC, F("c> "), _HEX(buf, buf[0] + 1), '\n' );
 }
 
 /**
@@ -395,5 +400,24 @@ void    CC::decode(uint8_t *buf) {
 	}
 
 	buf[i] ^= buf[2];
+}
+/**
+* @brief Encode the outgoing messages
+*        Note: this is no encryption!
+*
+* @param buf   pointer to buffer
+*/
+void CC::encode(uint8_t *buf) {
+	buf[1] = (~buf[1]) ^ 0x89;
+	uint8_t buf2 = buf[2];
+	uint8_t prev = buf[1];
+
+	uint8_t i;
+	for (i = 2; i < buf[0]; i++) {
+		prev = (prev + 0xDC) ^ buf[i];
+		buf[i] = prev;
+	}
+
+	buf[i] ^= buf2;
 }
 

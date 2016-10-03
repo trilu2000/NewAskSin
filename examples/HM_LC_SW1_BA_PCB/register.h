@@ -32,10 +32,8 @@
 
 	cmMaster *pcnlModule[2] = {
 		new cmMaintenance(0),
-		new cmSwitch(11),
+		new cmSwitch(10),
 	};
-
-
 
 
 	/*
@@ -77,6 +75,7 @@
 	 * here we can setup everything which is needed for a proper device operation
 	 */
 	void everyTimeStart(void) {
+		dbg << F("\nevery time start\n");
 
 		// channel 0 section 
 		led.set(welcome);

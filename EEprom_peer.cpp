@@ -18,7 +18,7 @@
 #include "AS.h"
 
 
-EE_PEER ee_peer;																			// defined in ee_peer.h, load it once
+//EE_PEER ee_peer;																			// defined in ee_peer.h, load it once
 
 
 EE_PEER::EE_PEER() {
@@ -32,7 +32,7 @@ EE_PEER::EE_PEER() {
 *
 * @return the channel were the peer was found, 0 if not
 */
-uint8_t EE_PEER::isPeerValid(uint8_t *peer) {
+/*uint8_t EE_PEER::isPeerValid(uint8_t *peer) {
 	uint8_t retByte = 0;
 
 	for (uint8_t i = 1; i <= cnl_max; i++) {											// step through all channels
@@ -41,7 +41,7 @@ uint8_t EE_PEER::isPeerValid(uint8_t *peer) {
 
 	DBG(F("EE:isPeerValid:"), _HEX(peer, 4), F(", ret:"), retByte, '\n');
 	return retByte;																		// otherwise 0
-}
+}*/
 
 /**
 * @brief Search for a given peer/peer channel in the peer database and return the index
@@ -52,13 +52,13 @@ uint8_t EE_PEER::isPeerValid(uint8_t *peer) {
 *
 * @return the found idx or 0xff if not found
 */
-void EE_PEER::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *ret_peer) {
+/*void EE_PEER::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *ret_peer) {
 	s_peer_table *peer = &pcnlModule[cnl]->peer;										// short hand to the peer table in the respective channel module
 	uint16_t pAddr = peer->ee_addr + (idx * 4);											// calculate the peer address in eeprom
 	getEEPromBlock(pAddr, 4, ret_peer);													// get the respective eeprom block
 
 	//DBG( F("EE:getPeerByIdx, cnl:"), cnl, F(", idx:"), idx, F(", peer:"), _HEX(peer, 4), '\n' );
-}
+}*/
 
 
 /**
@@ -74,7 +74,7 @@ void EE_PEER::getPeerByIdx(uint8_t cnl, uint8_t idx, uint8_t *ret_peer) {
 *
 * @return the amount of added peers
 */
-uint8_t EE_PEER::addPeers(uint8_t cnl, uint8_t *add_peer) {
+//uint8_t EE_PEER::addPeers(uint8_t cnl, uint8_t *add_peer) {
 /*	uint8_t retByte = 0;
 	cmMaster  *pCM = pcnlModule[cnl];
 	s_peer_table *peer = &pcnlModule[cnl]->peer;										// short hand to the peer table in the respective channel module
@@ -116,7 +116,7 @@ uint8_t EE_PEER::addPeers(uint8_t cnl, uint8_t *add_peer) {
 
 	DBG(F("EE:addPeers, cnl:"), cnl, F(", peer:"), _HEX(add_peer, 5), F(", add:"), retByte, '\n');// some debug
 	return retByte;	*/																	// everything went fine, return success
-}
+//}
 
 /**
 * @brief Removes up to 2 peers incl peer channels from the peer database by the given channel
@@ -129,7 +129,7 @@ uint8_t EE_PEER::addPeers(uint8_t cnl, uint8_t *add_peer) {
 *
 * @return the amount of removed peers
 */
-uint8_t EE_PEER::remPeers(uint8_t cnl, uint8_t *rem_peer) {
+//uint8_t EE_PEER::remPeers(uint8_t cnl, uint8_t *rem_peer) {
 	/*	s_peer_table *peer = &pcnlModule[cnl]->peer;										// short hand to the peer table in the respective channel module
 
 	uint8_t *lPeer = new uint8_t[4];													// temp byte array to load peer addresses
@@ -151,7 +151,7 @@ uint8_t EE_PEER::remPeers(uint8_t cnl, uint8_t *rem_peer) {
 
 	DBG(F("EE:remPeers, cnl:"), cnl, F(", peer:"), _HEX(rem_peer, 5), F(", removed:"), retByte, '\n');
 	return retByte;*/
-}
+//}
 
 
 /*
@@ -161,13 +161,13 @@ uint8_t EE_PEER::remPeers(uint8_t cnl, uint8_t *rem_peer) {
 *        This functions returns the number of messages needed to send all 4 peer long strings.
 *
 */
-uint8_t EE_PEER::countPeerSlc(uint8_t cnl) {
+/*uint8_t EE_PEER::countPeerSlc(uint8_t cnl) {
 	s_peer_table *pDB = &pcnlModule[cnl]->peer;											// short hand to the peer table in the respective channel module
 
 	/*
 	* @brief calculate the amound of needed slots for all 4 byte peers in the peer database per channel
 	*/
-	uint8_t used_slots = pDB->max - countFreeSlots(cnl) + 1;							// get used slots and add one for terminating zeros, not sure if a INT is needed while a byte could indicate 63 peers
+	//uint8_t used_slots = pDB->max - countFreeSlots(cnl) + 1;							// get used slots and add one for terminating zeros, not sure if a INT is needed while a byte could indicate 63 peers
 
 	/*
 	* @brief calculate the amount of slices depending on the message length
@@ -176,13 +176,13 @@ uint8_t EE_PEER::countPeerSlc(uint8_t cnl) {
 	* needed slots = 3 / 4 = 0 - didn't work, need 1
 	* needed slots = 5 / 4 = 1 - didn't work, need 2
 	*/
-	uint8_t slices = 0;																	// declare the return value
+/*	uint8_t slices = 0;																	// declare the return value
 	while (used_slots > 0) {															// loop until used_slots gets 0
 		used_slots -= 4;																// reduce by max message len
 		slices++;																		// count the loops
 	}
 	return slices;																		// return amount of slices
-}
+}*/
 
 /*
 * @brief Copies all peers from the peer database per channel in a buffer array
@@ -196,17 +196,19 @@ uint8_t EE_PEER::countPeerSlc(uint8_t cnl) {
 * @return     The amount of bytes copied into the buffer array
 *
 */
-uint8_t EE_PEER::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
+/*uint8_t EE_PEER::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 	s_peer_table *pDB = &pcnlModule[cnl]->peer;											// short hand to the peer table in the respective channel module
-
+	*/
 	/*
 	* All peers a copied into the buffer array, so we start every time with slice 0.
 	* If slice 1 or above is requested we roll over to the required slice
 	*/
-	uint8_t byteCnt = 0, slcCnt = 0;													// start the byte and slice counter
+/*	uint8_t byteCnt = 0, slcCnt = 0;													// start the byte and slice counter
 	for (uint8_t i = 0; i < pDB->max; i++) {											// step through the possible peer slots
 
-		getPeerByIdx(cnl, i, buf);														// get peer from eeprom
+		uint8_t *lPeer = pDB->get_peer(i);
+		memcpy(buf, lPeer, 4);
+		//getPeerByIdx(cnl, i, buf);														// get peer from eeprom
 		if (isEmpty(buf, 4)) continue;													// peer is empty therefor next
 
 		byteCnt += 4;																	// if we are here, then we got a valid peer and we should increase the byte counter
@@ -230,7 +232,7 @@ uint8_t EE_PEER::getPeerListSlc(uint8_t cnl, uint8_t slc, uint8_t *buf) {
 end_getPeerListSlc:
 	DBG(F("EE:getPeerListSlc, cnl:"), cnl, F(", slc:"), slc, F(", data:"), _HEX(buf, byteCnt), '\n');
 	return byteCnt;																		// return the amount of bytes
-}
+}*/
 
 
 /**
@@ -241,7 +243,7 @@ end_getPeerListSlc:
 *
 * @return the amount of free slots
 */
-uint8_t EE_PEER::countFreeSlots(uint8_t cnl) {
+/*uint8_t EE_PEER::countFreeSlots(uint8_t cnl) {
 	s_peer_table *pDB = &pcnlModule[cnl]->peer;											// short hand to the peer table in the respective channel module
 
 	uint8_t *lPeer = new uint8_t[4];													// temp byte array to load peer addresses
@@ -254,7 +256,7 @@ uint8_t EE_PEER::countFreeSlots(uint8_t cnl) {
 
 	DBG(F("EE:countFreeSlots, cnl:"), cnl, F(", total:"), pDB->max, F(", free:"), bCounter, '\n');
 	return bCounter;																	// return the counter
-}
+}*/
 
 /**
 * @brief Clears the complete defined peer database in eeprom
@@ -262,13 +264,13 @@ uint8_t EE_PEER::countFreeSlots(uint8_t cnl) {
 *        to defaults.
 *
 */
-void EE_PEER::clearPeers(void) {
+/*void EE_PEER::clearPeers(void) {
 	for (uint8_t i = 0; i <= cnl_max; i++) {											// step through all channels
 		s_peer_table *pDB = &pcnlModule[i]->peer;										// short hand to the peer table in the respective channel module
 		clearEEPromBlock(pDB->ee_addr, pDB->max * 4);
 		DBG(F("EE:clearPeers, cnl:"), i, F(", addr:"), pDB->ee_addr, F(", len:"), (pDB->max * 4), '\n');																	// ...and some information
 	}
-}
+}*/
 
 /**
 * @brief Search for a given peer/peer channel in the peer database and return the index
@@ -279,20 +281,21 @@ void EE_PEER::clearPeers(void) {
 *
 * @return the found idx or 0xff if not found
 */
-inline uint8_t EE_PEER::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
+/*inline uint8_t EE_PEER::getIdxByPeer(uint8_t cnl, uint8_t *peer) {
 	s_peer_table *pDB = &pcnlModule[cnl]->peer;											// short hand to the peer table in the respective channel module
 
-	uint8_t *lPeer = new uint8_t[4];													// temp byte array to load peer addresses
+	uint8_t *lPeer ;													// temp byte array to load peer addresses
 	uint8_t retByte = 0xff;																// default return value
 
 	for (uint8_t i = 0; i < pDB->max; i++) {											// step through the possible peer slots
-		getPeerByIdx(cnl, i, lPeer);
+		lPeer = pDB->get_peer(i);
+		//getPeerByIdx(cnl, i, lPeer);
 		//dbg << "ee:" << _HEX(lPeer, 4) << ", gv:" << _HEX(peer, 4) << "\n";
 		if (isEqual(lPeer, peer, 4)) { retByte = i; break; };							// if result matches then return slot index
 	}
 
 	DBG(F("EE:getIdxByPeer, cnl:"), cnl, F(", peer:"), _HEX(peer, 4), F(", ret:"), retByte, '\n');
 	return retByte;
-}
+}*/
 
 

@@ -24,7 +24,6 @@ waitTimer::waitTimer() {
 uint8_t  waitTimer::done(void) {
 	if (!armed) return 1;																		// not armed, so nothing to do
 	if ((getMillis() - startTime) < checkTime) return 0;										// not ready yet
-
 	checkTime = 0;
 	armed = 0;																					// if we are here, timeout was happened, next loop status 1 will indicated
 	return 1;

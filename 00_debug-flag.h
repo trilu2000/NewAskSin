@@ -18,7 +18,8 @@
 #include "WProgram.h"
 #endif
 
-#include "avr/power.h"
+#include "HAL.h"
+
 
 /*
 * @brief Remove the double slash in the respective line to enable debug messages 
@@ -26,8 +27,8 @@
 */
 
 #define SER_DBG					// Main sketch debug function and messages
-//#define AS_DBG                // AskSin class debug (AS.cpp)
-//#define CC_DBG				// Communication class (CC1101.cpp)
+//#define AS_DBG					// AskSin class debug (AS.cpp)
+//#define CC_DBG					// Communication class (CC1101.cpp)
 #define SN_DBG					// Send class (Send.cpp)
 #define RV_DBG					// Receive class (Receive.cpp)
 //#define RV_DBG_EX				// Further explanation of received messages (Receive.cpp)
@@ -36,8 +37,8 @@
 //#define EP_DBG				// EEprom peer class (EEprom_peer.cpp)
 
 //#define CM_DBG					// Channel Master module (cmMaster.cpp)
-//#define MN_DBG				// Maintenance channel module (cmMaintenance.cpp)
-//#define SW_DBG					// Switsch channel module (cmSwitch.cpp)
+//#define MN_DBG					// Maintenance channel module (cmMaintenance.cpp)
+//#define SW_DBG				// Switsch channel module (cmSwitch.cpp)
 
 
 /*
@@ -159,12 +160,12 @@ struct _HEX {
 	uint8_t len;
 	_HEX(uint8_t *v, uint8_t l) : val(v), len(l) {}
 };
-inline Print &operator  ,(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i + 1<arg.len) obj.print(' '); }; return obj; }
-inline Print &operator <<(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i + 1<arg.len) obj.print(' '); }; return obj; }
+inline Print &operator  ,(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i<=arg.len) obj.print(' '); }; return obj; }
+inline Print &operator <<(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i<=arg.len) obj.print(' '); }; return obj; }
 
 enum _eTIME { _TIME };
-inline Print &operator  ,(Print &obj, _eTIME arg) { obj.print('('); obj.print(millis()); obj.print(')'); return obj; }
-inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(millis()); obj.print(')'); return obj; }
+inline Print &operator  ,(Print &obj, _eTIME arg) { obj.print('('); obj.print(getMillis()); obj.print(')'); return obj; }
+inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(getMillis()); obj.print(')'); return obj; }
 
 
 
