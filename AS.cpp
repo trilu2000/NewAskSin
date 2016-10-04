@@ -529,7 +529,7 @@ void AS::sendDEVICE_INFO(void) {
 	}
 
 	snd_msg.mBody->MSG_LEN = 0x1A;
-	snd_msg.mBody->FLAG.CFG = 1;
+	//snd_msg.mBody->FLAG.CFG = 1;
 	snd_msg.mBody->FLAG.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
 
 	memcpy_P(snd_msg.buf+10, dev_static, 3);

@@ -14,7 +14,7 @@
 #endif
 
 
-#include "EEprom_peer.h"
+//#include "EEprom_peer.h"
 #include "AS.h"
 
 EE_LIST ee_list;																			// defined in ee_list.h, load it once

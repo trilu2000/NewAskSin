@@ -23,7 +23,7 @@
 #include "Send.h"
 #include "Receive.h"
 #include "EEprom_list.h"
-#include "EEprom_peer.h"
+//#include "EEprom_peer.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"

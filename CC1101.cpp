@@ -53,27 +53,31 @@ void    CC::init(void) {																// initialize CC1101
 		CC1101_SYNC0,     0xCA,
 		CC1101_PKTLEN,    0x3D,						// packet length 61
 		CC1101_PKTCTRL1,  0x0C,						// PQT = 0, CRC auto flush = 1, append status = 1, no address check
+		CC1101_PKTCTRL0,  0x45,						// WHITE_DATA on, use FIFOs for RX and TX, CRC calculation in TX and CRC check in RX enabled, Packet length configured by the first byte after sync word
+
 		CC1101_FSCTRL1,   0x06,						// frequency synthesizer control
 
-		// 868.299866 MHz
+		// 868.299866 MHz - 868.299866
 		//CC1101_FREQ2,     0x21,
 		//CC1101_FREQ1,     0x65,
 		//CC1101_FREQ0,     0x6A,
 
-		// 868.2895508
+		// 868.2895508 - 868.289551
 		CC1101_FREQ2,     0x21,
 		CC1101_FREQ1,     0x65,
-		CC1101_FREQ0,     0x50,//was 50
+		CC1101_FREQ0,     0x50,
 
 		CC1101_MDMCFG4,  0xC8,
 		CC1101_MDMCFG3,  0x93,
-		CC1101_MDMCFG2,  0x03,
+		CC1101_MDMCFG2,  0x03,						// digital DC blocking filter enabled (better sensitivity), 2-FSK, Manchester encoding/decoding disabled, SYNC_MODE[2:0] 30/32 sync word bits detected
+		CC1101_MDMCFG1,  0x22,						// Forward Error Correction (FEC) disabled, NUM_PREAMBLE[2:0] 4 bytes, 
+
 		CC1101_DEVIATN,  0x34,						// 19.042969 kHz
-		CC1101_MCSM2,    0x01,
-		CC1101_MCSM1,    0x33,						// always go into IDLE
-		CC1101_MCSM0,    0x18,
-		CC1101_FOCCFG,   0x16,
-		CC1101_AGCCTRL2, 0x43,
+		CC1101_MCSM2,    0x01,						// RX_TIME[2:0]
+		CC1101_MCSM1,    0x03, // EQ3 0x03, 0x3f	// TXOFF_MODE[1:0] 3 (11) : RX, RXOFF_MODE[1:0] 0 (00) : IDLE, CCA_MODE[1:0] 3 (11) : If RSSI below threshold unless currently receiving a packet
+		CC1101_MCSM0,    0x18,						// FS_AUTOCAL[1:0] 1 (01) : When going from IDLE to RX or TX (or FSTXON), 
+		CC1101_FOCCFG,   0x16,						// frequency compensation loop gain to be used before a sync word is detected 2 (10) : 3K, gain to be used after a sync word is detected 1 : K/2, Frequency offset compensation 3 (11) : ±BWCHAN/2
+		CC1101_AGCCTRL2, 0x43,						// MAX_DVGA_GAIN[1:0] 1 (01) : The highest gain setting can not be used, MAGN_TARGET[2:0] 3 (011) : 33 dB
 		//CC1101_WOREVT1, 0x28,						// tEVENT0 = 50 ms, RX timeout = 390 us
 		//7CC1101_WOREVT0, 0xA0,
 		//CC1101_WORCTRL, 0xFB,						//EVENT1 = 3, WOR_RES = 0
@@ -115,7 +119,7 @@ void    CC::init(void) {																// initialize CC1101
 *
 */
 void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet via RF
-
+	/*
 	// Going from RX to TX does not work if there was a reception less than 0.5
 	// sec ago. Due to CCA? Using IDLE helps to shorten this period(?)
 	setActive();																		// maybe we come from power down mode
@@ -123,6 +127,7 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 	strobe(CC1101_SFRX );																// flush RX buffer
 	strobe(CC1101_SFTX );																// flush TX buffer
 
+	// enter TX and wait till state is confirmed
 	//dbg << "tx\n";
 
 	if (burst) {																		// BURST-bit set?
@@ -167,15 +172,55 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {										// send data packet 
 			break;																		// now in RX mode, good
 		_delay_us(10);
 	}
+	*/
 
-	// back to receive
-	strobe(CC1101_SRX);																	// set RX mode again
-	for (uint8_t i = 0; i < 200; i++) {													// wait for reaching RX state
-		if (readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_RX)
-			break;																		// now in RX mode, good
-		dbg << '.';
-		_delay_us(10);
+	// Going from RX to TX does not work if there was a reception less than 0.5
+	// sec ago. Due to CCA? Using IDLE helps to shorten this period(?)
+	setActive();																		// maybe we come from power down mode
+	strobe(CC1101_SIDLE);																// go to idle mode
+	//strobe(CC1101_SFRX);																// flush RX buffer
+	//strobe(CC1101_SFTX);																// flush TX buffer
+
+	// enter TX and wait till state is confirmed
+	for (uint8_t i = 0; i < 255; i++) {
+		strobe(CC1101_STX);																// switch to transmit mode
+		_delay_ms(1);
+		DBG(CC, 't');
+		if (readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_TX) break;			// waits until we are in transmit mode
 	}
+		
+	if (burst) {																		// BURST-bit set?
+		DBG(CC, F("CC:send burst...\n"));												// some debug
+		_delay_ms(360);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
+	} else {
+		_delay_ms(10);																	// wait a short time to set TX mode
+	}
+
+	// former writeburst function, now done here while hm encoding included
+	ccSelect();																			// select CC1101
+	ccSendByte(CC1101_TXFIFO | WRITE_BURST);											// send register address
+	ccSendByte(buf[0]);																	// send byte 0
+
+	// we write the given string encoded in the buffer of the communication module
+	uint8_t prev = (~buf[1]) ^ 0x89;													// prepare byte 1
+	ccSendByte(prev);																	// send byte 1
+
+	uint8_t buf2 = buf[2];																// remember byte 2, we need it on the end of string
+
+	for (uint8_t i = 2; i < buf[0]; i++) {												// process the string starting with byte 2
+		prev = (prev + 0xDC) ^ buf[i];													// encode current (i) byte
+		ccSendByte(prev);																// write it into the module buffer
+	}
+	ccSendByte(buf[buf[0] + 1] ^ buf2);													// process the last byte
+	ccDeselect();																		// deselect CC1101
+
+																					
+	while (readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_TX);					// wait for TX to finish
+
+	// some test on receive capabilities
+	do {																				// back to receive mode
+		strobe(CC1101_SRX);
+	} while (readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_RX);
 
 	DBG(CC, F("<c "), _HEX(buf, buf[0] + 1), _TIME, '\n');
 }
@@ -193,11 +238,13 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	u_rxStatus rxByte;																	// size the rx status byte
 
 	rxByte.VAL = readReg(CC1101_RXBYTES, CC1101_STATUS);								// how many bytes are in the buffer
-	dbg << "rxs: " << rxByte.VAL << '\n';
+	uint8_t rxFifo = readReg(CC1101_RXFIFO, CC1101_CONFIG);
+	dbg << "rxs: " << rxByte.VAL << ", rxf: " << rxFifo << '\n';
 	DBG(CC, F("CC:RXS "), rxByte.FLAGS.VAL, F(" bytes\n"));
 
 	if ((rxByte.FLAGS.WAITING) && (!rxByte.FLAGS.OVERFLOW)) {							// any byte waiting to be read and no overflow?
-		buf[0] = readReg(CC1101_RXFIFO, CC1101_CONFIG);									// read data length
+		buf[0] = rxFifo;
+		//buf[0] = readReg(CC1101_RXFIFO, CC1101_CONFIG);									// read data length
 		DBG(CC, F("CC:RXF "), buf[0], F(" bytes\n"));
 
 		if (buf[0] >= CC1101_DATA_LEN) {												// if packet is too long
@@ -218,9 +265,12 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	} else buf[0] = 0;																	// nothing to do, or overflow
 
 	strobe(CC1101_SFRX);																// flush Rx FIFO
-	strobe(CC1101_SIDLE);																// enter IDLE state
-	strobe(CC1101_SRX);																	// back to RX state
-	strobe(CC1101_SWORRST);																// reset real time clock
+	do {
+		strobe(CC1101_SRX);
+	} while (readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_RX);
+	//strobe(CC1101_SIDLE);																// enter IDLE state
+	//strobe(CC1101_SRX);																	// back to RX state
+	//strobe(CC1101_SWORRST);																// reset real time clock
 	//	trx868.rfState = RFSTATE_RX;													// declare to be in Rx state
 
 	DBG(CC, F("c> "), _HEX(buf, buf[0] + 1), '\n' );
