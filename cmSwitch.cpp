@@ -33,6 +33,9 @@ cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 	lstP.def = cmSwitch_PeerDef;
 	lstP.len = sizeof(cmSwitch_PeerReg);
 
+	//list[1] = &lstC;																		// all other lists are pointing to NULL per default
+	//list[3] = &lstP;																		// all other lists are pointing to NULL per default
+
 	l1 = (s_l1*)&lstC.val;																	// set list structures to something useful
 	l3 = (s_l3*)&lstP.val;																	// reduced l3, description in cmSwitch.h at struct declaration
 	l3F = (s_lstPeer*)&lstP.val;

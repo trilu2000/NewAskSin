@@ -34,9 +34,6 @@ void setup() {
 	// - user related -----------------------------------------
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(MAID,3), F(", CNL: "), cnl_max, F("\n\n") );	// some debug
 
-
-
-
 	//snd.prep_msg(MSG_REASON::INITIAL, MSG_INTENT::INTERN, MSG_TYPE::ACK, 9, 3);
 
 	//dbg << "by03 " << _HEXB(BY03(MSG_TYPE::CONFIG_PARAM_REQ)) << ", by10 " << _HEXB(BY10(MSG_TYPE::CONFIG_PARAM_REQ)) << ", by11 " << _HEXB(BY11(MSG_TYPE::CONFIG_PARAM_REQ)) << ", mlen " << _HEXB(MLEN(MSG_TYPE::CONFIG_PARAM_REQ)) << '\n';
@@ -121,54 +118,47 @@ void serialEvent() {
 }
 
 void dumpEEprom() {
+	uint16_t pAddr;
 
 	DBG(SER, F("\nEEPROM content\n\n"));
 
-	for (uint8_t i = 0; i < cnl_max; i++) {
-		cmMaster *pCM = pcnlModule[i];															// shorthand to channel module
+	for (uint8_t i = 0; i < cnl_max; i++) {														// stepping through channels
 
-		printList( &pCM->lstC, &pCM->peer );
-		if (!i) continue;
-		printList( &pCM->lstP, &pCM->peer);
-	}
-}
+		for (uint8_t j = 0; j < 5; j++) {														// stepping through available lists
+			s_list_table *list = pcnlModule[i]->list[j];										// short hand to list table
+			s_peer_table *peer = &pcnlModule[i]->peerDB;										// short hand to peer db
+			if (!list) continue;																// skip if pointer is empty
 
-void printList( s_list_table *lstP, s_peer_table *peer ) {
-	uint8_t *x = new uint8_t[lstP->len];
-	uint16_t pAddr;
+			uint8_t *x = new uint8_t[list->len];												// size an array as data buffer
+			DBG(SER, F("cnl:"), _HEXB(list->cnl), F(", lst:"), _HEXB(list->lst), F(", sLen:"), _HEXB(list->len), F(", pAddr:"), list->ee_addr, '\n');
 
-	DBG(SER, F("cnl:"), _HEXB(lstP->cnl), F(", lst:"), _HEXB(lstP->lst), F(", sLen:"), _HEXB(lstP->len), F(", pAddr:"), lstP->ee_addr, '\n');
+			memcpy_P(x, list->reg, list->len);
+			DBG(SER, F("register:  "), _HEX(x, list->len), '\n');
+			memcpy_P(x, list->def, list->len);
+			DBG(SER, F("default:   "), _HEX(x, list->len), '\n');
 
-	memcpy_P(x, lstP->reg , lstP->len );
-	DBG(SER, F("register:  "), _HEX(x, lstP->len), '\n');
+			if (j == 3 || j == 4) {
+				DBG(SER, F("cmModul:\n"));
+				for (uint8_t k = 0; k < peer->max; k++) {
+					uint8_t *p = peer->get_peer(k);												// process peer
+					DBG(SER, F("peer   "), _HEXB(k), F(": "), _HEX(p, 4), F(" ("), peer->ee_addr + (k * 4), F(")\n"));
+					pAddr = list->ee_addr + (k * list->len);									// process list
+					getEEPromBlock(pAddr, list->len, x);
+					DBG(SER, F("eeprom "), _HEXB(k), F(": "), _HEX(x, list->len), F(" ("), pAddr, F(")\n"));
+				}
 
-	memcpy_P(x, lstP->def, lstP->len );
-	DBG(SER, F("default:   "), _HEX(x, lstP->len), '\n');
+			} else {
+				DBG(SER, F("cmModul:   "), _HEX(list->val, list->len), '\n');
+				getEEPromBlock(list->ee_addr, list->len, x);
+				DBG(SER, F("eeprom:    "), _HEX(x, list->len), '\n');
 
-	DBG(SER, F("cmModul:   "), _HEX(lstP->val, lstP->len), '\n');
-
-	if ((lstP->lst == 3) || (lstP->lst == 4)) {
-		DBG(SER, '\n');
-
-		for (uint8_t i = 0; i < peer->max; i++) {
-
-			// process peer
-			uint8_t *p = peer->get_peer(i);
-			DBG(SER, F("peer   "), _HEXB(i), F(": "), _HEX(p, 4), F(" ("), peer->ee_addr+(i*4), F(")\n"));
-
-			// process list
-			pAddr = lstP->ee_addr + (i * lstP->len);
-			getEEPromBlock(pAddr, lstP->len, x);
-			DBG(SER, F("eeprom "), _HEXB(i), F(": "), _HEX(x, lstP->len), F(" ("), pAddr, F(")\n"));
+			}
+			delete x;
+			DBG(SER, '\n');
 		}
-
-	} else {
-		getEEPromBlock(lstP->ee_addr, lstP->len, x);
-		DBG(SER, F("eeprom:    "), _HEX(x, lstP->len), '\n');
-
 	}
-	DBG(SER, '\n');
 }
+
 
 
 #endif

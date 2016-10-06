@@ -94,7 +94,7 @@ void AS::init(void) {
 			cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
 			pCM->lstC.load_default();														// copy from progmem into array
 			pCM->lstC.save_list();															// write it into the eeprom
-			pCM->peer.clear_all();
+			pCM->peerDB.clear_all();
 			DBG(AS, F("AS:write_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, '\n');
 		}
 
@@ -124,7 +124,6 @@ void AS::poll(void) {
 	*  and poll the received buffer, it checks if something is in the queue  */
 
 	if (ccGetGDO0()) {																			// check if something is in the cc1101 receive buffer
-		dbg << "GDO0 " << _TIME << '\n';
 		cc.rcvData(rcv_msg.buf);																// if yes, get it into our receive processing struct
 		rcv.poll();																				// and poll the receive function to get intent and some basics
 	}
@@ -199,16 +198,16 @@ void AS::processMessage(void) {
 		cmMaster *pCM = pcnlModule[cnl];													// short hand to respective channel module
 		uint8_t by11 = rcv_msg.mBody->BY11;													// short hand to byte 11 in the received string
 
-		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(   (s_m01xx01*)&rcv_msg.buf[12] );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE((s_m01xx02*)&rcv_msg.buf[12] );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ();
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ();
-		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START();
-		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END();
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1();
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2();
-		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ();
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL();
+		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(     (s_m01xx01*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(  (s_m01xx02*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ( );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(     );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(         );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(           );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(  );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(  );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(    );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(   );
 		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST();
 		else {
 			dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
@@ -885,21 +884,27 @@ void AS::sendWeatherEvent(void) {
 inline void AS::sendSliceList(void) {
 	uint8_t cnt;
 
-	if (snd_msg.active) return;																		// check if send function has a free slot, otherwise return
+	if (snd_msg.active) return;																	// check if send function has a free slot, otherwise return
 
 	if        (stcSlice.peer) {			// INFO_PEER_LIST
-		cnt = pcnlModule[stcSlice.cnl]->peer.get_slice(stcSlice.curSlc, snd_msg.buf + 11);						// get the slice and the amount of bytes
-		//cnt = ee_peer.getPeerListSlc(stcSlice.cnl, stcSlice.curSlc, snd_msg.buf + 11);						// get the slice and the amount of bytes
+		s_peer_table *peerDB = &pcnlModule[stcSlice.cnl]->peerDB;								// short hand to peer table
+		cnt = peerDB->get_slice(stcSlice.curSlc, snd_msg.buf + 11);								// get the slice and the amount of bytes
 		sendINFO_PEER_LIST(cnt);																// create the body
 		stcSlice.curSlc++;																		// increase slice counter
 		//dbg << "peer slc: " << _HEX(snd_msg.buf,snd_msg.buf[0]+1) << '\n';								// write to send buffer
 
 	} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
-		cnt = ee_list.getRegListSlc(stcSlice.cnl, stcSlice.lst, stcSlice.idx, stcSlice.curSlc, snd_msg.buf+11); // get the slice and the amount of bytes
+		s_list_table *list = pcnlModule[stcSlice.cnl]->list[stcSlice.lst];						// short hand to respective list table
+		if (stcSlice.curSlc + 1 == stcSlice.totSlc) {											// last slice, terminating message
+			memset(snd_msg.buf + 11, 0, 2);
+			cnt = 2;
+		} else {
+			cnt = list->get_slice_pairs(stcSlice.idx, stcSlice.curSlc, snd_msg.buf + 11);		// get the slice and the amount of bytes
+		}
 		//dbg << "cnt: " << cnt << '\n';
 		sendINFO_PARAM_RESPONSE_PAIRS(cnt);
 		stcSlice.curSlc++;																		// increase slice counter
-		//dbg << "reg2 slc: " << _HEX(snd_msg.buf,snd_msg.buf[0]+1) << '\n';								// write to send buffer
+		//dbg << "reg2 slc: " << _HEX(snd_msg.buf,snd_msg.buf[0]+1) << '\n';					// write to send buffer
 		
 	} else if (stcSlice.reg3) {																	// INFO_PARAM_RESPONSE_SEQ
 
@@ -921,9 +926,9 @@ inline void AS::sendPeerMsg(void) {
 	
 	// first run, prepare amount of slots
 	if (!stcPeer.idx_max) {
-		stcPeer.idx_max = pCM->peer.max;														// get amount of messages of peer channel
+		stcPeer.idx_max = pCM->peerDB.max;														// get amount of messages of peer channel
 
-		if (pCM->peer.used_slots() ) {															// check if at least one peer exist in db, otherwise send to master and stop function
+		if (!pCM->peerDB.used_slots() ) {															// check if at least one peer exist in db, otherwise send to master and stop function
 			preparePeerMessage(MAID, retries_max);
 			snd_msg.MSG_CNT++;																		// increase the send message counter
 			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
@@ -965,7 +970,7 @@ inline void AS::sendPeerMsg(void) {
 	}
 
 	//uint8_t *tmp_peer;																		// get the respective peer address
-	uint8_t *tmp_peer = pcnlModule[stcPeer.channel]->peer.get_peer(stcPeer.idx_cur);
+	uint8_t *tmp_peer = pcnlModule[stcPeer.channel]->peerDB.get_peer(stcPeer.idx_cur);
 	//ee_peer.getPeerByIdx(stcPeer.channel, stcPeer.idx_cur, tmp_peer);
 	
 	#ifdef AS_DBG
@@ -1050,14 +1055,14 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 		rcv_msg.buf[13] = rcv_msg.buf[14];																// copy the channel byte to the peer
 		cnl = is_peer_valid(rcv_msg.buf+10);													// check with the right part of the string
 		if (cnl != 0xff) {
-			*pIdx = pcnlModule[cnl]->peer.get_idx(rcv_msg.buf + 10);										// get the index of the respective peer in the channel store
+			*pIdx = pcnlModule[cnl]->peerDB.get_idx(rcv_msg.buf + 10);										// get the index of the respective peer in the channel store
 		}
 		rcv_msg.buf[13] = tmp;																		// get it back
 
 	} else {
 		cnl = is_peer_valid(rcv_msg.peer);
 		if (cnl != 0xff) {
-			*pIdx = pcnlModule[cnl]->peer.get_idx(rcv_msg.peer);										// get the index of the respective peer in the channel store
+			*pIdx = pcnlModule[cnl]->peerDB.get_idx(rcv_msg.peer);										// get the index of the respective peer in the channel store
 		}
 	}
 
@@ -1213,18 +1218,21 @@ inline void AS::processMessageConfigSerialReq(void) {
  * @brief Process message CONFIG_PARAM_REQ.
  *
  * Message description:
- *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
- * 10 04 A0 01 63 19 63 01 02 04 01  04     00 00 00 00          01
+ *             Sender__ Receiver     Channel PeerID__  PeerChannel  ParmList
+ * 10 04 A0 01 63 19 63 01 02 04 01  04      00 00 00  00           01
  */
 inline void AS::processMessageConfigParamReq(void) {
+	/* check if we have the required list in the channel, channel check was already done in processMessage */
 	if ((rcv_msg.buf[16] == 0x03) || (rcv_msg.buf[16] == 0x04)) {										// only list 3 and list 4 needs an peer id and idx
-		stcSlice.idx = pcnlModule[rcv_msg.mBody->BY10]->peer.get_idx(rcv_msg.buf + 12);					// get peer index
-		//stcSlice.idx = ee_peer.getIdxByPeer(rcv_msg.mBody->BY10, rcv_msg.buf+12);					// get peer index
+		stcSlice.idx = pcnlModule[rcv_msg.mBody->BY10]->peerDB.get_idx(rcv_msg.buf + 12);					// get peer index
+		stcSlice.totSlc = pcnlModule[rcv_msg.mBody->BY10]->lstP.get_nr_slices_pairs();					// how many slices are need
 	} else {
 		stcSlice.idx = 0;																		// otherwise peer index is 0
+		stcSlice.totSlc = pcnlModule[rcv_msg.mBody->BY10]->lstC.get_nr_slices_pairs();;					// how many slices are need
 	}
+	stcSlice.totSlc++;																			// increase by one, while we have to terminate the message flow with a seperate message
 
-	stcSlice.totSlc = ee_list.countRegListSlc(rcv_msg.mBody->BY10, rcv_msg.buf[16]);					// how many slices are need
+	//stcSlice.totSlc = ee_list.countRegListSlc(rcv_msg.mBody->BY10, rcv_msg.buf[16]);					// how many slices are need
 	stcSlice.mCnt = rcv_msg.mBody->MSG_CNT;														// remember the message count
 	memcpy(stcSlice.toID, rcv_msg.mBody->SND_ID, 3);
 	stcSlice.cnl = rcv_msg.mBody->BY10;															// send input to the send peer function
@@ -1252,7 +1260,7 @@ inline void AS::processMessageConfigParamReq(void) {
  */
 inline void AS::processMessageConfigPeerListReq(void) {
 	cmMaster *pCM = pcnlModule[rcv_msg.mBody->BY10];
-	stcSlice.totSlc = pCM->peer.get_nr_slices(4);					// how many slices are needed
+	stcSlice.totSlc = pCM->peerDB.get_nr_slices(4);												// how many slices are needed
 	//stcSlice.totSlc = ee_peer.countPeerSlc(rcv_msg.mBody->BY10);									// how many slices are need
 	stcSlice.mCnt = rcv_msg.mBody->MSG_CNT;														// remember the message count
 	memcpy(stcSlice.toID, rcv_msg.mBody->SND_ID, 3);
@@ -1348,7 +1356,7 @@ inline void AS::configStart() {
 	config_mode.cnl = rcv_msg.mBody->BY10;															// fill structure to remember where to write
 	config_mode.lst = rcv_msg.buf[16];
 	if ((config_mode.lst == 3) || (config_mode.lst == 4)) {
-		config_mode.idx_peer = pcnlModule[rcv_msg.mBody->BY10]->peer.get_idx(rcv_msg.buf + 12) ;
+		config_mode.idx_peer = pcnlModule[rcv_msg.mBody->BY10]->peerDB.get_idx(rcv_msg.buf + 12) ;
 		//config_mode.idx_peer = ee_peer.getIdxByPeer(rcv_msg.mBody->BY10, rcv_msg.buf + 12);
 	} else {
 		config_mode.idx_peer = 0;
@@ -1539,7 +1547,8 @@ inline void AS::sendINFO_PEER_LIST(uint8_t length) {
 inline void AS::sendINFO_PARAM_RESPONSE_PAIRS(uint8_t length) {
 	snd_msg.mBody->MSG_LEN = length + 10;
 	snd_msg.mBody->FLAG.BIDI = 1;
-	snd_msg.mBody->BY10 = (length < 3) ? AS_INFO_PARAM_RESPONSE_SEQ : AS_INFO_PARAM_RESPONSE_PAIRS;
+	snd_msg.mBody->BY10 = AS_INFO_PARAM_RESPONSE_PAIRS;
+	//snd_msg.mBody->BY10 = (length < 3) ? AS_INFO_PARAM_RESPONSE_SEQ : AS_INFO_PARAM_RESPONSE_PAIRS;
 	prepareToSend(stcSlice.mCnt++, AS_MESSAGE_INFO, stcSlice.toID);
 }
 

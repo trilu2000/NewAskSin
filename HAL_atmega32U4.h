@@ -33,7 +33,7 @@
 #define PIN_C4   PORTC4, &DDRC, &PORTC, &PINC,,,,,, 
 #define PIN_C5   PORTC5, &DDRC, &PORTC, &PINC,,,,,, 
 #define PIN_C6   PORTC6, &DDRC, &PORTC, &PINC,,,,,, 
-//#define PIN_C7   PORTC7, DDRC, &PORTC, &PINC,,,,,, 
+#define PIN_C7   PORTC7, &DDRC, &PORTC, &PINC,,,,,, 
 
 #define PIN_D0   PORTD0, &DDRD, &PORTD, &PIND,,,,,,
 #define PIN_D1   PORTD1, &DDRD, &PORTD, &PIND,,,,,, 

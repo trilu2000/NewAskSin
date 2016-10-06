@@ -40,17 +40,6 @@ EE_LIST::EE_LIST() {
 * The specified channel, list and index are used to identify the eeprom section to read from
 * (see @ref section_eeprom_memory_layout).
 */
-uint8_t EE_LIST::getList(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t *buf) {
-
-	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
-	if (!list) return 0;																	// return if not found
-
-	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);								// calculate the appropiate address
-	getEEPromBlock(pAddr, list->len, buf);													// get the eeprom content
-
-	DBG(F("EE:getList cnl:"), list->cnl, F(", lst:"), list->lst, F(", idx:"), idx, F(", addr:"), pAddr, F(", data:"), _HEX(buf, list->len), '\n');
-	return 1;																				// report everything ok
-}
 
 /*
 * @brief Get register value from EEprom
@@ -133,17 +122,7 @@ uint8_t EE_LIST::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t 
 *
 * @see setListArray(), firstTimeStart()
 */
-uint8_t EE_LIST::setList(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t *buf) {
 
-	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
-	if (!list) return 0;																	// return if not found
-
-	uint16_t pAddr = list->ee_addr + (list->len * peer_idx);								// calculate the appropiate address
-	setEEPromBlock(pAddr, list->len, buf);													// get the eeprom content
-
-	DBG(F("EE:setList cnl:"), list->cnl, F(", lst:"), list->lst, F(", idx:"), idx, F(", addr:"), pAddr, F(", data:"), _HEX(buf, list->len), '\n');
-	return 1;																				// report everything ok
-}
 
 /*
 * @brief Set individual registers of a list.
@@ -229,51 +208,9 @@ uint8_t EE_LIST::setListArray(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_
 *
 * @return The amount of slices
 */
-uint8_t  EE_LIST::countRegListSlc(uint8_t cnl, uint8_t lst) {
-	uint8_t needed_slice = 0;																// set the return value to 0
 
-	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
-		if (!list) return 0;																// return if not found
 
-	int16_t total_bytes = list->len * 2;													// get the slice len and multiply by 2 because we need regs and content
 
-	while (total_bytes > 0) {																// loop until total_bytes gets 0
-		total_bytes -= maxMsgLen;															// reduce by max message len
-		needed_slice++;																		// count the slices
-	}
-	needed_slice++;
-	DBG( F("EE:countRegListSlc cnl:"), cnl, F(", lst:"), lst, F(", slc:"), needed_slice, '\n');
-	return needed_slice;																	// return amount of slices
-}
-
-uint8_t  EE_LIST::getRegListSlc(uint8_t cnl, uint8_t lst, uint8_t idx, uint8_t slc, uint8_t *buf) {
-
-	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
-	if (!list) return 0;																	// return if not found
-
-	uint8_t slcOffset = slc * maxMsgLen;													// calculate the starting offset
-	slcOffset /= 2;																			// divided by to because of mixed message, regs + eeprom content
-
-	int8_t remByte = list->len - slcOffset;													// calculate the remaining bytes
-	if (remByte <= 0) {																		// check if we are in the last slice and add terminating zeros
-		*(uint16_t*)buf = 0;																// add them
-		//dbg << slc << ' ' << slcOffset << ' ' << list->len << '\n';
-		return 2;																			// nothing to do anymore
-	}
-	if (remByte >= (maxMsgLen / 2)) remByte = (maxMsgLen / 2);								// shorten remaining bytes if necessary
-
-	uint16_t pAddr = list->ee_addr + (list->len * idx);
-	//dbg << slc << ", sO:" << slcOffset << ", rB:" << remByte << ", sIdx:" << pHexB(sIdx) << ", eIdx:" << pHexB(eIdx) << '\n';
-
-	for (uint8_t i = 0; i < remByte; i++) {													// count through the remaining bytes
-		*buf++ = _PGM_BYTE(list->reg[i + slcOffset]);										// add the register address
-		getEEPromBlock(i + pAddr + slcOffset, 1, buf++);									// add the eeprom content
-		//dbg << (i+eIdx+slcOffset) << '\n';
-	}
-
-	DBG(F("EE:getRegListSlc cnl:"), cnl, F(", lst:"), lst, F(", idx:"), idx, F(", slc:"), slc, F(", data:"), _HEX(buf, remByte * 2), '\n');
-	return remByte * 2;																	// return the byte length
-}
 
 /*
 * @brief Finds and returns the requested channel or peer list.

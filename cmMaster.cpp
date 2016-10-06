@@ -15,11 +15,13 @@ uint8_t cnl_max = 0;																			// defined in cmMaster.h, increased by ev
 
 //public://------------------------------------------------------------------------------------------------------------------
 cmMaster::cmMaster(const uint8_t peer_max) {
-	peer.max = peer_max;
+	peerDB.max = peer_max;
 
+	list[lstC.lst] = &lstC;
+	if (lstP.lst < 5 ) list[lstP.lst] = &lstP;
 	lstC.cnl = cnl_max;																			// set the channel to the lists
 	lstP.cnl = cnl_max++;
-
+	
 	DBG_START(CM, F("CM["), lstC.cnl, F("].\n"));
 }
 
@@ -85,11 +87,11 @@ void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
 		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
 
-		uint8_t idx = peer.get_idx(temp_peer);												// search if we have already the peer in the database
-		if (idx == 0xff) idx = peer.get_free_slot();										// not in the in the database, search a free slot
+		uint8_t idx = peerDB.get_idx(temp_peer);											// search if we have already the peer in the database
+		if (idx == 0xff) idx = peerDB.get_free_slot();										// not in the in the database, search a free slot
 
 		if (idx != 0xff) {																	// free slot available
-			peer.set_peer(idx, temp_peer);													// write the peer into the database
+			peerDB.set_peer(idx, temp_peer);												// write the peer into the database
 
 			lstP.load_default();															// copy the defaults from progmem into the peer list, index doesn't matter
 			request_peer_defaults(idx, buf);												// ask the channel module to load the defaults
@@ -112,10 +114,10 @@ void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 
 		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
 		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
-		uint8_t idx = peer.get_idx(temp_peer);												// find the peer in the database
+		uint8_t idx = peerDB.get_idx(temp_peer);											// find the peer in the database
 
 		if (idx != 0xff) {																	// found it
-			peer.clear_peer(idx);															// delete the peer in the database
+			peerDB.clear_peer(idx);															// delete the peer in the database
 			ret_byte++;																		// increase success
 		}
 
@@ -144,10 +146,14 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		pCM->lstC.val = new uint8_t[pCM->lstC.len];										// create and allign the value arrays
 		pCM->lstP.val = new uint8_t[pCM->lstP.len];
 
+		// as we have a list table array we should allign it with the single lists
+		//cnl_lst[i][pCM->lstC.lst] = &pCM->lstC;
+		//cnl_lst[i][pCM->lstP.lst] = &pCM->lstP;
+
 		pCM->lstC.ee_addr = ee_start_addr;												// write the eeprom address in the channel list
 		ee_start_addr += pCM->lstC.len;													// create new address by adding the length of the list before
 		pCM->lstP.ee_addr = ee_start_addr;												// write the eeprom address in the peer list
-		ee_start_addr += (pCM->lstP.len * pCM->peer.max);								// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
+		ee_start_addr += (pCM->lstP.len * pCM->peerDB.max);								// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
 
 		pCM->lstC.load_list();															// read the defaults in respective list0/1
 		pCM->info_config_change();														// inform the channel modules
@@ -156,8 +162,8 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
 		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
-		pCM->peer.ee_addr = ee_start_addr;												// write eeprom address into the peer table
-		ee_start_addr += pCM->peer.max * 4;												// create nwe eeprom start address depending on the space for max peers are used
+		pCM->peerDB.ee_addr = ee_start_addr;											// write eeprom address into the peer table
+		ee_start_addr += pCM->peerDB.max * 4;											// create nwe eeprom start address depending on the space for max peers are used
 	}
 	return ee_start_addr;
 }
@@ -169,7 +175,7 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 uint8_t  is_peer_valid(uint8_t *peer) {
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
 		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
-		if (pCM->peer.get_idx(peer) != 0xff) return i;									// ask the peer table to find the peer, if found, return the cnl
+		if (pCM->peerDB.get_idx(peer) != 0xff) return i;								// ask the peer table to find the peer, if found, return the cnl
 	}
 	return 0;																			// nothing was found, return 0
 }
@@ -189,7 +195,7 @@ uint16_t cm_calc_crc(void) {
 		flashCRC = crc16_P(flashCRC, pCM->lstC.len, pCM->lstC.def);
 		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.reg);
 		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.def);
-		flashCRC = crc16(flashCRC, pCM->peer.max);
+		flashCRC = crc16(flashCRC, pCM->peerDB.max);
 		DBG(CM, F("CM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');					// some debug
 	}
 	return flashCRC;

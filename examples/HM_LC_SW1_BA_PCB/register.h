@@ -26,8 +26,8 @@
 	* void cmSwitch::initSwitch(uint8_t channel);
 	* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
 	*/
-	const uint8_t cmMaintenance_ChnlReg[] PROGMEM = { 0x02,0x0a,0x0b,0x0c,0x12,0x18, };
-	const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x1e,0x00, };
+	const uint8_t cmMaintenance_ChnlReg[] PROGMEM = { 0x02,0x05,0x0a,0x0b,0x0c,0x12, };
+	const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0x69, };
 	const uint8_t cmMaintenance_ChnlLen = 6;
 
 	cmMaster *pcnlModule[2] = {
@@ -61,9 +61,9 @@
 	 *                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
 	 */
 	const uint8_t dev_static[] PROGMEM = {             // testID 
-		/* firmwareVersion 1 byte */  0x10,           // or GE 
+		/* firmwareVersion 1 byte */  0x15,           // or GE 
 		/* modelID         2 byte */  0x00,0x6c,
-		/* subTypeID       1 byte */  0x00,           // replace __ by a valid type id 
+		/* subTypeID       1 byte */  0x10,           // replace __ by a valid type id 
 		/* deviceInfo      3 byte */  0x41,0x01,0x00, // device info not found, replace by valid values 
 	};
 

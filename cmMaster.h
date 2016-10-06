@@ -23,6 +23,7 @@ public://-----------------------------------------------------------------------
 	*        of the channel in combination with peer devices.
 	*        Therefore we have in every channel two lists - lstC and lstP organized in structs
 	*/
+	s_list_table *list[5] = {};
 	s_list_table lstC;
 	s_list_table lstP;
 
@@ -36,7 +37,7 @@ public://-----------------------------------------------------------------------
 	* peer device HMID (3 bytes) and peer device channel (1 byte). Consequently, the following
 	* definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory.
 	*/
-	s_peer_table peer;
+	s_peer_table peerDB;
 
 	cmMaster(const uint8_t peer_max);														// constructor
 

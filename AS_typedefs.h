@@ -94,20 +94,42 @@ typedef struct ts_list_table {
 	uint16_t get_ee_addr(uint8_t idx = 0) {						// calculate the eeprom address on base of the index, list0/1 didnt need an index
 		return ee_addr + (idx * len);
 	}
+
 	void load_list(uint8_t idx = 0) {							// load the respective list from the eeprom
 		getEEPromBlock(get_ee_addr(idx), len, val);
 	}
+
 	void save_list(uint8_t idx = 0) {							// writes the respective list to the eeprom
 		setEEPromBlock(get_ee_addr(idx), len, val);
 	}
+
 	void load_default() {										// load defaults from PROGMEM
 		memcpy_P(val, def, len);
 	}
+
 	uint8_t* ptr_to_val(uint8_t reg_addr, uint8_t idx = 0) {	// search a specific register address and return a pointer to the value
 		const void *pAddr =  memchr_P(reg, reg_addr, len);
 		if (!pAddr) return NULL;
 		return val + (uint16_t)pAddr - (uint16_t)reg + (idx * len);
 	}
+
+	uint8_t get_nr_slices_pairs(uint8_t byte_per_msg = 16) {	// calculates the amount of needed slices to send all peers depending on the given msg length in peers per message
+		uint8_t slices = 0;	int16_t total = (len * 2);			// len of register + len of value
+		while ((total -= byte_per_msg) > 0) slices++;
+		return ++slices;
+	}
+
+	uint8_t get_slice_pairs(uint8_t idx, uint8_t slc, uint8_t *buf, uint8_t byte_per_msg = 16) { // returns a sliced peer list
+		load_list(idx);																		// load the eeprom content by idx into the value table
+		byte_per_msg /= 2;																	// divided by 2 while we mix two arrays
+		uint8_t slc_start = slc * byte_per_msg;												// calculate the start point for reg and val
+		uint8_t slc_end = slc_start + byte_per_msg;											// calculate the corresponding end point
+		if (slc_end > len) slc_end = len;													// if calculated end point is bigger than the physical
+
+		for (uint8_t i = slc_start; i < slc_end; i++) {	memcpy_P(buf++, &reg[i], 1); memcpy(buf++, &val[i], 1);	}
+		return (slc_end - slc_start) * 2;
+	}
+
 } s_list_table;
 
 
@@ -163,7 +185,7 @@ typedef struct ts_peer_table {
 	}
 
 	uint8_t get_nr_slices(uint8_t byte_per_msg = 16) {			// calculates the amount of needed slices to send all peers depending on the given msg length in peers per message
-		uint8_t slices = 0;	uint16_t total = (used_slots() + 1) * 4;		
+		uint8_t slices = 0;	int16_t total = (used_slots() + 1) * 4;		
 		while ((total -= byte_per_msg) > 0) slices++;
 		return ++slices;
 	}
@@ -712,52 +734,52 @@ typedef struct ts_msg00xxxx {
 
 /*
 * @brief CONFIG_PEER_ADD message
-* //byte 00, MSG_LEN - message length
-* //byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-* //byte 02, FLAG - see structure of message flags
-* //byte 03, MSG_TYP - type of message
-* //byte 04, SND_ID[3] - sender ID
-* //byte 07, RCV_ID[3] - receiver id, broadcast for 0
-* //byte 10, MSG_CNL - message channel
-* //byte 11, BY11 - message type
+* byte 00, MSG_LEN - message length
+* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+* byte 02, FLAG - see structure of message flags
+* byte 03, MSG_TYP - type of message
+* byte 04, SND_ID[3] - sender ID
+* byte 07, RCV_ID[3] - receiver id, broadcast for 0
+* byte 10, MSG_CNL - message channel
+* byte 11, BY11 - message type
 * byte 12, PEER_ID - by12,13,14 - peer address
 * byte 15, PEER_CNL[2] - by15,16 - peer channel A and B
 */
 typedef struct ts_msg01xx01 {
-	//uint8_t       MSG_LEN;				// by00 - message length
-	//uint8_t       MSG_CNT;				// by01 - message counter
-	//struct s_mFlg FLAG;					// by02 - see structure of message flags
-	//uint8_t       MSG_TYP;				// by03 - type of message
-	//uint8_t       SND_ID[3];			// by04 - sender ID
-	//uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
-	//uint8_t       MSG_CNL;				// by10 - message channel
-	//uint8_t       BY11;					// by11 - message type
+	uint8_t       MSG_LEN;				// by00 - message length
+	uint8_t       MSG_CNT;				// by01 - message counter
+	struct s_mFlg FLAG;					// by02 - see structure of message flags
+	uint8_t       MSG_TYP;				// by03 - type of message
+	uint8_t       SND_ID[3];			// by04 - sender ID
+	uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
+	uint8_t       MSG_CNL;				// by10 - message channel
+	uint8_t       BY11;					// by11 - message type
 	uint8_t	      PEER_ID[3];			// by12 - peer address
 	uint8_t       PEER_CNL[2];			// by15, by16 - peer channel A and B
 } s_m01xx01; // CONFIG_PEER_ADD message
 
 /*
 * @brief CONFIG_PEER_REMOVE message
-* //byte 00, MSG_LEN - message length
-* //byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
-* //byte 02, FLAG - see structure of message flags
-* //byte 03, MSG_TYP - type of message
-* //byte 04, SND_ID[3] - sender ID
-* //byte 07, RCV_ID[3] - receiver id, broadcast for 0
-* //byte 10, MSG_CNL - message channel
-* //byte 11, BY11 - message type
+* byte 00, MSG_LEN - message length
+* byte 01, MSG_CNT - counter, if it is an answer counter has to reflect the answered message, otherwise own counter has to be used
+* byte 02, FLAG - see structure of message flags
+* byte 03, MSG_TYP - type of message
+* byte 04, SND_ID[3] - sender ID
+* byte 07, RCV_ID[3] - receiver id, broadcast for 0
+* byte 10, MSG_CNL - message channel
+* byte 11, BY11 - message type
 * byte 12, PEER_ID - by12,13,14 - peer address
 * byte 15, PEER_CNL[2] - by15,16 - peer channel A and B
 */
 typedef struct ts_msg01xx02 {
-	//uint8_t       MSG_LEN;				// by00 - message length
-	//uint8_t       MSG_CNT;				// by01 - message counter
-	//struct s_mFlg FLAG;					// by02 - see structure of message flags
-	//uint8_t       MSG_TYP;				// by03 - type of message
-	//uint8_t       SND_ID[3];			// by04 - sender ID
-	//uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
-	//uint8_t       MSG_CNL;				// by10 - message channel
-	//uint8_t       BY11;					// by11 - message type
+	uint8_t       MSG_LEN;				// by00 - message length
+	uint8_t       MSG_CNT;				// by01 - message counter
+	struct s_mFlg FLAG;					// by02 - see structure of message flags
+	uint8_t       MSG_TYP;				// by03 - type of message
+	uint8_t       SND_ID[3];			// by04 - sender ID
+	uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
+	uint8_t       MSG_CNL;				// by10 - message channel
+	uint8_t       BY11;					// by11 - message type
 	uint8_t	      PEER_ID[3];			// by12 - peer address
 	uint8_t       PEER_CNL[2];			// by15, by16 - peer channel A and B
 } s_m01xx02; // CONFIG_PEER_REMOVE message

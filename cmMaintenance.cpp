@@ -30,10 +30,11 @@ cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
 	lstC.def = cmMaintenance_ChnlDef;
 	lstC.len = cmMaintenance_ChnlLen;
 
-	lstP.lst = 0;
-	lstP.reg = cmMaintenance_PeerReg;
-	lstP.def = cmMaintenance_PeerDef;
-	lstP.len = sizeof(cmMaintenance_PeerReg);
+	lstP.lst = 255;																			// in principle not needed...
+	//lstP.reg = cmMaintenance_PeerReg;														// while channel 0 has only list 0
+	//lstP.def = cmMaintenance_PeerDef;
+	//lstP.len = sizeof(cmMaintenance_PeerReg);
+
 	DBG(MN, F("MN. cnl: "), lstC.cnl, '\n');
 }
 

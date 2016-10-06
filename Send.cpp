@@ -30,7 +30,7 @@ void SN::poll(void) {
 		snd_msg.clear();																	// nothing to do any more
 		led.set(ack);																		// fire the status led
 		pom.stayAwake(100);																	// and stay awake for a short while
-		DBG(SN, F("ACK detected...\n") );
+		//DBG(SN, F("ACK detected...\n") );
 		return;
 	}
 
