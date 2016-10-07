@@ -22,8 +22,6 @@
 #include "CC1101.h"
 #include "Send.h"
 #include "Receive.h"
-#include "EEprom_list.h"
-//#include "EEprom_peer.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
@@ -170,8 +168,6 @@ public:		//---------------------------------------------------------------------
 	inline void processMessageConfigAESProtected();
 
 	inline void actionSwitchEvent();
-	//inline uint8_t configPeerAdd();
-	//inline uint8_t configPeerRemove();
 	inline void configStart();
 	inline void configEnd();
 	inline void configWriteIndex(void);
@@ -202,10 +198,6 @@ public:		//---------------------------------------------------------------------
 	inline void initRandomSeed();
 	
   protected:	//---------------------------------------------------------------------------------------------------------
-	// - homematic specific functions ------------------
-	//void decode(uint8_t *buf);																// decodes the message
-	//void encode(uint8_t *buf);																// encodes the message
-	void explainMessage(uint8_t *buf);														// explains message content, part of debug functions
 
 	// - some helpers ----------------------------------
 

@@ -91,29 +91,52 @@ typedef struct ts_list_table {
 	uint8_t len;							// length of register, defaults and value array
 	uint16_t ee_addr;						// start address for channel in eeprom
 
-	uint16_t get_ee_addr(uint8_t idx = 0) {						// calculate the eeprom address on base of the index, list0/1 didnt need an index
+	/* calculate the eeprom address on base of the index, list0 / 1 didnt need an index */
+	uint16_t get_ee_addr(uint8_t idx = 0) {	
 		return ee_addr + (idx * len);
 	}
 
-	void load_list(uint8_t idx = 0) {							// load the respective list from the eeprom
+	/* load the respective list from the eeprom  */
+	void load_list(uint8_t idx = 0) {							
 		getEEPromBlock(get_ee_addr(idx), len, val);
 	}
 
-	void save_list(uint8_t idx = 0) {							// writes the respective list to the eeprom
+	/* writes the respective list to the eeprom  */
+	void save_list(uint8_t idx = 0) {
 		setEEPromBlock(get_ee_addr(idx), len, val);
 	}
 
-	void load_default() {										// load defaults from PROGMEM
+	/* load defaults from PROGMEM  */
+	void load_default() {
 		memcpy_P(val, def, len);
 	}
 
-	uint8_t* ptr_to_val(uint8_t reg_addr, uint8_t idx = 0) {	// search a specific register address and return a pointer to the value
+	/* Returns a pointer to the array where we load PROGMEM defaults, or eeprom stored content.
+	*  The function searches for a given register value and returns the pointer to the specic address in 
+	*  the value array. If a register address is not found, the pointer shows to an empty byte, defined within this function.
+	*  This function can also be used to update register content, but you have to load and save the value array
+	*  by calling load_defaults(), load_list() or save_list()
+	*/
+	uint8_t* ptr_to_val(uint8_t reg_addr) {	
+		uint8_t empty = 0xff;
 		const void *pAddr =  memchr_P(reg, reg_addr, len);
-		if (!pAddr) return NULL;
-		return val + (uint16_t)pAddr - (uint16_t)reg + (idx * len);
+		if (!pAddr) return &empty;
+		return val + (uint16_t)pAddr - (uint16_t)reg;
 	}
 
-	uint8_t get_nr_slices_pairs(uint8_t byte_per_msg = 16) {	// calculates the amount of needed slices to send all peers depending on the given msg length in peers per message
+	/* Writes values by a given register/value array into the local value array. 
+	*  Respective list is loaded and saved by this function.
+	*/
+	void write_array(uint8_t *buf, uint8_t len, uint8_t idx = 0) {
+		load_list(idx);
+		for (uint8_t i = 0; i < len; i++) *ptr_to_val(buf[i]) = buf[i + 1];
+		save_list(idx);
+	}
+
+	/* Calculates the amount of needed slices to send all peers depending on the given 
+	*  msg length in peers per message
+	*/
+	uint8_t get_nr_slices_pairs(uint8_t byte_per_msg = 16) {
 		uint8_t slices = 0;	int16_t total = (len * 2);			// len of register + len of value
 		while ((total -= byte_per_msg) > 0) slices++;
 		return ++slices;

@@ -30,7 +30,7 @@
 	const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0x69, };
 	const uint8_t cmMaintenance_ChnlLen = 6;
 
-	cmMaster *pcnlModule[2] = {
+	cmMaster *ptr_CM[2] = {
 		new cmMaintenance(0),
 		new cmSwitch(10),
 	};

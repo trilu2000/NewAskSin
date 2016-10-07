@@ -14,6 +14,8 @@
 #include "HAL.h"
 #include "AS_typedefs.h"
 
+const uint8_t list_max = 5;
+
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------
 
@@ -23,7 +25,7 @@ public://-----------------------------------------------------------------------
 	*        of the channel in combination with peer devices.
 	*        Therefore we have in every channel two lists - lstC and lstP organized in structs
 	*/
-	s_list_table *list[5] = {};
+	s_list_table *list[list_max] = {};
 	s_list_table lstC;
 	s_list_table lstP;
 
@@ -74,7 +76,7 @@ public://-----------------------------------------------------------------------
 *  byte to identify the channel we are actually setting up, increased in the constructor...
    the overall amount will be kept for runtime to step through the different instances. */
 extern uint8_t cnl_max;
-extern cmMaster *pcnlModule[];
+extern cmMaster *ptr_CM[];
 
 
 

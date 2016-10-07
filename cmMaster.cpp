@@ -141,7 +141,7 @@ void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 uint16_t cm_prep_default(uint16_t ee_start_addr) {
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+		cmMaster *pCM = ptr_CM[i];														// short hand to respective channel master	
 		
 		pCM->lstC.val = new uint8_t[pCM->lstC.len];										// create and allign the value arrays
 		pCM->lstP.val = new uint8_t[pCM->lstP.len];
@@ -155,13 +155,14 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		pCM->lstP.ee_addr = ee_start_addr;												// write the eeprom address in the peer list
 		ee_start_addr += (pCM->lstP.len * pCM->peerDB.max);								// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
 
-		pCM->lstC.load_list();															// read the defaults in respective list0/1
-		pCM->info_config_change();														// inform the channel modules
+		// defaults loaded in the AS module init, on every time start
+		//pCM->lstC.load_list();															// read the defaults in respective list0/1
+		//pCM->info_config_change();														// inform the channel modules
 		DBG(CM, F("CM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->lstC.val, pCM->lstC.len), '\n');
 	}
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+		cmMaster *pCM = ptr_CM[i];														// short hand to respective channel master	
 		pCM->peerDB.ee_addr = ee_start_addr;											// write eeprom address into the peer table
 		ee_start_addr += pCM->peerDB.max * 4;											// create nwe eeprom start address depending on the space for max peers are used
 	}
@@ -174,7 +175,7 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 */
 uint8_t  is_peer_valid(uint8_t *peer) {
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
+		cmMaster *pCM = ptr_CM[i];														// short hand to respective channel master	
 		if (pCM->peerDB.get_idx(peer) != 0xff) return i;								// ask the peer table to find the peer, if found, return the cnl
 	}
 	return 0;																			// nothing was found, return 0
@@ -190,19 +191,22 @@ uint16_t cm_calc_crc(void) {
 	uint16_t flashCRC = 0;																// define and set the return value
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = pcnlModule[i];													// short hand to channel module
-		flashCRC = crc16_P(flashCRC, pCM->lstC.len, pCM->lstC.reg);						// and calculate the crc - arrays are in PROGMEM
-		flashCRC = crc16_P(flashCRC, pCM->lstC.len, pCM->lstC.def);
-		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.reg);
-		flashCRC = crc16_P(flashCRC, pCM->lstP.len, pCM->lstP.def);
-		flashCRC = crc16(flashCRC, pCM->peerDB.max);
-		DBG(CM, F("CM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');					// some debug
+		s_peer_table *pPeer = &ptr_CM[i]->peerDB;										// short hand to the peer database
+		for (uint8_t j = 0; j < list_max; j++) {										// step through all lists
+			s_list_table *pList = ptr_CM[i]->list[j];									// short hand to list module
+			if (!pList) continue;														// skip on empty pointer
+			flashCRC = crc16_P(flashCRC, pList->len, pList->reg);						// and calculate the crc - arrays are in PROGMEM
+			flashCRC = crc16_P(flashCRC, pList->len, pList->def);
+			flashCRC = crc16(flashCRC, pPeer->max);
+			DBG(CM, F("CM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');				// some debug
+		}
 	}
 	return flashCRC;
 }
 inline uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf) {
-	for (uint8_t i = 0; i < len; i++) {												// step through all channels
-		crc = crc16(crc, _PGM_BYTE(buf[i]));
+	for (uint8_t i = 0; i < len; i++) {													// step through all channels
+		uint8_t t = _PGM_BYTE(buf[i]);
+		crc = crc16(crc, t);
 	}
 	return crc;
 }

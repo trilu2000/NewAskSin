@@ -20,9 +20,9 @@
 *
 * Spechial register list 0: 0x0A, 0x0B, 0x0C
 * Spechial register list 1: 0x08
+*
+* Has to be defined within the channel module or externally from the class
 */
-const uint8_t cmMaintenance_PeerReg[] PROGMEM = { 0 };
-const uint8_t cmMaintenance_PeerDef[] PROGMEM = { 0 };
 
 class cmMaintenance : public cmMaster {
 public:  //----------------------------------------------------------------------------------------------------------------

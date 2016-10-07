@@ -2,7 +2,6 @@
 #include "00_debug-flag.h"
 
 
-
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <AS.h>																					// ask sin framework
 #include "register.h"																			// configuration sheet
@@ -33,6 +32,13 @@ void setup() {
 
 	// - user related -----------------------------------------
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(MAID,3), F(", CNL: "), cnl_max, F("\n\n") );	// some debug
+
+	//uint8_t x[] = { 0x02, 0x22, 0x03, 0x33, 0x04, 0x44, 0x0A, 0xaa, 0x0F, 0xff, 0x0B, 0xbb, };
+	//pcnlModule[1]->list[3]->write_array(x, sizeof(x),9 );
+	//uint8_t *t = pcnlModule[0]->list[0]->ptr_to_val(0x0f);
+	//if (t) dbg << "test: " << *t << '\n';
+	//else dbg << "no t " << *t << '\n';
+	
 
 	//snd.prep_msg(MSG_REASON::INITIAL, MSG_INTENT::INTERN, MSG_TYPE::ACK, 9, 3);
 
@@ -121,12 +127,15 @@ void dumpEEprom() {
 	uint16_t pAddr;
 
 	DBG(SER, F("\nEEPROM content\n\n"));
+	uint8_t *e = new uint8_t[32];
+	getEEPromBlock(0, 32, e);
+	DBG(SER, F("Magic:"), _HEX(e, 2), F("("), *(uint16_t*)e, F("), HMID:"), _HEX(e+2,3), F(", SERIAL:"), _HEX(e+5, 10), F("\nKEY_IDX:"), _HEX(e + 15, 1), F(", KEY:"), _HEX(e + 16, 16), F("\n\n"));
 
 	for (uint8_t i = 0; i < cnl_max; i++) {														// stepping through channels
 
 		for (uint8_t j = 0; j < 5; j++) {														// stepping through available lists
-			s_list_table *list = pcnlModule[i]->list[j];										// short hand to list table
-			s_peer_table *peer = &pcnlModule[i]->peerDB;										// short hand to peer db
+			s_list_table *list = ptr_CM[i]->list[j];											// short hand to list table
+			s_peer_table *peer = &ptr_CM[i]->peerDB;											// short hand to peer db
 			if (!list) continue;																// skip if pointer is empty
 
 			uint8_t *x = new uint8_t[list->len];												// size an array as data buffer

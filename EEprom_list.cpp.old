@@ -51,7 +51,7 @@ EE_LIST::EE_LIST() {
 *
 * @return the value or 0 if not found
 */
-uint8_t EE_LIST::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t addr) {
+/*uint8_t EE_LIST::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t addr) {
 
 	uint8_t retByte = 0;																	// set the return byte to default
 
@@ -70,7 +70,7 @@ uint8_t EE_LIST::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t 
 	DBG(F("EE:getRegAddr cnl:"), list->cnl, F(", lst:"), list->lst, F(", idx:"), peer_idx, F(", addr:"), pAddr, F(", reg:"), addr, F(", ret:"), retByte, '\n');
 
 	return retByte;
-}
+}*/
 
 
 /*
@@ -177,7 +177,7 @@ uint8_t EE_LIST::getRegAddr(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t 
 *
 * @todo Add references to related methods
 */
-uint8_t EE_LIST::setListArray(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t len, uint8_t *buf) {
+/*uint8_t EE_LIST::setListArray(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_t len, uint8_t *buf) {
 
 	s_list_table *list = find_list(cnl, lst);												// search the channel module for the appropiate list
 	if (!list) return 0;																	// return if not found
@@ -197,7 +197,7 @@ uint8_t EE_LIST::setListArray(uint8_t cnl, uint8_t lst, uint8_t peer_idx, uint8_
 			}
 		}
 	}
-}
+}*/
 
 
 /* 

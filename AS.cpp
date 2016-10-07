@@ -42,8 +42,8 @@ s_config_mode config_mode;																	// helper structure for keeping track
 s_ee_start    dev_ident;																	// struct to hold the device identification related information									
 uint8_t       *MAID;																		// pointer to the master id, which is hold in cmMaintenance
 
-s_recv rcv_msg;																				// struct to process received strings
-s_send snd_msg;																				// same for send strings
+s_recv        rcv_msg;																		// struct to process received strings
+s_send        snd_msg;																		// same for send strings
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
@@ -67,7 +67,8 @@ void AS::init(void) {
 	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.	*/
 	uint16_t flashCRC = cm_calc_crc();														// calculate the crc of all channel module list0/1, list3/4
 	getEEPromBlock(0, sizeof(dev_ident), &dev_ident);						// get magic byte and all other information from eeprom
-	//dbg << "ee: magic: " << dev_ident.MAGIC << ", hmid: " << _HEX(dev_ident.HMID, 3) << ", serial: " << _HEX(dev_ident.SERIAL_NR, 10) << ", index: " << _HEXB(dev_ident.HMKEY_INDEX) << ", key: " << _HEX(dev_ident.HMKEY, 16) << ", sizeof: " << sizeof(dev_ident) << ", addr: " << (uint16_t)&dev_ident.MAGIC << '\n';
+	dbg << "fl: magic: " << flashCRC << '\n';
+	dbg << "ee: magic: " << dev_ident.MAGIC << ", hmid: " << _HEX(dev_ident.HMID, 3) << ", serial: " << _HEX(dev_ident.SERIAL_NR, 10) << ", index: " << _HEXB(dev_ident.HMKEY_INDEX) << ", key: " << _HEX(dev_ident.HMKEY, 16) << ", sizeof: " << sizeof(dev_ident) << ", addr: " << (uint16_t)&dev_ident.MAGIC << '\n';
 	DBG(AS, F("AS:init crc- flash:"), flashCRC, F(", eeprom: "), dev_ident.MAGIC, '\n');	// some debug
 
 	if (flashCRC != dev_ident.MAGIC) {	
@@ -88,13 +89,13 @@ void AS::init(void) {
 
 		/* - Write the defaults into the respective lists in eeprom and clear the peer database.
 		* defaults are read from channel modules PROGMEM section, copied into the value byte array
-		* and written to the eeprom. nothing to do any more, while defaults are in the value arrays 
-		* with the same information as in the eeprom */
+		* and written to the eeprom.  */
 		for (uint8_t i = 0; i < cnl_max; i++) {												// write the defaults in respective list0/1
-			cmMaster *pCM = pcnlModule[i];													// short hand to respective channel master	
-			pCM->lstC.load_default();														// copy from progmem into array
-			pCM->lstC.save_list();															// write it into the eeprom
-			pCM->peerDB.clear_all();
+			s_list_table *pList = &ptr_CM[i]->lstC;											// short hand to list 
+			s_peer_table *pPeer = &ptr_CM[i]->peerDB;										// short hand to peer db
+			pList->load_default();															// copy from progmem into array
+			pList->save_list();																// write it into the eeprom
+			pPeer->clear_all();
 			DBG(AS, F("AS:write_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, '\n');
 		}
 
@@ -108,9 +109,15 @@ void AS::init(void) {
 	initMillis();																			// start the millis counter
 	
 	cc.init();																				// init the rf module
-	//cc.init();																			// init the rf module
 
 	initRandomSeed();
+
+	/* load list 0 and 1 defaults and inform the channel modules */
+	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
+		cmMaster *pCM = ptr_CM[i];															// short hand to respective channel master	
+		pCM->lstC.load_list();																// read the defaults in respective list0/1
+		pCM->info_config_change();															// inform the channel modules
+	}
 
 	/* - add this function in register.h to setup default values every start */
 	everyTimeStart();
@@ -160,7 +167,7 @@ void AS::poll(void) {
 
 	// regular polls
 	for (uint8_t i = 0; i < cnl_max; i++) {													// poll the channel modules
-		pcnlModule[i]->poll();
+		ptr_CM[i]->poll();
 	}
 
 	btn.poll();																			// poll the config button
@@ -195,7 +202,7 @@ void AS::processMessage(void) {
 			return;																			// no further processing needed
 		}
 
-		cmMaster *pCM = pcnlModule[cnl];													// short hand to respective channel module
+		cmMaster *pCM = ptr_CM[cnl];														// short hand to respective channel module
 		uint8_t by11 = rcv_msg.mBody->BY11;													// short hand to byte 11 in the received string
 
 		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(     (s_m01xx01*)rcv_msg.buf );
@@ -434,8 +441,9 @@ void AS::processMessage(void) {
 		}
 
 		// check if AES for the current channel active or aesActiveForReset @see above
-		if (ee_list.getRegAddr(rcv_msg.mBody->BY11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
-			sendSignRequest(1);
+		if (*ptr_CM[rcv_msg.mBody->BY11]->list[1]->ptr_to_val(AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
+		//if (ee_list.getRegAddr(rcv_msg.mBody->BY11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
+				sendSignRequest(1);
 
 		}
 		else {
@@ -491,8 +499,9 @@ void AS::processMessage(void) {
 		if (cnl > 0) {
 #ifdef SUPPORT_AES
 			// check if AES for the current channel active
-			if (ee_list.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
-				sendSignRequest(1);
+			if (*ptr_CM[cnl]->list[1]->ptr_to_val(AS_REG_L1_AES_ACTIVE) == 1) {
+			//if (ee_list.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
+					sendSignRequest(1);
 
 			}
 			else {
@@ -887,14 +896,14 @@ inline void AS::sendSliceList(void) {
 	if (snd_msg.active) return;																	// check if send function has a free slot, otherwise return
 
 	if        (stcSlice.peer) {			// INFO_PEER_LIST
-		s_peer_table *peerDB = &pcnlModule[stcSlice.cnl]->peerDB;								// short hand to peer table
+		s_peer_table *peerDB = &ptr_CM[stcSlice.cnl]->peerDB;								// short hand to peer table
 		cnt = peerDB->get_slice(stcSlice.curSlc, snd_msg.buf + 11);								// get the slice and the amount of bytes
 		sendINFO_PEER_LIST(cnt);																// create the body
 		stcSlice.curSlc++;																		// increase slice counter
 		//dbg << "peer slc: " << _HEX(snd_msg.buf,snd_msg.buf[0]+1) << '\n';								// write to send buffer
 
 	} else if (stcSlice.reg2) {			// INFO_PARAM_RESPONSE_PAIRS
-		s_list_table *list = pcnlModule[stcSlice.cnl]->list[stcSlice.lst];						// short hand to respective list table
+		s_list_table *list = ptr_CM[stcSlice.cnl]->list[stcSlice.lst];							// short hand to respective list table
 		if (stcSlice.curSlc + 1 == stcSlice.totSlc) {											// last slice, terminating message
 			memset(snd_msg.buf + 11, 0, 2);
 			cnt = 2;
@@ -917,7 +926,7 @@ inline void AS::sendSliceList(void) {
 }
 
 inline void AS::sendPeerMsg(void) {
-	cmMaster *pCM = pcnlModule[stcPeer.channel];
+	cmMaster *pCM = ptr_CM[stcPeer.channel];
 	uint8_t retries_max;
 
 	retries_max = (stcPeer.bidi) ? 3 : 1;
@@ -969,9 +978,7 @@ inline void AS::sendPeerMsg(void) {
 		return;
 	}
 
-	//uint8_t *tmp_peer;																		// get the respective peer address
-	uint8_t *tmp_peer = pcnlModule[stcPeer.channel]->peerDB.get_peer(stcPeer.idx_cur);
-	//ee_peer.getPeerByIdx(stcPeer.channel, stcPeer.idx_cur, tmp_peer);
+	uint8_t *tmp_peer = ptr_CM[stcPeer.channel]->peerDB.get_peer(stcPeer.idx_cur);
 	
 	#ifdef AS_DBG
 		dbg << "a: " << stcPeer.idx_cur << " m " << stcPeer.idx_max << '\n';
@@ -989,7 +996,9 @@ inline void AS::sendPeerMsg(void) {
 	// get the respective list4 entries and take care while sending the message
 	// peerNeedsBurst  =>{a=>  1.0,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"peer expects burst",lit=>{off=>0,on=>1}},
 	// expectAES       =>{a=>  1.7,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"expect AES"        ,lit=>{off=>0,on=>1}},
-	l4_0x01.ui = ee_list.getRegAddr(stcPeer.channel, 4, stcPeer.idx_cur, 0x01);
+	ptr_CM[stcPeer.channel]->list[4]->load_list(stcPeer.idx_cur);
+	l4_0x01.ui = *ptr_CM[stcPeer.channel]->list[4]->ptr_to_val(0x01);
+	//l4_0x01.ui = ee_list.getRegAddr(stcPeer.channel, 4, stcPeer.idx_cur, 0x01);
 	// fillLvlUpThr    =>{a=>  4.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level upper threshold"},
 	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
 	//dbg << F("s_l4_0x01=") << _HEXB(l4_0x01.ui) << F("\n");
@@ -1055,14 +1064,14 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 		rcv_msg.buf[13] = rcv_msg.buf[14];																// copy the channel byte to the peer
 		cnl = is_peer_valid(rcv_msg.buf+10);													// check with the right part of the string
 		if (cnl != 0xff) {
-			*pIdx = pcnlModule[cnl]->peerDB.get_idx(rcv_msg.buf + 10);										// get the index of the respective peer in the channel store
+			*pIdx = ptr_CM[cnl]->peerDB.get_idx(rcv_msg.buf + 10);										// get the index of the respective peer in the channel store
 		}
 		rcv_msg.buf[13] = tmp;																		// get it back
 
 	} else {
 		cnl = is_peer_valid(rcv_msg.peer);
 		if (cnl != 0xff) {
-			*pIdx = pcnlModule[cnl]->peerDB.get_idx(rcv_msg.peer);										// get the index of the respective peer in the channel store
+			*pIdx = ptr_CM[cnl]->peerDB.get_idx(rcv_msg.peer);										// get the index of the respective peer in the channel store
 		}
 	}
 
@@ -1076,7 +1085,8 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	uint8_t AS::checkAnyChannelForAES(void) {
 		uint8_t i;
 		for (i = 1; i < cnl_max; i++) {														// check if AES activated for any channel
-			if (ee_list.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
+			if (*ptr_CM[i]->list[1]->ptr_to_val(AS_REG_L1_AES_ACTIVE)) {
+			//if (ee_list.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
 				return 1;
 			}
 		}
@@ -1185,7 +1195,7 @@ inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
 	//} else {
 	//	sendINFO_ACTUATOR_STATUS(rcv.mBdy.by10, 0, 0);
 	//}
-	pcnlModule[by10]->request_pair_status();
+	ptr_CM[by10]->request_pair_status();
 
 }
 
@@ -1218,26 +1228,24 @@ inline void AS::processMessageConfigSerialReq(void) {
  * @brief Process message CONFIG_PARAM_REQ.
  *
  * Message description:
- *             Sender__ Receiver     Channel PeerID__  PeerChannel  ParmList
- * 10 04 A0 01 63 19 63 01 02 04 01  04      00 00 00  00           01
+ *             Sender__ Receiver   Channel  MSG  PeerID__  PeerChannel  ParmList
+ * 10 04 A0 01 63 19 63 01 02 04   01       04   00 00 00  00           01
  */
 inline void AS::processMessageConfigParamReq(void) {
-	/* check if we have the required list in the channel, channel check was already done in processMessage */
-	if ((rcv_msg.buf[16] == 0x03) || (rcv_msg.buf[16] == 0x04)) {										// only list 3 and list 4 needs an peer id and idx
-		stcSlice.idx = pcnlModule[rcv_msg.mBody->BY10]->peerDB.get_idx(rcv_msg.buf + 12);					// get peer index
-		stcSlice.totSlc = pcnlModule[rcv_msg.mBody->BY10]->lstP.get_nr_slices_pairs();					// how many slices are need
+	/* if channel = 0 we do not need to check the index, while channel 0 has no peers  */
+	if (rcv_msg.mBody->BY10) {
+		stcSlice.idx = ptr_CM[rcv_msg.mBody->BY10]->peerDB.get_idx(rcv_msg.buf + 12);		// get peer index
 	} else {
-		stcSlice.idx = 0;																		// otherwise peer index is 0
-		stcSlice.totSlc = pcnlModule[rcv_msg.mBody->BY10]->lstC.get_nr_slices_pairs();;					// how many slices are need
+		stcSlice.idx = 0;																	// otherwise peer index is 0
 	}
-	stcSlice.totSlc++;																			// increase by one, while we have to terminate the message flow with a seperate message
+	stcSlice.totSlc = ptr_CM[rcv_msg.mBody->BY10]->list[rcv_msg.buf[16]]->get_nr_slices_pairs(); // how many slices are need
+	stcSlice.totSlc++;																		// increase by one, while we have to terminate the message flow with a seperate message
 
-	//stcSlice.totSlc = ee_list.countRegListSlc(rcv_msg.mBody->BY10, rcv_msg.buf[16]);					// how many slices are need
-	stcSlice.mCnt = rcv_msg.mBody->MSG_CNT;														// remember the message count
-	memcpy(stcSlice.toID, rcv_msg.mBody->SND_ID, 3);
-	stcSlice.cnl = rcv_msg.mBody->BY10;															// send input to the send peer function
-	stcSlice.lst = rcv_msg.buf[16];																	// send input to the send peer function
-	stcSlice.reg2 = 1;																			// set the type of answer
+	stcSlice.mCnt = rcv_msg.mBody->MSG_CNT;													// remember the message count
+	memcpy(stcSlice.toID, rcv_msg.mBody->SND_ID, 3);										// remember to whom we have to send
+	stcSlice.cnl = rcv_msg.mBody->BY10;														// send input to the send peer function
+	stcSlice.lst = rcv_msg.buf[16];															// send input to the send peer function
+	stcSlice.reg2 = 1;																		// set the type of answer
 
 	#ifdef AS_DBG
 		dbg << "cnl: " << rcv_msg.mBody->BY10 << " s: " << stcSlice.idx << '\n';
@@ -1259,7 +1267,7 @@ inline void AS::processMessageConfigParamReq(void) {
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
  */
 inline void AS::processMessageConfigPeerListReq(void) {
-	cmMaster *pCM = pcnlModule[rcv_msg.mBody->BY10];
+	cmMaster *pCM = ptr_CM[rcv_msg.mBody->BY10];
 	stcSlice.totSlc = pCM->peerDB.get_nr_slices(4);												// how many slices are needed
 	//stcSlice.totSlc = ee_peer.countPeerSlc(rcv_msg.mBody->BY10);									// how many slices are need
 	stcSlice.mCnt = rcv_msg.mBody->MSG_CNT;														// remember the message count
@@ -1356,7 +1364,7 @@ inline void AS::configStart() {
 	config_mode.cnl = rcv_msg.mBody->BY10;															// fill structure to remember where to write
 	config_mode.lst = rcv_msg.buf[16];
 	if ((config_mode.lst == 3) || (config_mode.lst == 4)) {
-		config_mode.idx_peer = pcnlModule[rcv_msg.mBody->BY10]->peerDB.get_idx(rcv_msg.buf + 12) ;
+		config_mode.idx_peer = ptr_CM[rcv_msg.mBody->BY10]->peerDB.get_idx(rcv_msg.buf + 12) ;
 		//config_mode.idx_peer = ee_peer.getIdxByPeer(rcv_msg.mBody->BY10, rcv_msg.buf + 12);
 	} else {
 		config_mode.idx_peer = 0;
@@ -1377,7 +1385,7 @@ inline void AS::configStart() {
  * 10 04 A0 01 63 19 63 01 02 04 01 06
  */
 inline void AS::configEnd() {
-	cmMaster *pCM = pcnlModule[config_mode.cnl];													// short hand to channel module
+	cmMaster *pCM = ptr_CM[config_mode.cnl];														// short hand to channel module
 	config_mode.active = 0;																			// set inactive
 
 	if ( (config_mode.lst == 0) || (config_mode.lst == 1) ) {												// only list 0 or list 1 to load, while list 3 or list 4 are refreshed with a peer message
@@ -1395,7 +1403,9 @@ inline void AS::configEnd() {
  */
  inline void AS::configWriteIndex(void) {
 	if ((config_mode.active) && (config_mode.cnl == rcv_msg.mBody->BY10)) {								// check if we are in config mode and if the channel fit
-		ee_list.setListArray(config_mode.cnl, config_mode.lst, config_mode.idx_peer, rcv_msg.buf[0]-11, rcv_msg.buf+12);	// write the string to EEprom
+
+		//ee_list.setListArray(config_mode.cnl, config_mode.lst, config_mode.idx_peer, rcv_msg.buf[0]-11, rcv_msg.buf+12);	// write the string to EEprom
+		ptr_CM[config_mode.cnl]->list[config_mode.lst]->write_array(rcv_msg.buf + 12, rcv_msg.buf[0] - 11, config_mode.idx_peer);
 
 		/*if ((cFlag.channel == 0) && (cFlag.list == 0)) {										// check if we got somewhere in the string a 0x0a, as indicator for a new masterid
 			uint8_t maIdFlag = 0;
@@ -1449,7 +1459,7 @@ void AS::processMessageAction11() {
 		//if (pModTbl->isActive) {
 		//	pModTbl->mDlgt(rcv.mBdy.mTyp, rcv.mBdy.by10, rcv.mBdy.by11, rcv_msg.buf+12, rcv.mBdy.mLen-11);
 		//}
-		pcnlModule[rcv_msg.mBody->BY11]->message_trigger11(rcv_msg.buf[12], (rcv_msg.mBody->MSG_LEN > 13) ? rcv_msg.buf + 13 : NULL, (rcv_msg.mBody->MSG_LEN > 15) ? rcv_msg.buf + 15 : NULL);
+		ptr_CM[rcv_msg.mBody->BY11]->message_trigger11(rcv_msg.buf[12], (rcv_msg.mBody->MSG_LEN > 13) ? rcv_msg.buf + 13 : NULL, (rcv_msg.mBody->MSG_LEN > 15) ? rcv_msg.buf + 15 : NULL);
 	}
 }
 
@@ -1464,7 +1474,7 @@ void AS::processMessageAction11() {
  */
 void AS::processMessageAction3E(uint8_t cnl, uint8_t peer_idx) {
 
-	cmMaster *pCM = pcnlModule[cnl];															// short hand for the channel module pointer
+	cmMaster *pCM = ptr_CM[cnl];																// short hand for the channel module pointer
 	uint16_t pAddr = pCM->lstP.ee_addr + ( pCM->lstP.len * peer_idx );							// calculate the eeprom address
 	getEEPromBlock( pAddr, pCM->lstP.len, pCM->lstP.val );										// get list3 or list4 loaded into the user module
 
@@ -1594,206 +1604,8 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 	// --------------------------------------------------------------------
 }
 
-// - homematic specific functions ------------------
-
-/**
- * @brief Decode the incoming messages
- *        Note: this is no encryption!
- *
- * @param buf   pointer to buffer
- */
-/*void AS::decode(uint8_t *buf) {
-	uint8_t prev = buf[1];
-	buf[1] = (~buf[1]) ^ 0x89;
-
-	uint8_t i, t;
-	for (i = 2; i < buf[0]; i++) {
-		t = buf[i];
-		buf[i] = (prev + 0xDC) ^ buf[i];
-		prev = t;
-	}
-
-	buf[i] ^= buf[2];
-}*/
-
-/**
- * @brief Encode the outgoing messages
- *        Note: this is no encryption!
- *
- * @param buf   pointer to buffer
- */
-/*void AS::encode(uint8_t *buf) {
-	buf[1] = (~buf[1]) ^ 0x89;
-	uint8_t buf2 = buf[2];
-	uint8_t prev = buf[1];
-
-	uint8_t i;
-	for (i = 2; i < buf[0]; i++) {
-		prev = (prev + 0xDC) ^ buf[i];
-		buf[i] = prev;
-	}
-
-	buf[i] ^= buf2;
-}*/
-
-#ifdef RV_DBG_EX																				// only if extended AS debug is set
-	/**
-	 * @brief Debuging: Explain the Messages
-	 *
-	 * @param buf   pointer to buffer
-	 */
-	void AS::explainMessage(uint8_t *buf) {
-		dbg << F("   ");																		// save some byte and send 3 blanks once, instead of having it in every if
-
-		if        ((buf[3] == AS_MESSAGE_DEVINFO)) {
-			dbg << F("DEVICE_INFO; fw: ") << _HEX((buf+10),1) << F(", type: ") << _HEX((buf+11),2) << F(", serial: ") << _HEX((buf+13),10) << '\n';
-			dbg << F("              , class: ") << _HEXB(buf[23]) << F(", pCnlA: ") << _HEXB(buf[24]) << F(", pCnlB: ") << _HEXB(buf[25]) << F(", na: ") << _HEXB(buf[26]);
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PEER_ADD)) {
-			dbg << F("CONFIG_PEER_ADD; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PEER_REMOVE)) {
-			dbg << F("CONFIG_PEER_REMOVE; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnlA: ") << _HEXB(buf[15]) << F(", pCnlB: ") << _HEXB(buf[16]);
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PEER_LIST_REQ)) {
-			dbg << F("CONFIG_PEER_LIST_REQ; cnl: ") << _HEXB(buf[10]);
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PARAM_REQ)) {
-			dbg << F("CONFIG_PARAM_REQ; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_START)) {
-			dbg << F("CONFIG_START; cnl: ") << _HEXB(buf[10]) << F(", peer: ") << _HEX((buf+12),3) << F(", pCnl: ") << _HEXB(buf[15]) << F(", lst: ") << _HEXB(buf[16]);
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_END)) {
-			dbg << F("CONFIG_END; cnl: ") << _HEXB(buf[10]);
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_WRITE_INDEX)) {
-			dbg << F("CONFIG_WRITE_INDEX; cnl: ") << _HEXB(buf[10]) << F(", data: ") << _HEX((buf+12),(buf[0]-11));
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_SERIAL_REQ)) {
-			dbg << F("CONFIG_SERIAL_REQ");
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_PAIR_SERIAL)) {
-			dbg << F("PAIR_SERIAL, serial: ") << _HEX((buf+12),10);
-
-		} else if ((buf[3] == AS_MESSAGE_CONFIG) && (buf[11] == AS_CONFIG_STATUS_REQUEST)) {
-			dbg << F("CONFIG_STATUS_REQUEST, cnl: ") << _HEXB(buf[10]);
-
-		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_ACK)) {
-			if (buf[0] == 0x0A) dbg << F("ACK");
-			else dbg << F("ACK; data: ") << _HEX((buf+11),buf[0]-10);
-
-		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_ACK_STATUS)) {
-			dbg << F("ACK_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", down/up/loBat: ") << _HEXB(buf[13]);
-			if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
-
-		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_ACK2)) {
-			dbg << F("ACK2");
-
-		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_AES_CHALLANGE)) {
-			dbg << F("REQUEST_AES_RESPONSE, challange: ") << _HEX((buf+11),6);
-
-		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_NACK)) {
-			dbg << F("NACK");
-
-		} else if ((buf[3] == AS_MESSAGE_RESPONSE) && (buf[10] == AS_RESPONSE_NACK_TARGET_INVALID)) {
-			dbg << F("NACK_TARGET_INVALID");
-
-		} else if ((buf[3] == AS_MESSAGE_RESPONSE_AES)) {
-			dbg << F("RESPONSE_AES; data: ") << _HEX((buf+10),buf[0]-9);
-
-		} else if ((buf[3] == AS_MESSAGE_KEY_EXCHANGE) && (buf[10] == 0x01)) {
-			// TODO: check if byte 10 must be 0x01; the doc says byte 10 must 0x00
-			dbg << F("TO_HMLAN:SEND_AES_CODE; cnl: ") << _HEXB(buf[11]);
-
-		} else if ((buf[3] == AS_MESSAGE_KEY_EXCHANGE)) {
-			dbg << F("TO_ACTOR:KEY_EXCHANGE; encrypted data: ") << _HEX((buf+10), 16);
-
-		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_SERIAL)) {
-			dbg << F("INFO_SERIAL; serial: ") << _HEX((buf+11),10);
-
-		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_PEER_LIST)) {
-			dbg << F("INFO_PEER_LIST; peer1: ") << _HEX((buf+11),4);
-			if (buf[0] >= 19) dbg << F(", peer2: ") << _HEX((buf+15),4);
-			if (buf[0] >= 23) dbg << F(", peer3: ") << _HEX((buf+19),4);
-			if (buf[0] >= 27) dbg << F(", peer4: ") << _HEX((buf+23),4);
-
-		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_PARAM_RESPONSE_PAIRS)) {
-			dbg << F("INFO_PARAM_RESPONSE_PAIRS; data: ") << _HEX((buf+11),buf[0]-10);
-
-		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_PARAM_RESPONSE_SEQ)) {
-			dbg << F("INFO_PARAM_RESPONSE_SEQ; offset: ") << _HEXB(buf[11]) << F(", data: ") << _HEX((buf+12),buf[0]-11);
-
-		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_PARAMETER_CHANGE)) {
-			dbg << F("INFO_PARAMETER_CHANGE; cnl: ") << _HEXB(buf[11]) << F(", peer: ") << _HEX((buf+12),4) << F(", pLst: ") << _HEXB(buf[16]) << F(", data: ") << _HEX((buf+17),buf[0]-16);
-
-		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_ACTUATOR_STATUS)) {
-			dbg << F("INFO_ACTUATOR_STATUS; cnl: ") << _HEXB(buf[11]) << F(", status: ") << _HEXB(buf[12]) << F(", na: ") << _HEXB(buf[13]);
-			if (buf[0] > 13) dbg << F(", rssi: ") << _HEXB(buf[14]);
-
-		} else if ((buf[3] == AS_MESSAGE_INFO) && (buf[10] == AS_INFO_RT_STATUS)) {
-			dbg << F("INFO_RT_STATUS; dstTmp: ") << (buf[11]>>3) << F(".") << ((buf[11]>>2)&1)*5 << F(", Tmp: ") << (((buf[11]&3)<<8)+buf[12])/10 << F(".") << (((buf[11]&3)<<8)+buf[12])%10;
-			dbg << F(", bat: ") << ((buf[13]&0x1f)+15)/10 << F(".") << ((buf[13]&0x1f)+15)%10;
-			dbg << F(", err: ") << _HEXB(buf[13]>>5) << F(", valve: ") << _HEXB(buf[14]) << F(", ctrlMode: ") << _HEXB(buf[15]);
-
-		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_SET)) {
-			dbg << F("SET; cnl: ") << _HEXB(buf[11]) << F(", value: ") << _HEXB(buf[12]) << F(", rampTime: ") << _HEX((buf+13),2) << F(", duration: ") << _HEX((buf+15),2);
-
-		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_STOP_CHANGE)) {
-			dbg << F("STOP_CHANGE; cnl: ") << _HEXB(buf[11]);
-
-		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_RESET) && (buf[11] == 0x00)) {
-			dbg << F("RESET");
-
-		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_LED)) {
-			dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", color: ") << _HEXB(buf[12]);
-
-		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_LEDALL) && (buf[11] == 0x00)) {
-			dbg << F("LED_ALL; Led1To16: ") << _HEX((buf+12),4);
-
-		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_LEVEL)) {
-			dbg << F("LED; cnl: ") << _HEXB(buf[11]) << F(", time: ") << _HEXB(buf[12]) << F(", speed: ") << _HEXB(buf[13]);
-
-		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_SLEEPMODE)) {
-			dbg << F("SLEEPMODE; cnl: ") << _HEXB(buf[11]) << F(", mode: ") << _HEXB(buf[12]);
-
-		} else if ((buf[3] == AS_MESSAGE_ACTION) && (buf[10] == AS_ACTION_ENTER_BOOTLOADER)) {
-			dbg << F("ENTER_BOOTLOADER;");
-
-		} else if ((buf[3] == AS_MESSAGE_HAVE_DATA)) {
-			dbg << F("HAVE_DATA");
-
-		} else if ((buf[3] == AS_MESSAGE_SWITCH_EVENT)) {
-			dbg << F("SWITCH; dst: ") << _HEX((buf+10),3) << F(", na: ") << _HEXB(buf[13]) << F(", cnl: ") << _HEXB(buf[14]) << F(", counter: ") << _HEXB(buf[15]);
-
-		} else if ((buf[3] == AS_MESSAGE_TIMESTAMP)) {
-			dbg << F("TIMESTAMP; na: ") << _HEX((buf+10),2) << F(", time: ") << _HEX((buf+12),2);
-
-		} else if ((buf[3] == AS_MESSAGE_REMOTE_EVENT)) {
-			dbg << F("REMOTE; button: ") << _HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", counter: ") << _HEXB(buf[11]);
-
-		} else if ((buf[3] == AS_MESSAGE_SENSOR_EVENT)) {
-			dbg << F("SENSOR_EVENT; button: ") <<_HEXB((buf[10] & 0x3F)) << F(", long: ") << (buf[10] & 0x40 ? 1:0) << F(", lowBatt: ") << (buf[10] & 0x80 ? 1:0) << F(", value: ") << _HEXB(buf[11]) << F(", next: ") << _HEXB(buf[12]);
-
-		} else if ((buf[3] == AS_MESSAGE_SENSOR_DATA)) {
-			dbg << F("SENSOR_DATA; cmd: ") << _HEXB(buf[10]) << F(", fld1: ") << _HEXB(buf[11]) << F(", val1: ") << _HEX((buf+12),2) << F(", fld2: ") << _HEXB(buf[14]) << F(", val2: ") << _HEX((buf+15),2) << F(", fld3: ") << _HEXB(buf[17]) << F(", val3: ") << _HEX((buf+18),2) << F(", fld4: ") << _HEXB(buf[20]) << F(", val4: ") << _HEX((buf+21),2);
-
-		} else if ((buf[3] == AS_MESSAGE_CLIMATE_EVENT)) {
-			dbg << F("CLIMATE_EVENT; cmd: ") << _HEXB(buf[10]) << F(", valvePos: ") << _HEXB(buf[11]);
-
-		} else if ((buf[3] == AS_MESSAGE_CLIMATECTRL_EVENT)) {
-					dbg << F("CLIMATE_EVENT; cmd: ???");  //<< _HEXB(buf[10]) << F(", valvePos: ") << _HEXB(buf[11]);
-
-		} else if ((buf[3] == AS_MESSAGE_WEATHER_EVENT)) {
-			dbg << F("WEATHER_EVENT; temp: ") << _HEX(buf+10,2) << F(", hum: ") << _HEXB(buf[12]);
 
 
-		} else {
-			dbg << F("Unknown Message, please report! MsgType: ") << _HEXB(buf[3]) << _HEXB(buf[10]);
-		}
-		dbg << F("\n\n");
-	}
-#endif
 
 // - AES Signing related methods -------------------
 
