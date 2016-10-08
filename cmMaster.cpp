@@ -17,8 +17,8 @@ uint8_t cnl_max = 0;																			// defined in cmMaster.h, increased by ev
 cmMaster::cmMaster(const uint8_t peer_max) {
 	peerDB.max = peer_max;
 
-	list[lstC.lst] = &lstC;
-	if (lstP.lst < 5 ) list[lstP.lst] = &lstP;
+	//list[lstC.lst] = &lstC;																	// moved into cm_init
+	//if (lstP.lst < 5 ) list[lstP.lst] = &lstP;
 	lstC.cnl = cnl_max;																			// set the channel to the lists
 	lstP.cnl = cnl_max++;
 	
@@ -146,9 +146,8 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		pCM->lstC.val = new uint8_t[pCM->lstC.len];										// create and allign the value arrays
 		pCM->lstP.val = new uint8_t[pCM->lstP.len];
 
-		// as we have a list table array we should allign it with the single lists
-		//cnl_lst[i][pCM->lstC.lst] = &pCM->lstC;
-		//cnl_lst[i][pCM->lstP.lst] = &pCM->lstP;
+		pCM->list[pCM->lstC.lst] = &pCM->lstC;											// allign lstC to the list array
+		if (pCM->lstP.lst < 5) pCM->list[pCM->lstP.lst] = &pCM->lstP;					// because of the absence of lstP in channel0
 
 		pCM->lstC.ee_addr = ee_start_addr;												// write the eeprom address in the channel list
 		ee_start_addr += pCM->lstC.len;													// create new address by adding the length of the list before
@@ -156,8 +155,6 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		ee_start_addr += (pCM->lstP.len * pCM->peerDB.max);								// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
 
 		// defaults loaded in the AS module init, on every time start
-		//pCM->lstC.load_list();															// read the defaults in respective list0/1
-		//pCM->info_config_change();														// inform the channel modules
 		DBG(CM, F("CM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->lstC.val, pCM->lstC.len), '\n');
 	}
 

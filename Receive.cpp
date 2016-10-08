@@ -23,14 +23,14 @@ void RV::poll(void) {
 
 	// checks a received string for validity and intent
 	if (rcv_msg.mBody->MSG_LEN < 9) {														// check if the string has all mandatory bytes, if not
-		DBG(RV, F("  too short...\n") );
+		DBG(RV, F("  too short...\n"));
 		rcv_msg.clear();																	// clear receive buffer
 		return;
 	}
 
 	// check for a repeated string which was already processed
 	if ((rcv_msg.mBody->FLAG.RPTED) && (rcv_msg.prev_MSG_CNT == rcv_msg.mBody->MSG_CNT)) {	// check if message was already received
-		DBG(RV, F("  repeated ...\n") );
+		DBG(RV, F("  repeated ...\n"));
 		rcv_msg.clear();																	// clear receive buffer
 		return;
 	}
@@ -38,17 +38,23 @@ void RV::poll(void) {
 
 	// get the intend of the message
 	getIntend();																			// no params neccassary while everything is in the recv struct
-	DBG(RV, (char)rcv_msg.intent, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0]+1), ' ', _TIME, '\n' );
 
-	#ifdef RV_DBG_EX																		// only if extended AS debug is set
-	hm.explainMessage(this->buf);
-	#endif
+	// filter out the footprint of MAX! devices
+	// b> 0F 04 86 10 38 EB 06 00 00 00 0A 24 B8 0C 00 40  (1963077)
+	if ((rcv_msg.mBody->MSG_LEN == 0x0f) && (*(uint8_t*)&rcv_msg.mBody->FLAG == 0x86) && (rcv_msg.intent == MSG_INTENT::BROADCAST)) {
+		rcv_msg.clear();
+		return;
+	}
+
+	DBG(RV, (char)rcv_msg.intent, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), ' ', _TIME, '\n');
 
 	// process only messages from master, peer or internal
-	if ((rcv_msg.intent != MSG_INTENT::MASTER) && (rcv_msg.intent != MSG_INTENT::PEER) && (rcv_msg.intent != MSG_INTENT::INTERN) && (rcv_msg.intent != MSG_INTENT::NOT_PAIRED))
+	if ((rcv_msg.intent != MSG_INTENT::MASTER) && (rcv_msg.intent != MSG_INTENT::PEER) && (rcv_msg.intent != MSG_INTENT::INTERN) && (rcv_msg.intent != MSG_INTENT::NOT_PAIRED)) {
 		rcv_msg.clear();																	// nothing to do any more
-	else 
-		rcv_msg.hasdata = 1;																// signalize that something is to do
+		return;
+	}
+
+	rcv_msg.hasdata = 1;																	// signalize that something is to do
 }
 
 

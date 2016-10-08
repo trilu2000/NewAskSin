@@ -118,7 +118,7 @@ typedef struct ts_list_table {
 	*  by calling load_defaults(), load_list() or save_list()
 	*/
 	uint8_t* ptr_to_val(uint8_t reg_addr) {	
-		uint8_t empty = 0xff;
+		static uint8_t empty = 0xff;
 		const void *pAddr =  memchr_P(reg, reg_addr, len);
 		if (!pAddr) return &empty;
 		return val + (uint16_t)pAddr - (uint16_t)reg;
@@ -346,7 +346,9 @@ namespace MSG_TYPE {
 	
 		/* 0x01 ff 01 10 * -CONFIG_PEER_ADD
 		*    LEN CNT FLAG  BY03  SND       REV       CNL   BY11  PEER ADDR  PCNLA  PCNLB
-		* m> 10  31  A0    01    63 19 64  33 11 22  01    01    11 22 33   01     02      */
+		* <- 10  81  B0    01    63 19 64  1F B7 4A  01    01    11 22 32   01     02  (3801254)
+		* l> 0A 81 80 02 1F B7 4A 63 19 64 80  (3801374) as was successful
+		* l> 0A 81 80 02 1F B7 4A 63 19 64 82  (3801374) not enoug space  */
 		CONFIG_PEER_ADD = 0x01ff0110,
 
 		/* 0x01 ff 02 10 * -CONFIG_PEER_REMOVE
@@ -386,7 +388,8 @@ namespace MSG_TYPE {
 
 		/* 0x01 ff 09 0b * - CONFIG_SERIAL_REQ                                                 // check serial request string, not clear about byte 10
 		*    LEN CNT FLAG BY03 SND       RCV       BY10  BY11 
-		* l> 0B  40  A0   01   63 19 64  23 70 D8  01    09       */
+		* <- 0B  41  B0   01   63 19 64  1F B7 4A  01    09  (2329621)
+		* l> 14  41  80   10   1F B7 4A  63 19 64  00 4B 45 51 30 32 33 37 33 39 36  (2329754) */
 		CONFIG_SERIAL_REQ = 0x01ff090b,
 
 		/* 0x01 ff 0a 15 * - PAIR_SERIAL														// check pair serial string, not clear about byte 10
