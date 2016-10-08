@@ -347,18 +347,22 @@ namespace MSG_TYPE {
 		/* 0x01 ff 01 10 * -CONFIG_PEER_ADD
 		*    LEN CNT FLAG  BY03  SND       REV       CNL   BY11  PEER ADDR  PCNLA  PCNLB
 		* <- 10  81  B0    01    63 19 64  1F B7 4A  01    01    11 22 32   01     02  (3801254)
-		* l> 0A 81 80 02 1F B7 4A 63 19 64 80  (3801374) as was successful
+		* l> 0A 81 80 02 1F B7 4A 63 19 64 00  (3801374) was successful
 		* l> 0A 81 80 02 1F B7 4A 63 19 64 82  (3801374) not enoug space  */
 		CONFIG_PEER_ADD = 0x01ff0110,
 
 		/* 0x01 ff 02 10 * -CONFIG_PEER_REMOVE
 		*    LEN CNT FLAG  BY03  SND       REV       CNL   BY11  PEER ADDR  PCNLA  PCNLB
-		* m> 10  31  A0    01    63 19 64  33 11 22  01    02    11 22 33   01     02      */
+		* <- 10  31  B0    01    63 19 64  1F B7 4A  01    02    11 22 33   01     02  (769098)
+		* l> 0A 31 80 02 1F B7 4A 63 19 64 00  (769218) was successful
+		* l> 0A 31 80 02 1F B7 4A 63 19 64 84  (769218) peer not found    */
 		CONFIG_PEER_REMOVE = 0x01ff0210,
 
 		/* 0x01 ff 03 0b * -CONFIG_PEER_LIST_REQ
 		*    LEN CNT FLAG BY03 SND       RCV       CNL  BY11
-		* l> 0B  35  A0   01   63 19 64  23 70 D8  01   03  */
+		* <- 0B  90  B0   01   63 19 64  1F B7 4A  01   03  (515786)
+		* l> 1A 90 A0 10 1F B7 4A 63 19 64 01 63 19 64 01 11 22 33 01 11 22 33 02 11 22 01 01  (515927)
+		* l> 1A 91 A0 10 1F B7 4A 63 19 64 01 11 22 2F 02 11 22 30 01 11 22 30 02 00 00 00 00  (516177)  */
 		CONFIG_PEER_LIST_REQ = 0x01ff030b,
 
 		/* 0x01 ff 04 10 * - CONFIG_PARAM_REQ
@@ -1177,9 +1181,13 @@ typedef struct ts_recv {
 	uint8_t hasdata;					// flag that something is to process
 	uint8_t use_prev_buf;				// flag to store prev_buf is used
 
-	uint8_t buf[MaxDataLen];			// initial buffer for received and decoded message string
+	union {
+		uint8_t buf[MaxDataLen];		// initial buffer for received and decoded message string
+		s_mBody mBody;					// struct on buffer for easier data access
+	};
+	//uint8_t buf[MaxDataLen];			// initial buffer for received and decoded message string
 	uint8_t prev_buf[27];				// store the last receive message to verify with AES signed data.
-	s_mBody *mBody = (s_mBody*)buf;		// struct on buffer for easier data access
+	//s_mBody *mBody = (s_mBody*)buf;		// struct on buffer for easier data access
 
 	MSG_INTENT::E intent;				// remember the intent of the message, filled by receive class
 	uint8_t peer[4];					// peer is stored as a 4 byte array, but most messages delivers it with a seperate channel field (byte 10)
@@ -1203,9 +1211,13 @@ typedef struct ts_recv {
 typedef struct ts_send {
 	uint8_t   active;					// flag that something is to process
 
-	uint8_t   buf[MaxDataLen];			// initial buffer for received and decoded message string
+	union {
+		uint8_t buf[MaxDataLen];		// initial buffer for messages to send
+		s_mBody mBody;					// struct on buffer for easier data access
+	};
+	//uint8_t   buf[MaxDataLen];		// initial buffer for received and decoded message string
 	uint8_t   prev_buf[32];				// store the last receive message to verify with AES signed data.
-	s_mBody   *mBody = (s_mBody*)buf;	// struct on buffer for easier data access
+	//s_mBody   *mBody = (s_mBody*)buf;	// struct on buffer for easier data access
 
 	uint8_t   timeout;					// was last message a timeout
 	uint8_t   retr_cnt;					// variable to count how often a message was already send
