@@ -165,6 +165,7 @@ void dumpEEprom() {
 			delete x;
 			DBG(SER, '\n');
 		}
+		delete e;
 	}
 }
 

@@ -238,14 +238,16 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 		} else DBG(CC, F("error "), buf[0], ' ');										// visualize buffer too small
 	}	
 
-	/* check if there was a failure, empty receive queue */
-	if (readReg(CC1101_RXBYTES, CC1101_STATUS)) {
+	/* check if there was a failure and there are still bytes in the buffer, empty receive queue 
+	*  seems there is a bug in the cc1101 chip, bug described in the errata note, 
+	*  solution is - go idle, flush the buffer and back to rx mode   */
+	//if (readReg(CC1101_RXBYTES, CC1101_STATUS)) {
 		strobe(CC1101_SIDLE);															// idle needed to flush the buffer
 		strobe(CC1101_SFRX);															// flush the receive buffer
 		strobe(CC1101_SRX);																// and back to receive mode
-		DBG(CC, F("RESET "));															// some debug ...
-	}
-	DBG(CC, F(">> "), _HEX(buf, buf[0] + 1), '\n' );
+	//	DBG(CC, F("RESET "));															// some debug ...
+	//}
+	DBG(CC, F(">> "), _HEX(buf, buf[0] + 1), _TIME, '\n' );
 }
 
 /**

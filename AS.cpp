@@ -66,9 +66,9 @@ void AS::init(void) {
 	* with the CRC of the different lists in the channel modules. Every time there was a
 	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.	*/
 	uint16_t flashCRC = cm_calc_crc();														// calculate the crc of all channel module list0/1, list3/4
-	getEEPromBlock(0, sizeof(dev_ident), &dev_ident);						// get magic byte and all other information from eeprom
-	dbg << "fl: magic: " << flashCRC << '\n';
-	dbg << "ee: magic: " << dev_ident.MAGIC << ", hmid: " << _HEX(dev_ident.HMID, 3) << ", serial: " << _HEX(dev_ident.SERIAL_NR, 10) << ", index: " << _HEXB(dev_ident.HMKEY_INDEX) << ", key: " << _HEX(dev_ident.HMKEY, 16) << ", sizeof: " << sizeof(dev_ident) << ", addr: " << (uint16_t)&dev_ident.MAGIC << '\n';
+	getEEPromBlock(0, sizeof(dev_ident), &dev_ident);										// get magic byte and all other information from eeprom
+	dbg << "fl: magic: " << flashCRC << ", " << dev_ident.MAGIC << '\n';
+	//dbg << "ee: magic: " << dev_ident.MAGIC << ", hmid: " << _HEX(dev_ident.HMID, 3) << ", serial: " << _HEX(dev_ident.SERIAL_NR, 10) << ", index: " << _HEXB(dev_ident.HMKEY_INDEX) << ", key: " << _HEX(dev_ident.HMKEY, 16) << ", sizeof: " << sizeof(dev_ident) << ", addr: " << (uint16_t)&dev_ident.MAGIC << '\n';
 	DBG(AS, F("AS:init crc- flash:"), flashCRC, F(", eeprom: "), dev_ident.MAGIC, '\n');	// some debug
 
 	if (flashCRC != dev_ident.MAGIC) {	
@@ -131,6 +131,7 @@ void AS::poll(void) {
 	*  and poll the received buffer, it checks if something is in the queue  */
 
 	if (ccGetGDO0()) {																			// check if something is in the cc1101 receive buffer
+		dbg << "AS:GDO0\n";
 		cc.rcvData(rcv_msg.buf);																// if yes, get it into our receive processing struct
 		rcv.poll();																				// and poll the receive function to get intent and some basics
 	}

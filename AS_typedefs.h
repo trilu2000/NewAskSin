@@ -155,7 +155,6 @@ typedef struct ts_list_table {
 
 } s_list_table;
 
-
 /*
 * @brief Peer Device Table Entry
 *
@@ -246,7 +245,6 @@ namespace MSG_INTENT {
 	enum E : uint8_t { BROADCAST = 'b', MASTER = 'm', PEER = 'p', INTERN = 'i', LOGGING = 'l', NOT_PAIRED = 'x', ERROR = 'u', };
 };
 
-
 /*
 * @brief Reason for sending the message
 * ANSWER  - 0, messgae answers a received string
@@ -255,7 +253,6 @@ namespace MSG_INTENT {
 namespace MSG_REASON {
 	enum E : uint8_t { ANSWER = 0x00, INITIAL = 0x01,  };
 };
-
 
 /*
 * @brief Type of message, Byte 03 translation
@@ -761,7 +758,6 @@ typedef struct ts_msg00xxxx {
 	uint8_t : 8;						// by26 - unknown
 } s_m00xxxx; // DEVICE_INFO message
 
-
 /*
 * @brief CONFIG_PEER_ADD message
 * byte 00, MSG_LEN - message length
@@ -1185,9 +1181,7 @@ typedef struct ts_recv {
 		uint8_t buf[MaxDataLen];		// initial buffer for received and decoded message string
 		s_mBody mBody;					// struct on buffer for easier data access
 	};
-	//uint8_t buf[MaxDataLen];			// initial buffer for received and decoded message string
 	uint8_t prev_buf[27];				// store the last receive message to verify with AES signed data.
-	//s_mBody *mBody = (s_mBody*)buf;		// struct on buffer for easier data access
 
 	MSG_INTENT::E intent;				// remember the intent of the message, filled by receive class
 	uint8_t peer[4];					// peer is stored as a 4 byte array, but most messages delivers it with a seperate channel field (byte 10)
@@ -1215,9 +1209,7 @@ typedef struct ts_send {
 		uint8_t buf[MaxDataLen];		// initial buffer for messages to send
 		s_mBody mBody;					// struct on buffer for easier data access
 	};
-	//uint8_t   buf[MaxDataLen];		// initial buffer for received and decoded message string
 	uint8_t   prev_buf[32];				// store the last receive message to verify with AES signed data.
-	//s_mBody   *mBody = (s_mBody*)buf;	// struct on buffer for easier data access
 
 	uint8_t   timeout;					// was last message a timeout
 	uint8_t   retr_cnt;					// variable to count how often a message was already send
