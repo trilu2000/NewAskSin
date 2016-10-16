@@ -33,8 +33,9 @@ cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 	lstP.def = cmSwitch_PeerDef;
 	lstP.len = sizeof(cmSwitch_PeerReg);
 
-	//list[1] = &lstC;																		// all other lists are pointing to NULL per default
-	//list[3] = &lstP;																		// all other lists are pointing to NULL per default
+	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
+	lstP.val = new uint8_t[lstP.len];
+
 
 	l1 = (s_l1*)&lstC.val;																	// set list structures to something useful
 	l3 = (s_l3*)&lstP.val;																	// reduced l3, description in cmSwitch.h at struct declaration
@@ -209,7 +210,7 @@ void cmSwitch::sendStatus(void) {
 	if (!delayTmr.done() )       modDUL |= 0x40;
 	
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      ( sendStat == INFO::SND_ACK_STATUS )      hm.sendACK_STATUS(lstC.cnl, modStat, modDUL);	
+	if      ( sendStat == INFO::SND_ACK_STATUS )      send_ACK_STATUS(lstC.cnl, modStat, modDUL);	
 	else if ( sendStat == INFO::SND_ACTUATOR_STATUS ) hm.sendINFO_ACTUATOR_STATUS(lstC.cnl, modStat, modDUL);
 
 	// check if it is a stable status, otherwise schedule next info message
@@ -220,7 +221,7 @@ void cmSwitch::sendStatus(void) {
 	} else sendStat = INFO::NOTHING;														// no need for next time
 }
 
-void cmSwitch::poll(void) {
+void cmSwitch::cm_poll(void) {
 
 	adjustStatus();																			// check if something is to be set on the Relay channel
 	sendStatus();																			// check if there is some status to send

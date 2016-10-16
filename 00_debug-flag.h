@@ -28,7 +28,7 @@
 
 #define SER_DBG					// Main sketch debug function and messages
 //#define AS_DBG					// AskSin class debug (AS.cpp)
-#define CC_DBG					// Communication class (CC1101.cpp)
+//#define CC_DBG					// Communication class (CC1101.cpp)
 #define SN_DBG					// Send class (Send.cpp)
 #define RV_DBG					// Receive class (Receive.cpp)
 //#define RV_DBG_EX				// Further explanation of received messages (Receive.cpp)

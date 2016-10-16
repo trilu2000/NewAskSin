@@ -24,13 +24,17 @@ public:		//---------------------------------------------------------------------
 	SN();																	// constructor
 	void poll(void);														// poll function, process if something is to send
 
-	void prep_msg(MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type, uint8_t len, uint8_t max_retr);
+
+	//void prep_msg(MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type, uint8_t len, uint8_t max_retr);
 
 };
+
+
 /*
 * @brief Struct to hold the buffer for any string to send with some flags for further processing
 */
 extern s_send snd_msg;
+
 extern SN snd;																// send class is declared in AS.cpp
 
 #endif 

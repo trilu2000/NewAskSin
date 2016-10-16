@@ -29,6 +29,7 @@ cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
 	lstC.reg = cmMaintenance_ChnlReg;
 	lstC.def = cmMaintenance_ChnlDef;
 	lstC.len = cmMaintenance_ChnlLen;
+	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
 
 	lstP.lst = 255;																			// in principle not needed...
 	//lstP.reg = cmMaintenance_PeerReg;														// while channel 0 has only list 0

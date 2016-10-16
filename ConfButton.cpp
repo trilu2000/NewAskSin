@@ -121,7 +121,7 @@ void CB::outSignal(uint8_t mode) {
 	#endif
 
 	if        (mode == 1) {					// keyShortSingle
-		if (scn == 1) hm.sendDEVICE_INFO();													// send pairing string
+		if (scn == 1) send_DEVICE_INFO(dev_ident.HMID);													// send pairing string
 		else if (scn == 2) ptr_CM[1]->set_toggle();										// send toggle to user module registered on channel 1
 		//else if (scn == 2) if (pModTbl->isActive) pModTbl->mDlgt(TOOGLE);					// send toggle to user module registered on channel 1
 		
@@ -129,7 +129,7 @@ void CB::outSignal(uint8_t mode) {
 		
 	} else if (mode == 3) {					// keyLongSingle
 		if      (scn == 1) led.set(key_long);
-		else if (scn == 2) hm.sendDEVICE_INFO();											// send pairing string
+		else if (scn == 2) send_DEVICE_INFO(dev_ident.HMID);											// send pairing string
 
 	} else if (mode == 4) {					// keyLongRepeat
 		led.set(nothing);

@@ -20,6 +20,7 @@ SN::SN()  {
 }
 
 void SN::poll(void) {
+
 	if (!snd_msg.active) return;															// nothing to do
 
 	/*  return while no ACK received and timer is running */
@@ -47,8 +48,11 @@ void SN::poll(void) {
 		}
 
 		/* internal messages doesn't matter anymore*/
+		memcpy(snd_msg.mBody.SND_ID, dev_ident.HMID, 3);									// we always send the message in our name
 		snd_msg.mBody.FLAG.RPTEN = 1;														// every message need this flag
 		snd_msg.temp_MSG_CNT = snd_msg.mBody.MSG_CNT;										// copy the message count to identify the ACK
+		if (isEmpty(snd_msg.mBody.RCV_ID,3)) snd_msg.mBody.FLAG.BIDI = 0;						// broadcast, no ack required
+
 		if (!snd_msg.temp_max_retr)
 			snd_msg.temp_max_retr = (snd_msg.mBody.FLAG.BIDI) ? snd_msg.max_retr : 1;		// send once while not requesting an ACK
 
@@ -91,6 +95,7 @@ void SN::poll(void) {
 
 
 
+
 /* 
 * @brief Make broadcast, pair, peer and internal messages ready to send
 * Set the right flags for the send poll function. Following flags are set: active, max_retr and timeout
@@ -103,7 +108,7 @@ void SN::poll(void) {
 * Msg flags, like CONFIG, BIDI, and ACK are set. 
 *
 */
-void SN::prep_msg( MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type, uint8_t len = 0xff, uint8_t max_retr = 3 ) {
+/*void SN::prep_msg( MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type, uint8_t len = 0xff, uint8_t max_retr = 3 ) {
 	// todo: max_retr could be taken from respective channel module
 	uint8_t *type_arr = new uint8_t[4];
 
@@ -111,7 +116,6 @@ void SN::prep_msg( MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type,
 	if ( (intent == MSG_INTENT::MASTER) && (isEmpty(MAID,3)) )								// check if we have a valid master
 		intent = MSG_INTENT::BROADCAST;														// otherwise set the message to broadcast
 
-	memset(&snd_msg.mBody.FLAG, 0, 1);														// clear the message flag while set later on
 
 	if (intent == MSG_INTENT::BROADCAST) {
 		snd_msg.max_retr = 1;																// nobody to answer, ack not required
@@ -135,22 +139,6 @@ void SN::prep_msg( MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type,
 
 	}
 
-	// message type spefic things
-	#define BIG_ENDIAN ((1 >> 1 == 0) ? 0 : 1)
-	#if BIG_ENDIAN
-		type_arr[0] = type;
-		type_arr[1] = type >> 8;
-		type_arr[2] = type >> 16;
-		type_arr[3] = type >> 24;
-	#else
-		type_arr[0] = type >> 24;
-		type_arr[1] = type >> 16;
-		type_arr[2] = type >> 8;
-		type_arr[3] = type;
-	#endif
-	snd_msg.mBody.MSG_TYP = type_arr[1];
-	if (type_arr[2] != 0xff) snd_msg.mBody.BY10 = type_arr[2];
-	if (type_arr[3] != 0xff) snd_msg.mBody.BY11 = type_arr[3];
 	//dbg << "i:" << intent << ", t:" << type << ", d:" << _HEX(type_arr, 4) << '\n';
 
 	// if it is an ACK type message, we do not need a BIDI
@@ -162,7 +150,7 @@ void SN::prep_msg( MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type,
 	snd_msg.mBody.FLAG.RPTEN = 1;															// set as standard
 	snd_msg.max_time = 300; // todo: link to maintenance channel module
 	snd_msg.active = 1;
-}
+}*/
 
 /*void SN::prep_peer_msg() {
 // handle internal messages as 

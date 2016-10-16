@@ -140,7 +140,7 @@ public:  //---------------------------------------------------------------------
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 	virtual void request_pair_status(void);													// event on status request
 
-	virtual void poll(void);																// poll function, driven by HM loop
+	virtual void cm_poll(void);																// poll function, driven by HM loop
 	virtual void set_toggle(void);															// toggle the module initiated by config button
 
 };

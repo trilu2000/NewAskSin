@@ -30,7 +30,7 @@ public:  //---------------------------------------------------------------------
 	cmMaintenance(const uint8_t peer_max);													// constructor
 
 	virtual void info_config_change(void);													// list1 on registered channel had changed
-	//virtual void poll(void);																// poll function, driven by HM loop
+	//virtual void cm_poll(void);															// poll function, driven by HM loop
 
 
 };

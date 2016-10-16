@@ -131,7 +131,7 @@ void AS::poll(void) {
 	*  and poll the received buffer, it checks if something is in the queue  */
 
 	if (ccGetGDO0()) {																			// check if something is in the cc1101 receive buffer
-		dbg << "AS:GDO0\n";
+		//dbg << "AS:GDO0\n";
 		cc.rcvData(rcv_msg.buf);																// if yes, get it into our receive processing struct
 		rcv.poll();																				// and poll the receive function to get intent and some basics
 	}
@@ -193,7 +193,7 @@ void AS::processMessage(void) {
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) {
 		/* config request messages are used to configure a devive by writing registers and peers -
-		*  find the right channel and forward processing to cmMaster.
+		*  find the right channel and forward for processing to cmMaster.
 		*  check upfront the channel in byte 10 if it is out of range */
 
 		uint8_t cnl = rcv_msg.mBody.BY10;													// shorthand to channel information
@@ -206,17 +206,17 @@ void AS::processMessage(void) {
 		cmMaster *pCM = ptr_CM[cnl];														// short hand to respective channel module
 		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
 
-		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(     (s_m01xx01*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(  (s_m01xx02*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ( );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(     );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(         );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(           );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(  );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(  );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(    );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(   );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST();
+		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(      (s_m01xx01*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(   (s_m01xx02*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ( (s_m01xx03*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(     (s_m01xx04*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(         (s_m01xx05*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(           (s_m01xx06*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(  (s_m01xx07*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(  (s_m01xx08*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(    (s_m01xx09*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(   (s_m01xx0a*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST((s_m01xx0e*)rcv_msg.buf);
 		else {
 			dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
 			DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
@@ -267,7 +267,7 @@ void AS::processMessage(void) {
 	else if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_CONFIG) {
 
 		if (rcv_msg.mBody.BY11 == AS_CONFIG_PEER_LIST_REQ) {
-			processMessageConfigPeerListReq();
+			//processMessageConfigPeerListReq();
 
 		}
 		else if (rcv_msg.mBody.BY11 == AS_CONFIG_PARAM_REQ) {
@@ -423,7 +423,7 @@ void AS::processMessage(void) {
 #endif
 
 			// ToDo: Check if needed.
-			sendNACK();
+			send_NACK(rcv_msg.mBody.SND_ID);
 		}
 
 	}
@@ -453,14 +453,14 @@ void AS::processMessage(void) {
 			processMessageAction11();
 			if (rcv_msg.mBody.FLAG.BIDI || resetStatus == AS_RESET) {
 				if (resetStatus == AS_RESET) {   //(ee.getRegListIdx(1, 3) == 0xFF || resetStatus == AS_RESET) {
-					sendACK();
+					send_ACK(rcv_msg.mBody.SND_ID);
 				}
 				else {
 					uint8_t channel = rcv_msg.mBody.BY11;
 					if (rcv_msg.mBody.BY10 == AS_ACTION_RESET && rcv_msg.mBody.BY11 == 0x00) {
 						channel = 1;
 					}
-					sendACK_STATUS(channel, 0, 0);
+					send_ACK_STATUS(rcv_msg.mBody.SND_ID, channel, 0, 0);
 				}
 			}
 
@@ -529,7 +529,7 @@ void AS::processMessage(void) {
  *             Sender__ Receiver fwVer type   Serial number                     class  pCnlA  pCnlB  unknown
  * 1A 94 84 00 1F B7 4A 01 02 04 15    00 6C  4B 45 51 30 32 33 37 33 39 36  10 41     01     00
  */
-void AS::sendDEVICE_INFO(void) {
+/*void AS::sendDEVICE_INFO(void) {
 	uint8_t msgCount;
 	if ((rcv_msg.mBody.FLAG.CFG == AS_MESSAGE_CONFIG) && (rcv_msg.mBody.BY11 == AS_CONFIG_PAIR_SERIAL)) {
 		msgCount = rcv_msg.mBody.MSG_CNT;															// send counter - is it an answer or a initial message
@@ -550,50 +550,11 @@ void AS::sendDEVICE_INFO(void) {
 	pair_mode.active = 1;																		// set pairing flag
 	pair_mode.timer.set(20000);															// set pairing time
 	led.set(pairing);																			// and visualize the status
-}
+}*/
 
-/**
- * @brief Check if ACK required and send ACK or NACK
- */
-void AS::checkSendACK(uint8_t ackOk) {
-	if (rcv_msg.mBody.FLAG.BIDI) {
-		if (ackOk) {
-			sendACK();
-		} else {
-			sendNACK();
-		}
-	}
-}
 
-/**
- * @brief Send ACK message
- *
- * Message description:
- *             Sender__ Receiver ACK
- * 0A 24 80 02 1F B7 4A 63 19 63 00
- */
-void AS::sendACK(void) {
-	if (rcv_msg.mBody.FLAG.BIDI) {																// prevent answer for requests from a user class on repeated key press
-		snd_msg.mBody.MSG_LEN = 0x0A;
-		snd_msg.mBody.FLAG.CFG = 0;
-		snd_msg.mBody.FLAG.BIDI = 0;
-		snd_msg.mBody.BY10 = 0x00;
-		prepareToSend(rcv_msg.mBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv_msg.mBody.SND_ID);
-	}
-}
 
-/**
- * @brief Send a NACK (not ACK)
- *
- * Message description:
- *             Sender__ Receiver NACK
- * 0A 24 80 02 1F B7 4A 63 19 63 80
- */
-inline void AS::sendNACK(void) {
-	snd_msg.mBody.MSG_LEN = 0x0A;
-	snd_msg.mBody.BY10 = AS_RESPONSE_NACK;
-	prepareToSend(rcv_msg.mBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv_msg.mBody.SND_ID);
-}
+
 
 #ifdef SUPPORT_AES
 	/**
@@ -616,48 +577,8 @@ inline void AS::sendNACK(void) {
 	}
 #endif
 
-/**
- * @brief Send an ACK with status data
- *
- * Message description:
- *             Sender__ Receiver ACK Cnl Stat Action RSSI
- * 0F 12 80 02 1E 7A AD 23 70 EC 01  01  BE   20     27    CC - dimmer
- * 0E 5C 80 02 1F B7 4A 63 19 63 01  01  C8   00     42       - pcb relay
- *
- * Action: Down=0x20, UP=0x10, LowBat=&0x80
- *
- * @param channel
- * @param state
- * @param action
- */
-void AS::sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action) {
-	if (rcv_msg.mBody.FLAG.BIDI) {																	// prevent answer for requests from a user class on repeated key press
-		snd_msg.mBody.MSG_LEN = 0x0E;
-		snd_msg.mBody.FLAG.BIDI = 0;
-		snd_msg.mBody.BY10 = 0x01;
-		snd_msg.mBody.BY11 = channel;
-		snd_msg.mBody.PAYLOAD[0]   = state;
-		snd_msg.mBody.PAYLOAD[1]   = action | (bat.getStatus() << 7);
-		snd_msg.mBody.PAYLOAD[2] = cc.rssi;
-		//snd_msg.mBody->PAYLOAD[2] = cc.rssi;
-		prepareToSend(rcv_msg.mBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv_msg.mBody.SND_ID);
-	}
-}
 
-/**
- * @brief Send a NACK (not ACK and target invalid)
- *
- * TODO: remove? don't used yet
- *
- * Message description:
- *             Sender__ Receiver NACK_TAGRET_INVALID
- * 0A 24 80 02 1F B7 4A 63 19 63 84
- */
-void AS::sendNACK_TARGET_INVALID(void) {
-	snd_msg.mBody.MSG_LEN = 0x0A;
-	snd_msg.mBody.BY10 = AS_RESPONSE_NACK_TARGET_INVALID;
-	prepareToSend(rcv_msg.mBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv_msg.mBody.SND_ID);
-}
+
 
 /**
  * @brief Send info about an actor status
@@ -1209,7 +1130,7 @@ inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
  */
 inline void AS::processMessageConfigPairSerial(void) {
 	if (isEqual(rcv_msg.buf+12, dev_ident.SERIAL_NR, 10)) {															// compare serial and send device info
-		sendDEVICE_INFO();
+		send_DEVICE_INFO(dev_ident.HMID);
 	}
 }
 
@@ -1267,7 +1188,7 @@ inline void AS::processMessageConfigParamReq(void) {
  *             Sender__ Receiver    Channel
  * 0C 0A A4 01 23 70 EC 1E 7A AD 02 01
  */
-inline void AS::processMessageConfigPeerListReq(void) {
+/*inline void AS::processMessageConfigPeerListReq(void) {
 	cmMaster *pCM = ptr_CM[rcv_msg.mBody.BY10];
 	stcSlice.totSlc = pCM->peerDB.get_nr_slices(4);												// how many slices are needed
 	//stcSlice.totSlc = ee_peer.countPeerSlc(rcv_msg.mBody->BY10);									// how many slices are need
@@ -1277,7 +1198,7 @@ inline void AS::processMessageConfigPeerListReq(void) {
 	stcSlice.peer = 1;																			// set the type of answer
 	stcSlice.active = 1;																		// start the send function
 	// answer will send from sendsList(void)
-}
+}*/
 
 inline void AS::processMessageConfigAESProtected() {
 	#ifdef SUPPORT_AES
@@ -1288,7 +1209,7 @@ inline void AS::processMessageConfigAESProtected() {
 		} else {
 	#endif
 			uint8_t ackOk = processMessageConfig();
-			checkSendACK(ackOk);																// send appropriate answer
+			check_send_ACK_NACK(rcv_msg.mBody.SND_ID, ackOk);																// send appropriate answer
 
 	#ifdef SUPPORT_AES
 		}
@@ -1495,7 +1416,7 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t peer_idx) {
 	if      (rcv_msg.mBody.MSG_TYP == 0x3E) pCM->message_trigger3E(sF.LONG, sF.COUNT);		// call the user module
 	else if (rcv_msg.mBody.MSG_TYP == 0x40) pCM->message_trigger40(sF.LONG, sF.COUNT);
 	else if (rcv_msg.mBody.MSG_TYP == 0x41) pCM->message_trigger41(sF.LONG, sF.COUNT, sF.VALUE);
-	else sendACK();
+	else send_ACK(rcv_msg.mBody.SND_ID);
 }
 
 /**

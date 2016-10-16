@@ -117,14 +117,9 @@ public:		//---------------------------------------------------------------------
 	void poll(void);
 
 	// - send functions --------------------------------
-	void sendDEVICE_INFO(void);
-	void sendACK(void);
-	void checkSendACK(uint8_t ackOk);
+	//void sendDEVICE_INFO(void);
 	void sendPayload(uint8_t payloadType, uint8_t *data, uint8_t dataLen);
 	inline void sendAckAES(uint8_t *data);
-	void sendACK_STATUS(uint8_t channel, uint8_t state, uint8_t action);
-	inline void sendNACK(void);
-	void sendNACK_TARGET_INVALID(void);
 	void sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag);
 	void sendINFO_POWER_EVENT(uint8_t *data);
 	void sendINFO_TEMP(void);
@@ -164,7 +159,7 @@ public:		//---------------------------------------------------------------------
 	inline void processMessageConfigPairSerial(void);
 	inline void processMessageConfigSerialReq(void);
 	inline void processMessageConfigParamReq(void);
-	inline void processMessageConfigPeerListReq(void);
+	//inline void processMessageConfigPeerListReq(void);
 	inline void processMessageConfigAESProtected();
 
 	inline void actionSwitchEvent();
