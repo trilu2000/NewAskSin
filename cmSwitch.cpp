@@ -210,7 +210,7 @@ void cmSwitch::sendStatus(void) {
 	if (!delayTmr.done() )       modDUL |= 0x40;
 	
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      ( sendStat == INFO::SND_ACK_STATUS )      send_ACK_STATUS(lstC.cnl, modStat, modDUL);	
+	if      ( sendStat == INFO::SND_ACK_STATUS )      hm.send_ACK_STATUS(lstC.cnl, modStat, modDUL);	
 	else if ( sendStat == INFO::SND_ACTUATOR_STATUS ) hm.sendINFO_ACTUATOR_STATUS(lstC.cnl, modStat, modDUL);
 
 	// check if it is a stable status, otherwise schedule next info message

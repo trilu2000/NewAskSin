@@ -104,12 +104,12 @@ void serialEvent() {
 			i = 0;
 			return;
 		} else if (inChar == 's') {
-			DBG(SER, F("con: "), _HEX(snd_msg.buf, snd_msg.buf[0]+1), '\n');
+			DBG(SER, F("con: "), _HEX(snd_msg.buf, snd_msg.buf[0] + 1), '\n');
 			snd_msg.temp_max_retr = 1;
 			snd_msg.active = 1;
 			i = 0;
 			return;
-		}
+		} 
 
 		if ((inChar>96) && (inChar<103)) inChar -= 87;											// a - f
 		else if ((inChar>64) && (inChar<71))  inChar -= 55;										// A - F

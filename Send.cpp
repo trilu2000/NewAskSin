@@ -20,7 +20,7 @@ SN::SN()  {
 }
 
 void SN::poll(void) {
-
+	process_config_list_answer_slice();														// check if something has to be send slice wise
 	if (!snd_msg.active) return;															// nothing to do
 
 	/*  return while no ACK received and timer is running */
@@ -41,9 +41,9 @@ void SN::poll(void) {
 		/* check if we should send an internal message */
 		if (isEqual(snd_msg.mBody.RCV_ID, dev_ident.HMID, 3)) {
 			memcpy(rcv_msg.buf, snd_msg.buf, snd_msg.buf[0] + 1);							// copy send buffer to received buffer
-			rcv_msg.hasdata = 1;															// signalize that something is to progress in received message
-			snd_msg.clear();																// nothing to do any more for send, msg will processed in the receive loop
 			DBG(SN, F("<i ...\n"));															// some debug, message is shown in the received string
+			rcv.poll();																		// get intent and so on...
+			snd_msg.clear();																// nothing to do any more for send, msg will processed in the receive loop
 			return;																			// and return...
 		}
 
@@ -51,7 +51,7 @@ void SN::poll(void) {
 		memcpy(snd_msg.mBody.SND_ID, dev_ident.HMID, 3);									// we always send the message in our name
 		snd_msg.mBody.FLAG.RPTEN = 1;														// every message need this flag
 		snd_msg.temp_MSG_CNT = snd_msg.mBody.MSG_CNT;										// copy the message count to identify the ACK
-		if (isEmpty(snd_msg.mBody.RCV_ID,3)) snd_msg.mBody.FLAG.BIDI = 0;						// broadcast, no ack required
+		if (isEmpty(snd_msg.mBody.RCV_ID,3)) snd_msg.mBody.FLAG.BIDI = 0;					// broadcast, no ack required
 
 		if (!snd_msg.temp_max_retr)
 			snd_msg.temp_max_retr = (snd_msg.mBody.FLAG.BIDI) ? snd_msg.max_retr : 1;		// send once while not requesting an ACK
@@ -92,7 +92,43 @@ void SN::poll(void) {
 	
 }
 
+void SN::process_config_list_answer_slice(void) {
+	if (!config_list_answer_slice.active) return;											// nothing to send, return
+	if (snd_msg.active) return;																// we have something to do, but send_msg is busy
 
+	s_config_list_answer_slice *cl = &config_list_answer_slice;								// short hand
+	uint8_t payload_len;
+
+	if (cl->type == LIST_ANSWER::PEER_LIST) {						// INFO_PEER_LIST
+		dbg << "cur:" << cl->cur_slc << ", max:" << cl->max_slc << '\n';
+		payload_len = cl->peer->get_slice(cl->cur_slc, snd_msg.buf + 11);					// get the slice and the amount of bytes
+		snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// set the message counter
+		snd_msg.set_msg(MSG_TYPE::INFO_PEER_LIST, MAID, 1, payload_len + 10);				// set message type, RCV_ID, SND_ID and set it active
+		cl->cur_slc++;																		// increase slice counter
+		//dbg << "peer slc: " << _HEX(snd_msg.buf, snd_msg.buf[0] + 1) << '\n';
+
+	} else if (cl->type == LIST_ANSWER::PARAM_RESPONSE_PAIRS) {		// INFO_PARAM_RESPONSE_PAIRS
+		dbg << "cur:" << cl->cur_slc << ", max:" << cl->max_slc << '\n';
+		if ((cl->cur_slc + 1) < cl->max_slc) {												// within message processing, get the content													
+			payload_len = cl->list->get_slice_pairs(cl->peer_idx, cl->cur_slc, snd_msg.buf + 11);// get the slice and the amount of bytes
+		} else {																			// last slice, terminating message
+			payload_len = 2;																// reflect it in the payload_len
+			memset(snd_msg.buf + 11, 0, payload_len);										// write terminating zeros
+		}
+		snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// set the message counter
+		snd_msg.set_msg(MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS, MAID, 1, payload_len + 10);	// set message type, RCV_ID, SND_ID and set it active
+		cl->cur_slc++;																		// increase slice counter
+		//dbg << "reg2 slc: " << _HEX(snd_msg.buf, snd_msg.buf[0] + 1) << '\n';				
+
+	} else if (cl->type == LIST_ANSWER::PARAM_RESPONSE_SEQ) {		// INFO_PARAM_RESPONSE_SEQ
+		// not implemented yet
+	}
+
+	if (cl->cur_slc >= cl->max_slc) {														// if everything is send, we could stop the struct
+		cl->active = 0;
+		cl->cur_slc = 0;
+	}
+}
 
 
 

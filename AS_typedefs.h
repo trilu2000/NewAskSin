@@ -187,6 +187,7 @@ typedef struct ts_peer_table {
 	}
 
 	uint8_t get_idx(uint8_t *buf) {								// returns the idx of the given peer, or 0xff if not found. don't use the peer array of the struct, it will be overwritten!
+		if (!*(uint32_t*)buf) return 0;							// for list0/1 requests the peer address is empty
 		for (uint8_t i = 0; i < max; i++) if (!memcmp(get_peer(i), buf, 4)) return i;
 		return 0xff;
 	}
@@ -827,8 +828,7 @@ typedef struct ts_msg01xx04 {
 	uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 	uint8_t       MSG_CNL;				// by10 - message channel
 	uint8_t       BY11;					// by11 - message type
-	uint8_t       PEER_ID[3];			// by12 - peer address
-	uint8_t       PEER_CNL;				// by15 - peer channel
+	uint8_t       PEER_ID[4];			// by12 - peer address, incl peer cnl
 	uint8_t       PARAM_LIST;			// by16 - parameter list 0, 1, 3, 4, etc.
 } s_m01xx04; // CONFIG_PARAM_REQ message
 
@@ -1781,8 +1781,8 @@ typedef struct ts_send {
 	/* prepare the message and make it ready to send.
 	*  within this function call we set the message type, the message length,
 	*  and the BIDI flag. RPTEN and the SND_ID is set within the send function */
-	void set_msg(MSG_TYPE::E type, uint8_t *snd_id, uint8_t bidi = 0, uint8_t len = 0xff) {
-		memcpy(mBody.SND_ID, snd_id, 3); 
+	void set_msg(MSG_TYPE::E type, uint8_t *rcv_id, uint8_t bidi = 0, uint8_t len = 0xff) {
+		memcpy(mBody.RCV_ID, rcv_id, 3); 
 
 		/* NACK_TARGET_INVALID is defined in AS_typedef.h as 0x0284ff0a
 		* where 0x02 is the message type, 0x84 is byte 10, 0xff is byte 11 but ff indicates that it is not used
@@ -1825,8 +1825,6 @@ typedef struct ts_config_list_answer_slice {
 	s_list_table *list;					// pointer to the respective list table for answering the request
 	uint8_t peer_idx;					// peer index if a list3 or 4 is requested
 	s_peer_table *peer;					// pointer to the peer table in case in is a PEER_LIST answer
-	uint8_t RCV_ID[3];					// remember to whom we have to send the message
-
 } s_config_list_answer_slice;
 
 

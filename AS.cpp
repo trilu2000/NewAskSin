@@ -180,6 +180,13 @@ void AS::poll(void) {
 }
 
 
+/* ------------------------------------------------------------------------------------------------------------------------
+* - receive functions -----------------------------------------------------------------------------------------------------
+* @brief Received messages are stored and prepared in the rcv_msg struct. AS:poll is calling while rcv_msg.active
+* is set to 1. All receive functions are handled within the AS class - some forwarded to the channel module class.
+* The intent is to overload them there by the respective user channel module and work with the information accordingly.
+*/
+
 /**
 * @brief Receive handler: Process received messages
 * Process message is called while rcv_msg.hasdata is set to TRUE. It takes all information from the rcv_msg struct.
@@ -206,16 +213,16 @@ void AS::processMessage(void) {
 		cmMaster *pCM = ptr_CM[cnl];														// short hand to respective channel module
 		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
 
-		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(      (s_m01xx01*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(   (s_m01xx02*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ( (s_m01xx03*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(     (s_m01xx04*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(         (s_m01xx05*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(           (s_m01xx06*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(  (s_m01xx07*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(  (s_m01xx08*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(    (s_m01xx09*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(   (s_m01xx0a*)rcv_msg.buf);
+		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       CONFIG_PEER_ADD(      (s_m01xx01*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    CONFIG_PEER_REMOVE(   (s_m01xx02*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  CONFIG_PEER_LIST_REQ( (s_m01xx03*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      CONFIG_PARAM_REQ(     (s_m01xx04*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          CONFIG_START(         (s_m01xx05*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            CONFIG_END(           (s_m01xx06*)rcv_msg.buf );
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   CONFIG_WRITE_INDEX1(  (s_m01xx07*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   CONFIG_WRITE_INDEX2(  (s_m01xx08*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     CONFIG_SERIAL_REQ(    (s_m01xx09*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    CONFIG_PAIR_SERIAL(   (s_m01xx0a*)rcv_msg.buf);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST((s_m01xx0e*)rcv_msg.buf);
 		else {
 			dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
@@ -271,7 +278,7 @@ void AS::processMessage(void) {
 
 		}
 		else if (rcv_msg.mBody.BY11 == AS_CONFIG_PARAM_REQ) {
-			processMessageConfigParamReq();
+			//processMessageConfigParamReq();
 
 		}
 		else if (rcv_msg.mBody.BY11 == AS_CONFIG_SERIAL_REQ) {
@@ -423,7 +430,7 @@ void AS::processMessage(void) {
 #endif
 
 			// ToDo: Check if needed.
-			send_NACK(rcv_msg.mBody.SND_ID);
+			send_NACK();
 		}
 
 	}
@@ -453,14 +460,14 @@ void AS::processMessage(void) {
 			processMessageAction11();
 			if (rcv_msg.mBody.FLAG.BIDI || resetStatus == AS_RESET) {
 				if (resetStatus == AS_RESET) {   //(ee.getRegListIdx(1, 3) == 0xFF || resetStatus == AS_RESET) {
-					send_ACK(rcv_msg.mBody.SND_ID);
+					send_ACK();
 				}
 				else {
 					uint8_t channel = rcv_msg.mBody.BY11;
 					if (rcv_msg.mBody.BY10 == AS_ACTION_RESET && rcv_msg.mBody.BY11 == 0x00) {
 						channel = 1;
 					}
-					send_ACK_STATUS(rcv_msg.mBody.SND_ID, channel, 0, 0);
+					send_ACK_STATUS(channel, 0, 0);
 				}
 			}
 
@@ -520,37 +527,329 @@ void AS::processMessage(void) {
 	rcv_msg.clear();																	// nothing to do any more
 }
 
+/*
+* @brief Adds one or two peers to a channel
+* CONFIG_PEER_ADD message is send by the HM master to combine two client devices
+* request is forwarded by the AS:processMessage function
+*/
+inline void AS::CONFIG_PEER_ADD(s_m01xx01 *buf) {
+	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
+	s_peer_table *peerDB = &ptr_CM[buf->MSG_CNL]->peerDB;									// short hand to the respective peer table
+	s_list_table *listP = &ptr_CM[buf->MSG_CNL]->lstP;										// short hand to the list table
+	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting 
+
+	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
+		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry 
+
+		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
+		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
+
+		uint8_t idx = peerDB->get_idx(temp_peer);											// search if we have already the peer in the database
+		if (idx == 0xff) idx = peerDB->get_free_slot();										// not in the in the database, search a free slot
+
+		if (idx != 0xff) {																	// free slot available
+			peerDB->set_peer(idx, temp_peer);												// write the peer into the database
+
+			listP->load_default();															// copy the defaults from progmem into the peer list, index doesn't matter
+			ptr_CM[buf->MSG_CNL]->request_peer_defaults(idx, buf);							// ask the channel module to load the defaults
+			listP->save_list(idx);															// and save the list, index is important while more choices in the peer table
+			ret_byte++;																		// increase success
+		}
+	}
+	ptr_CM[buf->MSG_CNL]->info_peer_add(buf);												// inform the user module of the added peer
+
+	DBG(CM, F("AS:CONFIG_PEER_ADD, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
+	check_send_ACK_NACK(ret_byte);
+}
+
+/*
+* @brief Removes one or two peers from a channel
+* CONFIG_PEER_REMOVE message is send by the HM master to remove the binding of two client devices
+* request is forwarded by the AS:processMessage function
+*/
+inline void AS::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
+	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
+	s_peer_table *peerDB = &ptr_CM[buf->MSG_CNL]->peerDB;									// short hand to the respective peer table
+	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting 
+
+	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
+		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry 
+
+		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
+		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
+		uint8_t idx = peerDB->get_idx(temp_peer);											// find the peer in the database
+
+		if (idx != 0xff) {																	// found it
+			peerDB->clear_peer(idx);														// delete the peer in the database
+			ret_byte++;																		// increase success
+		}
+	}
+	DBG(CM, F("CM:CONFIG_PEER_REMOVE, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n');
+	check_send_ACK_NACK(ret_byte);
+}
+
+/*
+* @brief Requests a listing of all registered peers from a specific channel
+* CONFIG_PEER_LIST_REQ message is send by the HM master to get information which peers are known at the client device.
+* This type of message can't be answered within one string, therefor we send an ACK on the initial list request
+* and prepare a struct with the required information to process it further in a seperate function call
+* request is forwarded by the AS:processMessage function
+*/
+inline void AS::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
+	send_ACK();
+	send_INFO_PEER_LIST(buf->MSG_CNL);
+}
+
+/*
+* @brief Requests a listing of all values in a list from a specific channel
+* CONFIG_PARAM_REQ message is send by the HM master to get information which list values are stored at the client device.
+* This type of message can't be answered within one string, therefor we send an ACK on the initial list request
+* and prepare a struct with the required information to process it further in a seperate function call
+* request is forwarded by the AS:processMessage function
+*/
+inline void AS::CONFIG_PARAM_REQ(s_m01xx04 *buf) {
+	send_ACK();
+	send_INFO_PARAM_RESPONSE_PAIRS(buf->MSG_CNL, buf->PARAM_LIST, buf->PEER_ID);
+}
+
+inline void AS::CONFIG_START(s_m01xx05 *buf) {
+}
+inline void AS::CONFIG_END(s_m01xx06 *buf) {
+}
+inline void AS::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
+}
+inline void AS::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
+}
+inline void AS::CONFIG_SERIAL_REQ(s_m01xx09 *buf) {
+}
+inline void AS::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
+}
+
+
+/* ------------------------------------------------------------------------------------------------------------------------
+* - send functions --------------------------------------------------------------------------------------------------------
+* @brief Here are the send functions for the device, this library is focused on client communication,
+* so you will find send functions for client communication only. The send functions are sorted by
+* message type and sub type. Only for the peer related messages there is the need to define the receiver.
+* Configuration and status answers send only to HMID, ACK and subtypes are always the response to a received string
+*/
+
+/**
+* @brief Send device info
+* Could be an answer on a pair serial request, or initial send by the device
+* Only difference is the message counter - on own initialized send, we use the message
+* counter from the send class, on a pair serial request we take the counter value from the received string
+*
+* Message description:
+*             Sender__ Receiver fwVer type   Serial number                     class  pCnlA  pCnlB  unknown
+* 1A 94 84 00 1F B7 4A 01 02 04 15    00 6C  4B 45 51 30 32 33 37 33 39 36  10 41     01     00
+*/
+void AS::send_DEVICE_INFO(MSG_REASON::E reason) {
+	s_m00xxxx *msg = (s_m00xxxx*)snd_msg.buf;												// define a device info struct while easier to fill
+	uint8_t *rcv_id;																		// pointer to an array address for the answer
+
+																							/* copy the payload from different sources */
+	memcpy_P(&msg->FIRMWARE, dev_static, 3);												// copy firmware and modelID
+	memcpy(&msg->SERIALNO, dev_ident.SERIAL_NR, 10);										// copy the serial number
+	memcpy_P(&msg->CLASS, dev_static + 3, 4);												// copy subtype and device info
+
+																							/* is it an answer to a CONFIG_PAIR_SERIAL request, or while we initiate the pairing process */
+	if (reason == MSG_REASON::ANSWER) {
+		msg->MSG_CNT = rcv_msg.mBody.MSG_CNT;												// set the message counter accordingly
+		rcv_id = rcv_msg.mBody.SND_ID;														// respond to sender
+	}
+	else {
+		msg->MSG_CNT = snd_msg.MSG_CNT++;
+		rcv_id = MAID;																		// we initiated, so it has to go to the master id
+	}
+
+	/* BIDI is asked all time, will removed automatically if MAID is empty */
+	snd_msg.set_msg(MSG_TYPE::DEVICE_INFO, rcv_id, 1);
+
+	//pair_mode.active = 1;																	// set pairing flag
+	//pair_mode.timer.set(20000);															// set pairing time
+	led.set(pairing);																		// and visualize the status
+}
 
 
 /**
- * @brief Send device info
- *
- * Message description:
- *             Sender__ Receiver fwVer type   Serial number                     class  pCnlA  pCnlB  unknown
- * 1A 94 84 00 1F B7 4A 01 02 04 15    00 6C  4B 45 51 30 32 33 37 33 39 36  10 41     01     00
- */
-/*void AS::sendDEVICE_INFO(void) {
-	uint8_t msgCount;
-	if ((rcv_msg.mBody.FLAG.CFG == AS_MESSAGE_CONFIG) && (rcv_msg.mBody.BY11 == AS_CONFIG_PAIR_SERIAL)) {
-		msgCount = rcv_msg.mBody.MSG_CNT;															// send counter - is it an answer or a initial message
-	} else {
-		msgCount = snd_msg.MSG_CNT++;
-	}
+* @brief Check if ACK required and send ACK or NACK
+*/
+void AS::check_send_ACK_NACK(uint8_t ackOk) {
+	if (ackOk) send_ACK();																	// we are here to proof the result
+	else send_NACK();																		// and send an ACK or NACK
+}
+/**
+* @brief Send ACK message
+*
+* Message description:
+*             Sender__ Receiver ACK
+* 0A 24 80 02 1F B7 4A 63 19 63 00
+*/
+void AS::send_ACK(void) {
+	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
+	snd_msg.set_msg(MSG_TYPE::ACK, rcv_msg.mBody.SND_ID);									// length and flags are set within the snd_msg struct
+}
+/**
+* @brief Send an ACK with status data
+*
+* Message description:
+*             Sender__ Receiver ACK Cnl Stat Action RSSI
+* 0F 12 80 02 1E 7A AD 23 70 EC 01  01  BE   20     27    CC - dimmer
+* 0E 5C 80 02 1F B7 4A 63 19 63 01  01  C8   00     42       - pcb relay
+*
+* Action: Down=0x20, UP=0x10, LowBat=&0x80
+*
+* @param chnl
+* @param stat
+* @param actn
+*/
+void AS::send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
+	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ACK only while required
+	s_m0201xx *msg = (s_m0201xx*)snd_msg.buf;												// define an ACK Status struct while easier to fill
+	msg->MSG_CNL = chnl;
+	msg->MSG_STATUS = stat;
+	*(uint8_t*)&msg->MSG_FLAG = actn;
+	msg->MSG_FLAG.LOWBAT = bat.getStatus();
+	msg->MSG_RSSI = cc.rssi;
+	snd_msg.set_msg(MSG_TYPE::ACK_STATUS, rcv_msg.mBody.SND_ID);
+}
+void AS::send_ACK2(void) {
+}
+void AS::send_AES_REQ(s_m0204xx *buf) {
+}
+/**
+* @brief Send a NACK (not ACK)
+*
+* Message description:
+*             Sender__ Receiver NACK
+* 0A 24 80 02 1F B7 4A 63 19 63 80
+*/
+void AS::send_NACK(void) {
+	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
+	snd_msg.set_msg(MSG_TYPE::NACK, rcv_msg.mBody.SND_ID);									// length and flags are set within the snd_msg struct
+}
+/**
+* @brief Send a NACK (not ACK and target invalid)
+*
+* Message description:
+*             Sender__ Receiver NACK_TAGRET_INVALID
+* 0A 24 80 02 1F B7 4A 63 19 63 84
+*/
+void AS::send_NACK_TARGET_INVALID(void) {
+	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ACK only while required
+	snd_msg.set_msg(MSG_TYPE::NACK_TARGET_INVALID, rcv_msg.mBody.SND_ID);
+}
+void AS::send_ACK_NACK_UNKNOWN() {
+}
 
-	snd_msg.mBody.MSG_LEN = 0x1A;
-	//snd_msg.mBody->FLAG.CFG = 1;
-	snd_msg.mBody.FLAG.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
+void AS::send_AES_REPLY() {
+}
 
-	memcpy_P(snd_msg.buf+10, dev_static, 3);
-	memcpy(snd_msg.buf+13, dev_ident.SERIAL_NR, 10);
-	memcpy_P(snd_msg.buf+23, dev_static +3, 4);
+void AS::send_SEND_AES_TO_HMLAN() {
+}
+void AS::send_SEND_AES_TO_ACTOR() {
+}
 
-	prepareToSend(msgCount, AS_MESSAGE_DEVINFO, MAID);
+void AS::send_INFO_SERIAL() {
+}
 
-	pair_mode.active = 1;																		// set pairing flag
-	pair_mode.timer.set(20000);															// set pairing time
-	led.set(pairing);																			// and visualize the status
-}*/
+/**
+* @brief Send info peer list
+* Typical requested by a CONFIG_PEER_LIST_REQ. As this message could require more bytes then 
+* it can send within one message, we prepare a slice wise sender struct. Progressed in the send class.
+*
+* Message description:
+*    LEN CNT FLAG BY03 SND       RCV       By10  PEER 1 to 4, empty peer terminates message
+* l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00   
+*/
+void AS::send_INFO_PEER_LIST(uint8_t cnl) {
+	config_list_answer_slice.type = LIST_ANSWER::PEER_LIST;									// we want to get the peer list
+	config_list_answer_slice.peer = &ptr_CM[cnl]->peerDB;									// pointer to the respective peerDB struct
+	config_list_answer_slice.max_slc = ptr_CM[cnl]->peerDB.get_nr_slices();					// get an idea of the total needed slices
+	config_list_answer_slice.active = 1;													// and set it active
+}
+
+/**
+* @brief Send info param response pairs of values
+* Typical requested by a CONFIG_PARAM_REQ. As this message could require more bytes then
+* it can send within one message, we prepare a slice wise sender struct. Progressed in the send class.
+*
+* Message description:
+*    LEN CNT FLAG BY03 SND       RCV       By10  PEER 1 to 4, empty peer terminates message
+* l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
+*/
+void AS::send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id) {
+	//dbg << "cnl " << cnl << ", lst " << lst << ", peer " << _HEX(peer_id, 4) << '\n';
+	if (!ptr_CM[cnl]->list[lst]) return;													// specific list is not available
+	uint8_t idx = ptr_CM[cnl]->peerDB.get_idx(peer_id);										// get the requested peer index
+	if (idx == 0xff) return;																// nothing to do while index not found
+
+	config_list_answer_slice.type = LIST_ANSWER::PARAM_RESPONSE_PAIRS;						// we want to get the param list as pairs
+	config_list_answer_slice.peer_idx = ptr_CM[cnl]->peerDB.get_idx(peer_id);				// remember on the peer index
+	config_list_answer_slice.list = ptr_CM[cnl]->list[lst];									// pointer to the respective list struct
+	config_list_answer_slice.max_slc = ptr_CM[cnl]->list[lst]->get_nr_slices_pairs() + 1;	// get an idea of the total needed slices, plus one for closing 00 00 message
+	config_list_answer_slice.active = 1;													// and set it active, while peer index is available
+}
+
+/**
+* @brief Send info param response sequential - todo: implement
+* Typical requested by a CONFIG_PARAM_REQ. As this message could require more bytes then
+* it can send within one message, we prepare a slice wise sender struct. Progressed in the send class.
+*
+* Message description:
+*    LEN CNT FLAG BY03 SND       RCV       By10  PEER 1 to 4, empty peer terminates message
+* l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
+*/
+void AS::send_INFO_PARAM_RESPONSE_SEQ(uint8_t cnl, uint8_t lst, uint8_t *peer_id) {
+	//config_list_answer_slice.type = LIST_ANSWER::PARAM_RESPONSE_PAIRS;;						// we want to get the param list sequential
+	//config_list_answer_slice.list = ptr_CM[cnl]->list[lst];									// pointer to the respective list struct
+	//config_list_answer_slice.max_slc = ptr_CM[cnl]->list[lst]->get_nr_slices();				// get an idea of the total needed slices
+	//config_list_answer_slice.active = 1;													// and set it active
+}
+
+void AS::send_INFO_PARAMETER_CHANGE() {
+}
+void AS::send_INFO_ACTUATOR_STATUS() {
+}
+void AS::send_INFO_TEMP() {
+}
+
+void AS::send_HAVE_DATA() {
+}
+
+void AS::send_SWITCH(s_peer_table *peerDB) {
+}
+void AS::send_TIMESTAMP(s_peer_table *peerDB) {
+}
+void AS::send_REMOTE(s_peer_table *peerDB) {
+}
+void AS::send_SENSOR_EVENT(s_peer_table *peerDB) {
+}
+void AS::send_SWITCH_LEVEL(s_peer_table *peerDB) {
+}
+void AS::send_SENSOR_DATA(s_peer_table *peerDB) {
+}
+void AS::send_GAS_EVENT(s_peer_table *peerDB) {
+}
+void AS::send_CLIMATE_EVENT(s_peer_table *peerDB) {
+}
+void AS::send_SET_TEAM_TEMP(s_peer_table *peerDB) {
+}
+void AS::send_THERMAL_CONTROL(s_peer_table *peerDB) {
+}
+void AS::send_POWER_EVENT_CYCLE(s_peer_table *peerDB) {
+}
+void AS::send_POWER_EVENT(s_peer_table *peerDB) {
+}
+void AS::send_WEATHER_EVENT(s_peer_table *peerDB) {
+}
+
+
+
+
+
+
 
 
 
@@ -1130,7 +1429,7 @@ inline void AS::processMessageConfigStatusRequest(uint8_t by10) {
  */
 inline void AS::processMessageConfigPairSerial(void) {
 	if (isEqual(rcv_msg.buf+12, dev_ident.SERIAL_NR, 10)) {															// compare serial and send device info
-		send_DEVICE_INFO(dev_ident.HMID);
+		send_DEVICE_INFO(MSG_REASON::ANSWER);
 	}
 }
 
@@ -1209,7 +1508,7 @@ inline void AS::processMessageConfigAESProtected() {
 		} else {
 	#endif
 			uint8_t ackOk = processMessageConfig();
-			check_send_ACK_NACK(rcv_msg.mBody.SND_ID, ackOk);																// send appropriate answer
+			check_send_ACK_NACK(ackOk);																// send appropriate answer
 
 	#ifdef SUPPORT_AES
 		}
@@ -1416,7 +1715,7 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t peer_idx) {
 	if      (rcv_msg.mBody.MSG_TYP == 0x3E) pCM->message_trigger3E(sF.LONG, sF.COUNT);		// call the user module
 	else if (rcv_msg.mBody.MSG_TYP == 0x40) pCM->message_trigger40(sF.LONG, sF.COUNT);
 	else if (rcv_msg.mBody.MSG_TYP == 0x41) pCM->message_trigger41(sF.LONG, sF.COUNT, sF.VALUE);
-	else send_ACK(rcv_msg.mBody.SND_ID);
+	else send_ACK();
 }
 
 /**
