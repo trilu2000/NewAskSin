@@ -52,11 +52,9 @@ public://-----------------------------------------------------------------------
 	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
 
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
-	//virtual void request_pair_status(void);													// event on status request
 
 	void poll(void);																		// poll function, driven by HM loop
 	virtual void cm_poll(void) {}															// poll function for channel modules to overwrite
-	void process_config_list_answer_slice(void);											// poll the config_list_answer_slice struct for preparing answers on peer and param list requests
 
 	virtual void set_toggle(void);															// toggle the module initiated by config button
 
@@ -64,6 +62,31 @@ public://-----------------------------------------------------------------------
 	/* receive functions to handle requests forwarded by AS:processMessage 
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */
 	virtual void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);
+
+	virtual void INSTRUCTION_INHIBIT_OFF();	
+	virtual void INSTRUCTION_INHIBIT_ON();	
+	virtual void INSTRUCTION_SET();	
+	virtual void INSTRUCTION_STOP_CHANGE();	
+	virtual void INSTRUCTION_LED();	
+	virtual void INSTRUCTION_LED_ALL();	
+	virtual void INSTRUCTION_LEVEL();	
+	virtual void INSTRUCTION_SET_TEMP();
+	virtual void INSTRUCTION_ADAPTION_DRIVE_SET();
+
+	virtual void SWITCH();	
+	virtual void TIMESTAMP();
+	virtual void REMOTE();	
+	virtual void SENSOR_EVENT();
+	virtual void SWITCH_LEVEL();
+	virtual void SENSOR_DATA();
+	virtual void GAS_EVENT();
+	virtual void CLIMATE_EVENT(); 
+	virtual void SET_TEAM_TEMP();
+	virtual void THERMAL_CONTROL();
+	virtual void POWER_EVENT_CYCLE();
+	virtual void POWER_EVENT();
+	virtual void WEATHER_EVENT();
+
 
 };
 

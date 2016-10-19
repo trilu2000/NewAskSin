@@ -79,9 +79,53 @@ void cmMaster::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
 	DBG(CM, F("CM:CONFIG_STATUS_REQUEST\n"));
 }
 
+// need to define structs and the calls from AS.cpp
+void cmMaster::INSTRUCTION_INHIBIT_OFF() {
+}
+void cmMaster::INSTRUCTION_INHIBIT_ON() {
+}
+void cmMaster::INSTRUCTION_SET() {
+}
+void cmMaster::INSTRUCTION_STOP_CHANGE() {
+}
+void cmMaster::INSTRUCTION_LED() {
+}
+void cmMaster::INSTRUCTION_LED_ALL() {
+}
+void cmMaster::INSTRUCTION_LEVEL() {
+}
+void cmMaster::INSTRUCTION_SET_TEMP() {
+}
+void cmMaster::INSTRUCTION_ADAPTION_DRIVE_SET() {
+}
 
+void cmMaster::SWITCH() {
+}
+void cmMaster::TIMESTAMP() {
+}
+void cmMaster::REMOTE() {
+}
+void cmMaster::SENSOR_EVENT() {
+}
+void cmMaster::SWITCH_LEVEL() {
+}
+void cmMaster::SENSOR_DATA() {
+}
+void cmMaster::GAS_EVENT() {
+}
+void cmMaster::CLIMATE_EVENT() {
+}
+void cmMaster::SET_TEAM_TEMP() {
+}
+void cmMaster::THERMAL_CONTROL() {
+}
+void cmMaster::POWER_EVENT_CYCLE() {
+}
+void cmMaster::POWER_EVENT() {
+}
+void cmMaster::WEATHER_EVENT() {
+}
 
-//- send functions --------------------------------------------------------------------------------------------------------
 
 
 

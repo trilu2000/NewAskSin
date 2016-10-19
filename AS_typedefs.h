@@ -1733,6 +1733,7 @@ typedef struct ts_recv {
 	};
 	uint8_t prev_buf[27];				// store the last receive message to verify with AES signed data.
 
+	MSG_TYPE::E type;					// type of message as defined in AS_typedef
 	MSG_INTENT::E intent;				// remember the intent of the message, filled by receive class
 	uint8_t peer[4];					// peer is stored as a 4 byte array, but most messages delivers it with a seperate channel field (byte 10)
 	uint8_t cnl;						// by getting the intent the peer is checked, here we are store the channel where the peer is registered in

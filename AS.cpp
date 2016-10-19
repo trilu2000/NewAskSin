@@ -210,16 +210,16 @@ void AS::processMessage(void) {
 		cmMaster *pCM = ptr_CM[cnl];														// short hand to respective channel module
 		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
 
-		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       CONFIG_PEER_ADD(      (s_m01xx01*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    CONFIG_PEER_REMOVE(   (s_m01xx02*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  CONFIG_PEER_LIST_REQ( (s_m01xx03*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      CONFIG_PARAM_REQ(     (s_m01xx04*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          CONFIG_START(         (s_m01xx05*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            CONFIG_END(           (s_m01xx06*)rcv_msg.buf );
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   CONFIG_WRITE_INDEX1(  (s_m01xx07*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   CONFIG_WRITE_INDEX2(  (s_m01xx08*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     CONFIG_SERIAL_REQ(    (s_m01xx09*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    CONFIG_PAIR_SERIAL(   (s_m01xx0a*)rcv_msg.buf);
+		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       CONFIG_PEER_ADD((s_m01xx01*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    CONFIG_PEER_REMOVE((s_m01xx02*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  CONFIG_PEER_LIST_REQ((s_m01xx03*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      CONFIG_PARAM_REQ((s_m01xx04*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          CONFIG_START((s_m01xx05*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            CONFIG_END((s_m01xx06*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   CONFIG_WRITE_INDEX1((s_m01xx07*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   CONFIG_WRITE_INDEX2((s_m01xx08*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     CONFIG_SERIAL_REQ((s_m01xx09*)rcv_msg.buf);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    CONFIG_PAIR_SERIAL((s_m01xx0a*)rcv_msg.buf);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST((s_m01xx0e*)rcv_msg.buf);
 		else {
 			dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
