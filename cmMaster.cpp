@@ -12,7 +12,6 @@
 
 
 uint8_t cnl_max = 0;																		// defined in cmMaster.h, increased by every instance which is initialized
-s_config_list_answer_slice config_list_answer_slice;										// defined in cmMaster.h, holds information to answer config list requests for peer or param lists
 
 
 //public://------------------------------------------------------------------------------------------------------------------
@@ -59,9 +58,6 @@ void cmMaster::info_peer_add(s_m01xx01 *buf) {
 void cmMaster::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEXB(idx), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n' );
 }
-void cmMaster::request_pair_status(void) {
-	DBG(CM, F("CM:pair_status\n") );
-}
 
 
 void cmMaster::poll(void) {
@@ -80,7 +76,7 @@ void cmMaster::set_toggle(void) {
 * @brief Received message handling forwarded by AS::processMessage
 */
 void cmMaster::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
-
+	DBG(CM, F("CM:CONFIG_STATUS_REQUEST\n"));
 }
 
 

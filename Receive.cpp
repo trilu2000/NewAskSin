@@ -48,6 +48,10 @@ void RV::poll(void) {
 
 	DBG(RV, (char)rcv_msg.intent, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), ' ', _TIME, '\n');
 
+	// make an exception for broadcast messages when it is a serial pair request
+	if ((rcv_msg.intent == MSG_INTENT::BROADCAST) && (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcv_msg.mBody.BY11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL)))
+		rcv_msg.intent = MSG_INTENT::MASTER;
+
 	// process only messages from master, peer or internal
 	if ((rcv_msg.intent != MSG_INTENT::MASTER) && (rcv_msg.intent != MSG_INTENT::PEER) && (rcv_msg.intent != MSG_INTENT::INTERN) && (rcv_msg.intent != MSG_INTENT::NOT_PAIRED)) {
 		rcv_msg.clear();																	// nothing to do any more

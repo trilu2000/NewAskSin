@@ -93,22 +93,24 @@ void SN::poll(void) {
 }
 
 void SN::process_config_list_answer_slice(void) {
-	if (!config_list_answer_slice.active) return;											// nothing to send, return
+	s_config_list_answer_slice *cl = &config_list_answer_slice;								// short hand
+
+	if (!cl->active) return;																// nothing to send, return
+	if (!cl->timer.done()) return;															// something to send but we have to wait
 	if (snd_msg.active) return;																// we have something to do, but send_msg is busy
 
-	s_config_list_answer_slice *cl = &config_list_answer_slice;								// short hand
 	uint8_t payload_len;
 
-	if (cl->type == LIST_ANSWER::PEER_LIST) {						// INFO_PEER_LIST
-		dbg << "cur:" << cl->cur_slc << ", max:" << cl->max_slc << '\n';
+	if (cl->type == LIST_ANSWER::PEER_LIST) {
+		/* process the INFO_PEER_LIST */
 		payload_len = cl->peer->get_slice(cl->cur_slc, snd_msg.buf + 11);					// get the slice and the amount of bytes
 		snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// set the message counter
 		snd_msg.set_msg(MSG_TYPE::INFO_PEER_LIST, MAID, 1, payload_len + 10);				// set message type, RCV_ID, SND_ID and set it active
+		//DBG(SN, F("SN:LIST_ANSWER::PEER_LIST cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
 		cl->cur_slc++;																		// increase slice counter
-		//dbg << "peer slc: " << _HEX(snd_msg.buf, snd_msg.buf[0] + 1) << '\n';
 
-	} else if (cl->type == LIST_ANSWER::PARAM_RESPONSE_PAIRS) {		// INFO_PARAM_RESPONSE_PAIRS
-		dbg << "cur:" << cl->cur_slc << ", max:" << cl->max_slc << '\n';
+	} else if (cl->type == LIST_ANSWER::PARAM_RESPONSE_PAIRS) {
+		/* process the INFO_PARAM_RESPONSE_PAIRS */
 		if ((cl->cur_slc + 1) < cl->max_slc) {												// within message processing, get the content													
 			payload_len = cl->list->get_slice_pairs(cl->peer_idx, cl->cur_slc, snd_msg.buf + 11);// get the slice and the amount of bytes
 		} else {																			// last slice, terminating message
@@ -117,14 +119,16 @@ void SN::process_config_list_answer_slice(void) {
 		}
 		snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// set the message counter
 		snd_msg.set_msg(MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS, MAID, 1, payload_len + 10);	// set message type, RCV_ID, SND_ID and set it active
+		//DBG(SN, F("SN:LIST_ANSWER::PARAM_RESPONSE_PAIRS cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
 		cl->cur_slc++;																		// increase slice counter
-		//dbg << "reg2 slc: " << _HEX(snd_msg.buf, snd_msg.buf[0] + 1) << '\n';				
 
-	} else if (cl->type == LIST_ANSWER::PARAM_RESPONSE_SEQ) {		// INFO_PARAM_RESPONSE_SEQ
-		// not implemented yet
+	} else if (cl->type == LIST_ANSWER::PARAM_RESPONSE_SEQ) {
+		/* process the INFO_PARAM_RESPONSE_SEQ 
+		* not implemented yet */
 	}
 
 	if (cl->cur_slc >= cl->max_slc) {														// if everything is send, we could stop the struct
+		//DBG(SN, F("SN:LIST_ANSWER::DONE cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
 		cl->active = 0;
 		cl->cur_slc = 0;
 	}
@@ -132,64 +136,5 @@ void SN::process_config_list_answer_slice(void) {
 
 
 
-/* 
-* @brief Make broadcast, pair, peer and internal messages ready to send
-* Set the right flags for the send poll function. Following flags are set: active, max_retr and timeout
-* Timeout and max_retr could come from the register set of the cmMaintenance class. 
-*
-* Further functions are - set the message counter in the send string accordingly. On an answer we copy from the 
-* received messgae, if we are initiating the message it is taken from send class counter.
-*
-* Sender ID is copied in the string, length of send string is set
-* Msg flags, like CONFIG, BIDI, and ACK are set. 
-*
-*/
-/*void SN::prep_msg( MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type, uint8_t len = 0xff, uint8_t max_retr = 3 ) {
-	// todo: max_retr could be taken from respective channel module
-	uint8_t *type_arr = new uint8_t[4];
 
-	// intent relevant things
-	if ( (intent == MSG_INTENT::MASTER) && (isEmpty(MAID,3)) )								// check if we have a valid master
-		intent = MSG_INTENT::BROADCAST;														// otherwise set the message to broadcast
-
-
-	if (intent == MSG_INTENT::BROADCAST) {
-		snd_msg.max_retr = 1;																// nobody to answer, ack not required
-		snd_msg.mBody.FLAG.BIDI = 0;														// no ack required while broadcast
-		memset(snd_msg.mBody.RCV_ID, 0, 3);												// set receiver to 00 00 00
-
-	} else if (intent == MSG_INTENT::INTERN) {
-		snd_msg.max_retr = 1;																// internal message, no answer required
-		snd_msg.mBody.FLAG.BIDI = 0;														// no ack required while internal
-		memcpy(snd_msg.mBody.RCV_ID, dev_ident.HMID, 3);									// copy in the HMID as receiver
-
-	} else if (intent == MSG_INTENT::MASTER) {
-		// max_retr is set by default
-		snd_msg.mBody.FLAG.BIDI = 1;														// send to master, ack required
-		memcpy(snd_msg.mBody.RCV_ID, MAID, 3);												// copy in the central hm id as receiver
-
-	} else if (intent == MSG_INTENT::PEER) {												// it is only to answer messages, so should be fine to copy address from the received string
-		// max_retr is set by default
-		snd_msg.mBody.FLAG.BIDI = 1;														// send to known peer, ack required
-		memcpy(snd_msg.mBody.RCV_ID, rcv_msg.mBody.SND_ID, 3);							// copy in the received peer id as receiver
-
-	}
-
-	//dbg << "i:" << intent << ", t:" << type << ", d:" << _HEX(type_arr, 4) << '\n';
-
-	// if it is an ACK type message, we do not need a BIDI
-	if (snd_msg.mBody.MSG_TYP == 0x02) snd_msg.mBody.FLAG.BIDI = 0;
-
-	// general flags
-	if      (reason == MSG_REASON::ANSWER) snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;	// copy counter from received string
-	else if (reason == MSG_REASON::INITIAL) snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;		// copy counter from send function and increase
-	snd_msg.mBody.FLAG.RPTEN = 1;															// set as standard
-	snd_msg.max_time = 300; // todo: link to maintenance channel module
-	snd_msg.active = 1;
-}*/
-
-/*void SN::prep_peer_msg() {
-// handle internal messages as 
-
-}*/
 

@@ -32,7 +32,7 @@
 
 	cmMaster *ptr_CM[2] = {
 		new cmMaintenance(0),
-		new cmSwitch(10),
+		new cmSwitch(11),
 	};
 
 

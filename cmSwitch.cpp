@@ -211,7 +211,7 @@ void cmSwitch::sendStatus(void) {
 	
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
 	if      ( sendStat == INFO::SND_ACK_STATUS )      hm.send_ACK_STATUS(lstC.cnl, modStat, modDUL);	
-	else if ( sendStat == INFO::SND_ACTUATOR_STATUS ) hm.sendINFO_ACTUATOR_STATUS(lstC.cnl, modStat, modDUL);
+	else if ( sendStat == INFO::SND_ACTUATOR_STATUS ) hm.send_INFO_ACTUATOR_STATUS(lstC.cnl, modStat, modDUL);
 
 	// check if it is a stable status, otherwise schedule next info message
 	if (modDUL)  {																			// status is currently changing
@@ -360,3 +360,12 @@ void cmSwitch::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	DBG(SW, F("cmSwitch:request_peer_defaults CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", idx:"), _HEXB(idx), '\n' );
 }
 
+/*
+* @brief Received message handling forwarded by AS::processMessage
+*/
+void cmSwitch::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
+	sendStat = INFO::SND_ACTUATOR_STATUS;													// send next time a info status message
+	msgTmr.set(10);																			// wait a short time to set status
+
+	DBG(SW, F("SW:CONFIG_STATUS_REQUEST\n"));
+}

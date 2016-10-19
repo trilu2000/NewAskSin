@@ -31,10 +31,7 @@ cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
 	lstC.len = cmMaintenance_ChnlLen;
 	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
 
-	lstP.lst = 255;																			// in principle not needed...
-	//lstP.reg = cmMaintenance_PeerReg;														// while channel 0 has only list 0
-	//lstP.def = cmMaintenance_PeerDef;
-	//lstP.len = sizeof(cmMaintenance_PeerReg);
+	lstP.lst = 255;																			// lstP doesn't exist...
 
 	DBG(MN, F("MN. cnl: "), lstC.cnl, '\n');
 }

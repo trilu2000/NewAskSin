@@ -29,16 +29,6 @@
 	uint8_t  resetStatus;					// reset status flag
 } s_aes;*/
 
-/*
-* @brief Helper struct to remember on the config mode status in asksin main function
-*/
-typedef struct ts_config_mode {
-	uint8_t   active;						// indicates status, 1 if config mode is active
-	uint8_t   cnl;							// channel which was opened by config start message
-	uint8_t   lst;							// list which was opened
-	uint8_t   idx_peer;						// and the peer index
-	waitTimer timer;						// config mode timeout
-} s_config_mode;
 
 /*
 * @brief Helper struct to remember on the pairing mode status in asksin main function
@@ -129,7 +119,9 @@ typedef struct ts_list_table {
 	*/
 	void write_array(uint8_t *buf, uint8_t len, uint8_t idx = 0) {
 		load_list(idx);
-		for (uint8_t i = 0; i < len; i++) *ptr_to_val(buf[i]) = buf[i + 1];
+		for (uint8_t i = 0; i < len; i += 2) {
+			*ptr_to_val(buf[i]) = buf[i + 1];
+		}
 		save_list(idx);
 	}
 
@@ -143,11 +135,11 @@ typedef struct ts_list_table {
 	}
 
 	uint8_t get_slice_pairs(uint8_t idx, uint8_t slc, uint8_t *buf, uint8_t byte_per_msg = 16) { // returns a sliced peer list
-		load_list(idx);																		// load the eeprom content by idx into the value table
-		byte_per_msg /= 2;																	// divided by 2 while we mix two arrays
-		uint8_t slc_start = slc * byte_per_msg;												// calculate the start point for reg and val
-		uint8_t slc_end = slc_start + byte_per_msg;											// calculate the corresponding end point
-		if (slc_end > len) slc_end = len;													// if calculated end point is bigger than the physical
+		load_list(idx);											// load the eeprom content by idx into the value table
+		byte_per_msg /= 2;										// divided by 2 while we mix two arrays
+		uint8_t slc_start = slc * byte_per_msg;					// calculate the start point for reg and val
+		uint8_t slc_end = slc_start + byte_per_msg;				// calculate the corresponding end point
+		if (slc_end > len) slc_end = len;						// if calculated end point is bigger than the physical
 
 		for (uint8_t i = slc_start; i < slc_end; i++) {	memcpy_P(buf++, &reg[i], 1); memcpy(buf++, &val[i], 1);	}
 		return (slc_end - slc_start) * 2;
@@ -166,9 +158,9 @@ typedef struct ts_list_table {
 * definition with 6 possible peers for channel 1 will use 24 bytes in EEprom memory.
 */
 typedef struct ts_peer_table {
-	uint8_t  max;							// maximum number of peer devices
-	uint16_t ee_addr;						// address of configuration data in EEprom memory
-	uint8_t  dont_use_peer[4];				// placeholder for a peer id from or to eeprom
+	uint8_t  max;												// maximum number of peer devices
+	uint16_t ee_addr;											// address of configuration data in EEprom memory
+	uint8_t  dont_use_peer[4];									// placeholder for a peer id from or to eeprom
 
 	uint8_t *get_peer(uint8_t idx) {							// reads a peer address by idx from the database into the struct peer
 		if (idx >= max) return NULL;
@@ -214,21 +206,33 @@ typedef struct ts_peer_table {
 	}
 
 	uint8_t get_slice(uint8_t slice_nr, uint8_t *buf, uint8_t byte_per_msg = 16) {	// cpoies all known peers into the given buffer, as msg length is limited we use multipe messages
-		uint8_t byteCnt = 0, slcCnt = 0;											// start the byte and slice counter
-		for (uint8_t i = 0; i < max; i++) {											// step through the possible peer slots
-			getEEPromBlock(ee_addr + (i * 4), 4, &buf[byteCnt]);					// get the peer
-			if (!*(uint32_t*)&buf[byteCnt]) continue;								// continue if peer is empty
-			byteCnt += 4; 															// increase the byte counter while not empty 
-			if (byteCnt >= byte_per_msg) {											// string is full
-				if (slcCnt == slice_nr) goto end_get_slice;							// and we are in the right slice, return result
-				byteCnt = 0; slcCnt++;												// wrong slice, next slice from beginning
+		uint8_t byteCnt = 0, slcCnt = 0;						// start the byte and slice counter
+		for (uint8_t i = 0; i < max; i++) {						// step through the possible peer slots
+			getEEPromBlock(ee_addr + (i * 4), 4, &buf[byteCnt]);// get the peer
+			if (!*(uint32_t*)&buf[byteCnt]) continue;			// continue if peer is empty
+			byteCnt += 4; 										// increase the byte counter while not empty 
+			if (byteCnt >= byte_per_msg) {						// string is full
+				if (slcCnt == slice_nr) goto end_get_slice;		// and we are in the right slice, return result
+				byteCnt = 0; slcCnt++;							// wrong slice, next slice from beginning
 			}
 		}
-		memset(&buf[byteCnt], 0, 4); byteCnt += 4;									// add the terminating zeros
-		end_get_slice:
-		return byteCnt;																// return the amount of bytes
+		memset(&buf[byteCnt], 0, 4); byteCnt += 4;				// add the terminating zeros
+	end_get_slice:
+		return byteCnt;											// return the amount of bytes
 	}
 } s_peer_table;
+
+/*
+* @brief Helper struct to remember on the config mode status in asksin main function
+*/
+typedef struct ts_config_mode {
+	uint8_t   active;						// indicates status, 1 if config mode is active
+	uint8_t   cnl;							// channel which was opened by config start message
+	uint8_t   lst;							// list which was opened
+	uint8_t   idx_peer;						// and the peer index
+	s_list_table *list;						// pointer to the respective list
+	waitTimer timer;						// config mode timeout
+} s_config_mode;
 
 
 /*
@@ -855,8 +859,7 @@ typedef struct ts_msg01xx05 {
 	uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 	uint8_t       MSG_CNL;				// by10 - message channel
 	uint8_t       BY11;					// by11 - message type
-	uint8_t       PEER_ID[3];			// by12 - peer address
-	uint8_t       PEER_CNL;				// by15 - peer channel
+	uint8_t       PEER_ID[4];			// by12 - peer address
 	uint8_t       PARAM_LIST;			// by16 - parameter list 0, 1, 3, 4, etc.
 } s_m01xx05; // CONFIG_START message
 
@@ -1297,10 +1300,10 @@ typedef struct ts_msg1004xx {
 * byte 04, SND_ID[3] - sender ID
 * byte 07, RCV_ID[3] - receiver id, broadcast for 0
 * byte 10, BY10 - message type
-* byte 11, CNL - channel
-* byte 12, STAT - device status
+* byte 11, MSG_CNL - channel
+* byte 12, MSG_STAT - device status
 * byte 13, UNKNOWN - unknown
-* byte 14, RSSI - rssi value
+* byte 14, MSG_RSSI - rssi value
 *    LEN CNT FLAG BY03 SND       RCV       By10  CNL  STATUS  UNKNOWN  RSSI
 * l> 0E  42  A0   10   23 70 D8  63 19 64  06    01   00      00       80
 */
@@ -1312,10 +1315,10 @@ typedef struct ts_msg1006xx {
 	uint8_t       SND_ID[3];			// by04 - sender ID
 	uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
 	uint8_t       BY10;					// by10 - message type
-	uint8_t       CNL;					// by11 - channel
-	uint8_t       STAT;					// by12 - status
+	uint8_t       MSG_CNL;				// by11 - channel
+	uint8_t       MSG_STAT;				// by12 - status
 	uint8_t       UNKNOWN;				// by13 - unknown
-	uint8_t	      RSSI;					// by14 - rssi value
+	uint8_t	      MSG_RSSI;				// by14 - rssi value
 } s_m1006xx; // INFO_ACTUATOR_STATUS message
 
 /*
@@ -1755,6 +1758,46 @@ typedef struct ts_send {
 	union {
 		uint8_t buf[MaxDataLen];		// initial buffer for messages to send
 		s_mBody mBody;					// struct on buffer for easier data access
+		s_m00xxxx m00xxxx;				// DEVICE_INFO
+		s_m01xx01 m01xx01;				// CONFIG_PEER_ADD
+		s_m01xx02 m01xx02;				// CONFIG_PEER_REMOVE
+		s_m01xx03 m01xx03;				// CONFIG_PEER_LIST_REQ
+		s_m01xx04 m01xx04;				// CONFIG_PARAM_REQ
+		s_m01xx05 m01xx05;				// CONFIG_START
+		s_m01xx06 m01xx06;				// CONFIG_END
+		s_m01xx07 m01xx07;				// CONFIG_WRITE_INDEX1
+		s_m01xx08 m01xx08;				// CONFIG_WRITE_INDEX2
+		s_m01xx09 m01xx09;				// CONFIG_SERIAL_REQ
+		s_m01xx0a m01xx0a;				// CONFIG_PAIR_SERIAL
+		s_m01xx0e m01xx0e;				// CONFIG_STATUS_REQUEST
+		s_m0200xx m0200xx;				// ACK message
+		s_m0201xx m0201xx;				// ACK_STATUS message
+		s_m0202xx m0202xx;				// ACK2 message
+		s_m0204xx m0204xx;				// AES_REQ message
+		s_m0280xx m0280xx;				// NACK message
+		s_m0284xx m0284xx;				// NACK_TARGET_INVALID message
+		s_m02ffxx m02ffxx;				// ACK_NACK_UNKNOWN message
+		s_m1000xx m1000xx;				// INFO_SERIAL message
+		s_m1001xx m1001xx;				// INFO_PEER_LIST message
+		s_m1002xx m1002xx;				// INFO_PARAM_RESPONSE_PAIRS message
+		s_m1003xx m1003xx;				// INFO_PARAM_RESPONSE_SEQ message
+		s_m1004xx m1004xx;				// INFO_PARAMETER_CHANGE message
+		s_m1006xx m1006xx;				// INFO_ACTUATOR_STATUS message
+		s_m100axx m100axx;				// INFO_TEMP message
+		s_m1100xx m1100xx;				// INSTRUCTION_INHIBIT_OFFINSTRUCTION_INHIBIT_OFF message
+		s_m1101xx m1101xx;				// INSTRUCTION_INHIBIT_ON message
+		s_m1102xx m1102xx;				// INSTRUCTION_SET message
+		s_m1103xx m1103xx;				// INSTRUCTION_STOP_CHANGE message
+		s_m1104xx m1104xx;				// INSTRUCTION_RESET message
+		s_m1180xx m1180xx;				// INSTRUCTION_LED message
+		s_m1181xx m1181xx;				// INSTRUCTION_LEVEL message
+		s_m1182xx m1182xx;				// INSTRUCTION_SLEEPMODE message
+		s_m1183xx m1183xx;				// INSTRUCTION_ENTER_BOOTLOADER message
+		s_m1186xx m1186xx;				// INSTRUCTION_SET_TEMP message
+		s_m1187xx m1187xx;				// INSTRUCTION_ADAPTION_DRIVE_SET message
+		s_m11caxx m11caxx;				// INSTRUCTION_ENTER_BOOTLOADER2 message
+
+		s_m3Exxxx m3Exxxx;				// SWITCH message
 	};
 	uint8_t   prev_buf[32];				// store the last receive message to verify with AES signed data.
 
@@ -1825,6 +1868,7 @@ typedef struct ts_config_list_answer_slice {
 	s_list_table *list;					// pointer to the respective list table for answering the request
 	uint8_t peer_idx;					// peer index if a list3 or 4 is requested
 	s_peer_table *peer;					// pointer to the peer table in case in is a PEER_LIST answer
+	waitTimer timer;					// give the master some time, otherwise we need to resend
 } s_config_list_answer_slice;
 
 

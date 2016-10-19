@@ -24,12 +24,12 @@ public:		//---------------------------------------------------------------------
 	SN();																	// constructor
 	void poll(void);														// poll function, process if something is to send
 
-	void process_config_list_answer_slice(void);							// slive wise send function for list requests
+	void process_config_list_answer_slice(void);							// slice wise send function for list requests
 
-	//void prep_msg(MSG_REASON::E reason, MSG_INTENT::E intent, MSG_TYPE::E type, uint8_t len, uint8_t max_retr);
 
 };
 
+extern s_config_list_answer_slice config_list_answer_slice;
 
 /*
 * @brief Struct to hold the buffer for any string to send with some flags for further processing

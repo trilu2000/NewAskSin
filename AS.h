@@ -50,19 +50,6 @@
 class AS {
 public:		//-------------------------------------------------------------------------------------------------------------
 
-	struct s_stcSlice {						// - send peers or reg in slices, store for send slice function
-		uint8_t active;						// indicates status of poll routine, 1 is active
-		uint8_t peer;						// is it a peer list message
-		uint8_t reg2;						// or a register send
-		uint8_t reg3;						// not implemented at the moment
-		uint8_t totSlc;						// amount of necessary slices to send content
-		uint8_t curSlc;						// counter for slices which are already send
-		uint8_t cnl;						// indicates channel
-		uint8_t lst;						// the respective list
-		uint8_t idx;						// the peer index
-		uint8_t mCnt;						// the message counter
-		uint8_t toID[3];					// to whom to send
-	} stcSlice;
 
 	struct s_stcPeer {
 		uint8_t active;//    :1;			// indicates status of poll routine, 1 is active
@@ -231,7 +218,7 @@ public:		//---------------------------------------------------------------------
 	void send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id);
 	void send_INFO_PARAM_RESPONSE_SEQ(uint8_t cnl, uint8_t lst, uint8_t *peer_id);
 	void send_INFO_PARAMETER_CHANGE();
-	void send_INFO_ACTUATOR_STATUS();
+	void send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag);
 	void send_INFO_TEMP();
 
 	//void send_INSTRUCTION_INHIBIT_OFF();													// not needed in client communication to send
@@ -266,9 +253,11 @@ public:		//---------------------------------------------------------------------
 
 
 
-	void sendPayload(uint8_t payloadType, uint8_t *data, uint8_t dataLen);
+
+
+
+
 	inline void sendAckAES(uint8_t *data);
-	void sendINFO_ACTUATOR_STATUS(uint8_t channel, uint8_t state, uint8_t flag);
 	void sendINFO_POWER_EVENT(uint8_t *data);
 	void sendINFO_TEMP(void);
 	void sendHAVE_DATA(void);
@@ -282,7 +271,6 @@ public:		//---------------------------------------------------------------------
 	void sendWeatherEvent(void);
 	void sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload);
 
-	void processMessageConfigAction(uint8_t by10, uint8_t cnl1);
 	void processMessageAction11();
 	void processMessageAction3E(uint8_t cnl, uint8_t pIdx);
 	void deviceReset(uint8_t clearEeprom);
@@ -295,37 +283,22 @@ public:		//---------------------------------------------------------------------
 
   //private:		//---------------------------------------------------------------------------------------------------------
 
-	inline void processMessageSwitchEvent();
+	//inline void processMessageSwitchEvent();
 
 	inline void processMessageResponseAES_Challenge(void);
 	inline void processMessageResponseAES(void);
 	inline void processMessageKeyExchange(void);
 	uint8_t checkAnyChannelForAES(void);
 
-	uint8_t processMessageConfig();
-	inline void processMessageConfigStatusRequest(uint8_t by10);
-	inline void processMessageConfigPairSerial(void);
-	inline void processMessageConfigSerialReq(void);
-	inline void processMessageConfigParamReq(void);
-	//inline void processMessageConfigPeerListReq(void);
 	inline void processMessageConfigAESProtected();
 
-	inline void actionSwitchEvent();
-	inline void configStart();
-	inline void configEnd();
-	inline void configWriteIndex(void);
 
 	// - poll functions --------------------------------
-	inline void sendSliceList(void);															// scheduler to send config messages, peers and regs
 	inline void sendPeerMsg(void);																// scheduler for peer messages
 	void preparePeerMessage(uint8_t *xPeer, uint8_t retr);
 			
 
 	// - send functions --------------------------------
-	inline void sendINFO_SERIAL(void);
-	inline void sendINFO_PEER_LIST(uint8_t len);
-	inline void sendINFO_PARAM_RESPONSE_PAIRS(uint8_t len);
-	void sendINFO_PARAM_RESPONSE_SEQ(uint8_t len);
 	void sendINFO_PARAMETER_CHANGE(void);
 
 	void prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr);
@@ -344,6 +317,8 @@ public:		//---------------------------------------------------------------------
 
 
 };
+
+extern s_config_list_answer_slice config_list_answer_slice;
 
 /*
 * @brief Struct to hold the buffer for any send or received string with some flags for further processing

@@ -52,7 +52,7 @@ public://-----------------------------------------------------------------------
 	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
 
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
-	virtual void request_pair_status(void);													// event on status request
+	//virtual void request_pair_status(void);													// event on status request
 
 	void poll(void);																		// poll function, driven by HM loop
 	virtual void cm_poll(void) {}															// poll function for channel modules to overwrite
@@ -67,7 +67,6 @@ public://-----------------------------------------------------------------------
 
 };
 
-extern s_config_list_answer_slice config_list_answer_slice;
 
 /* as there is no way to get the channel by setting up the pointer array for channel modules we use this
 *  byte to identify the channel we are actually setting up, increased in the constructor...
