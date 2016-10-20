@@ -191,71 +191,11 @@ void AS::poll(void) {
 * 
 */
 void AS::processMessage(void) {
-	/* first we sort out the message on base of the type in byte 03 */
-	if        (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::DEVICE_INFO)) {
-		/* not sure what to do with while received */
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) {
-		/* config request messages are used to configure a devive by writing registers and peers -
-		*  find the right channel and forward for processing to cmMaster.
-		*  check upfront the channel in byte 10 if it is out of range */
-
-		uint8_t cnl = rcv_msg.mBody.BY10;													// shorthand to channel information
-		if (cnl >= cnl_max) {																// check if channel is in the range
-			rcv_msg.clear();																// nothing to do any more
-			DBG(AS, F("channel out of range "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
-			return;																			// no further processing needed
-		}
-
-		cmMaster *pCM = ptr_CM[cnl];														// short hand to respective channel module
-		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
-
-		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       CONFIG_PEER_ADD((s_m01xx01*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    CONFIG_PEER_REMOVE((s_m01xx02*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  CONFIG_PEER_LIST_REQ((s_m01xx03*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      CONFIG_PARAM_REQ((s_m01xx04*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          CONFIG_START((s_m01xx05*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            CONFIG_END((s_m01xx06*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   CONFIG_WRITE_INDEX1((s_m01xx07*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   CONFIG_WRITE_INDEX2((s_m01xx08*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     CONFIG_SERIAL_REQ((s_m01xx09*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    CONFIG_PAIR_SERIAL((s_m01xx0a*)rcv_msg.buf);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST((s_m01xx0e*)rcv_msg.buf);
-		else {
-			dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
-			DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
-		}
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::ACK_MSG)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::AES_REPLY)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SEND_AES)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REPLY_MSG)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::INSTRUCTION_MSG)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::HAVE_DATA)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SWITCH)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::TIMESTAMP)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REMOTE)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SENSOR_EVENT)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SWITCH_LEVEL)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SENSOR_DATA)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::GAS_EVENT)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CLIMATE_EVENT)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SET_TEAM_TEMP)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::THERMAL_CONTROL)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::POWER_EVENT)) {
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::WEATHER_EVENT)) {
-	} else {
-		dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
-		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
+	for (uint8_t i = 0; i < cnl_max; i++) {
+		ptr_CM[i]->processMessage();
 	}
+
+
 
 
 
@@ -293,7 +233,7 @@ void AS::processMessage(void) {
 		* In exception of AS_RESPONSE_AES_CHALLANGE message, we set retrCnt to 0xFF
 		*/
 		if ((snd_msg.active) && (rcv_msg.mBody.MSG_CNT == snd_msg.temp_MSG_CNT) && (rcv_msg.mBody.BY10 != AS_RESPONSE_AES_CHALLANGE)) {
-			snd_msg.retr_cnt = 0xFF;
+			//snd_msg.retr_cnt = 0xFF;
 		}
 
 		if (rcv_msg.mBody.BY10 == AS_RESPONSE_ACK) {
@@ -519,183 +459,11 @@ void AS::processMessage(void) {
 
 
 
-/*
-* @brief Adds one or two peers to a channel
-* CONFIG_PEER_ADD message is send by the HM master to combine two client devices
-* request is forwarded by the AS:processMessage function
-*/
-inline void AS::CONFIG_PEER_ADD(s_m01xx01 *buf) {
-	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
-	s_peer_table *peerDB = &ptr_CM[buf->MSG_CNL]->peerDB;									// short hand to the respective peer table
-	s_list_table *listP = &ptr_CM[buf->MSG_CNL]->lstP;										// short hand to the list table
-	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting 
 
-	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
-		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry 
 
-		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
-		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
 
-		uint8_t idx = peerDB->get_idx(temp_peer);											// search if we have already the peer in the database
-		if (idx == 0xff) idx = peerDB->get_free_slot();										// not in the in the database, search a free slot
 
-		if (idx != 0xff) {																	// free slot available
-			peerDB->set_peer(idx, temp_peer);												// write the peer into the database
 
-			listP->load_default();															// copy the defaults from progmem into the peer list, index doesn't matter
-			ptr_CM[buf->MSG_CNL]->request_peer_defaults(idx, buf);							// ask the channel module to load the defaults
-			listP->save_list(idx);															// and save the list, index is important while more choices in the peer table
-			ret_byte++;																		// increase success
-		}
-	}
-	ptr_CM[buf->MSG_CNL]->info_peer_add(buf);												// inform the user module of the added peer
-
-	DBG(AS, F("AS:CONFIG_PEER_ADD, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
-	check_send_ACK_NACK(ret_byte);
-}
-
-/*
-* @brief Removes one or two peers from a channel
-* CONFIG_PEER_REMOVE message is send by the HM master to remove the binding of two client devices
-* request is forwarded by the AS:processMessage function
-*/
-inline void AS::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
-	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
-	s_peer_table *peerDB = &ptr_CM[buf->MSG_CNL]->peerDB;									// short hand to the respective peer table
-	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting 
-
-	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
-		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry 
-
-		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
-		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
-		uint8_t idx = peerDB->get_idx(temp_peer);											// find the peer in the database
-
-		if (idx != 0xff) {																	// found it
-			peerDB->clear_peer(idx);														// delete the peer in the database
-			ret_byte++;																		// increase success
-		}
-	}
-	DBG(AS, F("AS:CONFIG_PEER_REMOVE, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n');
-	check_send_ACK_NACK(ret_byte);
-}
-
-/*
-* @brief Requests a listing of all registered peers from a specific channel
-* CONFIG_PEER_LIST_REQ message is send by the HM master to get information which peers are known at the client device.
-* This type of message can't be answered within one string, therefor we send an ACK on the initial list request
-* and prepare a struct with the required information to process it further in a seperate function call
-* request is forwarded by the AS:processMessage function
-*/
-inline void AS::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
-	send_ACK();
-	send_INFO_PEER_LIST(buf->MSG_CNL);
-}
-
-/*
-* @brief Requests a listing of all values in a list from a specific channel
-* CONFIG_PARAM_REQ message is send by the HM master to get information which list values are stored at the client device.
-* This type of message can't be answered within one string, therefor we send an ACK on the initial list request
-* and prepare a struct with the required information to process it further in a seperate function call
-* request is forwarded by the AS:processMessage function
-*/
-inline void AS::CONFIG_PARAM_REQ(s_m01xx04 *buf) {
-	send_ACK();
-	send_INFO_PARAM_RESPONSE_PAIRS(buf->MSG_CNL, buf->PARAM_LIST, buf->PEER_ID);
-}
-
-/* 
-* @brief HM protocol indicates changes to any list by a config start request
-* Within this message we find the channel, the respective list and the peer address to evaluate the index
-* if we have to write a list3 or 4. Within the write index we will find only the channel where to write,
-* all other information we need to save somewhere to remember on.
-* Message description:
-*             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
-* 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
-*/
-inline void AS::CONFIG_START(s_m01xx05 *buf) {
-	s_config_mode *cm = &config_mode;														// short hand to config mode struct
-	cm->list = ptr_CM[buf->MSG_CNL]->list[buf->PARAM_LIST];									// short hand to the list table
-	
-	cm->idx_peer = ptr_CM[buf->MSG_CNL]->peerDB.get_idx(buf->PEER_ID);						// try to get the peer index
-
-	if ((cm->list) && (cm->idx_peer != 0xff)) {												// list and peer index found
-		cm->timer.set(2000);																// set timeout time, otherwise the channel will be open for write forever
-		cm->active = 1;																		// set active 
-		send_ACK();																			// send back that everything is ok
-		// TODO: set message id flag to config in send module
-	} else {
-		send_NACK();																		// something wrong
-	}
-	DBG(AS, F("AS:CONFIG_START, cnl:"), buf->MSG_CNL, '/', cm->list->cnl, F(", lst:"), buf->PARAM_LIST, '/', cm->list->cnl, F(", peer:"), _HEX(buf->PEER_ID, 4), F(", idx:"), cm->idx_peer, '\n');
-}
-
-/*
-* @brief Config end indicates that changes are written to the respective list and no access is needed any more
-* Within this function we call the respective channel module and inform of a change in any list
-* Message description:
-*             Sender__ Receiver    Channel
-* 10 04 A0 01 63 19 63 01 02 04 01 06
-*/
-inline void AS::CONFIG_END(s_m01xx06 *buf) {
-	s_config_mode *cm = &config_mode;														// short hand to config mode struct
-	cm->timer.set(0);																		// clear the timer
-	cm->active = 0;																			// clear the flag
-	send_ACK();																				// send back that everything is ok
-
-	if (cm->cnl < 2) cm->list->load_list(cm->idx_peer);										// reload list0 or 1
-	if (cm->cnl < 2) ptr_CM[cm->cnl]->info_config_change();									// inform the channel module on a change of list0 or 1
-	// TODO: remove message id flag to config in send module
-	DBG(AS, F("AS:CONFIG_END, cnl:"), buf->MSG_CNL, '\n');
-}
-
-// todo: implement
-inline void AS::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
-	// todo: implement
-}
-
-/*
-* @brief config write index writes new content to specific list values
-* Format is 02 00 03 ff where 02 and 03 is the register address and 00 and ff is the content
-* list has to be enabled by a config start message and closed with a config end message
-* Message description:
-*             Sender__ Receiver        Channel ConfigData: Register:BytePairs
-* 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
-*/
-inline void AS::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
-	s_config_mode *cm = &config_mode;														// short hand to config mode struct
-
-	if ((cm->active) && (cm->cnl == buf->MSG_CNL)) {										// check if we are in config mode and if the channel fit
-		cm->list->write_array(buf->DATA, buf->MSG_LEN - 11, cm->idx_peer);					// write the array into the list
-		DBG(AS, F("AS:CONFIG_WRITE_INDEX2, cnl:"), buf->MSG_CNL, F(", lst:"), cm->lst, F(", idx:"), cm->idx_peer, '\n');
-		send_ACK();																			// we are fine
-	} else send_NACK();
-}
-
-/*
-* @brief Process message CONFIG_SERIAL_REQ.
-*
-* Message description:
-*             Sender__ Receiver
-* 0B 77 A0 01 63 19 63 01 02 04 00 09
-*/
-inline void AS::CONFIG_SERIAL_REQ(s_m01xx09 *buf) {
-	send_INFO_SERIAL();
-}
-
-/*
-* @brief Process message CONFIG_PAIR_SERIAL
-*
-* Message description:
-*             Sender__ Receiver       SerialNumber
-* 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
-*/
-inline void AS::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
-	DBG(AS, F("AS:CONFIG_PAIR_SERIAL, cnl:"), _HEX(buf->SERIALNO,10), '\n');
-
-	if (isEqual(buf->SERIALNO, dev_ident.SERIAL_NR, 10)) 									// compare serial and send device info
-		send_DEVICE_INFO(MSG_REASON::ANSWER);
-}
 
 
 /* ------------------------------------------------------------------------------------------------------------------------

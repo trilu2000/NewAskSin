@@ -61,31 +61,79 @@ public://-----------------------------------------------------------------------
 
 	/* receive functions to handle requests forwarded by AS:processMessage 
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */
-	virtual void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);
 
-	virtual void INSTRUCTION_INHIBIT_OFF();	
-	virtual void INSTRUCTION_INHIBIT_ON();	
-	virtual void INSTRUCTION_SET();	
-	virtual void INSTRUCTION_STOP_CHANGE();	
-	virtual void INSTRUCTION_LED();	
-	virtual void INSTRUCTION_LED_ALL();	
-	virtual void INSTRUCTION_LEVEL();	
-	virtual void INSTRUCTION_SET_TEMP();
-	virtual void INSTRUCTION_ADAPTION_DRIVE_SET();
+	/* - receive functions ------------------------------------------------------------------------------------------------
+	* @brief Received messages are stored and prepared in the rcv_msg struct. AS:poll is calling while rcv_msg.active
+	* is set to 1. All receive functions are handled within the AS class - some forwarded to the channel module class.
+	* The intent is to overload them there by the respective user channel module and work with the information accordingly.
+	*/
+	void processMessage(void);
 
-	virtual void SWITCH();	
-	virtual void TIMESTAMP();
-	virtual void REMOTE();	
-	virtual void SENSOR_EVENT();
-	virtual void SWITCH_LEVEL();
-	virtual void SENSOR_DATA();
-	virtual void GAS_EVENT();
-	virtual void CLIMATE_EVENT(); 
-	virtual void SET_TEAM_TEMP();
-	virtual void THERMAL_CONTROL();
-	virtual void POWER_EVENT_CYCLE();
-	virtual void POWER_EVENT();
-	virtual void WEATHER_EVENT();
+	//void DEVICE_INFO(s_m00xxxx *buf);														// in client comms not needed as receive function
+
+	void CONFIG_PEER_ADD(s_m01xx01 *buf);													// mainly all needed to set or get information
+	void CONFIG_PEER_REMOVE(s_m01xx02 *buf);												// for the defined device. all requests are
+	void CONFIG_PEER_LIST_REQ(s_m01xx03 *buf);												// handled within the cmMaster class
+	void CONFIG_PARAM_REQ(s_m01xx04 *buf);
+	void CONFIG_START(s_m01xx05 *buf);
+	void CONFIG_END(s_m01xx06 *buf);
+	void CONFIG_WRITE_INDEX1(s_m01xx07 *buf);
+	void CONFIG_WRITE_INDEX2(s_m01xx08 *buf);
+	void CONFIG_SERIAL_REQ(s_m01xx09 *buf);
+	void CONFIG_PAIR_SERIAL(s_m01xx0a *buf);
+	virtual void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);										// to be overwritten by a user specific channel module
+
+	void ACK(s_m0200xx *buf);																// at the moment we need the ACK only to avoid
+	void ACK_STATUS(s_m0201xx *buf);														// resends in the send class, but here we can make it virtual
+	void ACK2(s_m0202xx *buf);																// to use it by the channel modules
+	void AES_REQ(s_m0204xx *buf);
+	void NACK(s_m0280xx *buf);
+	void NACK_TARGET_INVALID(s_m0284xx *buf);
+	void ACK_NACK_UNKNOWN(s_m02xxxx *buf);
+
+	void AES_REPLY(s_m03xxxx *buf);
+
+	void SEND_AES_TO_HMLAN(s_m0401xx *buf);
+	void SEND_AES_TO_ACTOR(s_m04xxxx *buf);
+
+	//void INFO_SERIAL(s_m1000xx *buf);														// in client communication only as
+	//void INFO_PEER_LIST(s_m1001xx *buf);													// send functions required
+	//void INFO_PARAM_RESPONSE_PAIRS(s_m1002xx *buf);
+	//void INFO_PARAM_RESPONSE_SEQ(s_m1003xx *buf);
+	//void INFO_PARAMETER_CHANGE(s_m1004xx *buf);
+	//void INFO_ACTUATOR_STATUS(s_m1006xx *buf);
+	//void INFO_TEMP(s_m100axx *buf);
+
+	virtual void INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf);									// forwarded to ptr_CM
+	virtual void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);									// forwarded to ptr_CM
+	virtual void INSTRUCTION_SET(s_m1102xx *buf);											// forwarded to ptr_CM
+	virtual void INSTRUCTION_STOP_CHANGE(s_m1103xx *buf);									// forwarded to ptr_CM
+	virtual void INSTRUCTION_RESET(s_m1104xx *buf);
+	virtual void INSTRUCTION_LED(s_m1180xx *buf);											// forwarded to ptr_CM
+	virtual void INSTRUCTION_LED_ALL(s_m1181xx *buf);										// forwarded to ptr_CM
+	virtual void INSTRUCTION_LEVEL(s_m1181xx *buf);											// forwarded to ptr_CM
+	virtual void INSTRUCTION_SLEEPMODE(s_m1182xx *buf);
+	void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
+	virtual void INSTRUCTION_SET_TEMP(s_m1186xx *buf);										// to be evaluated
+	virtual void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);							// no idea about this message
+	void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
+
+	void HAVE_DATA(s_m12xxxx *buf);
+
+	virtual void SWITCH(s_m3Exxxx *buf);													// peer related communication
+	virtual void TIMESTAMP(s_m3fxxxx *buf);													// needed as send and receive function,
+	virtual void REMOTE(s_m40xxxx *buf);													// but all channel module related
+	virtual void SENSOR_EVENT(s_m41xxxx *buf);												// all forwarded to ptr_CM
+	virtual void SWITCH_LEVEL(s_m42xxxx *buf);
+	virtual void SENSOR_DATA(s_m53xxxx *buf);
+	virtual void GAS_EVENT(s_m54xxxx *buf);
+	virtual void CLIMATE_EVENT(s_m58xxxx *buf);
+	virtual void SET_TEAM_TEMP(s_m59xxxx *buf);
+	virtual void THERMAL_CONTROL(s_m5axxxx *buf);
+	virtual void POWER_EVENT_CYCLE(s_m5exxxx *buf);
+	virtual void POWER_EVENT(s_m5fxxxx *buf);
+	virtual void WEATHER_EVENT(s_m70xxxx *buf);
+
 
 
 };

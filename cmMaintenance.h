@@ -33,6 +33,7 @@ public:  //---------------------------------------------------------------------
 	//virtual void cm_poll(void);															// poll function, driven by HM loop
 
 
+
 };
 
 extern const uint8_t cmMaintenance_ChnlLen;

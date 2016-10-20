@@ -37,9 +37,9 @@ cmSwitch::cmSwitch(const uint8_t peer_max) : cmMaster(peer_max) {
 	lstP.val = new uint8_t[lstP.len];
 
 
-	l1 = (s_l1*)&lstC.val;																	// set list structures to something useful
-	l3 = (s_l3*)&lstP.val;																	// reduced l3, description in cmSwitch.h at struct declaration
-	l3F = (s_lstPeer*)&lstP.val;
+	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
+	l3 = (s_l3*)lstP.val;																	// reduced l3, description in cmSwitch.h at struct declaration
+	l3F = (s_lstPeer*)lstP.val;
 
 	l3->ACTION_TYPE = ACTION::INACTIVE;														// and secure that no action will happened in polling function
 	active_tr11 = 0;

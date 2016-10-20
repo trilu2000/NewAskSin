@@ -111,70 +111,7 @@ public:		//---------------------------------------------------------------------
 	*/
 	void processMessage(void);
 
-	//void DEVICE_INFO(s_m00xxxx *buf);														// in client comms not needed as receive function
 
-	inline void CONFIG_PEER_ADD(s_m01xx01 *buf);											// mainly all needed to set or get information
-	inline void CONFIG_PEER_REMOVE(s_m01xx02 *buf);											// for the defined device. all requests are
-	inline void CONFIG_PEER_LIST_REQ(s_m01xx03 *buf);										// handled within AS main class
-	inline void CONFIG_PARAM_REQ(s_m01xx04 *buf);
-	inline void CONFIG_START(s_m01xx05 *buf);
-	inline void CONFIG_END(s_m01xx06 *buf);
-	inline void CONFIG_WRITE_INDEX1(s_m01xx07 *buf);
-	inline void CONFIG_WRITE_INDEX2(s_m01xx08 *buf);
-	inline void CONFIG_SERIAL_REQ(s_m01xx09 *buf);
-	inline void CONFIG_PAIR_SERIAL(s_m01xx0a *buf);
-	//void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);											// forwarded to ptr_CM
-
-	inline void ACK(s_m0200xx *buf);														// all different types of ACK are a response
-	inline void ACK_STATUS(s_m0201xx *buf);													// to previous send messages, handled via  
-	inline void ACK2(s_m0202xx *buf);														// AS main class only
-	inline void AES_REQ(s_m0204xx *buf);
-	inline void NACK(s_m0280xx *buf);
-	inline void NACK_TARGET_INVALID(s_m0284xx *buf);
-	inline void ACK_NACK_UNKNOWN(s_m02ffxx *buf);
-
-	inline void AES_REPLY();
-
-	inline void SEND_AES_TO_HMLAN();
-	inline void SEND_AES_TO_ACTOR();
-	
-	//void INFO_SERIAL();																	// in client communication only as
-	//void INFO_PEER_LIST();																// send functions required
-	//void INFO_PARAM_RESPONSE_PAIRS();
-	//void INFO_PARAM_RESPONSE_SEQ();
-	//void INFO_PARAMETER_CHANGE();
-	//void INFO_ACTUATOR_STATUS();
-	//void INFO_TEMP();
-
-	//void INSTRUCTION_INHIBIT_OFF();														// forwarded to ptr_CM
-	//void INSTRUCTION_INHIBIT_ON();														// forwarded to ptr_CM
-	//void INSTRUCTION_SET();																// forwarded to ptr_CM
-	//void INSTRUCTION_STOP_CHANGE();														// forwarded to ptr_CM
-	inline void INSTRUCTION_RESET();
-	//void INSTRUCTION_LED();																// forwarded to ptr_CM
-	//void INSTRUCTION_LED_ALL();															// forwarded to ptr_CM
-	//void INSTRUCTION_LEVEL();																// forwarded to ptr_CM
-	inline void INSTRUCTION_SLEEPMODE();
-	inline void INSTRUCTION_ENTER_BOOTLOADER();
-	//void INSTRUCTION_SET_TEMP();															// forwarded to ptr_CM
-	//void INSTRUCTION_ADAPTION_DRIVE_SET();												// forwarded to ptr_CM
-	inline void INSTRUCTION_ENTER_BOOTLOADER2();
-
-	void HAVE_DATA();
-
-	//void SWITCH();																		// peer related communication
-	//void TIMESTAMP();																		// needed as send and receive function,
-	//void REMOTE();																		// but all channel module related
-	//void SENSOR_EVENT();																	// all forwarded to ptr_CM
-	//void SWITCH_LEVEL();
-	//void SENSOR_DATA();
-	//void GAS_EVENT();
-	//void CLIMATE_EVENT(); ,
-	//void SET_TEAM_TEMP();
-	//void THERMAL_CONTROL();
-	//void POWER_EVENT_CYCLE();
-	//void POWER_EVENT();
-	//void WEATHER_EVENT();
 
 
 
