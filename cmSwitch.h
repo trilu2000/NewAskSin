@@ -112,9 +112,12 @@ public:  //---------------------------------------------------------------------
 
 	cmSwitch(const uint8_t peer_max);														// constructor
 
-	uint8_t   active_tr11;																	// trigger 11 active
-	uint8_t   value_tr11;																	// trigger 11 set value
-	uint16_t  rampTme, duraTme;																// time store for trigger 11
+	struct s_tr11 {
+		uint8_t  active;																	// trigger 11 active
+		uint8_t  value;																		// trigger 11 set value
+		uint16_t ramp_time;																	// time store for trigger 11
+		uint16_t dura_time;																
+	} tr11;
 
 	uint8_t   cnt;																			// message counter for type 40 message
 	uint8_t   curStat, nxtStat;																// current state and next state
@@ -129,24 +132,21 @@ public:  //---------------------------------------------------------------------
 	uint8_t   modDUL;																		// module down up low battery byte
 
 
-	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// what happens while a trigger11 message arrive
-	virtual void message_trigger3E(uint8_t msgLng, uint8_t msgCnt);							// same for switch messages
-	virtual void message_trigger40(uint8_t msgLng, uint8_t msgCnt);							// same for peer messages
-	virtual void message_trigger41(uint8_t msgLng, uint8_t msgCnt, uint8_t msgVal);			// same for sensor messages
-
 	inline void adjustStatus(void);															// setting of relay status
 	inline void sendStatus(void);															// help function to send status messages
 
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
-	virtual void request_pair_status(void);													// event on status request
 
 	virtual void cm_poll(void);																// poll function, driven by HM loop
 	virtual void set_toggle(void);															// toggle the module initiated by config button
 
 	/* receive functions to handle requests forwarded by AS:processMessage
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */
-	virtual void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);
-
+	virtual void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);										// master is asking for channel status
+	virtual void INSTRUCTION_SET(s_m1102xx *buf);											// master wants to set channel status
+	virtual void SWITCH(s_m3Exxxx *buf);													// switch message from master to test a peer setup
+	virtual void REMOTE(s_m40xxxx *buf);													// remote peer message
+	virtual void SENSOR_EVENT(s_m41xxxx *buf);												// sensor peer message
 
 };
 

@@ -43,14 +43,8 @@ public://-----------------------------------------------------------------------
 
 	cmMaster(const uint8_t peer_max);														// constructor
 
-	virtual void message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime);	// pair set message
-	virtual void message_trigger3E(uint8_t msgLng, uint8_t msgCnt);							// switch message, also config test button in HM
-	virtual void message_trigger40(uint8_t msgLng, uint8_t msgCnt);							// remote messages from peer
-	virtual void message_trigger41(uint8_t msgLng, uint8_t msgCnt, uint8_t msgVal);			// sensor messages from peer
-
 	virtual void info_config_change(void);													// list1 on registered channel had changed
 	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
-
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
 	void poll(void);																		// poll function, driven by HM loop
@@ -67,7 +61,6 @@ public://-----------------------------------------------------------------------
 	* is set to 1. All receive functions are handled within the AS class - some forwarded to the channel module class.
 	* The intent is to overload them there by the respective user channel module and work with the information accordingly.
 	*/
-	void processMessage(void);
 
 	//void DEVICE_INFO(s_m00xxxx *buf);														// in client comms not needed as receive function
 
@@ -104,18 +97,18 @@ public://-----------------------------------------------------------------------
 	//void INFO_ACTUATOR_STATUS(s_m1006xx *buf);
 	//void INFO_TEMP(s_m100axx *buf);
 
-	virtual void INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf);									// forwarded to ptr_CM
-	virtual void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);									// forwarded to ptr_CM
-	virtual void INSTRUCTION_SET(s_m1102xx *buf);											// forwarded to ptr_CM
-	virtual void INSTRUCTION_STOP_CHANGE(s_m1103xx *buf);									// forwarded to ptr_CM
+	virtual void INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf);
+	virtual void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);
+	virtual void INSTRUCTION_SET(s_m1102xx *buf);
+	virtual void INSTRUCTION_STOP_CHANGE(s_m1103xx *buf);
 	virtual void INSTRUCTION_RESET(s_m1104xx *buf);
-	virtual void INSTRUCTION_LED(s_m1180xx *buf);											// forwarded to ptr_CM
-	virtual void INSTRUCTION_LED_ALL(s_m1181xx *buf);										// forwarded to ptr_CM
-	virtual void INSTRUCTION_LEVEL(s_m1181xx *buf);											// forwarded to ptr_CM
+	virtual void INSTRUCTION_LED(s_m1180xx *buf);	
+	virtual void INSTRUCTION_LED_ALL(s_m1181xx *buf);
+	virtual void INSTRUCTION_LEVEL(s_m1181xx *buf);	
 	virtual void INSTRUCTION_SLEEPMODE(s_m1182xx *buf);
 	void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
 	virtual void INSTRUCTION_SET_TEMP(s_m1186xx *buf);										// to be evaluated
-	virtual void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);							// no idea about this message
+	void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);									// no idea about this message
 	void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
 
 	void HAVE_DATA(s_m12xxxx *buf);
@@ -133,7 +126,6 @@ public://-----------------------------------------------------------------------
 	virtual void POWER_EVENT_CYCLE(s_m5exxxx *buf);
 	virtual void POWER_EVENT(s_m5fxxxx *buf);
 	virtual void WEATHER_EVENT(s_m70xxxx *buf);
-
 
 
 };

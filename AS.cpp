@@ -191,9 +191,104 @@ void AS::poll(void) {
 * 
 */
 void AS::processMessage(void) {
-	for (uint8_t i = 0; i < cnl_max; i++) {
-		ptr_CM[i]->processMessage();
+	cmMaster *pCM;
+
+	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::DEVICE_INFO)) {
+		/* not sure what to do with while received, probably nothing */
+
+	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) {
+		/* config request messages are used to configure a devive by writing registers and peers -
+		*  check the channel and forward for processing to the respective function */
+
+		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
+		pCM = ptr_CM[rcv_msg.mBody.BY10];													// short hand to the respective channel module instance
+		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(&rcv_msg.m01xx01);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(&rcv_msg.m01xx02);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ(&rcv_msg.m01xx03);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(&rcv_msg.m01xx04);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(&rcv_msg.m01xx05);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(&rcv_msg.m01xx06);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(&rcv_msg.m01xx09);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(&rcv_msg.m01xx0a);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST(&rcv_msg.m01xx0e);
+
+	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::ACK_MSG)) {
+		/* at the moment we need the ACK message only for avoiding resends, so let the send_msg struct know about
+		*  a received ACK/NACK whatever - probably we have to change this function in the future */
+		if (rcv_msg.mBody.MSG_CNT == snd_msg.mBody.MSG_CNT) snd_msg.retr_cnt = 0xff;		// check if the message counter is similar and let the send function know
+
+	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::AES_REPLY)) {
+
+	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SEND_AES)) {
+
+	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REPLY_MSG)) {
+
+	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::INSTRUCTION_MSG)) {
+		uint8_t by10 = rcv_msg.mBody.BY10;													// short hand to byte 10 in the received string
+
+		/* not channel related, do it in any case and clear rcv_msg */
+		pCM = ptr_CM[0];																	// we will process it in AS???
+		if      (by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER))   pCM->INSTRUCTION_ENTER_BOOTLOADER(&rcv_msg.m1183xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER2))  pCM->INSTRUCTION_ENTER_BOOTLOADER2(&rcv_msg.m11caxx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_ADAPTION_DRIVE_SET)) pCM->INSTRUCTION_ADAPTION_DRIVE_SET(&rcv_msg.m1187xx);
+
+		/* everything below is channel related */
+		pCM = ptr_CM[rcv_msg.mBody.BY11];													// short hand to respective channel module instance
+		if      (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF)) pCM->INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))  pCM->INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SET))         pCM->INSTRUCTION_SET(&rcv_msg.m1102xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE)) pCM->INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_RESET))       pCM->INSTRUCTION_RESET(&rcv_msg.m1104xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LED))         pCM->INSTRUCTION_LED(&rcv_msg.m1180xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))     pCM->INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LEVEL))       pCM->INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))   pCM->INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))    pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
+
+	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::HAVE_DATA)) {
+
+	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SWITCH)) {
+		/* to process this message we need to load the right list table for the respective peer index into memory
+		* need also to find the right channel to issue the message, depending on the peer address */
+		memcpy(rcv_msg.peer, rcv_msg.m3Exxxx.PEER, 3);										// prepare a peer string
+		rcv_msg.peer[3] = rcv_msg.m3Exxxx.P_CNL;
+		rcv_msg.cnl = is_peer_valid(rcv_msg.peer);											// search for the peer channel
+		if (!rcv_msg.cnl) return;															// peer not found in any channel, return
+
+		pCM = ptr_CM[rcv_msg.cnl];															// short hand to the respective channel module
+		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
+		pCM->SWITCH(&rcv_msg.m3Exxxx);
+
+	} else if (rcv_msg.intent == MSG_INTENT::PEER) {
+		/* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
+		pCM = ptr_CM[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
+		pCM->lstP.load_list(ptr_CM[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective class 3
+		if      (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SWITCH_LEVEL))      pCM->SWITCH_LEVEL(&rcv_msg.m42xxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SENSOR_DATA))       pCM->SENSOR_DATA(&rcv_msg.m53xxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::GAS_EVENT))         pCM->GAS_EVENT(&rcv_msg.m54xxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CLIMATE_EVENT))     pCM->CLIMATE_EVENT(&rcv_msg.m58xxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SET_TEAM_TEMP))     pCM->SET_TEAM_TEMP(&rcv_msg.m59xxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::THERMAL_CONTROL))   pCM->THERMAL_CONTROL(&rcv_msg.m5axxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) pCM->POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::POWER_EVENT))       pCM->POWER_EVENT(&rcv_msg.m5fxxxx);
+		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::WEATHER_EVENT))     pCM->WEATHER_EVENT(&rcv_msg.m70xxxx);
+	} else {
+		dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
+		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
 	}
+
+	rcv_msg.clear();
+
+
+
+
+
+
 
 
 
@@ -1301,7 +1396,7 @@ void AS::processMessageAction11() {
 		//if (pModTbl->isActive) {
 		//	pModTbl->mDlgt(rcv.mBdy.mTyp, rcv.mBdy.by10, rcv.mBdy.by11, rcv_msg.buf+12, rcv.mBdy.mLen-11);
 		//}
-		ptr_CM[rcv_msg.mBody.BY11]->message_trigger11(rcv_msg.buf[12], (rcv_msg.mBody.MSG_LEN > 13) ? rcv_msg.buf + 13 : NULL, (rcv_msg.mBody.MSG_LEN > 15) ? rcv_msg.buf + 15 : NULL);
+		//ptr_CM[rcv_msg.mBody.BY11]->message_trigger11(rcv_msg.buf[12], (rcv_msg.mBody.MSG_LEN > 13) ? rcv_msg.buf + 13 : NULL, (rcv_msg.mBody.MSG_LEN > 15) ? rcv_msg.buf + 15 : NULL);
 	}
 }
 
@@ -1315,7 +1410,7 @@ void AS::processMessageAction11() {
  *
  */
 void AS::processMessageAction3E(uint8_t cnl, uint8_t peer_idx) {
-
+/*
 	cmMaster *pCM = ptr_CM[cnl];																// short hand for the channel module pointer
 	uint16_t pAddr = pCM->lstP.ee_addr + ( pCM->lstP.len * peer_idx );							// calculate the eeprom address
 	getEEPromBlock( pAddr, pCM->lstP.len, pCM->lstP.val );										// get list3 or list4 loaded into the user module
@@ -1336,7 +1431,7 @@ void AS::processMessageAction3E(uint8_t cnl, uint8_t peer_idx) {
 	if      (rcv_msg.mBody.MSG_TYP == 0x3E) pCM->message_trigger3E(sF.LONG, sF.COUNT);		// call the user module
 	else if (rcv_msg.mBody.MSG_TYP == 0x40) pCM->message_trigger40(sF.LONG, sF.COUNT);
 	else if (rcv_msg.mBody.MSG_TYP == 0x41) pCM->message_trigger41(sF.LONG, sF.COUNT, sF.VALUE);
-	else send_ACK();
+	else send_ACK();*/
 }
 
 /**

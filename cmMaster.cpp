@@ -25,23 +25,6 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 }
 
 
-void cmMaster::message_trigger11(uint8_t value, uint8_t *rampTime, uint8_t *duraTime) {
-	DBG(CM, F("CM:trigger11, setValue:"), value, F(", rampTime:"), intTimeCvt(*(uint16_t*)rampTime), F(", duraTime:"), intTimeCvt(*(uint16_t*)duraTime), '\n' );
-}
-
-void cmMaster::message_trigger3E(uint8_t msgLng, uint8_t msgCnt) {
-	DBG(CM, F("CM:trigger3E, msgLng:"), msgLng, F(", msgCnt:"), msgCnt, '\n' );
-}
-
-void cmMaster::message_trigger40(uint8_t msgLng, uint8_t msgCnt) {
-	DBG(CM, F("CM:trigger40, msgLng:"), msgLng, F(", msgCnt:"), msgCnt, '\n' );
-}
-
-void cmMaster::message_trigger41(uint8_t msgLng, uint8_t msgCnt, uint8_t msgVal) {
-	DBG(CM, F("CM:trigger41, val:"), msgLng, '\n' );
-}
-
-
 void cmMaster::info_config_change(void) {
 	DBG(CM, F("CM:config_change\n") );
 }
@@ -53,7 +36,6 @@ void cmMaster::info_config_change(void) {
 void cmMaster::info_peer_add(s_m01xx01 *buf) {
 	DBG(CM, F("CM:info_peer_add, peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n');
 }
-
 
 void cmMaster::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEXB(idx), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n' );
@@ -76,75 +58,6 @@ void cmMaster::set_toggle(void) {
 /*
 * @brief Received message handling forwarded by AS::processMessage
 */
-void cmMaster::processMessage() {
-	DBG(CM, F("CM:processMessage cnl:"), lstC.cnl, '\n');
-
-	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::DEVICE_INFO)) {
-		/* not sure what to do with while received, probably nothing */
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) {
-		/* config request messages are used to configure a devive by writing registers and peers -
-		*  check the channel and forward for processing to the respective function */
-		if (rcv_msg.mBody.BY10 != lstC.cnl) return;											// check if channel is this
-		
-		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
-		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       CONFIG_PEER_ADD(&rcv_msg.m01xx01);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    CONFIG_PEER_REMOVE(&rcv_msg.m01xx02);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  CONFIG_PEER_LIST_REQ(&rcv_msg.m01xx03);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      CONFIG_PARAM_REQ(&rcv_msg.m01xx04);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          CONFIG_START(&rcv_msg.m01xx05);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            CONFIG_END(&rcv_msg.m01xx06);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     CONFIG_SERIAL_REQ(&rcv_msg.m01xx09);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    CONFIG_PAIR_SERIAL(&rcv_msg.m01xx0a);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) CONFIG_STATUS_REQUEST(&rcv_msg.m01xx0e);
-		rcv_msg.clear();																	// progressed, so nothing to do any more
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::ACK_MSG)) {
-		/* at the moment we need the ACK message only for avoiding resends, so let the send_msg struct know about
-		*  a received ACK/NACK whatever - probably we have to change this function in the future */
-		if (rcv_msg.mBody.MSG_CNT == snd_msg.mBody.MSG_CNT) snd_msg.retr_cnt = 0xff;		// check if the message counter is similar and let the send function know
-		rcv_msg.clear();																	// progressed, so nothing to do any more
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::AES_REPLY)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SEND_AES)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REPLY_MSG)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::INSTRUCTION_MSG)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::HAVE_DATA)) {
-
-	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SWITCH)) {
-
-	} else if (rcv_msg.intent == MSG_INTENT::PEER) {
-		if (rcv_msg.cnl != lstC.cnl) return;
-
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::TIMESTAMP))         TIMESTAMP(&rcv_msg.m3fxxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REMOTE))            REMOTE(&rcv_msg.m40xxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SENSOR_EVENT))      SENSOR_EVENT(&rcv_msg.m41xxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SWITCH_LEVEL))      SWITCH_LEVEL(&rcv_msg.m42xxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SENSOR_DATA))       SENSOR_DATA(&rcv_msg.m53xxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::GAS_EVENT))         GAS_EVENT(&rcv_msg.m54xxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CLIMATE_EVENT))     CLIMATE_EVENT(&rcv_msg.m58xxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SET_TEAM_TEMP))     SET_TEAM_TEMP(&rcv_msg.m59xxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::THERMAL_CONTROL))   THERMAL_CONTROL(&rcv_msg.m5axxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::POWER_EVENT))       POWER_EVENT(&rcv_msg.m5fxxxx);
-		if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::WEATHER_EVENT))     WEATHER_EVENT(&rcv_msg.m70xxxx);
-		rcv_msg.clear();																	// progressed, so nothing to do any more
-
-	} else {
-		dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
-		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
-	}
-}
-
-
-
-
 
 /*
 * @brief Adds one or two peers to a channel
@@ -364,6 +277,7 @@ void cmMaster::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_INHIBIT_ON\n"));
 }
 void cmMaster::INSTRUCTION_SET(s_m1102xx *buf) {
+	dbg << "CM set\n";
 	DBG(CM, F("CM:INSTRUCTION_SET\n"));
 }
 void cmMaster::INSTRUCTION_STOP_CHANGE(s_m1103xx *buf) {

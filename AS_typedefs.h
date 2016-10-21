@@ -509,7 +509,7 @@ namespace MSG_TYPE {
 
 			
 		/* 0x11 ff ff ff * INSTRUCTION_MSG = 0x11, placeholder only */	
-		INSTRUCTION_MSG = 0x11ffff,
+		INSTRUCTION_MSG = 0x11ffffff,
 
 		/* 0x11 00 ff 0b * -INSTRUCTION_INHIBIT_OFF
 		*    LEN CNT FLAG BY03 SND       RCV       By10  CNL
@@ -1779,7 +1779,10 @@ typedef struct ts_msg3fxxxx {
 * byte 03, MSG_TYP - type of message
 * byte 04, SND_ID[3] - sender ID
 * byte 07, RCV_ID[3] - receiver id, broadcast for 0
-* byte 10, BLL - to be evaluated
+* byte 10, BLL - BUTTON, LONG, LOWBAT
+*      - 6bit, BUTTON, or channel
+*      - 1bit, LONG, key long pressed?
+*      - 1bit, LOWBAT
 * byte 11, COUNTER - counter from client device
 *    LEN CNT FLAG BY03 SND       RCV        BLL  COUNTER
 * l> 0B  42  A0   40   23 70 D8  63 19 64   41   22    
@@ -1791,7 +1794,11 @@ typedef struct ts_msg40xxxx {
 	uint8_t       MSG_TYP;				// by03 - type of message
 	uint8_t       SND_ID[3];			// by04 - sender ID
 	uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
-	uint8_t       BLL;					// by10 - to be evaluated
+	struct s_BLL {
+		uint8_t BUTTON : 6;
+		uint8_t LONG   : 1;
+		uint8_t LOWBAT : 1;
+	} BLL;								// by10 - button, long, lowbat
 	uint8_t       COUNTER;				// by11 - time
 } s_m40xxxx; // REMOTE message
 /*
@@ -1802,7 +1809,10 @@ typedef struct ts_msg40xxxx {
 * byte 03, MSG_TYP - type of message
 * byte 04, SND_ID[3] - sender ID
 * byte 07, RCV_ID[3] - receiver id, broadcast for 0
-* byte 10, BLL - to be evaluated
+* byte 10, BLL - BUTTON, LONG, LOWBAT
+*      - 6bit, BUTTON, or channel
+*      - 1bit, LONG, key long pressed?
+*      - 1bit, LOWBAT
 * byte 11, VALUE - sensor value
 * byte 12, COUNTER - counter from client device
 *    LEN CNT FLAG BY03 SND       RCV        BLL  VAL  COUNTER
@@ -1815,7 +1825,11 @@ typedef struct ts_msg41xxxx {
 	uint8_t       MSG_TYP;				// by03 - type of message
 	uint8_t       SND_ID[3];			// by04 - sender ID
 	uint8_t       RCV_ID[3];			// by07 - receiver id, broadcast for 0
-	uint8_t       BLL;					// by10 - to be evaluated
+	struct s_BLL {
+		uint8_t BUTTON : 6;
+		uint8_t LONG : 1;
+		uint8_t LOWBAT : 1;
+	} BLL;								// by10 - button, long, lowbat
 	uint8_t       VALUE;				// by11 - sensor value
 	uint8_t       COUNTER;				// by12 - counter
 } s_m41xxxx; // SENSOR_EVENT message
@@ -2140,7 +2154,6 @@ typedef struct ts_recv {
 	};
 	uint8_t prev_buf[27];				// store the last receive message to verify with AES signed data.
 
-	MSG_TYPE::E type;					// type of message as defined in AS_typedef
 	MSG_INTENT::E intent;				// remember the intent of the message, filled by receive class
 	uint8_t peer[4];					// peer is stored as a 4 byte array, but most messages delivers it with a seperate channel field (byte 10)
 	uint8_t cnl;						// by getting the intent the peer is checked, here we are store the channel where the peer is registered in
