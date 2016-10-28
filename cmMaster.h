@@ -16,6 +16,11 @@
 
 const uint8_t list_max = 5;
 
+namespace INFO {
+	enum E : uint8_t { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS, SND_ACTUATOR_STATUS_AGAIN };
+};
+
+
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------
 
@@ -42,6 +47,18 @@ public://-----------------------------------------------------------------------
 	s_peer_table peerDB;
 
 	cmMaster(const uint8_t peer_max);														// constructor
+																							
+	/*
+	* @brief Keep all information for sending an ACK_STATUS or INFO_ACTUATOR_STATUS at one place
+	*/
+	struct s_mod_stat {
+		uint8_t   value;																	// module status byte, needed for list3 modules to answer status requests
+		uint8_t   set_value;																// status to set on the Relay channel
+		uint8_t   flag;																		// module down up low battery byte
+		uint8_t	  message;																	// indicator for sendStatus function
+		waitTimer delay;																	// message timer for sending status
+	} cm_status;
+	inline void send_status(void);															// help function to send status messages
 
 	virtual void info_config_change(void);													// list1 on registered channel had changed
 	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel

@@ -423,15 +423,15 @@ void AS::processMessage(void) {
 
 				}
 				else if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_ACTION) {
-					processMessageAction11();
+					//processMessageAction11();
 
 				}
 				else if (rcv_msg.mBody.MSG_TYP >= AS_MESSAGE_SWITCH_EVENT) {
-					uint8_t pIdx;
-					uint8_t cnl = getChannelFromPeerDB(&pIdx);
-					if (cnl > 0) {
-						processMessageAction3E(cnl, pIdx);
-					}
+					//uint8_t pIdx;
+					//uint8_t cnl = getChannelFromPeerDB(&pIdx);
+					//if (cnl > 0) {
+						//processMessageAction3E(cnl, pIdx);
+					//}
 				}
 
 			}
@@ -481,7 +481,7 @@ void AS::processMessage(void) {
 		else {
 #endif
 
-			processMessageAction11();
+			//processMessageAction11();
 			if (rcv_msg.mBody.FLAG.BIDI || resetStatus == AS_RESET) {
 				if (resetStatus == AS_RESET) {   //(ee.getRegListIdx(1, 3) == 0xFF || resetStatus == AS_RESET) {
 					send_ACK();
@@ -524,7 +524,7 @@ void AS::processMessage(void) {
 		*/
 
 		uint8_t pIdx;
-		uint8_t cnl = getChannelFromPeerDB(&pIdx);
+		uint8_t cnl;// = getChannelFromPeerDB(&pIdx);
 
 		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rcv.mBdy.mTyp) << " by10: " << _HEXB(rcv.mBdy.by10)  << " by11: " << _HEXB(rcv.mBdy.by11) << " data: " << _HEX((rcv_msg.buf+10),(rcv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
 
@@ -539,7 +539,7 @@ void AS::processMessage(void) {
 			else {
 #endif
 
-				processMessageAction3E(cnl, pIdx);
+				//processMessageAction3E(cnl, pIdx);
 
 #ifdef SUPPORT_AES
 			}
@@ -1204,7 +1204,7 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
  *
  * @return channel number
  */
-uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
+/*uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	uint8_t cnl = 0;
 	uint8_t tmp;
 
@@ -1226,7 +1226,7 @@ uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
 	}
 
 	return cnl;
-}
+}*/
 
 #ifdef SUPPORT_AES
 	/*
@@ -1362,77 +1362,9 @@ inline void AS::processMessageConfigAESProtected() {
 
 
 
-/**
- * @brief Process all action (11) messages
- */
-void AS::processMessageAction11() {
-	if (rcv_msg.mBody.BY10 == AS_ACTION_RESET && rcv_msg.mBody.BY11 == 0x00) {								// RESET
-		/*
-		 * Message description:
-		 *             Sender__ Receiver
-		 * 0B 1C B0 11 63 19 63 1F B7 4A 04 00
-		 */
-		resetStatus = AS_RESET_CLEAR_EEPROM;													// schedule a device reset with clear eeprom
 
-	} else if (rcv_msg.mBody.BY10 == AS_ACTION_ENTER_BOOTLOADER) {								// We should enter the Bootloader
-		dbg << "AS_ACTION_ENTER_BOOTLOADER\n";
-		/*
-		 * Message description:
-		 *             Sender__ Receiver
-		 * 0B 1C B0 11 63 19 63 1F B7 4A CA
-		 */
-		resetStatus = AS_RESET;																	// schedule a device reset without eeprom
-		rcv_msg.mBody.FLAG.BIDI = 1;
 
-	} else {
-		/*
-		 * All other action types like STOP_CHANGE, LED, LEDALL, LEVEL, SLEEPMODE and do on
-		 *
-		 * Message description:
-		 *             Sender__ Receiver type actionType channel data
-		 * 0E 5E B0 11 63 19 63 1F B7 4A 02   01         01      C8 00 00 00 00
-		 */
-		//RG::s_modTable *pModTbl = &modTbl[rcv.mBdy.by11];										// pointer to the respective line in the module table
-		//if (pModTbl->isActive) {
-		//	pModTbl->mDlgt(rcv.mBdy.mTyp, rcv.mBdy.by10, rcv.mBdy.by11, rcv_msg.buf+12, rcv.mBdy.mLen-11);
-		//}
-		//ptr_CM[rcv_msg.mBody.BY11]->message_trigger11(rcv_msg.buf[12], (rcv_msg.mBody.MSG_LEN > 13) ? rcv_msg.buf + 13 : NULL, (rcv_msg.mBody.MSG_LEN > 15) ? rcv_msg.buf + 15 : NULL);
-	}
-}
 
-/**
- * @brief Process all action (3E, 3F, 40, 41, ...) messages
- * 
- * Within the function we load the respective list3/4 into the
- * list pointer in module table registered. Identification of the list
- * is done by a lookup in the peertable and following the plink into the 
- * the respective line in the channel table.
- *
- */
-void AS::processMessageAction3E(uint8_t cnl, uint8_t peer_idx) {
-/*
-	cmMaster *pCM = ptr_CM[cnl];																// short hand for the channel module pointer
-	uint16_t pAddr = pCM->lstP.ee_addr + ( pCM->lstP.len * peer_idx );							// calculate the eeprom address
-	getEEPromBlock( pAddr, pCM->lstP.len, pCM->lstP.val );										// get list3 or list4 loaded into the user module
-
-	struct structFlag {
-		uint8_t CNL : 4;
-		uint8_t UP : 1; // 0x10
-		uint8_t DOWN : 1; // 0x20
-		uint8_t LONG : 1; // 0x40
-		uint8_t LOWBAT : 1; // 0x80
-		uint8_t COUNT;
-		uint8_t VALUE;
-	} sF;
-
-	uint8_t *buf = (rcv_msg.mBody.MSG_TYP == 0x3E) ? rcv_msg.buf + 14 : rcv_msg.buf + 10;
-	memcpy( &sF, buf, 3);
-
-	if      (rcv_msg.mBody.MSG_TYP == 0x3E) pCM->message_trigger3E(sF.LONG, sF.COUNT);		// call the user module
-	else if (rcv_msg.mBody.MSG_TYP == 0x40) pCM->message_trigger40(sF.LONG, sF.COUNT);
-	else if (rcv_msg.mBody.MSG_TYP == 0x41) pCM->message_trigger41(sF.LONG, sF.COUNT, sF.VALUE);
-	else send_ACK();*/
-}
 
 /**
  * @brief Reset the Device

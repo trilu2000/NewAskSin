@@ -31,9 +31,6 @@ namespace JT {
 namespace CT {
 	enum E : uint8_t { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
 };
-namespace INFO {
-	enum E : uint8_t { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS };
-}
 
 class cmSwitch : public cmMaster {
 private:  //---------------------------------------------------------------------------------------------------------------
@@ -119,21 +116,15 @@ public:  //---------------------------------------------------------------------
 		uint16_t dura_time;																
 	} tr11;
 
-	uint8_t   cnt;																			// message counter for type 40 message
-	uint8_t   curStat, nxtStat;																// current state and next state
-
-	waitTimer msgTmr;																		// message timer for sending status
-	uint16_t  msgDelay;																		// delay for sending initial status
-	uint8_t	  sendStat;																		// indicator for sendStatus function
-
-	waitTimer delayTmr;																		// delay timer for relay
-	uint8_t   setStat;																		// status to set on the Relay channel
-	uint8_t   modStat;																		// module status byte, needed for list3 modules to answer status requests
-	uint8_t   modDUL;																		// module down up low battery byte
+	struct s_tr40 {
+		uint8_t   cnt;																		// counter store for type 40/41 messages to detect a repeated long
+		uint8_t   cur;																		// current state and next state
+		uint8_t	  nxt;
+		waitTimer delay;																	// delay timer for relay
+	} tr40;
 
 
 	inline void adjustStatus(void);															// setting of relay status
-	inline void sendStatus(void);															// help function to send status messages
 
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 

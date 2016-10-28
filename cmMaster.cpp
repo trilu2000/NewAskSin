@@ -20,9 +20,44 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 
 	lstC.cnl = cnl_max;																		// set the channel to the lists
 	lstP.cnl = cnl_max++;
-	
+
 	DBG_START(CM, F("CM["), lstC.cnl, F("].\n"));
 }
+
+/* 
+* @brief Sends the ACK_STATUS and INFO_ACTUATOR_STATUS based on content of send_stat struct
+* polled by cmMaster poll function. 
+*/
+void cmMaster::send_status(void) {
+	AS *phm = &hm;																			// short hand to main class
+
+	if (!cm_status.message) return;															// nothing to do
+	if (!cm_status.delay.done()) return;													// not the right time
+
+	// prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80
+	if (cm_status.value == cm_status.set_value)
+		cm_status.flag = 0;
+	else if (cm_status.value <  cm_status.set_value)
+		cm_status.flag  = 0x10;
+	else if (cm_status.value >  cm_status.set_value)
+		cm_status.flag  = 0x20;
+	//if (!tr40.delay.done())       send_stat.modDUL |= 0x40;
+
+	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
+	if      (cm_status.message == INFO::SND_ACK_STATUS)
+		phm->send_ACK_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
+	else if (cm_status.message == INFO::SND_ACTUATOR_STATUS)
+		phm->send_INFO_ACTUATOR_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
+	else if ((cm_status.message == INFO::SND_ACTUATOR_STATUS_AGAIN) && (!cm_status.flag))
+		phm->send_INFO_ACTUATOR_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
+
+	// check if it is a stable status, otherwise schedule next check
+	if (cm_status.flag) {																	// status is currently changing
+		cm_status.message = INFO::SND_ACTUATOR_STATUS_AGAIN;								// send next time a info status message
+		cm_status.delay.set(10);															// check again in 10 seconds
+	} else cm_status.message = INFO::NOTHING;												// no need for next time
+}
+
 
 
 void cmMaster::info_config_change(void) {
@@ -43,10 +78,9 @@ void cmMaster::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 
 
 void cmMaster::poll(void) {
-	//if (rcv_msg.hasdata) processMessage();													// check if we have to handle the receive buffer
-	cm_poll();
+	send_status();																			// check if there is some status to send
+	cm_poll();																				// poll the virtual poll function 
 }
-
 
 
 void cmMaster::set_toggle(void) {
@@ -58,7 +92,6 @@ void cmMaster::set_toggle(void) {
 /*
 * @brief Received message handling forwarded by AS::processMessage
 */
-
 /*
 * @brief Adds one or two peers to a channel
 * CONFIG_PEER_ADD message is send by the HM master to combine two client devices
