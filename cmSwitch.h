@@ -120,7 +120,6 @@ public:  //---------------------------------------------------------------------
 		uint8_t   cnt;																		// counter store for type 40/41 messages to detect a repeated long
 		uint8_t   cur;																		// current state and next state
 		uint8_t	  nxt;
-		waitTimer delay;																	// delay timer for relay
 	} tr40;
 
 

@@ -54,9 +54,20 @@ public://-----------------------------------------------------------------------
 	struct s_mod_stat {
 		uint8_t   value;																	// module status byte, needed for list3 modules to answer status requests
 		uint8_t   set_value;																// status to set on the Relay channel
-		uint8_t   flag;																		// module down up low battery byte
-		uint8_t	  message;																	// indicator for sendStatus function
-		waitTimer delay;																	// message timer for sending status
+		union {
+			struct {
+				uint8_t X : 3;
+				uint8_t UP : 1;
+				uint8_t DOWN : 1;
+				uint8_t ERROR : 1;
+				uint8_t DELAY : 1;
+				uint8_t LOWBAT : 1;
+			} f;
+			uint8_t   flag;																		// module down up low battery byte
+		};
+		waitTimer delay;																	// delay timer for relay
+		uint8_t	  message_type;																// indicator for sendStatus function
+		waitTimer message_delay;															// message timer for sending status
 	} cm_status;
 	inline void send_status(void);															// help function to send status messages
 

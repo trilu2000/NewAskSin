@@ -31,7 +31,7 @@ CC cc;																					// defined in CC1101.h, load it once
 *
 */
 void    CC::init(void) {	
-	DBG_START(CC, F("CC.\n"));
+	//DBG_START(CC, F("CC.\n"));
 
 	/* init the hardware to get access to the RF modul,
 	*  some deselect and selects to init the TRX868modul */
@@ -75,26 +75,28 @@ void    CC::init(void) {
 		CC1101_PKTLEN,    0x3D,						// packet length 61
 		CC1101_PKTCTRL1,  0x0C,						// PQT = 0, CRC auto flush = 1, append status = 1, no address check
 		CC1101_PKTCTRL0,  0x45,						// WHITE_DATA on, use FIFOs for RX and TX, CRC calculation in TX and CRC check in RX enabled, Packet length configured by the first byte after sync word
-		CC1101_FSCTRL1,   0x06,						// frequency synthesizer control
+		CC1101_FSCTRL1,   0x06,	//0x06					// frequency synthesizer control
 		//CC1101_FREQ2,   0x21,						// 868.299866 MHz
 		//CC1101_FREQ1,   0x65,
 		//CC1101_FREQ0,   0x6A,
 		CC1101_FREQ2,     0x21,						// 868.289551 MHz
 		CC1101_FREQ1,     0x65,
-		CC1101_FREQ0,     0x50,
+		CC1101_FREQ0,     0x6A, //50
 		CC1101_MDMCFG4,   0xC8,
 		CC1101_MDMCFG3,   0x93,
 		CC1101_MDMCFG2,   0x03,						// digital DC blocking filter enabled (better sensitivity), 2-FSK, Manchester encoding/decoding disabled, SYNC_MODE[2:0] 30/32 sync word bits detected
 		CC1101_MDMCFG1,   0x22,						// Forward Error Correction (FEC) disabled, NUM_PREAMBLE[2:0] 4 bytes, 
 		CC1101_DEVIATN,   0x34,						// 19.042969 kHz
 		CC1101_MCSM2,     0x01,						// RX_TIME[2:0]
-		CC1101_MCSM1,     0x3F, // EQ3 0x03, 0x3f	// TXOFF_MODE[1:0] 3 (11) : RX, RXOFF_MODE[1:0] 0 (00) : IDLE, CCA_MODE[1:0] 3 (11) : If RSSI below threshold unless currently receiving a packet
+		CC1101_MCSM1,     0x33, // EQ3 0x03, 0x3f	// TXOFF_MODE[1:0] 3 (11) : RX, RXOFF_MODE[1:0] 0 (00) : IDLE, CCA_MODE[1:0] 3 (11) : If RSSI below threshold unless currently receiving a packet
 		CC1101_MCSM0,     0x18,						// FS_AUTOCAL[1:0] 1 (01) : When going from IDLE to RX or TX (or FSTXON), 
 		CC1101_FOCCFG,    0x16,						// frequency compensation loop gain to be used before a sync word is detected 2 (10) : 3K, gain to be used after a sync word is detected 1 : K/2, Frequency offset compensation 3 (11) : ±BWCHAN/2
 		CC1101_AGCCTRL2,  0x43,						// MAX_DVGA_GAIN[1:0] 1 (01) : The highest gain setting can not be used, MAGN_TARGET[2:0] 3 (011) : 33 dB
 		CC1101_FREND1,    0x56,
 		CC1101_FSCAL1,    0x00,
 		CC1101_FSCAL0,    0x11,
+		CC1101_FSTEST,    0x59,
+		CC1101_TEST2,     0x81,
 		CC1101_TEST1,     0x35,
 		CC1101_PATABLE,   0xC3,
 	};
@@ -107,9 +109,9 @@ void    CC::init(void) {
 	strobe(CC1101_SCAL);																// calibrate frequency synthesizer
 	uint8_t x = 200;																	// set the counter
 	while (readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_IDLE) {				// waits until module gets ready
-		_delay_us(1);																	// wait some time while looping
+		_delay_us(2);																	// wait some time while looping
 		if (!--x) goto init_failure;													// otherwise we could loop forever on a missing module
-	} DBG(CC, '3' );																	// phase 3 is done, freq synth is calibrated
+	} DBG(CC, '3');																		// phase 3 is done, freq synth is calibrated
 
 	/* set the transmition power and enter receive mode */
 	writeReg(CC1101_PATABLE, PA_MaxPower);												// configure PATABLE
@@ -146,21 +148,24 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {
 
 	setActive();																		// maybe we come from power down mode
 	strobe(CC1101_SIDLE);																// go to idle mode
-	DBG(CC, F("<c "));
+	DBG(CC, F("<c"), _TIME, ' ');
 
 	/* enter TX and wait till state is confirmed */
 	strobe(CC1101_STX);																	// ask for transmit mode
 	x = 200;																			// set the counter for timeout
-	while (readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_TX) {					// waits until module gets ready
+	do {																				// waits until module gets ready
 		_delay_us(2);																	// wait some time while looping
 		if (!--x) goto snddata_failure;													// otherwise we could loop forever on a missing module
-	} DBG(CC ,F("TX "));																// we are in transmit mode
+	} while (readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_TX);
+	DBG(CC, F("TX"), _TIME, ' ');														// we are in transmit mode
 
 	/* if we have to send a burst, we wait still longer */
 	if (burst) {																		// BURST-bit set?
 		_delay_ms(360);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
-		DBG(CC, F("BURST "));															// some debug
+		DBG(CC, F("BURST"), _TIME, ' ');												// some debug
 	}
+	//DBG(CC, F("O:"), _HEX(buf, buf[0]+1), ' ');											// some debug
+
 
 	/* former writeburst function, now done with ccSendByte while writing byte
 	*  by byte to encode it on the fly                                          */
@@ -169,27 +174,26 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {
 
 	ccSelect();																			// select CC1101
 	ccSendByte(CC1101_TXFIFO | WRITE_BURST);											// send register address
-	ccSendByte(buf[0]);																	// send byte 0, holds the length information
-	ccSendByte(prev);																	// send byte 1
+	ccSendByte(buf[0]); DBG(CC, F("E:"), _HEXB(buf[0]), ' ');							// send byte 0, holds the length information
+	ccSendByte(prev);	DBG(CC, _HEXB(prev), ' ');										// send byte 1
 
 	for (uint8_t i = 2; i < buf[0]; i++) {												// process the string starting with byte 2
 		prev = (prev + 0xDC) ^ buf[i];													// encode current (i) byte
-		ccSendByte(prev);																// write it into the module buffer
+		ccSendByte(prev); DBG(CC, _HEXB(prev), ' ');									// write it into the module buffer
 	}
-	ccSendByte(buf[buf[0]] ^ buf2);														// process the last byte
-
+	prev = buf[buf[0]] ^ buf2;
+	ccSendByte(prev);	DBG(CC, _HEXB(prev), ' ');										// process the last byte
 	ccDeselect();																		// deselect CC1101
-	DBG(CC, buf[0] + 1, ' ');															// bytes are written in the send buffer, some debug
+	DBG(CC, F("#:"), buf[0]+1, _TIME, ' ');												// bytes are written in the send buffer, some debug
 
 	/* now wait till TX queue is finished and module enters RX mode automatically
 	*  while defined in CC1101_MCSM1, 0x3F - can take up to 50ms         */
 	x = 200;																			// set the counter for timeout
-	while (readReg(CC1101_MARCSTATE, CC1101_STATUS) != MARCSTATE_RX) {					// waits until module gets ready
+	while (readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_TX) {					// waits until module gets ready
 		_delay_ms(1);																	// wait some time while looping
 		if (!--x) goto snddata_failure;													// otherwise we could loop forever on a missing module
-	} DBG(CC, F("RX "));																// we are back in rx mode
+	} DBG(CC, F("TX"), _TIME, F(" \n"));												// we are back in rx mode
 
-	DBG(CC, F("<< "), _HEX(buf, buf[0] + 1), _TIME, '\n'); 
 	return;																				// nothing to do any more, return
 
 snddata_failure:

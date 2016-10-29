@@ -31,31 +31,30 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 void cmMaster::send_status(void) {
 	AS *phm = &hm;																			// short hand to main class
 
-	if (!cm_status.message) return;															// nothing to do
-	if (!cm_status.delay.done()) return;													// not the right time
+	if (!cm_status.message_type) return;													// nothing to do
+	if (!cm_status.message_delay.done()) return;											// not the right time
 
 	// prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80
-	if (cm_status.value == cm_status.set_value)
-		cm_status.flag = 0;
-	else if (cm_status.value <  cm_status.set_value)
-		cm_status.flag  = 0x10;
-	else if (cm_status.value >  cm_status.set_value)
-		cm_status.flag  = 0x20;
-	//if (!tr40.delay.done())       send_stat.modDUL |= 0x40;
+	if      (cm_status.value == cm_status.set_value) cm_status.flag = 0;
+	else if (cm_status.value <  cm_status.set_value) cm_status.f.UP  = 1;
+	else if (cm_status.value >  cm_status.set_value) cm_status.f.DOWN = 1;
+
+	if (!cm_status.delay.done())                     cm_status.f.DELAY = 1;
+	if (bat.getStatus())                             cm_status.f.LOWBAT = 1;;
 
 	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      (cm_status.message == INFO::SND_ACK_STATUS)
+	if      (cm_status.message_type == INFO::SND_ACK_STATUS)
 		phm->send_ACK_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
-	else if (cm_status.message == INFO::SND_ACTUATOR_STATUS)
+	else if (cm_status.message_type == INFO::SND_ACTUATOR_STATUS)
 		phm->send_INFO_ACTUATOR_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
-	else if ((cm_status.message == INFO::SND_ACTUATOR_STATUS_AGAIN) && (!cm_status.flag))
+	else if (cm_status.message_type == INFO::SND_ACTUATOR_STATUS_AGAIN)
 		phm->send_INFO_ACTUATOR_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
 
 	// check if it is a stable status, otherwise schedule next check
-	if (cm_status.flag) {																	// status is currently changing
-		cm_status.message = INFO::SND_ACTUATOR_STATUS_AGAIN;								// send next time a info status message
-		cm_status.delay.set(10);															// check again in 10 seconds
-	} else cm_status.message = INFO::NOTHING;												// no need for next time
+	if (cm_status.f.DELAY) {																// status is currently changing
+		cm_status.message_type = INFO::SND_ACTUATOR_STATUS_AGAIN;							// send next time a info status message
+		cm_status.message_delay.set(cm_status.delay.remain() + 100);						// check again in 10 seconds
+	} else cm_status.message_type = INFO::NOTHING;											// no need for next time
 }
 
 

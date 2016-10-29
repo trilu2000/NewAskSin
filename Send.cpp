@@ -48,7 +48,7 @@ void SN::poll(void) {
 		}
 
 		/* internal messages doesn't matter anymore*/
-		memcpy(snd_msg.mBody.SND_ID, dev_ident.HMID, 3);									// we always send the message in our name
+		if (snd_msg.active != 2) memcpy(snd_msg.mBody.SND_ID, dev_ident.HMID, 3);			// we always send the message in our name
 		snd_msg.mBody.FLAG.RPTEN = 1;														// every message need this flag
 		snd_msg.temp_MSG_CNT = snd_msg.mBody.MSG_CNT;										// copy the message count to identify the ACK
 		if (isEmpty(snd_msg.mBody.RCV_ID,3)) snd_msg.mBody.FLAG.BIDI = 0;					// broadcast, no ack required
