@@ -239,16 +239,16 @@ void AS::processMessage(void) {
 
 		/* everything below is channel related */
 		pCM = ptr_CM[rcv_msg.mBody.BY11];													// short hand to respective channel module instance
-		if      (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF)) pCM->INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))  pCM->INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SET))         pCM->INSTRUCTION_SET(&rcv_msg.m1102xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE)) pCM->INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_RESET))       pCM->INSTRUCTION_RESET(&rcv_msg.m1104xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LED))         pCM->INSTRUCTION_LED(&rcv_msg.m1180xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))     pCM->INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LEVEL))       pCM->INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))   pCM->INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))    pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
+		if      (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))        pCM->INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))         pCM->INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SET))                pCM->INSTRUCTION_SET(&rcv_msg.m1102xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE))        pCM->INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_RESET))              pCM->INSTRUCTION_RESET(&rcv_msg.m1104xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LED))                pCM->INSTRUCTION_LED(&rcv_msg.m1180xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))            pCM->INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LEVEL))              pCM->INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))          pCM->INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))           pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::HAVE_DATA)) {
 
