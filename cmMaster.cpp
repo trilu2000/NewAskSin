@@ -24,41 +24,13 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 	DBG_START(CM, F("CM["), lstC.cnl, F("].\n"));
 }
 
-/* 
-* @brief Sends the ACK_STATUS and INFO_ACTUATOR_STATUS based on content of send_stat struct
-* polled by cmMaster poll function. 
+
+
+/**
+* @brief Virtual function is called while we received a new list0 or list1
+* Herewith we can adapt changes given by the config change. Needs to be overwritten
+* by the respective channel module
 */
-void cmMaster::send_status(void) {
-	AS *phm = &hm;																			// short hand to main class
-
-	if (!cm_status.message_type) return;													// nothing to do
-	if (!cm_status.message_delay.done()) return;											// not the right time
-
-	// prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80
-	if      (cm_status.value == cm_status.set_value) cm_status.flag = 0;
-	else if (cm_status.value <  cm_status.set_value) cm_status.f.UP  = 1;
-	else if (cm_status.value >  cm_status.set_value) cm_status.f.DOWN = 1;
-
-	if (!cm_status.delay.done())                     cm_status.f.DELAY = 1;
-	if (bat.getStatus())                             cm_status.f.LOWBAT = 1;;
-
-	// check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status
-	if      (cm_status.message_type == INFO::SND_ACK_STATUS)
-		phm->send_ACK_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
-	else if (cm_status.message_type == INFO::SND_ACTUATOR_STATUS)
-		phm->send_INFO_ACTUATOR_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
-	else if (cm_status.message_type == INFO::SND_ACTUATOR_STATUS_AGAIN)
-		phm->send_INFO_ACTUATOR_STATUS(lstC.cnl, cm_status.value, cm_status.flag);
-
-	// check if it is a stable status, otherwise schedule next check
-	if (cm_status.f.DELAY) {																// status is currently changing
-		cm_status.message_type = INFO::SND_ACTUATOR_STATUS_AGAIN;							// send next time a info status message
-		cm_status.message_delay.set(cm_status.delay.remain() + 100);						// check again in 10 seconds
-	} else cm_status.message_type = INFO::NOTHING;											// no need for next time
-}
-
-
-
 void cmMaster::info_config_change(void) {
 	DBG(CM, F("CM:config_change\n") );
 }
@@ -77,11 +49,13 @@ void cmMaster::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 
 
 void cmMaster::poll(void) {
-	send_status();																			// check if there is some status to send
 	cm_poll();																				// poll the virtual poll function 
 }
 
-
+/*
+* @brief This function is called at the moment by the config button class, it is to toogle the output
+* of an alligned channel. Needs to be overwritten by any actor class 
+*/
 void cmMaster::set_toggle(void) {
 	DBG(CM, F("CM:toggle\n") );
 }
@@ -262,6 +236,14 @@ void cmMaster::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
 	if (isEqual(buf->SERIALNO, dev_ident.SERIAL_NR, 10)) 									// compare serial and send device info
 		hm.send_DEVICE_INFO(MSG_REASON::ANSWER);
 }
+/*
+* @brief Process message CONFIG_PAIR_SERIAL
+* Virtual function to be overwritten by the respective channel module
+*
+* Message description:
+*                Sender__  Receiver  CNL   BY11
+* l> 0B 40 A0 01 63 19 64  23 70 D8  01    0E     
+*/
 void cmMaster::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
 	DBG(CM, F("CM:CONFIG_STATUS_REQUEST\n"));
 }
@@ -315,8 +297,15 @@ void cmMaster::INSTRUCTION_SET(s_m1102xx *buf) {
 void cmMaster::INSTRUCTION_STOP_CHANGE(s_m1103xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_STOP_CHANGE\n"));
 }
+/*
+* @brief Reset to factory defaults
+*/
 void cmMaster::INSTRUCTION_RESET(s_m1104xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_RESET\n"));
+	hm.send_ACK();																			// prepare an ACK message
+	while (snd_msg.active) snd.poll();														// poll to get the ACK message send
+	clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
+	hm.init();																				// call the init function to get the device in factory status
 }
 void cmMaster::INSTRUCTION_LED(s_m1180xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_LED\n"));
@@ -402,6 +391,42 @@ void cmMaster::WEATHER_EVENT(s_m70xxxx *buf) {
 
 
 //- helpers ---------------------------------------------------------------------------------------------------------------
+/*
+* @brief Sends the ACK_STATUS and INFO_ACTUATOR_STATUS based on content of send_stat struct
+* polled by cmMaster poll function.
+*/
+void send_status(s_cm_status *cm, uint8_t cnl) {
+	AS *phm = &hm;																			// short hand to main class
+
+	if (!cm->message_type) return;															// nothing to do
+	if (!cm->message_delay.done()) return;													// not the right time
+
+	/* prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80 */
+	if      (cm->value == cm->set_value) cm->flag = 0;
+	else if (cm->value <  cm->set_value) cm->f.UP = 1;
+	else if (cm->value >  cm->set_value) cm->f.DOWN = 1;
+
+	if (!cm->delay.done())               cm->f.DELAY = 1;
+	if (bat.getStatus())                 cm->f.LOWBAT = 1;;
+
+	/* check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status */
+	if (cm->message_type == INFO::SND_ACK_STATUS)
+		phm->send_ACK_STATUS(cnl, cm->value, cm->flag);
+	else if (cm->message_type == INFO::SND_ACTUATOR_STATUS)
+		phm->send_INFO_ACTUATOR_STATUS(cnl, cm->value, cm->flag);
+	else if (cm->message_type == INFO::SND_ACTUATOR_STATUS_AGAIN)
+		phm->send_INFO_ACTUATOR_STATUS(cnl, cm->value, cm->flag);
+
+	/* check if it is a stable status, otherwise schedule next check */
+	if (cm->f.DELAY) {																		// status is currently changing
+		cm->message_type = INFO::SND_ACTUATOR_STATUS_AGAIN;									// send next time a info status message
+		cm->message_delay.set(cm->delay.remain() + 100);									// check again in 10 seconds
+
+	} else cm->message_type = INFO::NOTHING;												// no need for next time
+
+}
+
+
 /*
 * @brief Prepare defaults and read the defaults from the eeprom in the channel module space.
 *        We have to read only list0 or list 1 content, while list 3 or list 4 is read while received a peer message.

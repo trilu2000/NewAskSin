@@ -51,25 +51,6 @@ public://-----------------------------------------------------------------------
 	/*
 	* @brief Keep all information for sending an ACK_STATUS or INFO_ACTUATOR_STATUS at one place
 	*/
-	struct s_mod_stat {
-		uint8_t   value;																	// module status byte, needed for list3 modules to answer status requests
-		uint8_t   set_value;																// status to set on the Relay channel
-		union {
-			struct {
-				uint8_t X : 3;
-				uint8_t UP : 1;
-				uint8_t DOWN : 1;
-				uint8_t ERROR : 1;
-				uint8_t DELAY : 1;
-				uint8_t LOWBAT : 1;
-			} f;
-			uint8_t   flag;																		// module down up low battery byte
-		};
-		waitTimer delay;																	// delay timer for relay
-		uint8_t	  message_type;																// indicator for sendStatus function
-		waitTimer message_delay;															// message timer for sending status
-	} cm_status;
-	inline void send_status(void);															// help function to send status messages
 
 	virtual void info_config_change(void);													// list1 on registered channel had changed
 	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
@@ -129,7 +110,7 @@ public://-----------------------------------------------------------------------
 	virtual void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);
 	virtual void INSTRUCTION_SET(s_m1102xx *buf);
 	virtual void INSTRUCTION_STOP_CHANGE(s_m1103xx *buf);
-	virtual void INSTRUCTION_RESET(s_m1104xx *buf);
+	void INSTRUCTION_RESET(s_m1104xx *buf);													// back to factory defaults
 	virtual void INSTRUCTION_LED(s_m1180xx *buf);	
 	virtual void INSTRUCTION_LED_ALL(s_m1181xx *buf);
 	virtual void INSTRUCTION_LEVEL(s_m1181xx *buf);	
@@ -170,6 +151,33 @@ extern cmMaster *ptr_CM[];
 
 
 //- helpers ---------------------------------------------------------------------------------------------------------------
+/*
+* @brief Sends the ACK_STATUS and answers CONFIG_STATUS_REQUEST by sending an INFO_ACTUATOR_STATUS message
+* As we dont need this function in all channel modules, it is defined outside of the master channel. To use this function set, 
+* you have to define in the specific channel module a struct and poll the send_status function by handing over the defined
+* struct and the channel information.
+*/
+typedef struct ts_cm_status {
+	uint8_t   value;																		// module status byte, needed for list3 modules to answer status requests
+	uint8_t   set_value;																	// status to set on the Relay channel
+	union {
+		struct {
+			uint8_t NA     : 3;
+			uint8_t UP     : 1;
+			uint8_t DOWN   : 1;
+			uint8_t ERROR  : 1;
+			uint8_t DELAY  : 1;
+			uint8_t LOWBAT : 1;
+		} f;
+		uint8_t   flag;																		// module down up low battery byte
+	};
+	uint8_t   inhibit;																		// store for inhibit message
+	waitTimer delay;																		// delay timer for relay
+	uint8_t	  message_type;																	// indicator for sendStatus function
+	waitTimer message_delay;																// message timer for sending status
+} s_cm_status;
+void send_status(s_cm_status *cm, uint8_t cnl);												// help function to send status messages
+
 uint16_t cm_prep_default(uint16_t ee_start_addr);											// prepare the defaults incl eeprom address mapping
 uint8_t  is_peer_valid(uint8_t *peer);														// search through all instances and ceck if we know the peer, returns the channel
 

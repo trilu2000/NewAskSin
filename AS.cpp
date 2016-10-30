@@ -70,7 +70,6 @@ void AS::init(void) {
 	uint16_t flashCRC = cm_calc_crc();														// calculate the crc of all channel module list0/1, list3/4
 	getEEPromBlock(0, sizeof(dev_ident), &dev_ident);										// get magic byte and all other information from eeprom
 	dbg << "fl: magic: " << flashCRC << ", " << dev_ident.MAGIC << '\n';
-	//dbg << "ee: magic: " << dev_ident.MAGIC << ", hmid: " << _HEX(dev_ident.HMID, 3) << ", serial: " << _HEX(dev_ident.SERIAL_NR, 10) << ", index: " << _HEXB(dev_ident.HMKEY_INDEX) << ", key: " << _HEX(dev_ident.HMKEY, 16) << ", sizeof: " << sizeof(dev_ident) << ", addr: " << (uint16_t)&dev_ident.MAGIC << '\n';
 	DBG(AS, F("AS:init crc- flash:"), flashCRC, F(", eeprom: "), dev_ident.MAGIC, '\n');	// some debug
 
 	if (flashCRC != dev_ident.MAGIC) {	
@@ -80,11 +79,11 @@ void AS::init(void) {
 		* order in HMSerialData[]                 * HMID *, * Serial number *, * Default-Key *, * Key-Index *   
 		* order in dev_ident struct   *	MAGIC *, * HMID[3] *, * SERIAL_NR[10] *, * HMKEY[16] *, * HMKEY_INDEX *
 		* we can copy the complete struct with a 2 byte offset in regards to the magic byte */
-		memcpy_P( dev_ident.HMID, HMSerialData, sizeof(dev_ident) - 2);						// copy from PROGMEM
+		memcpy_P( ((uint8_t*)&dev_ident)+2, HMSerialData, sizeof(dev_ident) - 2);						// copy from PROGMEM
 		dev_ident.MAGIC = flashCRC;															// set new magic number
 
 		//dbg << "fl: magic: " << dev_ident.MAGIC << ", hmid: " << _HEX(dev_ident.HMID, 3) << ", serial: " << _HEX(dev_ident.SERIAL_NR, 10) << ", index: " << _HEXB(dev_ident.HMKEY_INDEX) << ", key: " << _HEX(dev_ident.HMKEY, 16) << ", sizeof: " << sizeof(dev_ident) << ", addr: " << (uint16_t)&dev_ident << '\n';
-		setEEPromBlock(0, sizeof(dev_ident), &dev_ident.MAGIC);
+		setEEPromBlock(0, sizeof(dev_ident), &dev_ident);
 																									//setEEPromBlock(0, sizeof(dev_ident), &dev_ident);									// store defaults to EEprom
 		DBG(AS, F("AS:writing new magic byte\n") );											// some debug
 
@@ -199,9 +198,11 @@ void AS::processMessage(void) {
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) {
 		/* config request messages are used to configure a devive by writing registers and peers -
 		*  check the channel and forward for processing to the respective function */
+		if (rcv_msg.mBody.BY10 >= cnl_max) return;											// channel is out of range, return
 
 		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
 		pCM = ptr_CM[rcv_msg.mBody.BY10];													// short hand to the respective channel module instance
+
 		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(&rcv_msg.m01xx01);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(&rcv_msg.m01xx02);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ(&rcv_msg.m01xx03);
@@ -550,7 +551,6 @@ void AS::processMessage(void) {
 
 	//rcv_msg.clear();																	// nothing to do any more
 }
-
 
 
 

@@ -3,7 +3,6 @@
 *  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 * - -----------------------------------------------------------------------------------------------------------------------
 * - AskSin channel module Switch ------------------------------------------------------------------------------------------
-* - with a lot of support from martin876 at FHEM forum
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
@@ -75,6 +74,7 @@ void cmSwitch::adjustStatus(void) {
 
 void cmSwitch::cm_poll(void) {
 
+	send_status(&cm_status, lstC.cnl);														// check if there is some status to send, function call in cmMaster.cpp
 	adjustStatus();																			// check if something is to be set on the Relay channel
 
 	// check if something is to do on the switch
@@ -140,11 +140,14 @@ void cmSwitch::cm_poll(void) {
 	}
 }
 
-
+/*
+* @brief setToggle will be addressed by config button in mode 2 by a short key press here we can toggle the status of the actor
+*/
 void cmSwitch::set_toggle(void) {
-	// setToggle will be addressed by config button in mode 2 by a short key press
-	// here we can toggle the status of the actor
 	DBG(SW, F("set_toggle\n") );
+
+	/* check for inhibit flag */
+	if (cm_status.inhibit) return;															// nothing to do while inhibit is set
 
 	if (cm_status.value)  cm_status.set_value = 0;											// if its on, we switch off
 	else cm_status.set_value = 200;
@@ -232,7 +235,22 @@ void cmSwitch::INSTRUCTION_SET(s_m1102xx *buf) {
 
 	DBG(SW, F("INSTRUCTION_SET, setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), '\n');
 }
-/**
+/*
+* @brief INSTRUCTION_INHIBIT_OFF avoids any status change via Sensor, Remote or set_toogle
+* Answer to a sensor or remote message is an NACK
+*/
+void cmSwitch::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
+	cm_status.inhibit = 0;
+	hm.send_ACK();
+}
+/*
+* @brief INSTRUCTION_INHIBIT_ON, see INSTRUCTION_INHIBIT_OFF
+**/
+void cmSwitch::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
+	cm_status.inhibit = 1;
+	hm.send_ACK();
+}
+/*
 * @brief Function is called on messages comming from master, simulating a remote or push button.
 * restructure the message and forward it to the local cmSwitch::REMOTE(s_m40xxxx *buf) function...
 * -> 0F 09 B0 3E 63 19 64 33 11 22 23 70 D8 40 01 1D 
@@ -253,6 +271,12 @@ void cmSwitch::SWITCH(s_m3Exxxx *buf) {
 * more interesting for the master...
 */
 void cmSwitch::REMOTE(s_m40xxxx *buf) {
+	/* check for inhibit flag */
+	if (cm_status.inhibit) {
+		hm.send_NACK();
+		return;
+	}
+
 	/* depending on the long flag, we cast the value array into a list3 struct.
 	* we do this, because the struct is seperated in two sections, values for a short key press and a section for long key press */
 	l3 = (buf->BLL.LONG) ? (s_l3*)lstP.val + 11 : (s_l3*)lstP.val;							// set short or long struct portion
@@ -294,6 +318,12 @@ void cmSwitch::REMOTE(s_m40xxxx *buf) {
 * @brief Function is called on messages comming from sensors.
 */
 void cmSwitch::SENSOR_EVENT(s_m41xxxx *buf) {
+	/* check for inhibit flag */
+	if (cm_status.inhibit) {
+		hm.send_NACK();
+		return;
+	}
+
 	/* depending on the long flag, we cast the value array into a list3 struct.
 	* we do this, because the struct is seperated in two sections, values for a short key press and a section for long key press */
 	l3 = (buf->BLL.LONG) ? (s_l3*)lstP.val + 11 : (s_l3*)lstP.val;							// set short or long struct portion

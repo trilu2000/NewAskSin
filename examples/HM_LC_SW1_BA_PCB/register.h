@@ -175,6 +175,7 @@ struct s_cnl1_lst3 {
  *
  * Needed frames:
  *
+ * // INSTRUCTION_SET
  * <frame id="LEVEL_SET" direction="to_device" type="0x11" subtype="0x02" subtype_index="9" channel_field="10">
  *      <parameter type="integer" index="11.0" size="1.0" param="STATE"/>
  *      <parameter type="integer" index="12.0" size="2.0" const_value="0"/>
@@ -183,15 +184,23 @@ struct s_cnl1_lst3 {
  *      <parameter type="integer" index="9.0" size="0.1" param="INHIBIT"/>
  * <frame id="LEVEL_GET" direction="to_device" type="0x01" channel_field="9">
  *      <parameter type="integer" index="10.0" size="1.0" const_value="14"/>
+ *
+ * // INFO_ACTUATOR_STATUS
  * <frame id="INFO_LEVEL" direction="from_device" allowed_receivers="BROADCAST,CENTRAL,OTHER" event="true" type="0x10" subtype="6" subtype_index="9" channel_field="10">
  *      <parameter type="integer" index="11.0" size="1.0" param="STATE"/>
  *      <parameter type="integer" index="12.4" size="0.3" param="STATE_FLAGS"/>
+ *
+ * // ACK_STATUS
  * <frame id="ACK_STATUS" direction="from_device" allowed_receivers="BROADCAST,CENTRAL,OTHER" event="true" type="0x02" subtype="1" subtype_index="9" channel_field="10">
  *      <parameter type="integer" index="11.0" size="1.0" param="STATE"/>
  *      <parameter type="integer" index="12.4" size="0.3" param="STATE_FLAGS"/>
+ *
+ * // INSTRUCTION_SET
  * <frame id="TOGGLE_INSTALL_TEST" direction="to_device" type="0x11" subtype="0x02" subtype_index="9" channel_field="10">
  *      <parameter type="integer" index="11.0" size="1.0" param="TOGGLE_FLAG"/>
  *      <parameter type="integer" index="12.0" size="2.0" const_value="0"/>
+ *
+ * // INFO_ACTUATOR_STATUS
  * <frame id="INFO_POWERON" direction="from_device" allowed_receivers="CENTRAL" event="true" type="0x10" subtype="6" subtype_index="9" fixed_channel="*">
  *      <parameter type="integer" index="10.0" size="1.0" const_value="0"/>
  *      <parameter type="integer" const_value="0" param="STATE"/>

@@ -3,7 +3,6 @@
 *  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 * - -----------------------------------------------------------------------------------------------------------------------
 * - AskSin channel module Switch ------------------------------------------------------------------------------------------
-* - with a lot of support from martin876 at FHEM forum
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
@@ -122,6 +121,7 @@ public:  //---------------------------------------------------------------------
 		uint8_t	  nxt;
 	} tr40;
 
+	s_cm_status cm_status;																	// defined in cmMaster.h, holds current status and set_satatus
 
 	inline void adjustStatus(void);															// setting of relay status
 
@@ -134,6 +134,8 @@ public:  //---------------------------------------------------------------------
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */
 	virtual void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);										// master is asking for channel status
 	virtual void INSTRUCTION_SET(s_m1102xx *buf);											// master wants to set channel status
+	virtual void INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf);									// deny access to switch, set_toogle and Remote 
+	virtual void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);									// grant access to switch
 	virtual void SWITCH(s_m3Exxxx *buf);													// switch message from master to test a peer setup
 	virtual void REMOTE(s_m40xxxx *buf);													// remote peer message
 	virtual void SENSOR_EVENT(s_m41xxxx *buf);												// sensor peer message

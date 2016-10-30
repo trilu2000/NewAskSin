@@ -2311,44 +2311,5 @@ typedef struct ts_config_list_answer_slice {
 
 
 
-/*"3F" = > { txt = > "TimeStamp", params = > {
-UNKNOWN = > "00,4",
-TIME = > "04,2", } },
-"40" = > { txt = > "REMOTE", params = > {
-BUTTON = > '00,2,$val=(hex($val)&0x3F)',
-LONG = > '00,2,$val=(hex($val)&0x40)?1:0',
-LOWBAT = > '00,2,$val=(hex($val)&0x80)?1:0',
-COUNTER = > "02,2", } },
-"41" = > { txt = > "Sensor_event", params = > {
-BUTTON = > '00,2,$val=(hex($val)&0x3F)',
-LONG = > '00,2,$val=(hex($val)&0x40)?1:0',
-LOWBAT = > '00,2,$val=(hex($val)&0x80)?1:0',
-NBR = > '02,2,$val=(hex($val))',
-VALUE = > '04,2,$val=(hex($val))', } },
-"53" = > { txt = > "SensorData", params = > {
-CMD = > "00,2",
-Fld1 = > "02,2",
-Val1 = > '04,4,$val=(hex($val))',
-Fld2 = > "08,2",
-Val2 = > '10,4,$val=(hex($val))',
-Fld3 = > "14,2",
-Val3 = > '16,4,$val=(hex($val))',
-Fld4 = > "20,2",
-Val4 = > '24,4,$val=(hex($val))'} },
-"58" = > { txt = > "ClimateEvent", params = > {
-CMD = > "00,2",
-ValvePos = > '02,2,$val=(hex($val))', } },
-"59" = > { txt = > "setTeamTemp", params = > {
-CMD = > "00,2",
-desTemp = > '02,2,$val=((hex($val)>>2) /2)',
-mode = > '02,2,$val=(hex($val) & 0x3)', } },
-"70" = > { txt = > "WeatherEvent", params = > {
-TEMP = > '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
-HUM = > '04,2,$val=(hex($val))', } },
-*/
-
-
-
-
 
 #endif
