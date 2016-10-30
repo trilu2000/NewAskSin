@@ -227,8 +227,6 @@ typedef struct ts_peer_table {
 */
 typedef struct ts_config_mode {
 	uint8_t   active;						// indicates status, 1 if config mode is active
-	uint8_t   cnl;							// channel which was opened by config start message
-	uint8_t   lst;							// list which was opened
 	uint8_t   idx_peer;						// and the peer index
 	s_list_table *list;						// pointer to the respective list
 	waitTimer timer;						// config mode timeout

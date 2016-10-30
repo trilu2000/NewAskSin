@@ -182,7 +182,7 @@ void cmMaster::CONFIG_END(s_m01xx06 *buf) {
 	cm->active = 0;																			// clear the flag
 	hm.send_ACK();																			// send back that everything is ok
 
-	if (cm->cnl < 2) {
+	if (cm->list->lst < 2) {
 		lstC.load_list(cm->idx_peer);														// reload list0 or 1
 		info_config_change();																// inform the channel module on a change of list0 or 1
 	}
@@ -206,7 +206,7 @@ void cmMaster::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
 void cmMaster::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 	s_config_mode *cm = &config_mode;														// short hand to config mode struct
 
-	if ((cm->active) && (cm->cnl == buf->MSG_CNL)) {										// check if we are in config mode and if the channel fit
+	if (cm->active)  {																		// check if config is active, channel fit is checked in AS
 		cm->list->write_array(buf->DATA, buf->MSG_LEN - 11, cm->idx_peer);					// write the array into the list
 		hm.send_ACK();																		// we are fine
 		DBG(CM, F("CM:CONFIG_WRITE_INDEX2, cnl:"), buf->MSG_CNL, F(", lst:"), cm->lst, F(", idx:"), cm->idx_peer, '\n');

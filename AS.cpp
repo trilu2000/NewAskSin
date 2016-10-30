@@ -122,6 +122,7 @@ void AS::init(void) {
 
 	/* - add this function in register.h to setup default values every start */
 	everyTimeStart();
+	dbg << "cnl_max:" << cnl_max << '\n';
 }
 
 /**
@@ -202,6 +203,7 @@ void AS::processMessage(void) {
 
 		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
 		pCM = ptr_CM[rcv_msg.mBody.BY10];													// short hand to the respective channel module instance
+		s_config_mode *cm = &config_mode;													// short hand to config mode struct
 
 		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(&rcv_msg.m01xx01);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(&rcv_msg.m01xx02);
@@ -209,8 +211,8 @@ void AS::processMessage(void) {
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(&rcv_msg.m01xx04);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(&rcv_msg.m01xx05);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(&rcv_msg.m01xx06);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   ptr_CM[cm->list->cnl]->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   ptr_CM[cm->list->cnl]->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(&rcv_msg.m01xx09);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(&rcv_msg.m01xx0a);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST(&rcv_msg.m01xx0e);

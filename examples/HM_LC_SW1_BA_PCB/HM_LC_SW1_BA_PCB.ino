@@ -101,6 +101,7 @@ void serialEvent() {
 
 		if (inChar == 'x') {
 			dumpEEprom();
+			Serial.flush();
 			i = 0;
 			return;
 		} else if (inChar == 's') {
@@ -165,8 +166,8 @@ void dumpEEprom() {
 			delete x;
 			DBG(SER, '\n');
 		}
-		delete e;
 	}
+	delete e;
 }
 
 
