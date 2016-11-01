@@ -47,11 +47,10 @@ void cmMaintenance::info_config_change(void) {
 	if (t) dev_operate.MAID = t;
 
 	// handle the aes flag (0x08) in list0 - does probably not exist 
-	static uint8_t aes_flag = 0x99;
+	static uint8_t aes_flag = 0;
 	t = lstC.ptr_to_val(0x08);
-	dev_operate.AES_FLAG = (t)? t : &aes_flag;
+	dev_operate.AES_FLAG = (*t != 0xff)? t : &aes_flag;
 
-	//dev_operate.AES_FLAG = &aes_flag;
 
 	snd_msg.max_retr = 3;		//or set TRANSMIT_DEV_TRY_MAX
 	snd_msg.max_time = 300;

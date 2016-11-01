@@ -92,7 +92,7 @@ void AS::init(void) {
 		dev_ident.MAGIC = flashCRC;															// set new magic number
 		memcpy_P(((uint8_t*)&dev_ident) + 2, HMSerialData, sizeof(dev_ident) - 2);						// copy from PROGMEM
 		setEEPromBlock(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));
-		do { dbg << ','; } while (!eeprom_is_ready());
+		while (!eeprom_is_ready());
 		DBG(AS, F("AS:writing new magic byte\n"));											// some debug
 
 		/* - function to be placed in register.h, to setup default values on first time start */

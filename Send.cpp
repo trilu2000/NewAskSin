@@ -16,7 +16,7 @@ SN snd;																						// declare send module, defined in send.h
 
 
 SN::SN()  {
-	DBG_START(SN, F("SN.\n") );																// ...some debug
+	DBG(SN, F("SN.\n") );																// ...some debug
 }
 
 void SN::poll(void) {
