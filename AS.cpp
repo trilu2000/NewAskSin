@@ -25,8 +25,6 @@
 //#define AES_DBG
 
 
-
-
 #include "AS.h"
 #include <avr/wdt.h>
 
@@ -39,8 +37,8 @@
 s_pair_mode   pair_mode;																	// helper structure for keeping track of active pairing mode
 s_config_mode config_mode;																	// helper structure for keeping track of active config mode
 
-s_ee_start    dev_ident;																	// struct to hold the device identification related information									
-uint8_t       *MAID;																		// pointer to the master id, which is hold in cmMaintenance
+s_dev_ident   dev_ident;																	// struct to hold the device identification related information									
+s_dev_operate dev_operate;																	// struct to hold all operational variables or pointers
 
 s_recv        rcv_msg;																		// struct to process received strings
 s_send        snd_msg;																		// same for send strings
@@ -69,24 +67,10 @@ void AS::init(void) {
 	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.	*/
 	uint16_t flashCRC = cm_calc_crc();														// calculate the crc of all channel module list0/1, list3/4
 	getEEPromBlock(0, sizeof(dev_ident), &dev_ident);										// get magic byte and all other information from eeprom
-	dbg << "fl: magic: " << flashCRC << ", " << dev_ident.MAGIC << '\n';
+	dbg << F("AS:init crc- flash:") << flashCRC << F(", eeprom: ") << dev_ident.MAGIC << '\n';	// some debug
 	DBG(AS, F("AS:init crc- flash:"), flashCRC, F(", eeprom: "), dev_ident.MAGIC, '\n');	// some debug
 
 	if (flashCRC != dev_ident.MAGIC) {	
-
-		/* - First time detected
-		* get the homematic id, serial number, aes key index and homematic aes key from flash and copy it into the eeprom
-		* order in HMSerialData[]                 * HMID *, * Serial number *, * Default-Key *, * Key-Index *   
-		* order in dev_ident struct   *	MAGIC *, * HMID[3] *, * SERIAL_NR[10] *, * HMKEY[16] *, * HMKEY_INDEX *
-		* we can copy the complete struct with a 2 byte offset in regards to the magic byte */
-		memcpy_P( ((uint8_t*)&dev_ident)+2, HMSerialData, sizeof(dev_ident) - 2);						// copy from PROGMEM
-		dev_ident.MAGIC = flashCRC;															// set new magic number
-
-		//dbg << "fl: magic: " << dev_ident.MAGIC << ", hmid: " << _HEX(dev_ident.HMID, 3) << ", serial: " << _HEX(dev_ident.SERIAL_NR, 10) << ", index: " << _HEXB(dev_ident.HMKEY_INDEX) << ", key: " << _HEX(dev_ident.HMKEY, 16) << ", sizeof: " << sizeof(dev_ident) << ", addr: " << (uint16_t)&dev_ident << '\n';
-		setEEPromBlock(0, sizeof(dev_ident), &dev_ident);
-																									//setEEPromBlock(0, sizeof(dev_ident), &dev_ident);									// store defaults to EEprom
-		DBG(AS, F("AS:writing new magic byte\n") );											// some debug
-
 
 		/* - Write the defaults into the respective lists in eeprom and clear the peer database.
 		* defaults are read from channel modules PROGMEM section, copied into the value byte array
@@ -99,6 +83,17 @@ void AS::init(void) {
 			pPeer->clear_all();
 			DBG(AS, F("AS:write_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, '\n');
 		}
+
+		/* - First time detected
+		* get the homematic id, serial number, aes key index and homematic aes key from flash and copy it into the eeprom
+		* order in HMSerialData[]                 * HMID *, * Serial number *, * Default-Key *, * Key-Index *
+		* order in dev_ident struct   *	MAGIC *, * HMID[3] *, * SERIAL_NR[10] *, * HMKEY[16] *, * HMKEY_INDEX *
+		* we can copy the complete struct with a 2 byte offset in regards to the magic byte */
+		dev_ident.MAGIC = flashCRC;															// set new magic number
+		memcpy_P(((uint8_t*)&dev_ident) + 2, HMSerialData, sizeof(dev_ident) - 2);						// copy from PROGMEM
+		setEEPromBlock(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));
+		do { dbg << ','; } while (!eeprom_is_ready());
+		DBG(AS, F("AS:writing new magic byte\n"));											// some debug
 
 		/* - function to be placed in register.h, to setup default values on first time start */
 		firstTimeStart();				
@@ -159,7 +154,7 @@ void AS::poll(void) {
 	if (pair_mode.active) { 
 		if (pair_mode.timer.done()) {
 			pair_mode.active = 0;
-			isEmpty(MAID, 3)? led.set(pair_err) : led.set(pair_suc);	
+			isEmpty(dev_operate.MAID, 3)? led.set(pair_err) : led.set(pair_suc);
 		}
 	}
 
@@ -193,6 +188,9 @@ void AS::poll(void) {
 void AS::processMessage(void) {
 	cmMaster *pCM;
 
+	/* first we check if AES is enabled and if the message is a valid SEND_AES_TO_ACTOR, if yes, we copy back the original message and process the request */
+	/* if AES is enabled and we didn't received a SEND_AES_TO_ACTOR, we send an AES_REQ */
+
 	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::DEVICE_INFO)) {
 		/* not sure what to do with while received, probably nothing */
 
@@ -211,8 +209,10 @@ void AS::processMessage(void) {
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(&rcv_msg.m01xx04);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(&rcv_msg.m01xx05);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(&rcv_msg.m01xx06);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   ptr_CM[cm->list->cnl]->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
-		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   ptr_CM[cm->list->cnl]->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
+		//else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   ptr_CM[cm->list->cnl]->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
+		//else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   ptr_CM[cm->list->cnl]->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
+		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(&rcv_msg.m01xx09);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(&rcv_msg.m01xx0a);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST(&rcv_msg.m01xx0e);
@@ -597,7 +597,7 @@ void AS::send_DEVICE_INFO(MSG_REASON::E reason) {
 	}
 	else {
 		msg->MSG_CNT = snd_msg.MSG_CNT++;
-		rcv_id = MAID;																		// we initiated, so it has to go to the master id
+		rcv_id = dev_operate.MAID;															// we initiated, so it has to go to the master id
 	}
 
 	/* BIDI is asked all time, will removed automatically if MAID is empty */
@@ -800,7 +800,7 @@ void AS::send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag) {
 		snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// we initiated, take the message counter from the request
 		bidi = 1;																			// want to get an ACK
 	}
-	snd_msg.set_msg(MSG_TYPE::INFO_ACTUATOR_STATUS, MAID, bidi);							// all the time send to the master
+	snd_msg.set_msg(MSG_TYPE::INFO_ACTUATOR_STATUS, dev_operate.MAID, bidi);				// all the time send to the master
 }
 
 void AS::send_INFO_TEMP() {
@@ -889,7 +889,7 @@ void AS::sendINFO_POWER_EVENT(uint8_t *data) {
 	//char* myBytes = reinterpret_cast<char*>(snd.mBdy.pyLd);
 
 
-	snd_msg.mBody.FLAG.BIDI = (isEmpty(MAID,3))?0:1;
+	snd_msg.mBody.FLAG.BIDI = (isEmpty(dev_operate.MAID,3))?0:1;
 	//snd.mBdy.by10      = AS_MESSAGE_POWER_EVENT_CYCLIC;
 
 	// set payload
@@ -905,7 +905,7 @@ void AS::sendINFO_POWER_EVENT(uint8_t *data) {
 	#ifdef AS_DBG
 		Serial << F(" BIDI: ") << snd_msg.mBody->FLAG.BIDI << "\n";
 	#endif
-	prepareToSend(cnt, AS_MESSAGE_POWER_EVENT_CYCLIC, MAID);
+	prepareToSend(cnt, AS_MESSAGE_POWER_EVENT_CYCLIC, dev_operate.MAID);
 }
 
 void AS::sendINFO_TEMP(void) {
@@ -1090,7 +1090,7 @@ inline void AS::sendPeerMsg(void) {
 		stcPeer.idx_max = pCM->peerDB.max;														// get amount of messages of peer channel
 
 		if (!pCM->peerDB.used_slots() ) {															// check if at least one peer exist in db, otherwise send to master and stop function
-			preparePeerMessage(MAID, retries_max);
+			preparePeerMessage(dev_operate.MAID, retries_max);
 			snd_msg.MSG_CNT++;																		// increase the send message counter
 			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
 			return;
@@ -1448,7 +1448,7 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 		}
 
 		snd_msg.mBody.MSG_LEN = 0x11;
-		snd_msg.mBody.FLAG.BIDI = (isEmpty(MAID,3)) ? 0 : 1;
+		snd_msg.mBody.FLAG.BIDI = (isEmpty(dev_operate.MAID,3)) ? 0 : 1;
 		snd_msg.mBody.BY10 = AS_RESPONSE_AES_CHALLANGE;											// AES Challenge
 
 		initPseudoRandomNumberGenerator();

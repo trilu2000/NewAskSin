@@ -31,14 +31,14 @@ void setup() {
 	hm.init();																					// init the asksin framework
 
 	// - user related -----------------------------------------
-	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(MAID,3), F(", CNL: "), cnl_max, F("\n\n") );	// some debug
+	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID,3), F(", MAID: "), _HEX(dev_operate.MAID,3), F(", CNL: "), cnl_max, F("\n\n") );	// some debug
 
 	//uint8_t x[] = { 0x02, 0x22, 0x03, 0x33, 0x04, 0x44, 0x0A, 0xaa, 0x0F, 0xff, 0x0B, 0xbb, };
 	//pcnlModule[1]->list[3]->write_array(x, sizeof(x),9 );
 	//uint8_t *t = pcnlModule[0]->list[0]->ptr_to_val(0x0f);
 	//if (t) dbg << "test: " << *t << '\n';
 	//else dbg << "no t " << *t << '\n';
-	
+	dbg << "AES: " << *dev_operate.AES_FLAG << '\n';
 
 	//snd.prep_msg(MSG_REASON::INITIAL, MSG_INTENT::INTERN, MSG_TYPE::ACK, 9, 3);
 

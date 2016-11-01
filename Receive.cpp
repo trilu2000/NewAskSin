@@ -86,7 +86,7 @@ void RV::getIntend() {
 		rcv_msg.intent = MSG_INTENT::LOGGING;
 
 	// because of the previous check, message is for us, check against master
-	else if ( isEqual(rcv_msg.mBody.SND_ID, MAID, 3) )										// coming from master
+	else if ( isEqual(rcv_msg.mBody.SND_ID, dev_operate.MAID, 3) )							// coming from master
 		rcv_msg.intent = MSG_INTENT::MASTER;
 
 	// message is for us, but not from master, maybe it is a peer message
@@ -98,7 +98,7 @@ void RV::getIntend() {
 		rcv_msg.intent = MSG_INTENT::INTERN;
 
 	// message is for us, but not from pair or peer or internal - check if we miss the master id because we are not paired
-	else if ( isEmpty(MAID, 3))																// for us, but pair is empty
+	else if ( isEmpty(dev_operate.MAID, 3))													// for us, but pair is empty
 		rcv_msg.intent = MSG_INTENT::NOT_PAIRED;
 
 	else																					// should never happens

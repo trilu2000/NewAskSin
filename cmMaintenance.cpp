@@ -44,11 +44,18 @@ cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
 void cmMaintenance::info_config_change(void) {
 	// get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it
 	uint8_t *t = lstC.ptr_to_val(0x0a);
-	if (t) MAID = t;
-	
+	if (t) dev_operate.MAID = t;
+
+	// handle the aes flag (0x08) in list0 - does probably not exist 
+	static uint8_t aes_flag = 0x99;
+	t = lstC.ptr_to_val(0x08);
+	dev_operate.AES_FLAG = (t)? t : &aes_flag;
+
+	//dev_operate.AES_FLAG = &aes_flag;
+
 	snd_msg.max_retr = 3;		//or set TRANSMIT_DEV_TRY_MAX
 	snd_msg.max_time = 300;
 
-	DBG(MN, F("MN:config_change - MAID:"), _HEX(MAID,3), '\n' );
+	DBG(MN, F("MN:config_change - MAID:"), _HEX(dev_operate.MAID,3), '\n' );
 
 }

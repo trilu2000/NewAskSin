@@ -275,7 +275,13 @@ extern s_send snd_msg;
 *  1 byte - aes key index
 * 16 byte - homematic aes key
 */
-extern s_ee_start dev_ident;
+extern s_dev_ident dev_ident;
+
+/*
+* @brief Global definition of a struct to hold all operational needed device variables
+*/
+extern s_dev_operate dev_operate;
+
 /*
 * @brief Global definition of master HM-ID (paired central).
 *

@@ -42,14 +42,21 @@ typedef struct ts_pair_mode {
 /* 
 * @brief First bytes of eeprom holds all device specific information for identification
 */
-typedef struct ts_eeprom_start_table {
+typedef struct ts_dev_ident {
 	uint16_t MAGIC;							//  2 byte - magic byte
 	uint8_t  HMID[3];						//  3 byte - homematic id
 	uint8_t  SERIAL_NR[10];					// 10 byte - serial number
 	uint8_t  HMKEY_INDEX;					//  1 byte - aes key index
 	uint8_t  HMKEY[16];						// 16 byte - homematic aes key
-} s_ee_start;
+} s_dev_ident;
 
+/*
+* @brief Holds all variables or pointers which are needed to operate a device 
+*/
+typedef struct ts_dev_operate {
+	uint8_t  *MAID;							// pointer to the master id, which is hold in cmMaintenance
+	uint8_t  *AES_FLAG;						// pointer to aes flag, handled in cmMaintenance
+} s_dev_operate;
 
 /*
 * @brief Every channel has two lists, the first list holds the configuration which is required to drive the channel,
@@ -289,7 +296,7 @@ namespace MSG_REASON {
 * -------------------------------------------
 * 0x04 ff ff ff * - SEND_AES
 * 0x04 01 ff 0c * - SEND_AES_TO_HMLAN
-* 0x04 ff ff 09 * - SEND_AES_TO_ACTOR, no byte 10
+* 0x04 ff ff 19 * - SEND_AES_TO_ACTOR, no byte 10
 * -------------------------------------------
 * 0x10 ff ff ff * REPLY_MSG
 * 0x10 00 ff 14 * - INFO_SERIAL
