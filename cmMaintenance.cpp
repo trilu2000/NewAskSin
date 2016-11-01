@@ -44,12 +44,11 @@ cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
 void cmMaintenance::info_config_change(void) {
 	// get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it
 	uint8_t *t = lstC.ptr_to_val(0x0a);
-	if (t) dev_operate.MAID = t;
+	dev_operate.MAID = t;
 
-	// handle the aes flag (0x08) in list0 - does probably not exist 
-	static uint8_t aes_flag = 0;
-	t = lstC.ptr_to_val(0x08);
-	dev_operate.AES_FLAG = (*t != 0xff)? t : &aes_flag;
+	// handle the aes flag (0x08) in list0 - flag does probably not exist, but ptr_to_val gives a pointer to an existing byte with 0xff as value
+	dev_operate.AES_FLAG = lstC.ptr_to_val(0x08);
+	if (*dev_operate.AES_FLAG == 0xff) *dev_operate.AES_FLAG = 0;
 
 
 	snd_msg.max_retr = 3;		//or set TRANSMIT_DEV_TRY_MAX
