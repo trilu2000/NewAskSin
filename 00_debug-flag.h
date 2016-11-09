@@ -39,6 +39,7 @@
 //#define CM_DBG					// Channel Master module (cmMaster.cpp)
 //#define MN_DBG					// Maintenance channel module (cmMaintenance.cpp)
 //#define SW_DBG				// Switsch channel module (cmSwitch.cpp)
+#define DM_DBG					// Dimmer channel module (cmDimmer.cpp)
 
 
 /*
@@ -132,6 +133,14 @@
 	#define DBG_SW(...) 
 #endif
 
+/* channel module dimmer */
+#ifdef DM_DBG
+	#define DBG_START_DM(...) _DBG_START(__VA_ARGS__)
+	#define DBG_DM(...) Serial ,__VA_ARGS__
+#else
+	#define DBG_START_DM(...)
+	#define DBG_DM(...) 
+#endif
 
 
 /**	- ---------------------------------------------------------------------------------------------------------------------

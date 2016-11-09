@@ -48,7 +48,7 @@ s_config_list_answer_slice config_list_answer_slice;										// defined in AS.h
 
 // public:		//---------------------------------------------------------------------------------------------------------
 AS::AS()  {
-	DBG_START(AS, F("AS.\n"));																// ...and some information
+	//DBG_START(AS, F("AS.\n"));																// ...and some information
 }
 
 /**
@@ -113,11 +113,11 @@ void AS::init(void) {
 		cmMaster *pCM = ptr_CM[i];															// short hand to respective channel master	
 		pCM->lstC.load_list();																// read the defaults in respective list0/1
 		pCM->info_config_change();															// inform the channel modules
+		pCM->init();																		// initialize the channel modules
 	}
 
 	/* - add this function in register.h to setup default values every start */
 	everyTimeStart();
-	dbg << "cnl_max:" << cnl_max << '\n';
 }
 
 /**
@@ -267,7 +267,7 @@ void AS::processMessage(void) {
 	} else if (rcv_msg.intent == MSG_INTENT::PEER) {
 		/* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
 		pCM = ptr_CM[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
-		pCM->lstP.load_list(ptr_CM[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective class 3
+		pCM->lstP.load_list(ptr_CM[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3
 		if      (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
 		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
 		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);

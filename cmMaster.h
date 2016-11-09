@@ -56,6 +56,9 @@ public://-----------------------------------------------------------------------
 	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
+	void init(void);																		// init function, called after AS initialisation
+	virtual void cm_init(void) {}															// init function for channel modules to overwrite
+
 	void poll(void);																		// poll function, driven by HM loop
 	virtual void cm_poll(void) {}															// poll function for channel modules to overwrite
 
@@ -171,7 +174,7 @@ typedef struct ts_cm_status {
 		} f;
 		uint8_t   flag;																		// module down up low battery byte
 	};
-	uint8_t   inhibit;																		// store for inhibit message
+	uint8_t   inhibit = 0;																	// store for inhibit message
 	waitTimer delay;																		// delay timer for relay
 	uint8_t	  message_type;																	// indicator for sendStatus function
 	waitTimer message_delay;																// message timer for sending status

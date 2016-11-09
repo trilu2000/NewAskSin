@@ -21,7 +21,7 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 	lstC.cnl = cnl_max;																		// set the channel to the lists
 	lstP.cnl = cnl_max++;
 
-	DBG_START(CM, F("CM["), lstC.cnl, F("].\n"));
+	DBG(CM, F("CM["), lstC.cnl, F("].\n"));
 }
 
 
@@ -47,6 +47,10 @@ void cmMaster::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEXB(idx), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n' );
 }
 
+
+void cmMaster::init(void) {
+	cm_init();																				// init the virtual poll function
+}
 
 void cmMaster::poll(void) {
 	cm_poll();																				// poll the virtual poll function 
@@ -454,6 +458,7 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		pCM->peerDB.ee_addr = ee_start_addr;											// write eeprom address into the peer table
 		ee_start_addr += pCM->peerDB.max * 4;											// create nwe eeprom start address depending on the space for max peers are used
 	}
+
 	return ee_start_addr;
 }
 

@@ -16,7 +16,7 @@ RV rcv;																						// declare receive module, defined in receive.h
 
 
 RV::RV() {
-	DBG(RV, F("RV.\n") );																	// ...and some information
+	//DBG(RV, F("RV.\n") );																	// ...and some information
 }
 
 void RV::poll(void) {
