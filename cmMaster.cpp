@@ -402,6 +402,7 @@ void cmMaster::WEATHER_EVENT(s_m70xxxx *buf) {
 void send_status(s_cm_status *cm, uint8_t cnl) {
 	AS *phm = &hm;																			// short hand to main class
 
+	if (snd_msg.active) return;																// send has already something to do
 	if (!cm->message_type) return;															// nothing to do
 	if (!cm->message_delay.done()) return;													// not the right time
 

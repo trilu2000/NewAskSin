@@ -72,34 +72,27 @@
 
 /* asksin main class */
 #ifdef AS_DBG
-	#define DBG_START_AS(...) _DBG_START(__VA_ARGS__)
 	#define DBG_AS(...) Serial ,__VA_ARGS__
 #else
-	#define DBG_START_AS(...)
 	#define DBG_AS(...) 
 #endif
 
 /* cc1101 class */
 #ifdef CC_DBG
-	#define DBG_START_CC(...) _DBG_START(__VA_ARGS__)
 	#define DBG_CC(...) Serial ,__VA_ARGS__
 #else
-	#define DBG_START_CC(...)
 	#define DBG_CC(...) 
 #endif
 
 /* send module */
 #ifdef SN_DBG
-	#define DBG_START_SN(...) _DBG_START(__VA_ARGS__)
 	#define DBG_SN(...) Serial ,__VA_ARGS__
 #else
-	#define DBG_START_SN(...)
 	#define DBG_SN(...) 
 #endif
 
 /* receive module */
 #ifdef RV_DBG
-	#define DBG_START_RV(...) _DBG_START(__VA_ARGS__)
 	#define DBG_RV(...) Serial ,__VA_ARGS__
 #else
 	#define DBG_START_RV(...)
@@ -108,37 +101,29 @@
 
 /* channel master class */
 #ifdef CM_DBG
-	#define DBG_START_CM(...) _DBG_START(__VA_ARGS__)
 	#define DBG_CM(...) Serial ,__VA_ARGS__
 #else
-	#define DBG_START_CM(...)
 	#define DBG_CM(...) 
 #endif
 
 /* maintenance channel module */
 #ifdef MN_DBG
-#define DBG_START_MN(...) _DBG_START(__VA_ARGS__)
 #define DBG_MN(...) Serial ,__VA_ARGS__
 #else
-#define DBG_START_MN(...)
 #define DBG_MN(...) 
 #endif
 
 /* channel module switch */
 #ifdef SW_DBG
-	#define DBG_START_SW(...) _DBG_START(__VA_ARGS__)
 	#define DBG_SW(...) Serial ,__VA_ARGS__
 #else
-	#define DBG_START_SW(...)
 	#define DBG_SW(...) 
 #endif
 
 /* channel module dimmer */
 #ifdef DM_DBG
-	#define DBG_START_DM(...) _DBG_START(__VA_ARGS__)
 	#define DBG_DM(...) Serial ,__VA_ARGS__
 #else
-	#define DBG_START_DM(...)
 	#define DBG_DM(...) 
 #endif
 
