@@ -407,8 +407,8 @@ void send_status(s_cm_status *cm, uint8_t cnl) {
 	if (!cm->message_delay.done()) return;													// not the right time
 
 	/* prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80 */
-	if      (cm->value == cm->set_value) cm->flag = 0;
-	else if (cm->value <  cm->set_value) cm->f.UP = 1;
+	cm->flag = 0;
+	if      (cm->value <  cm->set_value) cm->f.UP = 1;
 	else if (cm->value >  cm->set_value) cm->f.DOWN = 1;
 
 	if (!cm->delay.done())               cm->f.DELAY = 1;
@@ -425,7 +425,7 @@ void send_status(s_cm_status *cm, uint8_t cnl) {
 	/* check if it is a stable status, otherwise schedule next check */
 	if (cm->f.DELAY) {																		// status is currently changing
 		cm->message_type = INFO::SND_ACTUATOR_STATUS_AGAIN;									// send next time a info status message
-		cm->message_delay.set(cm->delay.remain() + 100);									// check again in 10 seconds
+		cm->message_delay.set(cm->delay.remain() + 100);									// check again when timer is finish
 
 	} else cm->message_type = INFO::NOTHING;												// no need for next time
 

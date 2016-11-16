@@ -791,7 +791,7 @@ void AS::send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag) {
 
 	msg->MSG_CNL = cnl;																		// copy in the channel
 	msg->MSG_STAT = stat;																	// the status of the channel
-	msg->UNKNOWN = 0;																		// needs investigation
+	msg->UNKNOWN = flag;																	// needs investigation
 	msg->MSG_RSSI = cc.rssi;																// received rssi value
 
 	if ((rcvBody->MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcvBody->BY11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST))) {

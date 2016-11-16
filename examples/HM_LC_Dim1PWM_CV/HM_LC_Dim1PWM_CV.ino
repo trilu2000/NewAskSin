@@ -62,7 +62,7 @@ void cmDimmer::initDimmer(uint8_t channel) {
 
 void cmDimmer::switchDimmer(uint8_t channel, uint8_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
-	DBG(SER, F("switchDim: "), channel, ", ", status, '\n' );
+	//DBG(SER, F("switchDim: "), channel, ", ", status, '\n' );
 
 	uint16_t x = status * 255;
 	x /= 200;																					// status = 0 to 200, but PWM needs 255 as maximum

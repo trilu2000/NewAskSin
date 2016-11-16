@@ -8,6 +8,11 @@
 
 #include "00_debug-flag.h"
 
+#include "cmDimmer.h"
+
+waitTimer adj_timer;																		// timer for dim-up/down
+uint32_t adj_delay;																			// calculate and store the adjustment time
+
 
 /**------------------------------------------------------------------------------------------------------------------------
 *- mandatory functions for every new module to communicate within HM protocol stack -
@@ -18,8 +23,6 @@
 *        Constructor of master class is processed first.
 *        Setup of class specific things is done here
 */
-#include "cmDimmer.h"
-
 cmDimmer::cmDimmer(const uint8_t peer_max) : cmMaster(peer_max) {
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
@@ -50,11 +53,22 @@ cmDimmer::cmDimmer(const uint8_t peer_max) : cmMaster(peer_max) {
 void cmDimmer::adjustStatus(void) {
 
 	if (cm_status.value == cm_status.set_value) return;										// nothing to do, return
-	//dbg << "m" << modStat << " s" << setStat << '\n';
+	if (!adj_timer.done()) return;															// timer not done, wait until then
 
-	switchDimmer(lstC.cnl, cm_status.set_value);											// calling the external function to make it happen
-	cm_status.value = cm_status.set_value;													// remember that it was done
+	// calculate next step
+	if (cm_status.value < cm_status.set_value) cm_status.value++;							// do we have to increase
+	else cm_status.value--;																	// or decrease
 
+	if (l1->CHARACTERISTIC) {																// check if we should use quadratic approach
+		uint16_t calc_value = cm_status.value * cm_status.value;							// recalculate the value
+		calc_value /= 200;
+		if ((cm_status.value) && (!calc_value)) calc_value = 1;								// till 15 it is below 1
+		switchDimmer(lstC.cnl, calc_value);													// calling the external function to make it happen
+
+	} else switchDimmer(lstC.cnl, cm_status.value);											// calling the external function to make it happen
+
+	adj_timer.set(adj_delay);																// set timer for next action
+	DBG(DM, F("DM"), lstC.cnl, F(":adj val: "), cm_status.value, F(", set: "), cm_status.set_value, F(", quad: "), l1->CHARACTERISTIC, '\n';)
 }
 
 void cmDimmer::cm_init(void) {
@@ -72,7 +86,7 @@ void cmDimmer::cm_init(void) {
 	cm_status.message_delay.set((rand() % 2000) + 1000);									// wait some time to settle the device
 	cm_status.message_type = INFO::SND_ACTUATOR_STATUS;										// send the initial status info
 	
-	DBG(DM, F("DM:init cnl: "), lstC.cnl, '\n';)
+	DBG(DM, F("DM"), lstC.cnl, F(":init\n"));
 }
 void cmDimmer::cm_poll(void) {
 
@@ -110,22 +124,23 @@ void cmDimmer::cm_poll(void) {
 
 	// check the different status changes
 	if (tr40.nxt == JT::ONDELAY) {
-		DBG(DM, F("ONDELAY\n"));
+		DBG(DM, F("DM"), lstC.cnl, F(":ONDELAY\n"));
 		if (l3->ONDELAY_TIME != NOT_USED) {													// if time is 255, we stay forever in the current status
 			cm_status.delay.set(byteTimeCvt(l3->ONDELAY_TIME));								// activate the timer and set next status
 			tr40.nxt = l3->JT_ONDELAY;														// get next status from jump table
 		}
 
 	} else if (tr40.nxt == JT::RAMPON) {
-		DBG(DM, F("RAMPON\n"));
+		DBG(DM, F("DM"), lstC.cnl, F(":RAMPON\n"));
+		cm_status.set_value = l3->ON_LEVEL;
+		adj_delay = 5;
 		if (l3->RAMPON_TIME  != NOT_USED) {													// if time is 255, we stay forever in the current status
 			cm_status.delay.set(byteTimeCvt(l3->RAMPON_TIME));								// activate the timer and set next status
 			tr40.nxt = l3->JT_RAMPON;														// get next status from jump table
 		}
 
 	} else if (tr40.nxt == JT::ON ) {
-		DBG(DM, F("ON\n") );
-		cm_status.set_value = 200;															// switch relay on
+		DBG(DM, F("DM"), lstC.cnl, F(":ON\n") );
 		if (l3->ON_TIME != NOT_USED) {														// if time is 255, we stay forever in the current status
 			cm_status.delay.set(byteTimeCvt(l3->ON_TIME));									// set the timer while not for ever
 			tr40.nxt = l3->JT_ON;															// set next status
@@ -133,21 +148,23 @@ void cmDimmer::cm_poll(void) {
 		 
 
 	} else if (tr40.nxt == JT::OFFDELAY ) {
-		DBG(DM, F("OFFDELAY\n") );
+		DBG(DM, F("DM"), lstC.cnl, F(":OFFDELAY\n") );
 		if (l3->OFFDELAY_TIME != NOT_USED) {												// if time is 255, we stay forever in the current status
 			cm_status.delay.set(byteTimeCvt(l3->OFFDELAY_TIME));							// activate the timer and set next status
 			tr40.nxt = l3->JT_OFFDELAY;														// get jump table for next status
 		}
 
 	} else if (tr40.nxt == JT::RAMPOFF) {
-		DBG(DM, F("RAMPOFF\n"));
+		DBG(DM, F("DM"), lstC.cnl, F(":RAMPOFF\n"));
+		cm_status.set_value = l3->OFF_LEVEL;
+		adj_delay = 5;
 		if (l3->RAMPOFF_TIME != NOT_USED) {													// if time is 255, we stay forever in the current status
 			cm_status.delay.set(byteTimeCvt(l3->RAMPOFF_TIME));								// activate the timer and set next status
 			tr40.nxt = l3->JT_RAMPOFF;														// get jump table for next status
 		}
 
 	} else if (tr40.nxt == JT::OFF ) {
-		DBG(DM, F("OFF\n") );
+		DBG(DM, F("DM"), lstC.cnl, F(":OFF\n") );
 		cm_status.set_value = 0;															// switch off relay
 		if (l3->OFF_TIME != NOT_USED) {														// if time is 255, we stay forever in the current status
 			cm_status.delay.set(byteTimeCvt(l3->OFF_TIME));									// activate the timer and set next status
@@ -160,7 +177,7 @@ void cmDimmer::cm_poll(void) {
 * @brief setToggle will be addressed by config button in mode 2 by a short key press here we can toggle the status of the actor
 */
 void cmDimmer::set_toggle(void) {
-	DBG(DM, F("set_toggle\n") );
+	DBG(DM, F("DM"), lstC.cnl, F(":set_toggle\n") );
 
 	/* check for inhibit flag */
 	if (cm_status.inhibit) return;															// nothing to do while inhibit is set
@@ -229,7 +246,7 @@ void cmDimmer::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 		lstP.val[39] = 0x26;
 	}
 
-	DBG(DM, F("DM:request_peer_defaults CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", idx:"), _HEXB(idx), '\n' );
+	DBG(DM, F("DM"), lstC.cnl, F(":request_peer_defaults CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", idx:"), _HEXB(idx), '\n' );
 }
 
 /*
@@ -239,7 +256,7 @@ void cmDimmer::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
 	cm_status.message_type = INFO::SND_ACTUATOR_STATUS;										// send next time a info status message
 	cm_status.message_delay.set(50);														// wait a short time to set status
 
-	DBG(DM, F("DM:CONFIG_STATUS_REQUEST\n"));
+	DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_STATUS_REQUEST\n"));
 }
 /*
 * @brief INSTRUCTION_SET is called on messages comming from a central device to setup a channel status
@@ -266,7 +283,7 @@ void cmDimmer::INSTRUCTION_SET(s_m1102xx *buf) {
 	cm_status.message_type = INFO::SND_ACK_STATUS;											// ACK should be send
 	cm_status.message_delay.set(100);														// give some time
 
-	DBG(DM, F("INSTRUCTION_SET, setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), '\n');
+	DBG(DM, F("DM"), lstC.cnl, F(":INSTRUCTION_SET, setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), '\n');
 }
 /*
 * @brief INSTRUCTION_INHIBIT_OFF avoids any status change via Sensor, Remote or set_toogle
@@ -355,7 +372,7 @@ void cmDimmer::REMOTE(s_m40xxxx *buf) {
 	cm_status.message_delay.set(100);														// wait a short time to set status
 
 	/* some debug */
-	DBG(DM, F("trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
+	DBG(DM, F("DM"), lstC.cnl, F(":trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
 	DBG(DM, F("JT_ONDELAY:"), _HEXB(l3->JT_ONDELAY), F(", ONDELAY_T:"), _HEXB(l3->ONDELAY_TIME), F(", JT_RAMPON:"), _HEXB(l3->JT_RAMPON), F(", RAMPON_T:"), _HEXB(l3->RAMPON_TIME), F(", JT_ON:"), _HEXB(l3->JT_ON), F(", ON_T:"), _HEXB(l3->ON_TIME), F(", JT_OFFDELAY:"), _HEXB(l3->JT_OFFDELAY), F(", OFFDELAY_T:"), _HEXB(l3->OFFDELAY_TIME), F(", JT_RAMPOFF:"), _HEXB(l3->JT_RAMPOFF), F(", RAMPOFF_T:"), _HEXB(l3->RAMPOFF_TIME), F(", JT_OFF:"), _HEXB(l3->JT_OFF), F(", OFF_T:"), _HEXB(l3->OFF_TIME), '\n');
 	DBG(DM, F("lst3: "), _HEX(lstP.val, lstP.len), '\n');
 }
@@ -406,7 +423,7 @@ void cmDimmer::SENSOR_EVENT(s_m41xxxx *buf) {
 		if ((buf->VALUE < l3->COND_VALUE_LO) || (buf->VALUE >= l3->COND_VALUE_HI)) do_or_not = 1;
 
 	/* some debug */
-	DBG(DM, F("trigger41, value:"), buf->VALUE, F(", cond_table:"), ctTbl, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
+	DBG(DM, F("DM"), lstC.cnl, F(":trigger41, value:"), buf->VALUE, F(", cond_table:"), ctTbl, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
 	DBG(DM, F("CT_ONDELAY:"), _HEXB(l3->CT_ONDELAY), F(", CT_RAMPON:"), _HEXB(l3->CT_RAMPON), F(", CT_ON:"), _HEXB(l3->CT_ON), F(", CT_OFFDELAY:"), _HEXB(l3->CT_OFFDELAY), F(", CT_RAMPOFF:"), _HEXB(l3->CT_RAMPOFF), F(", CT_OFF:"), _HEXB(l3->CT_OFF), '\n');
 
 	/* forward the request if needed, if not we answer with an ACK */
