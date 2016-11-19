@@ -2267,8 +2267,10 @@ typedef struct ts_send {
 	/* prepare the message and make it ready to send.
 	*  within this function call we set the message type, the message length,
 	*  and the BIDI flag. RPTEN and the SND_ID is set within the send function */
-	void set_msg(MSG_TYPE::E type, uint8_t *rcv_id, uint8_t bidi = 0, uint8_t len = 0xff) {
+	void set_msg(MSG_TYPE::E type, uint8_t *rcv_id, uint8_t cnt, uint8_t bidi = 0, uint8_t len = 0xff) {
 		memcpy(mBody.RCV_ID, rcv_id, 3); 
+
+		mBody.MSG_CNT = cnt;
 
 		/* NACK_TARGET_INVALID is defined in AS_typedef.h as 0x0284ff0a
 		* where 0x02 is the message type, 0x84 is byte 10, 0xff is byte 11 but ff indicates that it is not used

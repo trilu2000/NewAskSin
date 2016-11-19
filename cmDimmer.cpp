@@ -291,14 +291,14 @@ void cmDimmer::INSTRUCTION_SET(s_m1102xx *buf) {
 */
 void cmDimmer::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 	cm_status.inhibit = 0;
-	hm.send_ACK();
+	send_ACK();
 }
 /*
 * @brief INSTRUCTION_INHIBIT_ON, see INSTRUCTION_INHIBIT_OFF
 **/
 void cmDimmer::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 	cm_status.inhibit = 1;
-	hm.send_ACK();
+	send_ACK();
 }
 /*
 * @brief Function is called on messages comming from master, simulating a remote or push button.
@@ -323,7 +323,7 @@ void cmDimmer::SWITCH(s_m3Exxxx *buf) {
 void cmDimmer::REMOTE(s_m40xxxx *buf) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
-		hm.send_NACK();
+		send_NACK();
 		return;
 	}
 
@@ -382,7 +382,7 @@ void cmDimmer::REMOTE(s_m40xxxx *buf) {
 void cmDimmer::SENSOR_EVENT(s_m41xxxx *buf) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
-		hm.send_NACK();
+		send_NACK();
 		return;
 	}
 
