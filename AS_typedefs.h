@@ -2284,7 +2284,6 @@ typedef struct ts_send {
 		mBody.FLAG.BIDI = bidi;															// ACK required?
 		active = 1;
 	}
-
 } s_send;
 
 
