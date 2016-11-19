@@ -189,6 +189,8 @@ inline uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf);						// 
 inline uint16_t crc16(uint16_t crc, uint8_t a);												// calculates the crc for a given byte
 
 
+
+
 /* - send functions ---------------------------------------------------------------------------------------------------
 * @brief Here are the send functions for the device, this library is focused on client communication,
 * so you will find send functions for client communication only. The send functions are sorted by

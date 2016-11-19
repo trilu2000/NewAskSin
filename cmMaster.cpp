@@ -431,7 +431,6 @@ void send_status(s_cm_status *cm, uint8_t cnl) {
 
 }
 
-
 /*
 * @brief Prepare defaults and read the defaults from the eeprom in the channel module space.
 *        We have to read only list0 or list 1 content, while list 3 or list 4 is read while received a peer message.
@@ -531,17 +530,16 @@ void send_DEVICE_INFO(MSG_REASON::E reason) {
 	s_m00xxxx *msg = &snd_msg.m00xxxx;														// short hand to send buffer
 	uint8_t *rcv_id;																		// pointer to an array address for the answer
 
-																							/* copy the payload from different sources */
+	/* copy the payload from different sources */
 	memcpy_P(&msg->FIRMWARE, dev_static, 3);												// copy firmware and modelID
 	memcpy(&msg->SERIALNO, dev_ident.SERIAL_NR, 10);										// copy the serial number
 	memcpy_P(&msg->CLASS, dev_static + 3, 4);												// copy subtype and device info
 
-																							/* is it an answer to a CONFIG_PAIR_SERIAL request, or while we initiate the pairing process */
+	/* is it an answer to a CONFIG_PAIR_SERIAL request, or while we initiate the pairing process */
 	if (reason == MSG_REASON::ANSWER) {
 		msg->MSG_CNT = rcv_msg.mBody.MSG_CNT;												// set the message counter accordingly
 		rcv_id = rcv_msg.mBody.SND_ID;														// respond to sender
-	}
-	else {
+	} else {
 		msg->MSG_CNT = snd_msg.MSG_CNT++;
 		rcv_id = dev_operate.MAID;															// we initiated, so it has to go to the master id
 	}
@@ -646,7 +644,7 @@ void send_INFO_SERIAL() {
 	s_m1000xx *msg = &snd_msg.m1000xx;														// short hand to info serial struct
 	memcpy(&msg->SERIALNO, dev_ident.SERIAL_NR, 10);										// copy the serial number
 
-																							//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;											// as it is an answer, we reflect the counter in the answer
+	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;											// as it is an answer, we reflect the counter in the answer
 	snd_msg.set_msg(MSG_TYPE::INFO_SERIAL, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
 }
 
