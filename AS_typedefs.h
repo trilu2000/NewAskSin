@@ -2284,6 +2284,27 @@ typedef struct ts_send {
 		mBody.FLAG.BIDI = bidi;															// ACK required?
 		active = 1;
 	}
+	void set_type(MSG_TYPE::E type) {
+		mBody.FLAG.BIDI = 0;															// ACK required?
+		mBody.MSG_TYP = BY03(type);														// msg type
+		if (BY10(type) != 0xff) mBody.BY10 = BY10(type);								// byte 10
+		if (BY11(type) != 0xff) mBody.BY11 = BY11(type);								// byte 11
+		if (MLEN(type) != 0xff) mBody.MSG_LEN = MLEN(type);								// msg len
+	}
+	void set_rcv_id(uint8_t *rcv_id) {
+		memcpy(mBody.RCV_ID, rcv_id, 3);
+	}
+	void set_msg_cnt() {
+		mBody.MSG_CNT = MSG_CNT;
+		MSG_CNT++;
+	}
+	void set_msg_cnt(uint8_t cnt) {
+		mBody.MSG_CNT = cnt;
+	}
+	void set_active() {
+		active = 1;
+	}
+
 } s_send;
 
 

@@ -528,7 +528,6 @@ inline uint16_t crc16(uint16_t crc, uint8_t a) {
 */
 void send_DEVICE_INFO(MSG_REASON::E reason) {
 	s_m00xxxx *msg = &snd_msg.m00xxxx;														// short hand to send buffer
-	uint8_t *rcv_id;																		// pointer to an array address for the answer
 
 	/* copy the payload from different sources */
 	memcpy_P(&msg->FIRMWARE, dev_static, 3);												// copy firmware and modelID
@@ -537,15 +536,16 @@ void send_DEVICE_INFO(MSG_REASON::E reason) {
 
 	/* is it an answer to a CONFIG_PAIR_SERIAL request, or while we initiate the pairing process */
 	if (reason == MSG_REASON::ANSWER) {
-		msg->MSG_CNT = rcv_msg.mBody.MSG_CNT;												// set the message counter accordingly
-		rcv_id = rcv_msg.mBody.SND_ID;														// respond to sender
+		snd_msg.set_msg_cnt(rcv_msg.mBody.MSG_CNT);											// set the message counter accordingly
+		snd_msg.set_rcv_id(rcv_msg.mBody.SND_ID);											// respond to sender
 	} else {
-		msg->MSG_CNT = snd_msg.MSG_CNT++;
-		rcv_id = dev_operate.MAID;															// we initiated, so it has to go to the master id
+		snd_msg.set_msg_cnt();
+		snd_msg.set_rcv_id(dev_operate.MAID);												// we initiated, so it has to go to the master id
 	}
 
 	/* BIDI is asked all time, will removed automatically if MAID is empty */
-	snd_msg.set_msg(MSG_TYPE::DEVICE_INFO, rcv_id, 1);
+	snd_msg.set_type(MSG_TYPE::DEVICE_INFO);												// length and flags are set within the snd_msg struct
+	snd_msg.set_active();
 
 	//pair_mode.active = 1;																	// set pairing flag
 	//pair_mode.timer.set(20000);															// set pairing time
@@ -567,8 +567,10 @@ void check_send_ACK_NACK(uint8_t ackOk) {
 */
 void send_ACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
-	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;											// as it is an answer, we reflect the counter in the answer
-	snd_msg.set_msg(MSG_TYPE::ACK, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);			// length and flags are set within the snd_msg struct
+	snd_msg.set_type(MSG_TYPE::ACK);														// length and flags are set within the snd_msg struct
+	snd_msg.set_rcv_id(rcv_msg.mBody.SND_ID);
+	snd_msg.set_msg_cnt(rcv_msg.mBody.MSG_CNT);												// as it is an answer, we reflect the counter in the answer
+	snd_msg.set_active();
 }
 /**
 * @brief Send an ACK with status data
