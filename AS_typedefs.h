@@ -265,6 +265,21 @@ namespace MSG_REASON {
 };
 
 /*
+* @brief active flag for send message to define how the message has to be prepared
+* NONE      - 0, nothing to do
+* FORWARD   - 1, send string is prepared, process the message
+* INTERN    - 2, internal string, no ack necassary
+* ANSWER    - 3, take message counter and snd_id from the received string, ack not needed
+* BROADCAST - 4, device initiated messages only, ack not required
+* PAIR      - 5, device initiated messages only, message counter from send function, ack required
+* PEER      - 6, device initiated message to all known peers of a channel, message counter from send function, ack required
+*/
+namespace MSG_ACTIVE {
+	enum E : uint8_t { NONE = 0, FORWARD = 1, DEBUG = 2, ANSWER = 3, PAIR = 4, PEER = 5, };
+};
+
+
+/*
 * @brief Type of message, Byte 03 translation
 * by03 10 11 LEN
 * -------------------------------------------
@@ -2179,8 +2194,8 @@ typedef struct ts_recv {
 * *mBody       - struct on buffer for easier data access
 */
 typedef struct ts_send {
-	uint8_t   active;					// flag that something is to process
-	uint8_t   pass_through;				// pass through string from console
+	MSG_ACTIVE::E active;				// flag that something is to process
+	//uint8_t   pass_through;				// pass through string from console
 
 	union {
 		uint8_t buf[MaxDataLen];		// initial buffer for messages to send
@@ -2253,11 +2268,13 @@ typedef struct ts_send {
 	uint16_t  max_time;					// max time for message timeout timer - info is set by  cmMaintenance
 	waitTimer timer;					// send mode timeout
 
+	MSG_TYPE::E type;
+
 	void clear() {						// function to reset flags
-		active = 0;
+		active = MSG_ACTIVE::NONE;
 		buf[0] = 0;
 		*(uint8_t*)&mBody.FLAG = 0;
-		pass_through = 0;
+		//pass_through = 0;
 		timeout = 0;
 		retr_cnt = 0;
 		temp_max_retr = 0;
@@ -2282,7 +2299,7 @@ typedef struct ts_send {
 
 		if (len != 0xff) mBody.MSG_LEN = len;											// msg len from parameters
 		mBody.FLAG.BIDI = bidi;															// ACK required?
-		active = 1;
+		active = MSG_ACTIVE::FORWARD;
 	}
 	void set_type(MSG_TYPE::E type) {
 		mBody.FLAG.BIDI = 0;															// ACK required?
@@ -2302,7 +2319,7 @@ typedef struct ts_send {
 		mBody.MSG_CNT = cnt;
 	}
 	void set_active() {
-		active = 1;
+		active = MSG_ACTIVE::FORWARD;
 	}
 
 } s_send;

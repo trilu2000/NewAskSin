@@ -29,9 +29,6 @@
 
 
 
-
-
-
 /**
  * @short Main class for implementation of the AskSin protocol stack.
  * Every device needs exactly one instance of this class.
@@ -48,8 +45,7 @@
  * All send functions are used by sensor or actor classes like THSensor or Dimmer.
  */
 class AS {
-public:		//-------------------------------------------------------------------------------------------------------------
-
+  public:		//---------------------------------------------------------------------------------------------------------
 
 	struct s_stcPeer {
 		uint8_t active;//    :1;			// indicates status of poll routine, 1 is active
@@ -75,7 +71,6 @@ public:		//---------------------------------------------------------------------
 		uint8_t	ui;
 	} l4_0x01;
 
-
 	uint8_t  keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 	uint8_t  signingRequestData[6];
 	uint8_t  tempHmKey[16];
@@ -85,7 +80,7 @@ public:		//---------------------------------------------------------------------
 	uint8_t  resetStatus = 0;
 
   public:		//---------------------------------------------------------------------------------------------------------
-	AS();																					// constructor
+	AS() {}																					// constructor
 
 	/**
 	 * @brief Initialize the AS module
@@ -120,8 +115,7 @@ public:		//---------------------------------------------------------------------
 
 
 
-
-
+	// old functions, need to be reworked ---------------------------
 	inline void sendAckAES(uint8_t *data);
 	void sendINFO_POWER_EVENT(uint8_t *data);
 	void sendINFO_TEMP(void);

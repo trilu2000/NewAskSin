@@ -107,7 +107,7 @@ void serialEvent() {
 		} else if (inChar == 's') {
 			DBG(SER, F("con: "), _HEX(snd_msg.buf, snd_msg.buf[0] + 1), '\n');
 			snd_msg.temp_max_retr = 1;
-			snd_msg.active = 2;
+			snd_msg.active = MSG_ACTIVE::DEBUG;
 			i = 0;
 			return;
 		} 

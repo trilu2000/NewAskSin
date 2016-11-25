@@ -47,10 +47,6 @@ s_config_list_answer_slice config_list_answer_slice;										// defined in AS.h
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
-AS::AS()  {
-	//DBG_START(AS, F("AS.\n"));																// ...and some information
-}
-
 /**
  * @brief Initialize the AskSin Module
  */
@@ -572,11 +568,7 @@ void AS::processMessage(void) {
 */
 
 
-//void AS::send_ACK(void) {
-//	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
-//	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;											// as it is an answer, we reflect the counter in the answer
-//	snd_msg.set_msg(MSG_TYPE::ACK, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);			// length and flags are set within the snd_msg struct
-//}
+
 
 
 
@@ -1149,7 +1141,7 @@ void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
 	snd_msg.mBody.SND_ID[2] = dev_ident.HMID[2];
 	memcpy(snd_msg.mBody.RCV_ID, receiverAddr, 3);
 
-	snd_msg.active = 1;																				// remember to fire the message
+	snd_msg.active = MSG_ACTIVE::FORWARD;																				// remember to fire the message
 }
 
 

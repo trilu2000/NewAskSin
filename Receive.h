@@ -20,7 +20,7 @@ class RV  {
 public:		//---------------------------------------------------------------------------------------------------------
 	/* all used and neccassary variables are in rcv_msg, which is defined external */
 
-	RV();																// constructor
+	RV() {}																// constructor
 	void    poll(void);													// poll function
 	void    getIntend(void);											// checks the received string if addresses are known
 };

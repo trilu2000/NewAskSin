@@ -15,13 +15,9 @@
 SN snd;																						// declare send module, defined in send.h
 
 
-SN::SN()  {
-	//DBG(SN, F("SN.\n") );																	// ...some debug
-}
-
 void SN::poll(void) {
 	process_config_list_answer_slice();														// check if something has to be send slice wise
-	if (!snd_msg.active) return;															// nothing to do
+	if (snd_msg.active == MSG_ACTIVE::NONE) return;											// nothing to do
 
 	/*  return while no ACK received and timer is running */
 	if ((!snd_msg.timer.done()) && (snd_msg.retr_cnt != 0xff)) return;						
@@ -38,7 +34,40 @@ void SN::poll(void) {
 	/* check for first time and prepare the send */
 	if (!snd_msg.retr_cnt) {
 
-		/* check if we should send an internal message */
+		/* check based on active flag if it is a message which needs to be prepared or only processed */
+		if (snd_msg.active >= MSG_ACTIVE::ANSWER) {
+			snd_msg.mBody.FLAG.RPTEN = 1;													// every message need this flag
+			snd_msg.mBody.FLAG.BIDI = 0;													// ACK required, default no?
+
+			memcpy(snd_msg.mBody.SND_ID, dev_ident.HMID, 3);								// we always send the message in our name
+
+			snd_msg.mBody.MSG_TYP = BY03(snd_msg.type);										// msg type
+			if (BY10(snd_msg.type) != 0xff) snd_msg.mBody.BY10 = BY10(snd_msg.type);		// byte 10
+			if (BY11(snd_msg.type) != 0xff) snd_msg.mBody.BY11 = BY11(snd_msg.type);		// byte 11
+			if (MLEN(snd_msg.type) != 0xff) snd_msg.mBody.MSG_LEN = MLEN(snd_msg.type);		// msg len
+		}
+
+		/* now more in detail in regards to the active flag */
+		if        (snd_msg.active == MSG_ACTIVE::ANSWER) {
+			/* answer means - msg_cnt and rcv_id from received string, no bidi needed, but bidi is per default off */
+			memcpy(snd_msg.mBody.RCV_ID, rcv_msg.mBody.SND_ID, 3);
+			snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;
+
+		} else if (snd_msg.active == MSG_ACTIVE::PAIR) {
+			/* pair means - msg_cnt from snd_msg struct, rcv_id is master_id, bidi needed */
+			memcpy(snd_msg.mBody.RCV_ID, dev_operate.MAID, 3);
+			snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT;
+			snd_msg.MSG_CNT++;
+			snd_msg.mBody.FLAG.BIDI = 1;													// ACK required, will be detected later if not paired 
+
+		} else if (snd_msg.active == MSG_ACTIVE::PEER) {
+			/* peer means - .... */
+
+		}
+
+		/* an internal message which is only to forward while already prepared,
+		* other options are internal but need to be prepared, external message are differs to whom they have to be send and if they
+		* are initial send or as an answer to a received message. all necassary information are in the send struct */
 		if (isEqual(snd_msg.mBody.RCV_ID, dev_ident.HMID, 3)) {
 			memcpy(rcv_msg.buf, snd_msg.buf, snd_msg.buf[0] + 1);							// copy send buffer to received buffer
 			DBG(SN, F("<i ...\n"));															// some debug, message is shown in the received string
@@ -48,8 +77,6 @@ void SN::poll(void) {
 		}
 
 		/* internal messages doesn't matter anymore*/
-		if (snd_msg.active != 2) memcpy(snd_msg.mBody.SND_ID, dev_ident.HMID, 3);			// we always send the message in our name
-		snd_msg.mBody.FLAG.RPTEN = 1;														// every message need this flag
 		snd_msg.temp_MSG_CNT = snd_msg.mBody.MSG_CNT;										// copy the message count to identify the ACK
 		if (isEmpty(snd_msg.mBody.RCV_ID,3)) snd_msg.mBody.FLAG.BIDI = 0;					// broadcast, no ack required
 
@@ -97,15 +124,16 @@ void SN::process_config_list_answer_slice(void) {
 
 	if (!cl->active) return;																// nothing to send, return
 	if (!cl->timer.done()) return;															// something to send but we have to wait
-	if (snd_msg.active) return;																// we have something to do, but send_msg is busy
+	if (snd_msg.active != MSG_ACTIVE::NONE) return;											// we have something to do, but send_msg is busy
 
 	uint8_t payload_len;
 
 	if (cl->type == LIST_ANSWER::PEER_LIST) {
 		/* process the INFO_PEER_LIST */
 		payload_len = cl->peer->get_slice(cl->cur_slc, snd_msg.buf + 11);					// get the slice and the amount of bytes
-		snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// set the message counter
-		snd_msg.set_msg(MSG_TYPE::INFO_PEER_LIST, dev_operate.MAID, 1, payload_len + 10);	// set message type, RCV_ID, SND_ID and set it active
+		//snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;										// set the message counter
+		//snd_msg.set_msg(MSG_TYPE::INFO_PEER_LIST, dev_operate.MAID, 1, payload_len + 10);	// set message type, RCV_ID, SND_ID and set it active
+		snd_msg.type = MSG_TYPE::INFO_PEER_LIST;											// flags are set within the snd_msg struct
 		//DBG(SN, F("SN:LIST_ANSWER::PEER_LIST cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
 		cl->cur_slc++;																		// increase slice counter
 
@@ -117,8 +145,9 @@ void SN::process_config_list_answer_slice(void) {
 			payload_len = 2;																// reflect it in the payload_len
 			memset(snd_msg.buf + 11, 0, payload_len);										// write terminating zeros
 		}
-		snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// set the message counter
-		snd_msg.set_msg(MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS, dev_operate.MAID, 1, payload_len + 10);// set message type, RCV_ID, SND_ID and set it active
+		//snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// set the message counter
+		//snd_msg.set_msg(MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS, dev_operate.MAID, 1, payload_len + 10);// set message type, RCV_ID, SND_ID and set it active
+		snd_msg.type = MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS;									// flags are set within the snd_msg struct
 		//DBG(SN, F("SN:LIST_ANSWER::PARAM_RESPONSE_PAIRS cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
 		cl->cur_slc++;																		// increase slice counter
 
@@ -126,6 +155,9 @@ void SN::process_config_list_answer_slice(void) {
 		/* process the INFO_PARAM_RESPONSE_SEQ 
 		* not implemented yet */
 	}
+
+	snd_msg.mBody.MSG_LEN = payload_len + 10;												// set the message len accordingly
+	snd_msg.active = MSG_ACTIVE::PAIR;														// for address, counter and to make it active
 
 	if (cl->cur_slc >= cl->max_slc) {														// if everything is send, we could stop the struct
 		//DBG(SN, F("SN:LIST_ANSWER::DONE cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');

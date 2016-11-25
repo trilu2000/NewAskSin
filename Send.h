@@ -21,7 +21,7 @@ class SN  {
 
 public:		//---------------------------------------------------------------------------------------------------------
 
-	SN();																	// constructor
+	SN() {}																	// constructor
 	void poll(void);														// poll function, process if something is to send
 
 	void process_config_list_answer_slice(void);							// slice wise send function for list requests

@@ -536,16 +536,19 @@ void send_DEVICE_INFO(MSG_REASON::E reason) {
 
 	/* is it an answer to a CONFIG_PAIR_SERIAL request, or while we initiate the pairing process */
 	if (reason == MSG_REASON::ANSWER) {
-		snd_msg.set_msg_cnt(rcv_msg.mBody.MSG_CNT);											// set the message counter accordingly
-		snd_msg.set_rcv_id(rcv_msg.mBody.SND_ID);											// respond to sender
+		snd_msg.active = MSG_ACTIVE::ANSWER;												// for address, counter and to make it active
+		//snd_msg.set_msg_cnt(rcv_msg.mBody.MSG_CNT);										// set the message counter accordingly
+		//snd_msg.set_rcv_id(rcv_msg.mBody.SND_ID);											// respond to sender
 	} else {
-		snd_msg.set_msg_cnt();
-		snd_msg.set_rcv_id(dev_operate.MAID);												// we initiated, so it has to go to the master id
+		snd_msg.active = MSG_ACTIVE::PAIR;													// for address, counter and to make it active
+		//snd_msg.set_msg_cnt();
+		//snd_msg.set_rcv_id(dev_operate.MAID);												// we initiated, so it has to go to the master id
 	}
 
 	/* BIDI is asked all time, will removed automatically if MAID is empty */
-	snd_msg.set_type(MSG_TYPE::DEVICE_INFO);												// length and flags are set within the snd_msg struct
-	snd_msg.set_active();
+	snd_msg.type = MSG_TYPE::DEVICE_INFO;													// length and flags are set within the snd_msg struct
+	//snd_msg.set_type(MSG_TYPE::DEVICE_INFO);												// length and flags are set within the snd_msg struct
+	//snd_msg.set_active();
 
 	//pair_mode.active = 1;																	// set pairing flag
 	//pair_mode.timer.set(20000);															// set pairing time
@@ -567,10 +570,11 @@ void check_send_ACK_NACK(uint8_t ackOk) {
 */
 void send_ACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
-	snd_msg.set_type(MSG_TYPE::ACK);														// length and flags are set within the snd_msg struct
-	snd_msg.set_rcv_id(rcv_msg.mBody.SND_ID);
-	snd_msg.set_msg_cnt(rcv_msg.mBody.MSG_CNT);												// as it is an answer, we reflect the counter in the answer
-	snd_msg.set_active();
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::ACK;															// length and flags are set within the snd_msg struct
+	//snd_msg.set_rcv_id(rcv_msg.mBody.SND_ID);
+	//snd_msg.set_msg_cnt(rcv_msg.mBody.MSG_CNT);												// as it is an answer, we reflect the counter in the answer
+	//snd_msg.set_active();
 }
 /**
 * @brief Send an ACK with status data
@@ -594,8 +598,10 @@ void send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
 	*(uint8_t*)&msg->MSG_FLAG = actn;
 	msg->MSG_FLAG.LOWBAT = bat.getStatus();
 	msg->MSG_RSSI = cc.rssi;
-	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;											// as it is an answer, we reflect the counter in the answer
-	snd_msg.set_msg(MSG_TYPE::ACK_STATUS, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
+	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// as it is an answer, we reflect the counter in the answer
+	//snd_msg.set_msg(MSG_TYPE::ACK_STATUS, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::ACK_STATUS;													// length and flags are set within the snd_msg struct
 }
 void send_ACK2(void) {
 }
@@ -610,8 +616,11 @@ void send_AES_REQ(s_m0204xx *buf) {
 */
 void send_NACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
-																							//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;											// as it is an answer, we reflect the counter in the answer
-	snd_msg.set_msg(MSG_TYPE::NACK, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);			// length and flags are set within the snd_msg struct
+	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// as it is an answer, we reflect the counter in the answer
+	//snd_msg.set_msg(MSG_TYPE::NACK, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);			// length and flags are set within the snd_msg struct
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::NACK;															// length and flags are set within the snd_msg struct
+
 }
 /**
 * @brief Send a NACK (not ACK and target invalid)
@@ -622,8 +631,11 @@ void send_NACK(void) {
 */
 void send_NACK_TARGET_INVALID(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ACK only while required
-																							//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;											// as it is an answer, we reflect the counter in the answer
-	snd_msg.set_msg(MSG_TYPE::NACK_TARGET_INVALID, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
+	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// as it is an answer, we reflect the counter in the answer
+	//snd_msg.set_msg(MSG_TYPE::NACK_TARGET_INVALID, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::NACK_TARGET_INVALID;											// length and flags are set within the snd_msg struct
+
 }
 void send_ACK_NACK_UNKNOWN() {
 }
@@ -646,8 +658,10 @@ void send_INFO_SERIAL() {
 	s_m1000xx *msg = &snd_msg.m1000xx;														// short hand to info serial struct
 	memcpy(&msg->SERIALNO, dev_ident.SERIAL_NR, 10);										// copy the serial number
 
-	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;											// as it is an answer, we reflect the counter in the answer
-	snd_msg.set_msg(MSG_TYPE::INFO_SERIAL, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
+	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// as it is an answer, we reflect the counter in the answer
+	//snd_msg.set_msg(MSG_TYPE::INFO_SERIAL, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::INFO_SERIAL;													// length and flags are set within the snd_msg struct
 }
 
 /**
@@ -708,9 +722,9 @@ void send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id) 
 * l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
 */
 void send_INFO_PARAM_RESPONSE_SEQ(uint8_t cnl, uint8_t lst, uint8_t *peer_id) {
-	//config_list_answer_slice.type = LIST_ANSWER::PARAM_RESPONSE_PAIRS;;						// we want to get the param list sequential
-	//config_list_answer_slice.list = ptr_CM[cnl]->list[lst];									// pointer to the respective list struct
-	//config_list_answer_slice.max_slc = ptr_CM[cnl]->list[lst]->get_nr_slices();				// get an idea of the total needed slices
+	//config_list_answer_slice.type = LIST_ANSWER::PARAM_RESPONSE_PAIRS;;					// we want to get the param list sequential
+	//config_list_answer_slice.list = ptr_CM[cnl]->list[lst];								// pointer to the respective list struct
+	//config_list_answer_slice.max_slc = ptr_CM[cnl]->list[lst]->get_nr_slices();			// get an idea of the total needed slices
 	//config_list_answer_slice.active = 1;													// and set it active
 }
 
@@ -738,14 +752,16 @@ void send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag) {
 	msg->UNKNOWN = flag;																	// needs investigation
 	msg->MSG_RSSI = cc.rssi;																// received rssi value
 
-	if ((rcvBody->MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcvBody->BY11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST))) {
-		snd_msg.mBody.MSG_CNT = rcvBody->MSG_CNT;											// if it is an answer, take the message counter from received message
-	}
-	else {
-		snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// we initiated, take the message counter from the request
-		bidi = 1;																			// want to get an ACK
-	}
-	snd_msg.set_msg(MSG_TYPE::INFO_ACTUATOR_STATUS, dev_operate.MAID, bidi);				// all the time send to the master
+	//if ((rcvBody->MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcvBody->BY11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST))) {
+	//	snd_msg.mBody.MSG_CNT = rcvBody->MSG_CNT;											// if it is an answer, take the message counter from received message
+	//}
+	//else {
+	//	snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// we initiated, take the message counter from the request
+	//	bidi = 1;																			// want to get an ACK
+	//}
+	//snd_msg.set_msg(MSG_TYPE::INFO_ACTUATOR_STATUS, dev_operate.MAID, bidi);				// all the time send to the master
+	snd_msg.active = MSG_ACTIVE::PAIR;														// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;											// length and flags are set within the snd_msg struct
 }
 
 void send_INFO_TEMP() {

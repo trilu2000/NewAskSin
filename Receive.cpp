@@ -15,9 +15,6 @@
 RV rcv;																						// declare receive module, defined in receive.h
 
 
-RV::RV() {
-	//DBG(RV, F("RV.\n") );																	// ...and some information
-}
 
 void RV::poll(void) {
 
@@ -66,7 +63,6 @@ void RV::poll(void) {
 
 	rcv_msg.hasdata = 1;																	// signalize that something is to do
 }
-
 
 void RV::getIntend() {
 	// prepare the peer search
