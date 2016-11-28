@@ -25,7 +25,12 @@
 
  "channels": [
     { "type": "Master",    "peers":  0, "hidden": 0, "linked": 0 },
-    { "type": "xmlDimmer", "peers": 10, "hidden": 0, "linked": 0 }
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 },
+    { "type": "xmlRemote", "peers": 10, "hidden": 0, "linked": 0 }
     ]
 
 }

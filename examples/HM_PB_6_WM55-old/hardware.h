@@ -17,8 +17,7 @@
 
 	#if defined(__AVR_ATmega328P__)
 		//- hardware specific general setup
-		//#define PCINT_CALLBACK													// enables the pin change interrupt callback in user sketch
-
+		#define PCINT_CALLBACK													// enables the pin change interrupt callback in user sketch
 
 		//- cc1100 hardware CS and GDO0 definitions -------------------------------------------------------------------
 		#define CC_CS                  PIN_B2									// chip select

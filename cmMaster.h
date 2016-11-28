@@ -58,12 +58,12 @@ public://-----------------------------------------------------------------------
 
 	void init(void);																		// init function, called after AS initialisation
 	virtual void cm_init(void) {}															// init function for channel modules to overwrite
+	virtual void cm_init(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC) {}
 
 	void poll(void);																		// poll function, driven by HM loop
 	virtual void cm_poll(void) {}															// poll function for channel modules to overwrite
 
 	virtual void set_toggle(void);															// toggle the module initiated by config button
-
 
 	/* receive functions to handle requests forwarded by AS:processMessage 
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */

@@ -1,24 +1,23 @@
 #define SER_DBG
 
 //- load library's --------------------------------------------------------------------------------------------------------
-#include <AS.h>																				// the asksin framework
 #include "register.h"																		// configuration sheet
+#include <AS.h>																				// ask sin framework
 
-//waitTimer xTmr;
+
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
-	// - Hardware setup ---------------------------------------
-	// everything off
+
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
 
-	//EIMSK = 0;																			// disable external interrupts
-	//ADCSRA = 0;																			// ADC off
-	//power_all_disable();																	// and everything else
+	EIMSK = 0;																				// disable external interrupts
+	ADCSRA = 0;																				// ADC off
+	power_all_disable();																	// and everything else
 	
-	//DDRB = DDRC = DDRD = 0x00;															// everything as input
-	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
+	DDRB = DDRC = DDRD = 0x00;																// everything as input
+	PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
 	// todo: timer0 and SPI should enable internally
 	power_timer0_enable();
@@ -26,67 +25,62 @@ void setup() {
 
 	// enable only what is really needed
 
-
-	#ifdef SER_DBG
+	#ifdef SER_DBG																			// some debug
 		dbgStart();																			// serial setup
-		dbg << F("HM_LC_Dim1PWM_CV\n");
+		dbg << F("HM_PB_6_WM55\n");	
 		dbg << F(LIB_VERSION_STRING);
 		_delay_ms (50);																		// ...and some information
 	#endif
-	
-	
+
 	// - AskSin related ---------------------------------------
 	hm.init();																				// init the asksin framework
-
-
 	sei();																					// enable interrupts
 
-	
+
 	// - user related -----------------------------------------
+	registerPCINT(PIN_C0);																	// register the pin change interrupt for hw keys
+	registerPCINT(PIN_C1);
+	registerPCINT(PIN_C2);
+	registerPCINT(PIN_C3);
+	registerPCINT(PIN_C4);
+	registerPCINT(PIN_C5);
+
+
 	#ifdef SER_DBG
-		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");		// some debug
+		dbg << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");	// some debug
 	#endif
-	
+
 }
+
+
+
 
 void loop() {
 	// - AskSin related ---------------------------------------
 	hm.poll();																				// poll the homematic main loop
 	
-
 	// - user related -----------------------------------------
-
+	
 }
 
+void initRemote(uint8_t channel) {
+
+}
 
 //- user functions --------------------------------------------------------------------------------------------------------
-void initDim(uint8_t channel) {
-	#ifdef SER_DBG
-		dbg << F("initDim: ") << channel << "\n";
-	#endif
-		
-	power_timer2_enable();																	// enable the timer2 in power management
-	
-	SET_PIN_OUTPUT(PIN_D3); //pinOutput(DDRD, 3);																		// init the relay pins
-	//setPinLow(PORTD,3);
-	
-	TCCR2B |= (1<<CS21);																	// configure the PWM for the respective output pin
-	OCR2B = 0x00;
-	TCCR2A |= 1<<COM2B1;
-
+/**
+* @brief Callback function for pin change interrupt. Has to be enabled in hardware.h by #define PCINT_CALLBACK.
+* Will be called every time a registered pin change interrupt had happened. Declaration of callback is done in
+* HAL_extern.h automatically.
+* @param   vec     Indicates the vector were the interrupt was raised
+* @param   pin     Indicates the pin byte (1,2,4,8,16,32,64,128)
+* @param   flag    Indicates the value of the port pin (1 = high, 0 = low)
+*/
+void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag) {
+	//dbg << "cb, vec:" << vec << ", pin:" << pin << ", flag:" << flag << '\n';
 }
-void switchDim(uint8_t channel, uint8_t status, uint8_t characteristic) {
-	#ifdef SER_DBG
-		dbg << F("switchDim: ") << channel << ", " << status << ", " << characteristic << "\n";
-	#endif
 
-	uint16_t x = status*255;
-	x /= 200;																				// status = 0 to 200, but PWM needs 255 as maximum
-	OCR2B = x;																				// set the PWM value to the pin
 
-	//if (status) setPinHigh(PORTD,3);														// here you could switch on an additional power supply
-	//else setPinLow(PORTD,3);
-}
 
 //- predefined functions --------------------------------------------------------------------------------------------------
 void serialEvent() {
@@ -112,5 +106,3 @@ void serialEvent() {
 	}
 	#endif
 }
-
-

@@ -65,7 +65,6 @@ void cmMaster::set_toggle(void) {
 }
 
 
-
 /*
 * @brief Received message handling forwarded by AS::processMessage
 */
