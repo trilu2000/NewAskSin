@@ -63,6 +63,7 @@ void SN::poll(void) {
 		} else if (snd_msg.active == MSG_ACTIVE::PEER) {
 			/* peer means - .... */
 
+
 		}
 
 		/* an internal message which is only to forward while already prepared,

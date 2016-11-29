@@ -48,9 +48,7 @@ private:  //--------------------------------------------------------------------
 		uint8_t armed            : 1;														// if this is set to 1, poll function should be entered
 		uint8_t last_short       : 1;														// if the last key press was a short to detect a double short
 		uint8_t last_long        : 1;														// if the last keypress was a long to detect a double long
-		uint8_t wait_dbl_long    : 1;														// wait for a double_long, while last key was a long or repeated long
-		uint8_t last_rpt_long    : 1;														// if the key is still pressed for a certain time to detect repeat status over a timer
-	    uint8_t                  : 2;
+	    uint8_t                  : 4;
 	} button_check;
 	
 	struct s_button_ref {

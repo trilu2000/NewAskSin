@@ -256,7 +256,7 @@ void send_HAVE_DATA();
 
 void send_SWITCH(s_peer_table *peerDB);													// peer related communication
 void send_TIMESTAMP(s_peer_table *peerDB);												// needed as send and receive function
-void send_REMOTE(s_peer_table *peerDB);													// will be send to the peerlist, therefor
+void send_REMOTE(s_peer_table *peerDB, s_list_table *listP, uint8_t *payload, uint8_t bidi); // will be send to the peerlist, therefor
 void send_SENSOR_EVENT(s_peer_table *peerDB);											// handover of the respective peerDB pointer
 void send_SWITCH_LEVEL(s_peer_table *peerDB);											// is mandatory
 void send_SENSOR_DATA(s_peer_table *peerDB);

@@ -773,7 +773,14 @@ void send_SWITCH(s_peer_table *peerDB) {
 }
 void send_TIMESTAMP(s_peer_table *peerDB) {
 }
-void send_REMOTE(s_peer_table *peerDB) {
+void send_REMOTE(s_peer_table *peerDB, s_list_table *listP, uint8_t *payload, uint8_t bidi) {
+	memcpy(&snd_msg.buf[8], payload, 2);
+	snd_msg.type = MSG_TYPE::REMOTE;
+	snd_msg.peerDB = peerDB;
+	snd_msg.lstP = listP;
+	snd_msg.active = MSG_ACTIVE::PEER;
+	dbg << "peers:" << peerDB->used_slots() << ", payload:" << _HEX(payload, 2) << ", bidi:" << bidi << '\n';
+
 }
 void send_SENSOR_EVENT(s_peer_table *peerDB) {
 }

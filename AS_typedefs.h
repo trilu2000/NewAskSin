@@ -275,7 +275,7 @@ namespace MSG_REASON {
 * PEER      - 6, device initiated message to all known peers of a channel, message counter from send function, ack required
 */
 namespace MSG_ACTIVE {
-	enum E : uint8_t { NONE = 0, FORWARD = 1, DEBUG = 2, ANSWER = 3, PAIR = 4, PEER = 5, };
+	enum E : uint8_t { NONE = 0, FORWARD = 1, DEBUG = 2, ANSWER = 3, PAIR = 4, PEER = 5,  };
 };
 
 
@@ -2195,7 +2195,6 @@ typedef struct ts_recv {
 */
 typedef struct ts_send {
 	MSG_ACTIVE::E active;				// flag that something is to process
-	//uint8_t   pass_through;				// pass through string from console
 
 	union {
 		uint8_t buf[MaxDataLen];		// initial buffer for messages to send
@@ -2268,58 +2267,18 @@ typedef struct ts_send {
 	uint16_t  max_time;					// max time for message timeout timer - info is set by  cmMaintenance
 	waitTimer timer;					// send mode timeout
 
-	MSG_TYPE::E type;
+	MSG_TYPE::E type;					// set the message type for further processing in send function
+	s_peer_table *peerDB;				// pointer to respective peer table for peer message
+	s_list_table *lstP;					// ponter to list4 for peer message
 
 	void clear() {						// function to reset flags
 		active = MSG_ACTIVE::NONE;
-		buf[0] = 0;
-		*(uint8_t*)&mBody.FLAG = 0;
-		//pass_through = 0;
+		//buf[0] = 0;
+		//*(uint8_t*)&mBody.FLAG = 0;
 		timeout = 0;
 		retr_cnt = 0;
 		temp_max_retr = 0;
 		timer.set(0);
-	}
-
-	/* prepare the message and make it ready to send.
-	*  within this function call we set the message type, the message length,
-	*  and the BIDI flag. RPTEN and the SND_ID is set within the send function */
-	void set_msg(MSG_TYPE::E type, uint8_t *rcv_id, uint8_t cnt, uint8_t bidi = 0, uint8_t len = 0xff) {
-		memcpy(mBody.RCV_ID, rcv_id, 3); 
-
-		mBody.MSG_CNT = cnt;
-
-		/* NACK_TARGET_INVALID is defined in AS_typedef.h as 0x0284ff0a
-		* where 0x02 is the message type, 0x84 is byte 10, 0xff is byte 11 but ff indicates that it is not used
-		* and 0x0a reflects the len */
-		mBody.MSG_TYP = BY03(type);														// msg type
-		if (BY10(type) != 0xff) mBody.BY10 = BY10(type);								// byte 10
-		if (BY11(type) != 0xff) mBody.BY11 = BY11(type);								// byte 11
-		if (MLEN(type) != 0xff) mBody.MSG_LEN = MLEN(type);								// msg len
-
-		if (len != 0xff) mBody.MSG_LEN = len;											// msg len from parameters
-		mBody.FLAG.BIDI = bidi;															// ACK required?
-		active = MSG_ACTIVE::FORWARD;
-	}
-	void set_type(MSG_TYPE::E type) {
-		mBody.FLAG.BIDI = 0;															// ACK required?
-		mBody.MSG_TYP = BY03(type);														// msg type
-		if (BY10(type) != 0xff) mBody.BY10 = BY10(type);								// byte 10
-		if (BY11(type) != 0xff) mBody.BY11 = BY11(type);								// byte 11
-		if (MLEN(type) != 0xff) mBody.MSG_LEN = MLEN(type);								// msg len
-	}
-	void set_rcv_id(uint8_t *rcv_id) {
-		memcpy(mBody.RCV_ID, rcv_id, 3);
-	}
-	void set_msg_cnt() {
-		mBody.MSG_CNT = MSG_CNT;
-		MSG_CNT++;
-	}
-	void set_msg_cnt(uint8_t cnt) {
-		mBody.MSG_CNT = cnt;
-	}
-	void set_active() {
-		active = MSG_ACTIVE::FORWARD;
 	}
 
 } s_send;
