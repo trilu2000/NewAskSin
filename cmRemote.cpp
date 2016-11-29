@@ -39,11 +39,13 @@ cmRemote::cmRemote(const uint8_t peer_max) : cmMaster(peer_max) {
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
 	l4 = (s_l4*)lstP.val;
 
-	initRemote(lstC.cnl);																	// call external init function to set the input pins
-
-	DBG(RE, F("cmRemote, cnl: "), lstC.cnl, '\n');
 }
 
+void cmRemote::cm_init() {
+	initRemote(lstC.cnl);																	// call external init function to set the input pins
+	DBG(RE, F("cmRemote, cnl: "), lstC.cnl, '\n');
+
+}
 
 /**------------------------------------------------------------------------------------------------------------------------
 *- user defined functions -
@@ -57,7 +59,7 @@ cmRemote::cmRemote(const uint8_t peer_max) : cmMaster(peer_max) {
 * In such a case you can call the buttonAction() directly from user sketch.
 * @param   port/pin information    PIN_C2
 */
-void cmRemote::cm_init(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC) {
+void cmRemote::cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC) {
 
 	registerPCINT(PINBIT, DDREG, PORTREG, PINREG, PCINR, PCIBYTE, PCICREG, PCIMASK, PCIEREG, VEC);// prepare hardware and register interrupt
 
@@ -66,86 +68,93 @@ void cmRemote::cm_init(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t
 	button_ref.status = checkPCINT(button_ref.port, button_ref.pin, 0);						// get the latest information
 
 	button_check.configured = 1;															// poll the pin make only sense if it was configured, store result here
-	DBG(RE, F("RE:config, cnl: "), lstC.cnl, F(", pin: "), button_ref.pin, F(", port: "), button_ref.port, '\n');
+	DBG(RE, F("RE:init_pin, cnl: "), lstC.cnl, F(", pin: "), button_ref.pin, F(", port: "), button_ref.port, F(", LONG_PRESS_TIME: "), byteTimeCvt(l1->LONG_PRESS_TIME), F(", DBL_PRESS_TIME: "), byteTimeCvt(l1->DBL_PRESS_TIME), F(", AES_ACTIVE: "), l1->AES_ACTIVE, '\n');
 }
 
 
 #define repeatedLong 250
+#define LONG_PRESS_TIME  byteTimeCvt(l1->LONG_PRESS_TIME)
+#define DBL_PRESS_TIME  byteTimeCvt(l1->DBL_PRESS_TIME)
+
 void cmRemote::cm_poll(void) {
 
 	if (!button_check.configured) return;													// if port is not configured, poll makes no sense
 	button_ref.status = checkPCINT(button_ref.port, button_ref.pin, 1);						// check if an interrupt had happened
 
-
-	if (button_ref.status == 2) {								// button was just pressed
-		//dbg << "armed \n";
-		timer.set(l1->LONG_PRESS_TIME);													// set timer to detect a long
-		pom.stayAwake(l1->LONG_PRESS_TIME + 500);											// stay awake to check button status
+	/* button was just pressed, start for every option */
+	if (button_ref.status == 2) {
+		timer.set(LONG_PRESS_TIME);															// set timer to detect a long
+		pom.stayAwake(LONG_PRESS_TIME + 500);												// stay awake to check button status
 		button_check.armed = 1;																// set it armed
-		return;																				// all done while button was pressed
 	}
-	if (!button_check.armed) return;														// nothing to do any more, wait till the pin status is changed
+	if (!button_check.armed) return;
 
+	/* button was just released, keyShortSingle, keyShortDouble, keyLongRelease */
+	if (button_ref.status == 3) {
+		timer.set(DBL_PRESS_TIME);															// set timer to clear the repeated flags
+		pom.stayAwake(DBL_PRESS_TIME + 500);												// stay awake to check button status
 
-	if (button_ref.status == 3) {								// button was just released, keyShortSingle, keyShortDouble, keyLongRelease
+		/* keyLongRelease, could be a long_double */
+		if (button_check.last_long) { 	
+			button_check.wait_dbl_long = 1;													// waiting for a key long double
+			button_action(5);
 
-		//dbg << "3 lstLng:" << chkRPT.last_long << " dblLng:" << chkRPT.last_dbl_long << " lngRpt:" << chkRPT.last_rpt_long << " lstSht:" << chkRPT.last_short << '\n';
-		timer.set(l1->DBL_PRESS_TIME);														// set timer to clear the repeated flags
-		pom.stayAwake(l1->DBL_PRESS_TIME + 500);											// stay awake to check button status
-
-		if (button_check.last_long) { 									// keyLongRelease
-			button_check.wait_dbl_long = 1;														// waiting for a key long double
-			buttonAction(5);
-
-		} else if (button_check.last_short) {								// keyShortDouble
+		/* keyShortDouble */
+		} else if (button_check.last_short) {
 			button_check.last_short = 0;
-			buttonAction(2);
+			button_action(2);
 
-		} else if ((!button_check.last_long) && (!button_check.wait_dbl_long)) {// keyShortSingle
-			button_check.last_short = 1;															// waiting for a key short double
-			buttonAction(1);
+		/* keyShortSingle */
+		} else if ((!button_check.last_long) && (!button_check.wait_dbl_long)) {
+			button_check.last_short = 1;													// waiting for a key short double
+			button_action(1);
 
-		} else if (button_check.last_rpt_long && button_check.wait_dbl_long) {	// keyLongDoubleRelease														
-			buttonAction(7);
-
+		/* keyLongDoubleRelease */
+		} else if (button_check.last_rpt_long && button_check.wait_dbl_long) {														
+			button_action(7);
 		}
-		button_check.last_long = button_check.last_rpt_long = 0;										// some cleanup
+		button_check.last_long = button_check.last_rpt_long = 0;							// some cleanup
+	} 
+	
+	/* button is still pressed or released, if timer is running we have to wait */
+	if (!timer.done()) return;																				
 
+	/* button is still pressed, but timed out, seems to be a long */
+	if (button_ref.status == 0) {	
+		pom.stayAwake(LONG_PRESS_TIME + 500);												// stay awake to check button status
 
-	} else if ((button_ref.status == 0) && (timer.done())) {	// button is still pressed, but timed out, seems to be a long
-		//dbg << "0 lstLng:" << chkRPT.last_long << " dblLng:" << chkRPT.last_dbl_long << " lngRpt:" << chkRPT.last_rpt_long << " lstSht:" << chkRPT.last_short << '\n';
+		/* detect a repeated double long */
+		if (button_check.last_rpt_long  && button_check.wait_dbl_long) {					
+			timer.set(LONG_PRESS_TIME);														// set timer to detect next long
 
-		pom.stayAwake(l1->LONG_PRESS_TIME + 500);											// stay awake to check button status
-
-		if (button_check.last_rpt_long  && button_check.wait_dbl_long) {		// detect a repeated double long
-			timer.set(l1->LONG_PRESS_TIME);												// set timer to detect next long
-
-		} else if (button_check.last_long) {								// keyLongRepeat
+		/* keyLongRepeat */
+		} else if (button_check.last_long) {	
 			timer.set(repeatedLong);														// set timer to detect a repeated long
 			button_check.last_rpt_long = 1;
-			buttonAction(4);																// last key state was a long, now it is a repeated long
+			button_action(4);																// last key state was a long, now it is a repeated long
 
-		} else if (button_check.wait_dbl_long) {							// keyLongDouble
-			timer.set(l1->LONG_PRESS_TIME);												// set timer to detect next long
-			button_check.last_rpt_long = 1;														// remember last was long
-			buttonAction(6);																// double flag is set, means was the second time for a long													
+		/* keyLongDouble */
+		} else if (button_check.wait_dbl_long) {
+			timer.set(LONG_PRESS_TIME);														// set timer to detect next long
+			button_check.last_rpt_long = 1;													// remember last was long
+			button_action(6);																// double flag is set, means was the second time for a long													
 
-		} else {													// keyLongSingle
+		/* keyLongSingle */
+		} else {
 			timer.set(repeatedLong);														// set timer to detect a repeated long
-			button_check.last_long = 1;															// remember last was long
-			buttonAction(3);																// first time detect a long
-
+			button_check.last_long = 1;														// remember last was long
+			button_action(3);																// first time detect a long
 		}
-
-
-	} else if ((button_ref.status == 1) && (timer.done())) {	// button is not pressed for a longer time, clean up
-		//if (chkRPT.armed) dbg << "r\n";
+	} 
+	
+	/* button is not pressed for a longer time, clean up */
+	if (button_ref.status == 1) {	
 		button_check = {};
 		button_check.configured = 1;
 		//button_check.armed = button_check.wait_dbl_long = button_check.last_long = button_check.last_rpt_long = button_check.last_short = 0;
-
 	}
 }
+
 
 /**
 * @brief Sending out an Asksin message by the given action. Function can be called from user sketch directly.
@@ -160,16 +169,16 @@ void cmRemote::cm_poll(void) {
 *                   7 - end of double long key press
 *                 255 - key press, for stay awake issues
 */
-void cmRemote::buttonAction(uint8_t bEvent) {
+void cmRemote::button_action(uint8_t event) {
 	// at the moment this channel module will only work for channel > 0 while key for maintanance channel need
 	// some special functionality, like link to toogle and pairing
 
 	pom.stayAwake(1000);																	// overcome the problem of not getting a long repeated key press
-	if (bEvent == 255) return;																// was only a wake up message
+	if (event == 255) return;																// was only a wake up message
 
-	DBG(RE, F("RM:buttonAction, cnl: "), lstC.cnl, F(", evt:"), bEvent, '\n');
+	DBG(RE, F("RM:buttonAction, cnl: "), lstC.cnl, F(", evt:"), event, '\n');
 
-	if ((bEvent == 3) || (bEvent == 4)) button_info.longpress = 1;							// set the long key flag if requested
+	if ((event == 3) || (event == 4)) button_info.longpress = 1;							// set the long key flag if requested
 	else button_info.longpress = 0;															// otherwise it is a short
 	dbg << "x:" << button_info.longpress << '\n';
 

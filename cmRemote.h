@@ -15,7 +15,7 @@
 
 
 const uint8_t cmRemote_ChnlReg[] PROGMEM = { 0x04,0x08,0x09, };
-const uint8_t cmRemote_ChnlDef[] PROGMEM = { 0x10,0x00,0x00, };
+const uint8_t cmRemote_ChnlDef[] PROGMEM = { 0x40,0x00,0x00, };
 
 const uint8_t cmRemote_PeerReg[] PROGMEM = { 0x01, };
 const uint8_t cmRemote_PeerDef[] PROGMEM = { 0x00, };
@@ -70,13 +70,14 @@ private:  //--------------------------------------------------------------------
 public:  //----------------------------------------------------------------------------------------------------------------
 
 	cmRemote(const uint8_t peer_max);														// constructor
+	virtual void cm_init();																	// overwrite the init function in cmMaster
 
 	virtual void cm_poll(void);																// poll function, driven by HM loop
 
 	/* register a pc interrupt to the respective pin. definition of the pins are stored in HAL_atmega.h */
-	virtual void cm_init(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);
+	virtual void cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);
 	
-	void buttonAction(uint8_t bEvent);
+	virtual void button_action(uint8_t event);
 
 	/* receive functions to handle requests forwarded by AS:processMessage
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */

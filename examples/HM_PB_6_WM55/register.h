@@ -88,12 +88,12 @@ void everyTimeStart(void) {
 	pom.setMode(POWER_MODE_NO_SLEEP);
 	bat.set(30, 3600000);
 	// channel 1 section 
-	ptr_CM[1]->cm_init(PIN_C0);
-	ptr_CM[2]->cm_init(PIN_C1);
-	ptr_CM[3]->cm_init(PIN_C2);
-	ptr_CM[4]->cm_init(PIN_C3);
-	ptr_CM[5]->cm_init(PIN_C4);
-	ptr_CM[6]->cm_init(PIN_C5);
+	ptr_CM[1]->cm_init_pin(PIN_C0);
+	ptr_CM[2]->cm_init_pin(PIN_C1);
+	ptr_CM[3]->cm_init_pin(PIN_C2);
+	ptr_CM[4]->cm_init_pin(PIN_C3);
+	ptr_CM[5]->cm_init_pin(PIN_C4);
+	ptr_CM[6]->cm_init_pin(PIN_C5);
 }
 
 /**
