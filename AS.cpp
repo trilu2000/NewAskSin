@@ -500,7 +500,8 @@ void AS::processMessage(void) {
 
 	}
 	else if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_HAVE_DATA) {											// HAVE_DATA
-																										// TODO: Make ready
+		snd_msg.mBody.FLAG.WKMEUP= 0;
+		send_ACK();
 
 	}
 	else if (rcv_msg.mBody.MSG_TYP >= AS_MESSAGE_SWITCH_EVENT) {
@@ -916,6 +917,7 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
 	snd_msg.mBody.FLAG.CFG   = 1;
 	snd_msg.mBody.FLAG.BIDI  = stcPeer.bidi;															// message flag
 	snd_msg.mBody.FLAG.BURST = l4_0x01.s.peerNeedsBurst;
+	snd_msg.mBody.FLAG.WKMEUP= 1;
 	
 	prepareToSend(snd_msg.MSG_CNT, stcPeer.msg_type, xPeer);
 
