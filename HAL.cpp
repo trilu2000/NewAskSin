@@ -42,8 +42,7 @@ void    startWDG8000ms(void) {
 }
 void    setSleep(void) {
 	//dbg << ',';																// some debug
-	//_delay_ms(10);															// delay is necessary to get it printed on the console before device sleeps
-	//_delay_ms(100);
+	//Serial.flush();															// flush is necessary to get it printed on the console before device sleeps
 
 	// some power savings by switching off some CPU functionality
 	ADCSRA = 0;																	// disable ADC
@@ -84,7 +83,7 @@ void    initMillis() {
 	SET_TCCRA();
 	SET_TCCRB();
 	REG_TIMSK = _BV(BIT_OCIE);
-	REG_OCR = ((F_CPU / PRESCALER) / 1000) - 1;		// as of atmel docu: ocr should be one less than divider
+	REG_OCR = ((F_CPU / PRESCALER) / 1000) - 1;												// as of atmel docu: ocr should be one less than divider
 }
 tMillis getMillis() {
 	tMillis ms;

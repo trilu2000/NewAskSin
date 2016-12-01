@@ -693,12 +693,12 @@ void AS::sendTimeStamp(void) {
  * counter: the counter increased at every button release.
  *
  * @param channel
- * @param burst
  * @param payload: pointer to payload
+ * @param burst
  */
 void AS::sendREMOTE(uint8_t channel, uint8_t *payload, uint8_t msg_flag) {
 	// burst flag is not needed, has to come out of list4, as well as AES flag
-	sendEvent(channel, 0, AS_MESSAGE_REMOTE_EVENT, payload, 2);
+	sendEvent(channel, AS_MESSAGE_REMOTE_EVENT, 0, payload, 2);
 }
 
 /**
