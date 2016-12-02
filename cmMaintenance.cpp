@@ -32,8 +32,6 @@ cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
 	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
 
 	lstP.lst = 255;																			// lstP doesn't exist...
-
-	DBG(MN, F("MN. cnl: "), lstC.cnl, '\n');
 }
 
 
@@ -42,14 +40,18 @@ cmMaintenance::cmMaintenance(const uint8_t peer_max) : cmMaster(peer_max ) {
 *        like MasterID or resend time and counter if applicable
 */
 void cmMaintenance::info_config_change(void) {
-	// get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it
-	uint8_t *t = lstC.ptr_to_val(0x0a);
-	dev_operate.MAID = t;
+	/* get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it 
+	*  if register 0x0a didn't exist, we are getting a NULL pointer with a null value, writing into it 
+	* will reset the device, failure needs not to be solved, while a device where the pair address is not valid
+	* has probably more issues */
+	uint8_t *ptr_pair = lstC.ptr_to_val(0x0a);
+	dev_operate.MAID = ptr_pair;
 
-	// handle the aes flag (0x08) in list0 - flag does probably not exist, but ptr_to_val gives a pointer to an existing byte with 0xff as value
+	/* handle the aes flag (0x08) in list0 - flag does probably not exist therefore we check the pointer and if it is a 
+	*  NULL pointer, we create a byte and allign it with the AES flag */
+	static uint8_t aes = 0;
 	dev_operate.AES_FLAG = lstC.ptr_to_val(0x08);
-	if (*dev_operate.AES_FLAG == 0xff) *dev_operate.AES_FLAG = 0;
-
+	if (!dev_operate.AES_FLAG) dev_operate.AES_FLAG = &aes;
 
 	snd_msg.max_retr = 3;		//or set TRANSMIT_DEV_TRY_MAX
 	snd_msg.max_time = 300;
