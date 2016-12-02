@@ -55,6 +55,7 @@ private:  //--------------------------------------------------------------------
 		uint8_t port;																		// port information for checking interrupt
 		uint8_t pin;																		// pin information for checking interrupt
 		uint8_t status;																		// variable to store current status in polling function
+		uint8_t counter;																	// channel specific message counter
 	} button_ref;
 
 	struct s_button_info {

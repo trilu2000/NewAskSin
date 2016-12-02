@@ -19,13 +19,19 @@ class SN  {
 	#define sndStrLen	 snd_msg.mBody->MSG_LEN+1							// amount of bytes in the send buffer
 	#define sndAckReq    snd_msg.mBody->FLAG.BIDI							// check if an ACK is requested
 
+	struct s_0x01 {
+		uint8_t PEER_NEEDS_BURST : 1;  // 0x01.0, s:1   d: false  
+		uint8_t                  : 6;  // 0x01.1, s:6   d:   
+		uint8_t EXPECT_AES       : 1;  // 0x01.7, s:1   d: false  
+	}; // 1 byte
+
 public:		//---------------------------------------------------------------------------------------------------------
 
 	SN() {}																	// constructor
 	void poll(void);														// poll function, process if something is to send
 
-	void process_config_list_answer_slice(void);							// slice wise send function for list requests
-
+	inline void process_config_list_answer_slice(void);						// slice wise send function for list requests
+	inline void prepare_message(void);										// prepare the message to send with the information in snd_msg struct
 
 };
 

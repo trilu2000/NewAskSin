@@ -106,7 +106,30 @@ void everyTimeStart(void) {
 void firstTimeStart(void) {
 	dbg << F("\n\nnew magic!\n\n");
 
+	/* add some peers to test - peers can be added per default, important if we want to build up combined devices.
+	*  by doing this, we can build a light switch by combing a remote and a switch channel.
+	*  first we need an array with the peer address and in a second step it is written into the respective channel.
+	*  set_peer needs two parameters, the index which reflects the slot where the peer is written to and second the peer 
+	*  address as array. please note: no defaults a written into the respective peer list, this has to be done manually */
+	uint8_t temp[] = { 0x01,0x02,0x01,0x01, };												// declare and fill array
+	ptr_CM[1]->peerDB.set_peer(0, temp);													// write it to index 0
+	temp[2] = 0x02;																			// adjust array content
+	ptr_CM[1]->peerDB.set_peer(1, temp);													// write to index 1
+	temp[2] = 0x03;
+	ptr_CM[1]->peerDB.set_peer(2, temp);
+	temp[2] = 0x04;
+	ptr_CM[1]->peerDB.set_peer(3, temp);
 
+	/* this example shows how peer lists (list3/4) could be set manually. in the first example we set default values
+	*  to channel 1 list 4 for the first peer. in the second example we write a custom information to channel 1 list 4
+	*  peer 2,3 and 4. default values are stored in the respective channel module */
+	ptr_CM[1]->lstP.load_default();															// load the defaults into the list 4
+	ptr_CM[1]->lstP.save_list(0);															// write it to index 0
+
+	temp[0] = 0x01; temp[1] = 0x01;															// adjust array content
+	ptr_CM[1]->lstP.write_array(temp, 2, 1);												// write 2 bytes into index 1
+	ptr_CM[1]->lstP.write_array(temp, 2, 2);
+	ptr_CM[1]->lstP.write_array(temp, 2, 3);
 }
 
 

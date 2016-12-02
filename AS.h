@@ -47,21 +47,6 @@
 class AS {
   public:		//---------------------------------------------------------------------------------------------------------
 
-	struct s_stcPeer {
-		uint8_t active;//    :1;			// indicates status of poll routine, 1 is active
-		uint8_t retries;//     :3;			// send retries
-		uint8_t burst;//     :1;			// burst flag for send function
-		uint8_t bidi;//      :1;			// ack required
-		//uint8_t :2;
-		uint8_t msg_type;					// message type to build the right message
-		uint8_t *ptr_payload;				// pointer to payload
-		uint8_t len_payload;				// length of payload
-		uint8_t channel;					// which channel is the sender
-		uint8_t idx_cur;					// current peer slots
-		uint8_t idx_max;					// amount of peer slots
-		uint8_t slot[8];					// slot measure, all filled in a first step, if ACK was received, one is taken away by slot
-	} stcPeer;
-
 	union {
 		struct s_l4_0x01 {
 			uint8_t  peerNeedsBurst:1;			// 0x01, s:0, e:1
@@ -120,15 +105,15 @@ class AS {
 	void sendINFO_POWER_EVENT(uint8_t *data);
 	void sendINFO_TEMP(void);
 	void sendHAVE_DATA(void);
-	void sendSWITCH(void);
-	void sendTimeStamp(void);
-	void sendREMOTE(uint8_t channel, uint8_t *ptr_payload, uint8_t msg_flag = 0);
-	void sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload);
-	void sendSensorData(void);
-	void sendClimateEvent(void);
-	void sendSetTeamTemp(void);
-	void sendWeatherEvent(void);
-	void sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload);
+//	void sendSWITCH(void);
+//	void sendTimeStamp(void);
+//	void sendREMOTE(uint8_t channel, uint8_t *ptr_payload, uint8_t msg_flag = 0);
+//	void sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload);
+//	void sendSensorData(void);
+//	void sendClimateEvent(void);
+//	void sendSetTeamTemp(void);
+//	void sendWeatherEvent(void);
+//	void sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload);
 
 	//void processMessageAction11();
 	//void processMessageAction3E(uint8_t cnl, uint8_t pIdx);
@@ -153,8 +138,8 @@ class AS {
 
 
 	// - poll functions --------------------------------
-	inline void sendPeerMsg(void);																// scheduler for peer messages
-	void preparePeerMessage(uint8_t *xPeer, uint8_t retr);
+	//inline void sendPeerMsg(void);																// scheduler for peer messages
+	//void preparePeerMessage(uint8_t *xPeer, uint8_t retr);
 			
 
 	// - send functions --------------------------------

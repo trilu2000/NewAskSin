@@ -153,9 +153,9 @@ void cmRemote::button_action(uint8_t event) {
 	else button_info.longpress = 0;															// otherwise it is a short
 	button_info.lowbat = bat.getStatus();
 	button_info.channel = lstC.cnl;
+	button_info.counter = button_ref.counter;
 
 	send_REMOTE(&peerDB, &lstP, (uint8_t*)&button_info, (event == 3)? 0:1);					// send the message
-
-	if (event != 3) button_info.counter++;													// increase the button counter
+	if (event != 3) button_ref.counter++;													// increase the button counter
 }
 

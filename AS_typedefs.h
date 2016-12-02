@@ -115,10 +115,9 @@ typedef struct ts_list_table {
 	*  by calling load_defaults(), load_list() or save_list()
 	*/
 	uint8_t* ptr_to_val(uint8_t reg_addr) {	
-		static uint8_t empty = 0xff;
-		const void *pAddr =  memchr_P(reg, reg_addr, len);
-		if (!pAddr) return &empty;
-		return val + (uint16_t)pAddr - (uint16_t)reg;
+		uint8_t *pos_in_reg = (uint8_t*)memchr_P(reg, reg_addr, len);
+		if (!pos_in_reg) return NULL;
+		return (val + (pos_in_reg - reg));
 	}
 
 	/* Writes values by a given register/value array into the local value array. 
@@ -127,7 +126,8 @@ typedef struct ts_list_table {
 	void write_array(uint8_t *buf, uint8_t len, uint8_t idx = 0) {
 		load_list(idx);
 		for (uint8_t i = 0; i < len; i += 2) {
-			*ptr_to_val(buf[i]) = buf[i + 1];
+			uint8_t *ptr = ptr_to_val(buf[i]);
+			if (ptr) *ptr = buf[i + 1];
 		}
 		save_list(idx);
 	}
@@ -275,7 +275,7 @@ namespace MSG_REASON {
 * PEER      - 6, device initiated message to all known peers of a channel, message counter from send function, ack required
 */
 namespace MSG_ACTIVE {
-	enum E : uint8_t { NONE = 0, FORWARD = 1, DEBUG = 2, ANSWER = 3, PAIR = 4, PEER = 5,  };
+	enum E : uint8_t { NONE = 0, FORWARD = 1, DEBUG = 2, ANSWER = 3, PAIR = 4, PEER = 5, PEER_BIDI = 6, };
 };
 
 
@@ -2267,17 +2267,39 @@ typedef struct ts_send {
 	uint16_t  max_time;					// max time for message timeout timer - info is set by  cmMaintenance
 	waitTimer timer;					// send mode timeout
 
-	MSG_TYPE::E type;					// set the message type for further processing in send function
+	MSG_TYPE::E  type;					// set the message type for further processing in send function
 	s_peer_table *peerDB;				// pointer to respective peer table for peer message
 	s_list_table *lstP;					// ponter to list4 for peer message
+	uint8_t      *payload_ptr;			// pointer to the payload
+	uint8_t      payload_len;			// length of payload
+	uint8_t      peer_slot[8];			// peer slot table
+	uint8_t      peer_slot_cnt;			// peer slot counter
+	uint8_t      peer_retr_cnt;			// current retry counter for peer messages
+	uint8_t      peer_max_retr;			// max retry counter for peer messages
+
+	void set_peer_slot(uint8_t peer_nr) {		// set bit in slot table
+		peer_slot[peer_nr >> 3] |= (1 << (peer_nr & 0x07));
+	}
+	uint8_t get_peer_slot(uint8_t peer_nr) {	// get bit in slot table	
+		return ((peer_slot[peer_nr >> 3] & (1 << (peer_nr & 0x07))))?1:0;
+	}
+	void clear_peer_slot(uint8_t peer_nr) {		// clear bit in slot table
+		peer_slot[peer_nr >> 3] &= ~(1 << (peer_nr & 0x07));
+	}
+	void prep_peer_slot(void) {					// prepare the slot table
+		for (uint8_t i = 0; i < peerDB->max; i++) {
+			if (*(uint32_t*)peerDB->get_peer(i)) set_peer_slot(i);
+			else clear_peer_slot(i);
+		}
+	}
 
 	void clear() {						// function to reset flags
 		active = MSG_ACTIVE::NONE;
-		//buf[0] = 0;
-		//*(uint8_t*)&mBody.FLAG = 0;
 		timeout = 0;
 		retr_cnt = 0;
 		temp_max_retr = 0;
+		peer_slot_cnt = 0;
+		peer_retr_cnt = 0;
 		timer.set(0);
 	}
 

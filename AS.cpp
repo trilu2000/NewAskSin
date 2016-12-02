@@ -136,15 +136,11 @@ void AS::poll(void) {
 		if (config_mode.timer.done()) config_mode.active = 0;									// when timer is done, set config flag to inactive
 	}
 
+
+
 	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
 		deviceReset(resetStatus);
 	}
-
-
-	if (stcPeer.active) {
-		sendPeerMsg();																			// poll the peer message sender
-	}
-	
 
 	// time out the pairing timer
 	if (pair_mode.active) { 
@@ -660,7 +656,7 @@ void AS::sendHAVE_DATA(void) {
 	// --------------------------------------------------------------------
 }
 
-void AS::sendSWITCH(void) {
+/*void AS::sendSWITCH(void) {
 	//TODO: make ready#
 
 	//"3E"          => { txt => "SWITCH"      , params => {
@@ -669,16 +665,16 @@ void AS::sendSWITCH(void) {
 	//CHANNEL  => "08,2",
 	//COUNTER  => "10,2", } },
 	// --------------------------------------------------------------------
-}
+}*/
 
-void AS::sendTimeStamp(void) {
+/*void AS::sendTimeStamp(void) {
 	//TODO: make ready#
 
 	//"3F"          => { txt => "TimeStamp"   , params => {
 	//UNKNOWN  => "00,4",
 	//TIME     => "04,2", } },
 	// --------------------------------------------------------------------
-}
+}*/
 
 /**
  * @brief Send a remote Event
@@ -696,10 +692,10 @@ void AS::sendTimeStamp(void) {
  * @param burst
  * @param payload: pointer to payload
  */
-void AS::sendREMOTE(uint8_t channel, uint8_t *payload, uint8_t msg_flag) {
+/*void AS::sendREMOTE(uint8_t channel, uint8_t *payload, uint8_t msg_flag) {
 	// burst flag is not needed, has to come out of list4, as well as AES flag
 	sendEvent(channel, 0, AS_MESSAGE_REMOTE_EVENT, payload, 2);
-}
+}*/
 
 /**
  * @brief Send a sensor Event
@@ -718,9 +714,9 @@ void AS::sendREMOTE(uint8_t channel, uint8_t *payload, uint8_t msg_flag) {
  * @param burst
  * @param payload: pointer to payload
  */
-void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
+/*void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
 	sendEvent(channel, AS_MESSAGE_SENSOR_EVENT, burst, payload, 3);
-}
+}*/
 
 /**
  * @brief Send an event with arbitrary payload
@@ -747,7 +743,7 @@ void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
  * @attention The payload length may not exceed 16 bytes. If a greater value
  * for len is given, it is limited to 16 to prevent HM-CFG-LAN (v0.961) to crash.
  */
-void AS::sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload) {
+/*void AS::sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload) {
 	if (len_payload>16) {
 		#ifdef AS_DBG
 		dbg << "AS::sendGenericEvent(" << channel << "," << msg_flag << ",0x" << _HEX(&msg_type,1) << "," << len_payload << ",...): payload exceeds max len of 16\n";
@@ -764,9 +760,9 @@ void AS::sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t 
 	//stcPeer.bidi        = (isEmpty(MAID,3)) ? 0 : 1;
 	stcPeer.msg_type    = msg_type;
 	stcPeer.active      = 1;
-}
+}*/
 
-void AS::sendSensorData(void) {
+/*void AS::sendSensorData(void) {
 	//TODO: make ready#
 
 	//"53"          => { txt => "SensorData"  , params => {
@@ -779,38 +775,38 @@ void AS::sendSensorData(void) {
 	//Val3=> '16,4,$val=(hex($val))',
 	//Fld4=> "20,2",
 	//Val4=> '24,4,$val=(hex($val))'} },
-}
+}*/
 
-void AS::sendClimateEvent(void) {
+/*void AS::sendClimateEvent(void) {
 	//TODO: make ready#
 
 	//"58"          => { txt => "ClimateEvent", params => {
 	//CMD      => "00,2",
 	//ValvePos => '02,2,$val=(hex($val))', } },
-}
+}*/
 
-void AS::sendSetTeamTemp(void) {
+/*void AS::sendSetTeamTemp(void) {
 	//TODO: make ready#
 
 	//"59"          => { txt => "setTeamTemp" , params => {
 	//CMD      => "00,2",
 	//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
 	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
-}
+}*/
 
-void AS::sendWeatherEvent(void) {
+/*void AS::sendWeatherEvent(void) {
 	//TODO: make ready#
 
 	//"70"          => { txt => "WeatherEvent", params => {
 	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 	//HUM      => '04,2,$val=(hex($val))', } },
-}
+}*/
 
 // private:		//---------------------------------------------------------------------------------------------------------
 // - poll functions --------------------------------
 
 
-inline void AS::sendPeerMsg(void) {
+/*inline void AS::sendPeerMsg(void) {
 	cmMaster *pCM = ptr_CM[stcPeer.channel];
 	uint8_t retries_max;
 
@@ -896,9 +892,9 @@ inline void AS::sendPeerMsg(void) {
 	}
 
 	stcPeer.idx_cur++;																			// increase counter for next time
-}
+}*/
 
-void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
+/*void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
 
 	// description --------------------------------------------------------
 	//    len  cnt  flg  typ  reID      toID      pl
@@ -928,7 +924,7 @@ void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
 		memcpy(snd_msg.buf+10, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
 	}
 	snd_msg.max_retr = retries;																		// send only one time
-}
+}*/
 
 
 

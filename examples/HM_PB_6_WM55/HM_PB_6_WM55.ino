@@ -32,6 +32,7 @@ void setup() {
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
 
 	// - user related -----------------------------------------
+
 	sei();																						// enable interrupts
 }
 
