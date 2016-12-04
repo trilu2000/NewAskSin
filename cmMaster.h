@@ -20,7 +20,6 @@ namespace INFO {
 	enum E : uint8_t { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS, SND_ACTUATOR_STATUS_AGAIN };
 };
 
-
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------
 
@@ -152,6 +151,8 @@ public://-----------------------------------------------------------------------
    the overall amount will be kept for runtime to step through the different instances. */
 extern uint8_t cnl_max;
 extern cmMaster *ptr_CM[];
+extern s_peer_msg peer_msg;
+extern s_list_msg list_msg;
 
 
 
@@ -269,5 +270,6 @@ void send_POWER_EVENT(s_peer_table *peerDB);
 void send_WEATHER_EVENT(s_peer_table *peerDB);
 
 void process_peer_message(void);
+void process_list_message(void);
 
 #endif

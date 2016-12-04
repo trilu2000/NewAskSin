@@ -24,12 +24,10 @@ public:		//---------------------------------------------------------------------
 	SN() {}																	// constructor
 	void poll(void);														// poll function, process if something is to send
 
-	inline void process_config_list_answer_slice(void);						// slice wise send function for list requests
 	inline void process_peer_message(void);									// process peer messages with source of peer_msg_struct
 
 };
 
-extern s_config_list_answer_slice config_list_answer_slice;
 
 /*
 * @brief Struct to hold the buffer for any string to send with some flags for further processing

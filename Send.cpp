@@ -18,7 +18,6 @@ SN snd;																						// declare send module, defined in send.h
 void SN::poll(void) {
 	s_snd_msg *sm = &snd_msg;																// short hand to snd_msg struct
 
-	process_config_list_answer_slice();														// check if something has to be send slice wise
 	if (sm->active == MSG_ACTIVE::NONE) return;												// nothing to do
 
 	/* can only happen while an ack was received and AS:processMessage had send the retr_cnt to 0xff */
@@ -123,48 +122,6 @@ void SN::poll(void) {
 	
 }
 
-void SN::process_config_list_answer_slice(void) {
-	s_snd_msg *sm = &snd_msg;																// short hand to snd_msg struct
-	s_config_list_answer_slice *cl = &config_list_answer_slice;								// short hand
 
-	if (!cl->active) return;																// nothing to send, return
-	if (!cl->timer.done()) return;															// something to send but we have to wait
-	if (sm->active != MSG_ACTIVE::NONE) return;												// we have something to do, but send_msg is busy
-
-	uint8_t payload_len;
-
-	if (cl->type == LIST_ANSWER::PEER_LIST) {
-		/* process the INFO_PEER_LIST */
-		payload_len = cl->peer->get_slice(cl->cur_slc, sm->buf + 11);						// get the slice and the amount of bytes
-		sm->type = MSG_TYPE::INFO_PEER_LIST;												// flags are set within the snd_msg struct
-		//DBG(SN, F("SN:LIST_ANSWER::PEER_LIST cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
-		cl->cur_slc++;																		// increase slice counter
-
-	} else if (cl->type == LIST_ANSWER::PARAM_RESPONSE_PAIRS) {
-		/* process the INFO_PARAM_RESPONSE_PAIRS */
-		if ((cl->cur_slc + 1) < cl->max_slc) {												// within message processing, get the content													
-			payload_len = cl->list->get_slice_pairs(cl->peer_idx, cl->cur_slc, sm->buf + 11);// get the slice and the amount of bytes
-		} else {																			// last slice, terminating message
-			payload_len = 2;																// reflect it in the payload_len
-			memset(sm->buf + 11, 0, payload_len);											// write terminating zeros
-		}
-		sm->type = MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS;										// flags are set within the snd_msg struct
-		//DBG(SN, F("SN:LIST_ANSWER::PARAM_RESPONSE_PAIRS cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
-		cl->cur_slc++;																		// increase slice counter
-
-	} else if (cl->type == LIST_ANSWER::PARAM_RESPONSE_SEQ) {
-		/* process the INFO_PARAM_RESPONSE_SEQ 
-		* not implemented yet */
-	}
-
-	sm->mBody.MSG_LEN = payload_len + 10;													// set the message len accordingly
-	sm->active = MSG_ACTIVE::PAIR;															// for address, counter and to make it active
-
-	if (cl->cur_slc >= cl->max_slc) {														// if everything is send, we could stop the struct
-		//DBG(SN, F("SN:LIST_ANSWER::DONE cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
-		cl->active = 0;
-		cl->cur_slc = 0;
-	}
-}
 
 

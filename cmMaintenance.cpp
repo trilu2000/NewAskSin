@@ -59,3 +59,7 @@ void cmMaintenance::info_config_change(void) {
 	DBG(MN, F("MN:config_change - MAID:"), _HEX(dev_operate.MAID,3), '\n' );
 
 }
+
+void cmMaintenance::cm_poll(void) {
+	process_list_message();														// check if something has to be send slice wise
+}

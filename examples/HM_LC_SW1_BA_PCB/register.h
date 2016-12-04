@@ -27,7 +27,7 @@
 	* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
 	*/
 	const uint8_t cmMaintenance_ChnlReg[] PROGMEM = { 0x02,0x05,0x08,0x0a,0x0b,0x0c,0x12, };
-	const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x10,0x00,0x00,0x00,0x69, };
+	const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0x00,0x69, };
 	const uint8_t cmMaintenance_ChnlLen = 7;
 
 	cmMaster *ptr_CM[3] = {

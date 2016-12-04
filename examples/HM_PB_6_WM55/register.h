@@ -32,7 +32,7 @@ const uint8_t cmMaintenance_ChnlLen = 6;
 
 cmMaster *ptr_CM[7] = {
 	new cmMaintenance(0),
-	new cmRemote(10),
+	new cmRemote(11),
 	new cmRemote(10),
 	new cmRemote(10),
 	new cmRemote(10),
@@ -84,7 +84,7 @@ void everyTimeStart(void) {
 
 	// channel 0 section 
 	led.set(welcome);
-	btn.config(2);
+	btn.config(1);
 	pom.setMode(POWER_MODE_NO_SLEEP);
 	bat.set(30, 3600000);
 	// channel 1 section 

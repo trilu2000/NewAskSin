@@ -2288,7 +2288,7 @@ typedef struct ts_send_message {
 * PARAM_RESPONSE_SEQ, as answer on a CONFIG_PARAM_REQ 
 */
 namespace LIST_ANSWER {
-	enum E : uint8_t { PEER_LIST, PARAM_RESPONSE_PAIRS, PARAM_RESPONSE_SEQ, };
+	enum E : uint8_t { NONE = 0, PEER_LIST = 1, PARAM_RESPONSE_PAIRS = 2, PARAM_RESPONSE_SEQ = 3, };
 };
 
 /*
@@ -2296,23 +2296,23 @@ namespace LIST_ANSWER {
 * This type of messages generates more than one answer string and needs to be processed in a loop.
 * The answer is prepared by ts_list_table or ts_peer_table, but processed in send.h
 */
-typedef struct ts_config_list_answer_slice {
-	uint8_t active;						// indicates status of poll routine, 1 is active
-	LIST_ANSWER::E type;				// defines the type of answer message, valid types are: PEER_LIST, PARAM_RESPONSE_PAIRS, PARAM_RESPONSE_SEQ,
+typedef struct ts_list_msg {
+	//uint8_t active;						// indicates status of poll routine, 1 is active
+	LIST_ANSWER::E active = LIST_ANSWER::NONE; // defines the type of answer message, valid types are: PEER_LIST, PARAM_RESPONSE_PAIRS, PARAM_RESPONSE_SEQ,
 	uint8_t cur_slc;					// counter for slices which are already send
 	uint8_t max_slc;					// amount of necessary slices to send content
 	s_list_table *list;					// pointer to the respective list table for answering the request
 	uint8_t peer_idx;					// peer index if a list3 or 4 is requested
 	s_peer_table *peer;					// pointer to the peer table in case in is a PEER_LIST answer
 	waitTimer timer;					// give the master some time, otherwise we need to resend
-} s_config_list_answer_slice;
+} s_list_msg;
 
 
 /*
 * @brief Struct to hold all information to send peer messages.
 */
 typedef struct ts_peer_msg {
-	MSG_ACTIVE::E active;				// flag that something is to process
+	MSG_ACTIVE::E active = MSG_ACTIVE::NONE;// flag that something is to process
 	MSG_TYPE::E   type;					// set the message type for further processing in send function
 
 	s_peer_table *peerDB;				// pointer to respective peer table for peer message

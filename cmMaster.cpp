@@ -13,6 +13,9 @@
 
 uint8_t cnl_max = 0;																		// defined in cmMaster.h, increased by every instance which is initialized
 
+s_peer_msg    peer_msg;																		// peer message array as buffer between send function and send processing
+s_list_msg    list_msg;																		// holds information to answer config list requests for peer or param lists
+
 
 //public://------------------------------------------------------------------------------------------------------------------
 cmMaster::cmMaster(const uint8_t peer_max) {
@@ -659,15 +662,15 @@ void send_INFO_SERIAL() {
 * l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
 */
 void send_INFO_PEER_LIST(uint8_t cnl) {
-	s_config_list_answer_slice *cl = &config_list_answer_slice;								// short hand to the struct with all information for slice wise send
+	s_list_msg   *lm =     &list_msg;														// short hand to the struct with all information for slice wise send
 	s_peer_table *peerDB = &ptr_CM[cnl]->peerDB;											// short hand to the respective peer table of the channel
 
-	cl->type = LIST_ANSWER::PEER_LIST;														// we want to get the peer list
-	cl->peer = peerDB;																		// pointer to the respective peerDB struct
-	cl->max_slc = peerDB->get_nr_slices();													// get an idea of the total needed slices
-	cl->timer.set(50);																		// some time between last message
-	cl->active = 1;																			// and set it active
-	DBG(AS, F("AS:send_INFO_PEER_LIST, cnl:"), cnl, F(", slices:"), cl->max_slc, '\n');
+	lm->active = LIST_ANSWER::PEER_LIST;													// we want to get the peer list
+	lm->peer = peerDB;																		// pointer to the respective peerDB struct
+	lm->max_slc = peerDB->get_nr_slices();													// get an idea of the total needed slices
+	lm->timer.set(50);																		// some time between last message
+	//lm->active = 1;																			// and set it active
+	DBG(AS, F("AS:send_INFO_PEER_LIST, cnl:"), cnl, F(", slices:"), lm->max_slc, '\n');
 }
 
 /**
@@ -680,21 +683,21 @@ void send_INFO_PEER_LIST(uint8_t cnl) {
 * l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
 */
 void send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id) {
-	s_config_list_answer_slice *cl = &config_list_answer_slice;								// short hand to the struct with all information for slice wise send
+	s_list_msg   *lm =     &list_msg;														// short hand to the struct with all information for slice wise send
 	s_peer_table *peerDB = &ptr_CM[cnl]->peerDB;											// short hand to the respective peer table of the channel
-	s_list_table *list = ptr_CM[cnl]->list[lst];											// short hand to the respective list table
+	s_list_table *list =   ptr_CM[cnl]->list[lst];											// short hand to the respective list table
 
 	if (!list) return;																		// specific list is not available
 	uint8_t idx = peerDB->get_idx(peer_id);													// get the requested peer index
 	if (idx == 0xff) return;																// nothing to do while index not found
 
-	cl->type = LIST_ANSWER::PARAM_RESPONSE_PAIRS;											// we want to get the param list as pairs
-	cl->peer_idx = peerDB->get_idx(peer_id);												// remember on the peer index
-	cl->list = list;																		// pointer to the respective list struct
-	cl->max_slc = list->get_nr_slices_pairs() + 1;											// get an idea of the total needed slices, plus one for closing 00 00 message
-	cl->timer.set(50);																		// some time between last message
-	cl->active = 1;																			// and set it active, while peer index is available
-	DBG(AS, F("AS:send_INFO_PARAM_RESPONSE_PAIRS, cnl:"), cnl, F(", lst:"), lst, F(", peer:"), _HEX(peer_id, 4), F(", idx:"), cl->peer_idx, F(", slices:"), cl->max_slc, '\n');
+	lm->active = LIST_ANSWER::PARAM_RESPONSE_PAIRS;											// we want to get the param list as pairs
+	lm->peer_idx = peerDB->get_idx(peer_id);												// remember on the peer index
+	lm->list = list;																		// pointer to the respective list struct
+	lm->max_slc = list->get_nr_slices_pairs() + 1;											// get an idea of the total needed slices, plus one for closing 00 00 message
+	lm->timer.set(50);																		// some time between last message
+	//lm->active = 1;																			// and set it active, while peer index is available
+	DBG(AS, F("AS:send_INFO_PARAM_RESPONSE_PAIRS, cnl:"), cnl, F(", lst:"), lst, F(", peer:"), _HEX(peer_id, 4), F(", idx:"), lm->peer_idx, F(", slices:"), lm->max_slc, '\n');
 }
 
 /**
@@ -871,7 +874,50 @@ void process_peer_message(void) {
 	snd.poll();																				// call send poll function direct, otherwise someone could change the snd_msg content
 }
 
+void process_list_message(void) {
+	s_snd_msg  *sm = &snd_msg;																// short hand to snd_msg struct
+	s_list_msg *lm = &list_msg;																// short hand
 
+	if (!lm->active) return;																// nothing to send, return
+	if (!lm->timer.done()) return;															// something to send but we have to wait
+	if (sm->active) return;																	// send is busy, wait....
+
+	uint8_t payload_len;
+
+	if (lm->active == LIST_ANSWER::PEER_LIST) {
+		/* process the INFO_PEER_LIST */
+		payload_len = lm->peer->get_slice(lm->cur_slc, sm->buf + 11);						// get the slice and the amount of bytes
+		sm->type = MSG_TYPE::INFO_PEER_LIST;												// flags are set within the snd_msg struct
+		//DBG(SN, F("SN:LIST_ANSWER::PEER_LIST cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
+		lm->cur_slc++;																		// increase slice counter
+
+	} else if (lm->active == LIST_ANSWER::PARAM_RESPONSE_PAIRS) {
+		/* process the INFO_PARAM_RESPONSE_PAIRS */
+		if ((lm->cur_slc + 1) < lm->max_slc) {												// within message processing, get the content													
+			payload_len = lm->list->get_slice_pairs(lm->peer_idx, lm->cur_slc, sm->buf + 11);// get the slice and the amount of bytes
+		} else {																			// last slice, terminating message
+			payload_len = 2;																// reflect it in the payload_len
+			memset(sm->buf + 11, 0, payload_len);											// write terminating zeros
+		}
+		sm->type = MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS;										// flags are set within the snd_msg struct
+		//DBG(SN, F("SN:LIST_ANSWER::PARAM_RESPONSE_PAIRS cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
+		lm->cur_slc++;																		// increase slice counter
+
+	} else if (lm->active == LIST_ANSWER::PARAM_RESPONSE_SEQ) {
+		/* process the INFO_PARAM_RESPONSE_SEQ
+		* not implemented yet */
+	}
+
+	sm->mBody.MSG_LEN = payload_len + 10;													// set the message len accordingly
+	sm->active = MSG_ACTIVE::PAIR;															// for address, counter and to make it active
+
+	if (lm->cur_slc >= lm->max_slc) {														// if everything is send, we could stop the struct
+		//DBG(SN, F("SN:LIST_ANSWER::DONE cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
+		lm->active = LIST_ANSWER::NONE;
+		lm->cur_slc = 0;
+	}
+	snd.poll();
+}
 
 
 
