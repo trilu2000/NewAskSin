@@ -75,6 +75,7 @@ void cmRemote::cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uin
 
 void cmRemote::cm_poll(void) {
 	#define repeatedLong 250
+	process_peer_message();																	// if we want to send a peer message we have to poll the peer send processing
 
 	if (!button_check.configured) return;													// if port is not configured, poll makes no sense
 	button_ref.status = checkPCINT(button_ref.port, button_ref.pin, 1);						// check if an interrupt had happened
@@ -155,7 +156,9 @@ void cmRemote::button_action(uint8_t event) {
 	button_info.channel = lstC.cnl;
 	button_info.counter = button_ref.counter;
 
-	send_REMOTE(&peerDB, &lstP, (uint8_t*)&button_info, (event == 3)? 0:1);					// send the message
+	//MSG_ACTIVE::E msg_active = (event != 3) ? MSG_ACTIVE::PEER_BIDI : MSG_ACTIVE::PEER;
+	//peer_msg.set(msg_active, MSG_TYPE::REMOTE, &this->peerDB, &this->lstC, &this->lstP, (uint8_t*)&button_info, 2, 3);
+	send_REMOTE((event != 3) ? 1 : 0, this, (uint8_t*)&button_info);
 	if (event != 3) button_ref.counter++;													// increase the button counter
 }
 

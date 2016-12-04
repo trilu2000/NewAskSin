@@ -536,18 +536,12 @@ void send_DEVICE_INFO(MSG_REASON::E reason) {
 	/* is it an answer to a CONFIG_PAIR_SERIAL request, or while we initiate the pairing process */
 	if (reason == MSG_REASON::ANSWER) {
 		snd_msg.active = MSG_ACTIVE::ANSWER;												// for address, counter and to make it active
-		//snd_msg.set_msg_cnt(rcv_msg.mBody.MSG_CNT);										// set the message counter accordingly
-		//snd_msg.set_rcv_id(rcv_msg.mBody.SND_ID);											// respond to sender
 	} else {
 		snd_msg.active = MSG_ACTIVE::PAIR;													// for address, counter and to make it active
-		//snd_msg.set_msg_cnt();
-		//snd_msg.set_rcv_id(dev_operate.MAID);												// we initiated, so it has to go to the master id
 	}
 
 	/* BIDI is asked all time, will removed automatically if MAID is empty */
 	snd_msg.type = MSG_TYPE::DEVICE_INFO;													// length and flags are set within the snd_msg struct
-	//snd_msg.set_type(MSG_TYPE::DEVICE_INFO);												// length and flags are set within the snd_msg struct
-	//snd_msg.set_active();
 
 	//pair_mode.active = 1;																	// set pairing flag
 	//pair_mode.timer.set(20000);															// set pairing time
@@ -571,9 +565,6 @@ void send_ACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::ACK;															// length and flags are set within the snd_msg struct
-	//snd_msg.set_rcv_id(rcv_msg.mBody.SND_ID);
-	//snd_msg.set_msg_cnt(rcv_msg.mBody.MSG_CNT);												// as it is an answer, we reflect the counter in the answer
-	//snd_msg.set_active();
 }
 /**
 * @brief Send an ACK with status data
@@ -597,8 +588,7 @@ void send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
 	*(uint8_t*)&msg->MSG_FLAG = actn;
 	msg->MSG_FLAG.LOWBAT = bat.getStatus();
 	msg->MSG_RSSI = cc.rssi;
-	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// as it is an answer, we reflect the counter in the answer
-	//snd_msg.set_msg(MSG_TYPE::ACK_STATUS, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
+
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::ACK_STATUS;													// length and flags are set within the snd_msg struct
 }
@@ -615,8 +605,6 @@ void send_AES_REQ(s_m0204xx *buf) {
 */
 void send_NACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
-	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// as it is an answer, we reflect the counter in the answer
-	//snd_msg.set_msg(MSG_TYPE::NACK, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);			// length and flags are set within the snd_msg struct
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::NACK;															// length and flags are set within the snd_msg struct
 
@@ -630,8 +618,6 @@ void send_NACK(void) {
 */
 void send_NACK_TARGET_INVALID(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ACK only while required
-	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// as it is an answer, we reflect the counter in the answer
-	//snd_msg.set_msg(MSG_TYPE::NACK_TARGET_INVALID, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::NACK_TARGET_INVALID;											// length and flags are set within the snd_msg struct
 
@@ -751,14 +737,6 @@ void send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag) {
 	msg->UNKNOWN = flag;																	// needs investigation
 	msg->MSG_RSSI = cc.rssi;																// received rssi value
 
-	//if ((rcvBody->MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcvBody->BY11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST))) {
-	//	snd_msg.mBody.MSG_CNT = rcvBody->MSG_CNT;											// if it is an answer, take the message counter from received message
-	//}
-	//else {
-	//	snd_msg.mBody.MSG_CNT = snd_msg.MSG_CNT++;											// we initiated, take the message counter from the request
-	//	bidi = 1;																			// want to get an ACK
-	//}
-	//snd_msg.set_msg(MSG_TYPE::INFO_ACTUATOR_STATUS, dev_operate.MAID, bidi);				// all the time send to the master
 	snd_msg.active = MSG_ACTIVE::PAIR;														// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;											// length and flags are set within the snd_msg struct
 }
@@ -773,15 +751,17 @@ void send_SWITCH(s_peer_table *peerDB) {
 }
 void send_TIMESTAMP(s_peer_table *peerDB) {
 }
-void send_REMOTE(s_peer_table *peerDB, s_list_table *listP, uint8_t *payload, uint8_t bidi) {
-	snd_msg.type = MSG_TYPE::REMOTE;
-	snd_msg.peerDB = peerDB;
-	snd_msg.lstP = listP;
-	snd_msg.payload_ptr = payload;
-	snd_msg.payload_len = 2;
-	snd_msg.active = (bidi)? MSG_ACTIVE::PEER_BIDI : MSG_ACTIVE::PEER;
-	snd_msg.peer_max_retr = 3;
-	DBG(CM, F("CM:send_REMOTE peers:"), peerDB->used_slots(), F(", payload:"), _HEX(payload, 2), ", bidi:", bidi, '\n');
+void send_REMOTE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+	if (peer_msg.active) return;
+	peer_msg.active = (bidi) ? MSG_ACTIVE::PEER_BIDI : MSG_ACTIVE::PEER;
+	peer_msg.type = MSG_TYPE::REMOTE;
+	peer_msg.peerDB = &channel_module->peerDB;
+	peer_msg.lstP = &channel_module->lstP;
+	peer_msg.lstC = &channel_module->lstC;
+	peer_msg.payload_ptr = ptr_payload;
+	peer_msg.payload_len = 2;
+	peer_msg.max_retr = 3;
+	DBG(CM, F("CM:send_REMOTE peers:"), channel_module->peerDB.used_slots(), F(", payload:"), _HEX(ptr_payload, 2), ", bidi:", bidi, '\n');
 }
 void send_SENSOR_EVENT(s_peer_table *peerDB) {
 }
@@ -802,6 +782,93 @@ void send_POWER_EVENT_CYCLE(s_peer_table *peerDB) {
 void send_POWER_EVENT(s_peer_table *peerDB) {
 }
 void send_WEATHER_EVENT(s_peer_table *peerDB) {
+}
+
+/*
+* @brief poll function to process peer messages. 
+* Respective information needs to be in peer_msg struct, while herein the string preparation for the 
+* send function is done. This function needs to be polled by at least on channel module which uses
+* one peer send function from the list above.
+*/
+void process_peer_message(void) {
+	s_peer_msg *pm = &peer_msg;																// short hand to peer message struct
+	s_snd_msg  *sm = &snd_msg;
+
+	/* checks if a peer message needs to be processed and if send is busy */
+	if (!pm->active) return;																// is there a peer message to send?
+	if (sm->active) return;																	// has send function something else to do first?
+
+	/* if we are here, it has one of the following reasons, first time call to send a peer message, prepare the pre-requisites,
+	*  or we have sent a message earlier which is processed now, check if it was the last message to send, or process the next slot */
+	/* first time message, check if peers are registered and prepare the peer slot table. if it is not the first time, then check 
+	*  if the last message was not a timeout, cleanup the flag in the slot table and process the next message */
+	if ((!pm->slot_cnt) && (!pm->retr_cnt)) {
+		pm->prep_slot();
+		pm->retr_cnt++;
+		if (pm->active == MSG_ACTIVE::PEER) pm->max_retr = 1;								// todo: read it from list1 of the channel
+		//dbg << "prepare the slot table - msg:" << ((pm->active == MSG_ACTIVE::PEER_BIDI) ? "PEER_BIDI" : "") << ((pm->active == MSG_ACTIVE::PEER) ? "PEER" : "") << ", slot_cnt:" << pm->slot_cnt << ", max_retr:" << pm->max_retr << ", retr_cnt:" << pm->retr_cnt << '\n';
+
+	} else {
+	/* it is not the first time call, check if the last round was not timeout, clean the flag in the slot counter (flag was not necassarily set) */
+		if (!sm->timeout) pm->clear_slot(pm->slot_cnt);
+		pm->slot_cnt++;
+
+		/* start the next round while peer slot counter is above the limit; which indicates that all peers are processed */
+		if (pm->slot_cnt >= pm->peerDB->max) {
+			pm->retr_cnt++;
+			//dbg << "slot_cnt:" << pm->slot_cnt << ", max_retr:" << pm->max_retr << ", retr_cnt:" << pm->retr_cnt << '\n';
+
+			if (pm->retr_cnt > pm->max_retr) {												// check if we are done with all retries
+			/* clean up the peer message processing while all retries are done */
+				pm->clear();																// cleanup the struct
+				sm->MSG_CNT++;																// and increase the message counter in the general send function for next time
+				//dbg << "all peers done\n";
+			} else {
+			/* if we are not done, we start from begin of the slot table */	
+				pm->slot_cnt = 0;	
+				//dbg << "start next try\n";
+			}
+		}
+
+		/* goto next slot while the current slot is empty */
+		if (!pm->get_slot(pm->slot_cnt)) {
+			//dbg << "p_cnt: " << pm->slot_cnt << " nothing to do, next...\n";
+			return;
+		}
+	}
+
+	/* build the message, set type, len, bidi and content */
+	sm->type = pm->type;																	// copy the type into the send message struct
+
+	/* take care of the payload - peer message means in any case that the payload starts at the same position in the string and
+	*  while it could have a different length, we calculate the length of the string by a hand over value */
+	sm->mBody.MSG_LEN = pm->payload_len + 9;
+	memcpy(&sm->buf[10], pm->payload_ptr, pm->payload_len);
+
+	/* send it as pair message if we have no peer registered */
+	if (!pm->peerDB->used_slots()) {														// if no peer is registered, we send the message to the pair
+		sm->active = MSG_ACTIVE::PAIR;														// should be handled from now on as a pair message
+		pm->clear();																		// nothing to do here any more, while handled as pair message
+		return;																				// and return, otherwise some infos are overwritten
+	}
+
+	/* set the peer address */
+	memcpy(sm->mBody.RCV_ID, pm->peerDB->get_peer(pm->slot_cnt), 3);
+	sm->temp_max_retr = 1;
+
+	/* we have at least one peer to process, load the respective list4 to check if a burst is needed */
+	pm->lstP->load_list(pm->slot_cnt);														// check if we need a burst, load the respective peer list
+	struct s_0x01 {
+		uint8_t PEER_NEEDS_BURST : 1;  // 0x01.0, s:1   d: false  
+		uint8_t                  : 6;  // 0x01.1, s:6   d:   
+		uint8_t EXPECT_AES       : 1;  // 0x01.7, s:1   d: false  
+	};
+	s_0x01 *flag = (s_0x01*)pm->lstP->ptr_to_val(0x01);										// set a pointer to the burst value
+	sm->mBody.FLAG.BURST = flag->PEER_NEEDS_BURST;											// set the burst flag
+	//dbg << "burst: " << flag->PEER_NEEDS_BURST << '\n';
+
+	sm->active = pm->active;																// set it active
+	snd.poll();																				// call send poll function direct, otherwise someone could change the snd_msg content
 }
 
 

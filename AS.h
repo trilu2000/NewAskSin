@@ -168,7 +168,8 @@ extern s_config_list_answer_slice config_list_answer_slice;
 * @brief Struct to hold the buffer for any send or received string with some flags for further processing
 */
 extern s_recv rcv_msg;
-extern s_send snd_msg;
+extern s_snd_msg snd_msg;
+extern s_peer_msg peer_msg;
 
 /*
 * @brief Global definition of a struct to hold the device identification related information.

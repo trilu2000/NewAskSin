@@ -16,20 +16,14 @@ SN snd;																						// declare send module, defined in send.h
 
 
 void SN::poll(void) {
-	s_send *sm = &snd_msg;																	// short hand to snd_msg struct
+	s_snd_msg *sm = &snd_msg;																// short hand to snd_msg struct
 
 	process_config_list_answer_slice();														// check if something has to be send slice wise
 	if (sm->active == MSG_ACTIVE::NONE) return;												// nothing to do
 
 	/* can only happen while an ack was received and AS:processMessage had send the retr_cnt to 0xff */
 	if (sm->retr_cnt == 0xff) {
-		if ((sm->active == MSG_ACTIVE::PEER) || (sm->active == MSG_ACTIVE::PEER_BIDI)) {
-			sm->clear_peer_slot(sm->peer_slot_cnt);											// clear the peer table flag
-			sm->peer_slot_cnt++;															// process the next peer
-			sm->retr_cnt = 0;																// reset the retr_cnt to process next peer
-		} else {
-			sm->clear();																	// nothing to do any more
-		}
+		sm->clear();																		// nothing to do any more
 
 		led.set(ack);																		// fire the status led
 		pom.stayAwake(100);																	// and stay awake for a short while
@@ -69,65 +63,10 @@ void SN::poll(void) {
 			sm->MSG_CNT++;
 			sm->mBody.FLAG.BIDI = 1;														// ACK required, will be detected later if not paired 
 
-		} else if ((sm->active == MSG_ACTIVE::PEER) || (sm->active == MSG_ACTIVE::PEER_BIDI)) {
-			/* peer means - .... */
-			sm->mBody.MSG_CNT = sm->MSG_CNT;
-
-			sm->lstP->load_list(sm->peer_slot_cnt);											// check if we need a burst, load the respective peer list
-			s_0x01 *flag = (s_0x01*)sm->lstP->ptr_to_val(0x01);								// set a pointer to the burst value
-			sm->mBody.FLAG.BURST = flag->PEER_NEEDS_BURST;
-			//dbg << "burst: " << flag->PEER_NEEDS_BURST << '\n';
-
-			if (sm->active == MSG_ACTIVE::PEER_BIDI) {										// ACK required, will be detected later if not paired 
-				sm->mBody.FLAG.BIDI = 1;
-			} else {																		// no ACK, no need to resend 
-				sm->mBody.FLAG.BIDI = 0;
-				sm->peer_max_retr = 1;
-			}
-
-			/* take care of the payload - peer message means in any case that the payload starts at the same position in the string and
-			* while it could have a different length, we calculate the length of the string by a hand over value */
-			if (sm->payload_len) {
-				sm->mBody.MSG_LEN = sm->payload_len + 9;
-				memcpy(&sm->buf[10], sm->payload_ptr, sm->payload_len);
-			}
-
-			/* if no peers are registered in the respective channel we send the message to the pair */
-			if (!sm->peerDB->used_slots()) {
-				memcpy(sm->mBody.RCV_ID, dev_operate.MAID, 3);								// if no peer is registered, we send the message to the pair
-				sm->active = MSG_ACTIVE::PAIR;												// should be handled from now on as a pair message
-				sm->MSG_CNT++;																// and increase the message counter for next time
-
-			/* work through the peer list, as more peers in peer table as more often this function will be called */
-			} else {
-				/* if peer slot counter is 0 we need to prepare the slot table */
-				if ((!sm->peer_slot_cnt) && (!sm->peer_retr_cnt)) sm->prep_peer_slot();
-
-				/* go into next round or stop the function while peer count is over the available slots*/
-				if (sm->peer_slot_cnt >= sm->peerDB->max) {
-					sm->peer_retr_cnt++;													// round done, increase counter
-					if (sm->peer_retr_cnt >= sm->peer_max_retr) {							// check if we are done with all retries
-						sm->clear();														// cleanup the struct
-						sm->MSG_CNT++;														// and increase the message counter for next time
-						//dbg << "all peers done\n";
-					} else sm->peer_slot_cnt = 0;											// if we are not done, we start from begin of the slot table
-					return;																	// form start
-				}
-
-				/* check if we have anything to do for the current slot */
-				if (!sm->get_peer_slot(sm->peer_slot_cnt)) {
-					//dbg << "p_cnt: " << sm->peer_slot_cnt << " nothing to do, next...\n";
-					sm->peer_slot_cnt++;
-					return;
-				}
-
-				/* work through peer_cnt and peer slot table */
-				memcpy(sm->mBody.RCV_ID, sm->peerDB->get_peer(sm->peer_slot_cnt), 3);
-				sm->temp_max_retr = 1;
-				//dbg << "p_cnt: " << sm->peer_slot_cnt << " prep message\n";
-			}
-
+		} else if (sm->active == MSG_ACTIVE::PEER_BIDI) {
+			sm->mBody.FLAG.BIDI = 1;														// ACK required, will be detected later if not paired 
 		}
+
 
 		/* an internal message which is only to forward while already prepared,
 		* other options are internal but need to be prepared, external message are differs to whom they have to be send and if they
@@ -170,12 +109,7 @@ void SN::poll(void) {
 	} else {
 		/* if we are here, message was send one or multiple times and the timeout was raised if an ack where required */
 		/* seems, nobody had got our message, other wise we had received an ACK */
-		if ((sm->active == MSG_ACTIVE::PEER) || (sm->active == MSG_ACTIVE::PEER_BIDI)) {
-			sm->retr_cnt = 0;																// reset the retr_cnt to process next peer
-			sm->peer_slot_cnt++;															// process the next peer
-		} else {
-			sm->clear();																	// clear the struct, while nothing to do any more
-		}	
+		sm->clear();																	// clear the struct, while nothing to do any more
 
 		if (!sm->mBody.FLAG.BIDI) return;													// everything fine, ACK was not required
 
@@ -190,7 +124,7 @@ void SN::poll(void) {
 }
 
 void SN::process_config_list_answer_slice(void) {
-	s_send *sm = &snd_msg;																	// short hand to snd_msg struct
+	s_snd_msg *sm = &snd_msg;																// short hand to snd_msg struct
 	s_config_list_answer_slice *cl = &config_list_answer_slice;								// short hand
 
 	if (!cl->active) return;																// nothing to send, return

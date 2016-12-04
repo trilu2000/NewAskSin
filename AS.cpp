@@ -41,7 +41,8 @@ s_dev_ident   dev_ident;																	// struct to hold the device identifica
 s_dev_operate dev_operate;																	// struct to hold all operational variables or pointers
 
 s_recv        rcv_msg;																		// struct to process received strings
-s_send        snd_msg;																		// same for send strings
+s_snd_msg     snd_msg;																		// same for send strings
+s_peer_msg    peer_msg;																		// peer message array as buffer between send function and send processing
 
 s_config_list_answer_slice config_list_answer_slice;										// defined in AS.h, holds information to answer config list requests for peer or param lists
 

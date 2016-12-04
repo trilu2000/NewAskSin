@@ -2193,7 +2193,7 @@ typedef struct ts_recv {
 * buf[]        - initial buffer for received and decoded message string
 * *mBody       - struct on buffer for easier data access
 */
-typedef struct ts_send {
+typedef struct ts_send_message {
 	MSG_ACTIVE::E active;				// flag that something is to process
 
 	union {
@@ -2268,42 +2268,16 @@ typedef struct ts_send {
 	waitTimer timer;					// send mode timeout
 
 	MSG_TYPE::E  type;					// set the message type for further processing in send function
-	s_peer_table *peerDB;				// pointer to respective peer table for peer message
-	s_list_table *lstP;					// ponter to list4 for peer message
-	uint8_t      *payload_ptr;			// pointer to the payload
-	uint8_t      payload_len;			// length of payload
-	uint8_t      peer_slot[8];			// peer slot table
-	uint8_t      peer_slot_cnt;			// peer slot counter
-	uint8_t      peer_retr_cnt;			// current retry counter for peer messages
-	uint8_t      peer_max_retr;			// max retry counter for peer messages
-
-	void set_peer_slot(uint8_t peer_nr) {		// set bit in slot table
-		peer_slot[peer_nr >> 3] |= (1 << (peer_nr & 0x07));
-	}
-	uint8_t get_peer_slot(uint8_t peer_nr) {	// get bit in slot table	
-		return ((peer_slot[peer_nr >> 3] & (1 << (peer_nr & 0x07))))?1:0;
-	}
-	void clear_peer_slot(uint8_t peer_nr) {		// clear bit in slot table
-		peer_slot[peer_nr >> 3] &= ~(1 << (peer_nr & 0x07));
-	}
-	void prep_peer_slot(void) {					// prepare the slot table
-		for (uint8_t i = 0; i < peerDB->max; i++) {
-			if (*(uint32_t*)peerDB->get_peer(i)) set_peer_slot(i);
-			else clear_peer_slot(i);
-		}
-	}
 
 	void clear() {						// function to reset flags
 		active = MSG_ACTIVE::NONE;
 		timeout = 0;
 		retr_cnt = 0;
 		temp_max_retr = 0;
-		peer_slot_cnt = 0;
-		peer_retr_cnt = 0;
 		timer.set(0);
 	}
 
-} s_send;
+} s_snd_msg;
 
 
 
@@ -2321,7 +2295,6 @@ namespace LIST_ANSWER {
 * @brief Struct to hold all information to answer peer or param request answers.
 * This type of messages generates more than one answer string and needs to be processed in a loop.
 * The answer is prepared by ts_list_table or ts_peer_table, but processed in send.h
-*
 */
 typedef struct ts_config_list_answer_slice {
 	uint8_t active;						// indicates status of poll routine, 1 is active
@@ -2335,6 +2308,46 @@ typedef struct ts_config_list_answer_slice {
 } s_config_list_answer_slice;
 
 
+/*
+* @brief Struct to hold all information to send peer messages.
+*/
+typedef struct ts_peer_msg {
+	MSG_ACTIVE::E active;				// flag that something is to process
+	MSG_TYPE::E   type;					// set the message type for further processing in send function
 
+	s_peer_table *peerDB;				// pointer to respective peer table for peer message
+	s_list_table *lstC;
+	s_list_table *lstP;					// ponter to list4 for peer message
+	uint8_t      *payload_ptr;			// pointer to the payload
+	uint8_t       payload_len;			// length of payload
+	uint8_t       max_retr;				// max retry counter for peer messages
+
+	uint8_t       slot_tbl[8];			// peer slot table
+	uint8_t       slot_cnt;				// peer slot counter
+	uint8_t       retr_cnt;				// current retry counter for peer messages
+
+	void set_slot(uint8_t idx) {		// set bit in slot table
+		slot_tbl[idx >> 3] |= (1 << (idx & 0x07));
+	}
+	uint8_t get_slot(uint8_t idx) {		// get bit in slot table	
+		return ((slot_tbl[idx >> 3] & (1 << (idx & 0x07)))) ? 1 : 0;
+	}
+	void clear_slot(uint8_t idx) {		// clear bit in slot table
+		slot_tbl[idx >> 3] &= ~(1 << (idx & 0x07));
+	}
+	void prep_slot(void) {				// prepare the slot table
+		for (uint8_t i = 0; i < peerDB->max; i++) {
+			if (*(uint32_t*)peerDB->get_peer(i)) set_slot(i);
+			else clear_slot(i);
+		}
+	}
+
+	void clear() {						// function to reset flags
+		active = MSG_ACTIVE::NONE;
+		slot_cnt = 0;
+		retr_cnt = 0;
+	}
+
+} s_peer_msg;
 
 #endif
