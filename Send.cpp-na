@@ -73,7 +73,7 @@ void SN::poll(void) {
 		if (isEqual(sm->mBody.RCV_ID, dev_ident.HMID, 3)) {
 			memcpy(rcv_msg.buf, sm->buf, sm->buf[0] + 1);									// copy send buffer to received buffer
 			DBG(SN, F("<i ...\n"));															// some debug, message is shown in the received string
-			rcv.poll();																		// get intent and so on...
+			hm.rcv_poll();																		// get intent and so on...
 			sm->clear();																	// nothing to do any more for send, msg will processed in the receive loop
 			return;																			// and return...
 		}
@@ -108,7 +108,7 @@ void SN::poll(void) {
 	} else {
 		/* if we are here, message was send one or multiple times and the timeout was raised if an ack where required */
 		/* seems, nobody had got our message, other wise we had received an ACK */
-		sm->clear();																	// clear the struct, while nothing to do any more
+		sm->clear();																		// clear the struct, while nothing to do any more
 
 		if (!sm->mBody.FLAG.BIDI) return;													// everything fine, ACK was not required
 

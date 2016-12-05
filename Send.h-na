@@ -24,7 +24,7 @@ public:		//---------------------------------------------------------------------
 	SN() {}																	// constructor
 	void poll(void);														// poll function, process if something is to send
 
-	inline void process_peer_message(void);									// process peer messages with source of peer_msg_struct
+	//inline void process_peer_message(void);									// process peer messages with source of peer_msg_struct
 
 };
 

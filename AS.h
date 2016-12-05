@@ -11,7 +11,7 @@
 #ifndef _NAS_H
 #define _NAS_H
 
-#include "AS_typedefs.h"
+#include "AS_type_defs.h"
 #include "HAL.h"
 #include "macros.h"
 #include "defines.h"
@@ -20,8 +20,6 @@
 
 #include "cmMaster.h"
 #include "CC1101.h"
-#include "Send.h"
-#include "Receive.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
@@ -67,7 +65,7 @@ class AS {
   public:		//---------------------------------------------------------------------------------------------------------
 	AS() {}																					// constructor
 
-	/**
+	/*
 	 * @brief Initialize the AS module
 	 *
 	 * init() has to be called from the main setup() routine.
@@ -89,9 +87,11 @@ class AS {
 	* is set to 1. All receive functions are handled within the AS class - some forwarded to the channel module class.
 	* The intent is to overload them there by the respective user channel module and work with the information accordingly.
 	*/
+	void rcv_poll(void);																	// poll function
+	void getIntend(void);																	// checks the received string if addresses are known
 	void processMessage(void);
 
-
+	void snd_poll(void);																	// poll function, process if something is to send
 
 
 
@@ -137,9 +137,6 @@ class AS {
 	inline void processMessageConfigAESProtected();
 
 
-	// - poll functions --------------------------------
-	//inline void sendPeerMsg(void);																// scheduler for peer messages
-	//void preparePeerMessage(uint8_t *xPeer, uint8_t retr);
 			
 
 	// - send functions --------------------------------
@@ -155,9 +152,6 @@ class AS {
 
 	inline void initRandomSeed();
 	
-  protected:	//---------------------------------------------------------------------------------------------------------
-
-	// - some helpers ----------------------------------
 
 
 };
@@ -166,7 +160,7 @@ class AS {
 /*
 * @brief Struct to hold the buffer for any send or received string with some flags for further processing
 */
-extern s_recv rcv_msg;
+extern s_rcv_msg rcv_msg;
 extern s_snd_msg snd_msg;
 
 /*
@@ -184,24 +178,13 @@ extern s_dev_ident dev_ident;
 
 /*
 * @brief Global definition of a struct to hold all operational needed device variables
-*/
-extern s_dev_operate dev_operate;
-
-/*
-* @brief Global definition of master HM-ID (paired central).
-*
 * MAID is valid after initialization of AS with AS::init(). While not paired to a central,
 * MAID equals the broadcast address 000000. This is the case after first upload of a firmware
 * when an unconfigured EEprom is encountered (EEprom magic number does not match) or after a
 * reset of the device (RESET command sent by paired central or initiated by means of the
 * config button).
-*
-* The following example shows how HMID can be used for debugging purposes in user space:
-* @code
-* Serial << F("HMID: ") << _HEX(HMID,3) << F(", MAID: ") << _HEX(MAID,3) << F("\n\n");
-* @endcode
 */
-extern uint8_t *MAID;
+extern s_dev_operate dev_operate;
 
 /*
 * @brief Helper structure for keeping track of active pairing mode
@@ -261,7 +244,7 @@ extern AS hm;
 uint32_t byteTimeCvt(uint8_t tTime);
 uint32_t intTimeCvt(uint16_t iTime);
 
-inline uint8_t  isEmpty(void *ptr, uint8_t len);										// check if a byte array is empty
+uint8_t isEmpty(void *ptr, uint8_t len);												// check if a byte array is empty
 #define isEqual(p1,p2,len) memcmp(p1, p2, len)?0:1										// check if a byte array is equal
 
 //- -----------------------------------------------------------------------------------------------------------------------

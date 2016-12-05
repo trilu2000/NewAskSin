@@ -28,7 +28,7 @@ public:		//---------------------------------------------------------------------
 /*
 * @brief Struct to hold the buffer for any received string with some flags for further processing
 */
-extern s_recv rcv_msg;
+extern s_rcv_msg rcv_msg;
 
 extern RV rcv;															// declaration of receive class in AS.cpp
 

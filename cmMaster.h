@@ -12,7 +12,7 @@
 
 #include "AS.h"
 #include "HAL.h"
-#include "AS_typedefs.h"
+#include "AS_type_defs.h"
 
 const uint8_t list_max = 5;
 
@@ -156,8 +156,6 @@ extern s_list_msg list_msg;
 
 
 
-
-
 //- helpers ---------------------------------------------------------------------------------------------------------------
 /*
 * @brief Sends the ACK_STATUS and answers CONFIG_STATUS_REQUEST by sending an INFO_ACTUATOR_STATUS message
@@ -255,19 +253,19 @@ void send_INFO_TEMP();
 
 void send_HAVE_DATA();
 
-void send_SWITCH(s_peer_table *peerDB);													// peer related communication
-void send_TIMESTAMP(s_peer_table *peerDB);												// needed as send and receive function
+//void send_SWITCH(s_peer_table *peerDB);												// peer related communication
+void send_TIMESTAMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);		// needed as send and receive function
 void send_REMOTE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);			// will be send to the peerlist, therefor
-void send_SENSOR_EVENT(s_peer_table *peerDB);											// handover of the respective peerDB pointer
-void send_SWITCH_LEVEL(s_peer_table *peerDB);											// is mandatory
-void send_SENSOR_DATA(s_peer_table *peerDB);
-void send_GAS_EVENT(s_peer_table *peerDB);
-void send_CLIMATE_EVENT(s_peer_table *peerDB);
-void send_SET_TEAM_TEMP(s_peer_table *peerDB);
-void send_THERMAL_CONTROL(s_peer_table *peerDB);
-void send_POWER_EVENT_CYCLE(s_peer_table *peerDB);
-void send_POWER_EVENT(s_peer_table *peerDB);
-void send_WEATHER_EVENT(s_peer_table *peerDB);
+void send_SENSOR_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);	// handover of the respective peerDB pointer
+void send_SWITCH_LEVEL(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);	// is mandatory
+void send_SENSOR_DATA(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
+void send_GAS_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
+void send_CLIMATE_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
+void send_SET_TEAM_TEMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
+void send_THERMAL_CONTROL(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
+void send_POWER_EVENT_CYCLE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
+void send_POWER_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
+void send_WEATHER_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
 
 void process_peer_message(void);
 void process_list_message(void);

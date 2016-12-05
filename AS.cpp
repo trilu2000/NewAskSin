@@ -22,7 +22,6 @@
  */
 #define WDT_RESET_ON_RESET
 
-//#define AES_DBG
 
 
 #include "AS.h"
@@ -40,7 +39,7 @@ s_config_mode config_mode;																	// helper structure for keeping track
 s_dev_ident   dev_ident;																	// struct to hold the device identification related information									
 s_dev_operate dev_operate;																	// struct to hold all operational variables or pointers
 
-s_recv        rcv_msg;																		// struct to process received strings
+s_rcv_msg     rcv_msg;																		// struct to process received strings
 s_snd_msg     snd_msg;																		// same for send strings
 
 
@@ -122,12 +121,12 @@ void AS::poll(void) {
 	*  and poll the received buffer, it checks if something is in the queue  */
 	if (ccGetGDO0()) {																			// check if something is in the cc1101 receive buffer
 		cc.rcvData(rcv_msg.buf);																// if yes, get it into our receive processing struct
-		rcv.poll();																				// and poll the receive function to get intent and some basics
+		rcv_poll();																				// and poll the receive function to get intent and some basics
 	}
 	if (rcv_msg.hasdata) processMessage();														// check if we have to handle the receive buffer
 
 	/* handle the send module */
-	snd.poll();																					// check if there is something to send
+	snd_poll();																					// check if there is something to send
 
 	/* time out the config flag */
 	if (config_mode.active) {																	// check only if we are still in config mode
@@ -168,6 +167,94 @@ void AS::poll(void) {
 * is set to 1. All receive functions are handled within the AS class - some forwarded to the channel module class.
 * The intent is to overload them there by the respective user channel module and work with the information accordingly.
 */
+void AS::rcv_poll(void) {
+
+	/* checks a received string for validity and intent */
+	if (rcv_msg.mBody.MSG_LEN < 9) {														// check if the string has all mandatory bytes, if not
+		DBG(RV, F("  too short...\n"));
+		rcv_msg.clear();																	// clear receive buffer
+		return;
+	}
+
+	/* check for a repeated string which was already processed */
+	if ((rcv_msg.mBody.FLAG.RPTED) && (rcv_msg.prev_MSG_CNT == rcv_msg.mBody.MSG_CNT)) {	// check if message was already received
+		DBG(RV, F("  repeated ...\n"));
+		rcv_msg.clear();																	// clear receive buffer
+		return;
+	}
+	rcv_msg.prev_MSG_CNT = rcv_msg.mBody.MSG_CNT;											// remember for next time
+
+	/* get the intend of the message */
+	getIntend();																			// no params neccassary while everything is in the recv struct
+
+	/* filter out the footprint of MAX! devices
+	*  b> 0F 04 86 10 38 EB 06 00 00 00 0A 24 B8 0C 00 40  (1963077) */
+	if ((rcv_msg.mBody.MSG_LEN == 0x0f) && (*(uint8_t*)&rcv_msg.mBody.FLAG == 0x86) && (rcv_msg.intent == MSG_INTENT::BROADCAST)) {
+		rcv_msg.clear();
+		return;
+	}
+
+	DBG(RV, (char)rcv_msg.intent, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), ' ', _TIME, '\n');
+
+	/* sort out messages not needed to further processing */
+	if ((rcv_msg.intent == MSG_INTENT::LOGGING) || (rcv_msg.intent == MSG_INTENT::ERROR)) {
+		rcv_msg.clear();																	// nothing to do any more
+		return;
+	}
+
+	/* broadcast messages not used, with one exception - serial pair request */
+	if ((rcv_msg.intent == MSG_INTENT::BROADCAST) && (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcv_msg.mBody.BY11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL)))
+		rcv_msg.intent = MSG_INTENT::MASTER;
+
+	/* logging and error is already eliminated from further processing, now we can take out broadcasts */
+	if (rcv_msg.intent == MSG_INTENT::BROADCAST) {
+		rcv_msg.clear();																	// nothing to do any more
+		return;
+	}
+
+	rcv_msg.hasdata = 1;																	// signalize that something is to do
+}
+
+/*
+* @brief get the intend of the message
+* This function is part of the rcv_poll function and searches based on the sender and receiver address for the intend of the 
+* given message. It is important to know, because we work only on messages which are addressed to us and sent by a pair or peer.
+*/
+void AS::getIntend() {
+	/* prepare the peer search */
+	memcpy(rcv_msg.peer, rcv_msg.mBody.SND_ID, 3);											// peer has 4 byte and the last byte indicates the channel but also lowbat and long message, therefore we copy it together in a seperate byte array
+	uint8_t buf10 = rcv_msg.buf[10];														// get the channel byte seperate
+	if (rcv_msg.use_prev_buf) buf10 = rcv_msg.prev_buf[10];									// if AES is active, we must get buf[10] from prevBuf[10]
+	rcv_msg.peer[3] = buf10 & 0x3f;															// mask out long and battery low
+
+	/* it could come as a broadcast message - report it only while loging is enabled */
+	if (isEmpty(rcv_msg.mBody.RCV_ID, 3))													// broadcast message
+		rcv_msg.intent = MSG_INTENT::BROADCAST;
+
+	/* it could be addressed to a different device - report it only while loging is enabled
+	*  memcmp gives 0 if string matches, any other value while no match */
+	else if (!isEqual(rcv_msg.mBody.RCV_ID, dev_ident.HMID, 3)) 							// not for us, only show as log message
+		rcv_msg.intent = MSG_INTENT::LOGGING;
+
+	/* because of the previous check, message is for us, check against master */
+	else if (isEqual(rcv_msg.mBody.SND_ID, dev_operate.MAID, 3))							// coming from master
+		rcv_msg.intent = MSG_INTENT::MASTER;
+
+	/* message is for us, but not from master, maybe it is a peer message */
+	else if (rcv_msg.cnl = is_peer_valid(rcv_msg.peer))										// check if the peer is known and remember the channel
+		rcv_msg.intent = MSG_INTENT::PEER;
+
+	/* message is for us, but not from pair or peer, check if we were the sender and flag it as internal */
+	else if (isEqual(rcv_msg.mBody.SND_ID, dev_ident.HMID, 3))								// we were the sender, internal message
+		rcv_msg.intent = MSG_INTENT::INTERN;
+
+	/* message is for us, but not from pair or peer or internal - check if we miss the master id because we are not paired */
+	else if (isEmpty(dev_operate.MAID, 3))													// for us, but pair is empty
+		rcv_msg.intent = MSG_INTENT::NOT_PAIRED;
+
+	else																					// should never happens
+		rcv_msg.intent = MSG_INTENT::ERROR;
+}
 
 /**
 * @brief Receive handler: Process received messages
@@ -545,14 +632,6 @@ void AS::processMessage(void) {
 }
 
 
-
-
-
-
-
-
-
-
 /* ------------------------------------------------------------------------------------------------------------------------
 * - send functions --------------------------------------------------------------------------------------------------------
 * @brief Here are the send functions for the device, this library is focused on client communication,
@@ -560,6 +639,116 @@ void AS::processMessage(void) {
 * message type and sub type. Only for the peer related messages there is the need to define the receiver.
 * Configuration and status answers send only to HMID, ACK and subtypes are always the response to a received string
 */
+void AS::snd_poll(void) {
+	s_snd_msg *sm = &snd_msg;																// short hand to snd_msg struct
+
+	if (sm->active == MSG_ACTIVE::NONE) return;												// nothing to do
+
+																							/* can only happen while an ack was received and AS:processMessage had send the retr_cnt to 0xff */
+	if (sm->retr_cnt == 0xff) {
+		sm->clear();																		// nothing to do any more
+
+		led.set(ack);																		// fire the status led
+		pom.stayAwake(100);																	// and stay awake for a short while
+		return;
+	}
+
+	/*  return while no ACK received and timer is running */
+	if (!sm->timer.done()) return;
+
+
+	/* check for first time and prepare the send */
+	if (!sm->retr_cnt) {
+
+		/* check based on active flag if it is a message which needs to be prepared or only processed */
+		if (sm->active >= MSG_ACTIVE::ANSWER) {
+			sm->mBody.FLAG.RPTEN = 1;														// every message need this flag
+			sm->mBody.FLAG.BIDI = 0;														// ACK required, default no?
+
+			memcpy(sm->mBody.SND_ID, dev_ident.HMID, 3);									// we always send the message in our name
+
+			sm->mBody.MSG_TYP = BY03(sm->type);												// msg type
+			if (BY10(sm->type) != 0xff) sm->mBody.BY10 = BY10(sm->type);					// byte 10
+			if (BY11(sm->type) != 0xff) sm->mBody.BY11 = BY11(sm->type);					// byte 11
+			if (MLEN(sm->type) != 0xff) sm->mBody.MSG_LEN = MLEN(sm->type);					// msg len
+		}
+
+		/* now more in detail in regards to the active flag */
+		if (sm->active == MSG_ACTIVE::ANSWER) {
+			/* answer means - msg_cnt and rcv_id from received string, no bidi needed, but bidi is per default off */
+			memcpy(sm->mBody.RCV_ID, rcv_msg.mBody.SND_ID, 3);
+			sm->mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;
+
+		} else if (sm->active == MSG_ACTIVE::PAIR) {
+			/* pair means - msg_cnt from snd_msg struct, rcv_id is master_id, bidi needed */
+			memcpy(sm->mBody.RCV_ID, dev_operate.MAID, 3);
+			sm->mBody.MSG_CNT = sm->MSG_CNT;
+			sm->MSG_CNT++;
+			sm->mBody.FLAG.BIDI = 1;														// ACK required, will be detected later if not paired 
+
+		} else if (sm->active == MSG_ACTIVE::PEER_BIDI) {
+			sm->mBody.FLAG.BIDI = 1;														// ACK required, will be detected later if not paired 
+		}
+
+		/* an internal message which is only to forward while already prepared,
+		* other options are internal but need to be prepared, external message are differs to whom they have to be send and if they
+		* are initial send or as an answer to a received message. all necassary information are in the send struct */
+		if (isEqual(sm->mBody.RCV_ID, dev_ident.HMID, 3)) {
+			memcpy(rcv_msg.buf, sm->buf, sm->buf[0] + 1);									// copy send buffer to received buffer
+			DBG(SN, F("<i ...\n"));															// some debug, message is shown in the received string
+			rcv_poll();																		// get intent and so on...
+			sm->clear();																	// nothing to do any more for send, msg will processed in the receive loop
+			return;																			// and return...
+		}
+
+		/* internal messages doesn't matter anymore*/
+		sm->temp_MSG_CNT = sm->mBody.MSG_CNT;												// copy the message count to identify the ACK
+		if (isEmpty(sm->mBody.RCV_ID, 3)) sm->mBody.FLAG.BIDI = 0;							// broadcast, no ack required
+
+		if (!sm->temp_max_retr)
+			sm->temp_max_retr = (sm->mBody.FLAG.BIDI) ? sm->max_retr : 1;					// send once while not requesting an ACK
+
+		/* Copy the complete message to msgToSign. We need them for later AES signing.
+		*  We need copy the message to position after 5 of the buffer.
+		*  The bytes 0-5 remain free. These 5 bytes and the first byte of the copied message
+		*  will fill with 6 bytes random data later.	*/
+		memcpy(&sm->prev_buf[5], sm->buf, (sm->buf[0] > 26) ? 27 : sm->buf[0] + 1);
+	}
+
+
+	/* check the retr count if there is something to send, while message timer was checked earlier */
+	if (sm->retr_cnt < sm->temp_max_retr) {													// not all sends done and timing is OK
+		uint8_t tBurst = sm->mBody.FLAG.BURST;												// get burst flag, while string will get encoded
+		cc.sndData(sm->buf, tBurst);														// send to communication module
+		sm->retr_cnt++;																		// remember that we had send the message
+
+		if (sm->mBody.FLAG.BIDI) sm->timer.set(sm->max_time);								// timeout is only needed while an ACK is requested
+		led.set(send);																		// fire the status led
+		pom.stayAwake(100);																	// and stay awake for a short while
+
+		DBG(SN, F("<- "), _HEX(sm->buf, sm->buf[0] + 1), ' ', _TIME, '\n');					// some debug
+
+	} else {
+	/* if we are here, message was send one or multiple times and the timeout was raised if an ack where required */
+	/* seems, nobody had got our message, other wise we had received an ACK */
+		sm->clear();																		// clear the struct, while nothing to do any more
+
+		if (!sm->mBody.FLAG.BIDI) return;													// everything fine, ACK was not required
+
+		sm->timeout = 1;																	// set the time out only while an ACK or answer was requested
+		led.set(noack);																		// fire the status led
+		pom.stayAwake(100);																	// and stay awake for a short while
+
+		DBG(SN, F("  timed out "), _TIME, '\n');											// some debug
+	}
+}
+
+
+
+
+
+
+
 
 
 
@@ -798,130 +987,6 @@ void AS::sendHAVE_DATA(void) {
 	//"70"          => { txt => "WeatherEvent", params => {
 	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
 	//HUM      => '04,2,$val=(hex($val))', } },
-}*/
-
-// private:		//---------------------------------------------------------------------------------------------------------
-// - poll functions --------------------------------
-
-
-/*inline void AS::sendPeerMsg(void) {
-	cmMaster *pCM = ptr_CM[stcPeer.channel];
-	uint8_t retries_max;
-
-	retries_max = (stcPeer.bidi) ? 3 : 1;
-	
-	if (snd_msg.active) return;																		// check if send function has a free slot, otherwise return
-	
-	// first run, prepare amount of slots
-	if (!stcPeer.idx_max) {
-		stcPeer.idx_max = pCM->peerDB.max;														// get amount of messages of peer channel
-
-		if (!pCM->peerDB.used_slots() ) {															// check if at least one peer exist in db, otherwise send to master and stop function
-			preparePeerMessage(dev_operate.MAID, retries_max);
-			snd_msg.MSG_CNT++;																		// increase the send message counter
-			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
-			return;
-		}
-	}
-	
-	// all slots of channel processed, start next round or end processing
-	if (stcPeer.idx_cur >= stcPeer.idx_max) {													// check if all peer slots are done
-		stcPeer.retries++;																		// increase the round counter
-		
-		if ((stcPeer.retries >= retries_max) || (isEmpty(stcPeer.slot,8))) {					// all rounds done or all peers reached
-			//dbg << "through\n";
-			snd_msg.MSG_CNT++;																		// increase the send message counter
-			memset((void*)&stcPeer, 0, sizeof(s_stcPeer));										// clean out and return
-			
-		} else {																				// start next round
-			//dbg << "next round\n";
-			stcPeer.idx_cur = 0;
-
-		}
-		return;
-
-	} else if ((stcPeer.idx_cur) && (!snd_msg.timeout)) {											// peer index is >0, first round done and no timeout
-		uint8_t idx = stcPeer.idx_cur -1;
-		stcPeer.slot[idx >> 3] &=  ~(1 << (idx & 0x07));										// clear bit, because message got an ACK
-	}
-	
-	// set respective bit to check if ACK was received
-	if (!stcPeer.retries) {
-		stcPeer.slot[stcPeer.idx_cur >> 3] |= (1<<(stcPeer.idx_cur & 0x07));					// set bit in slt table										// clear bit in slt and increase counter
-	}
-
-
-	// exit while bit is not set
-	if (!(stcPeer.slot[stcPeer.idx_cur >> 3] & (1<<(stcPeer.idx_cur & 0x07)))) {
-		stcPeer.idx_cur++;																		// increase counter for next time
-		return;
-	}
-
-	uint8_t *tmp_peer = ptr_CM[stcPeer.channel]->peerDB.get_peer(stcPeer.idx_cur);
-	
-	#ifdef AS_DBG
-		dbg << "a: " << stcPeer.idx_cur << " m " << stcPeer.idx_max << '\n';
-	#endif
-
-	if (isEmpty(tmp_peer,4)) {																	// if peer is 0, set done bit in slt and skip
-		stcPeer.slot[stcPeer.idx_cur >> 3] &=  ~(1<<(stcPeer.idx_cur & 0x07));					// remember empty peer in slot table										// clear bit in slt and increase counter
-		stcPeer.idx_cur++;																		// increase counter for next time
-		return;																					// wait for next round
-	}
-
-	// if we are here, there is something to send
-	//dbg << "cnl:" << stcPeer.channel << " cIdx:" << stcPeer.idx_cur << " mIdx:" << stcPeer.idx_max << " slt:" << _HEX(stcPeer.slot,8) << '\n';
-	
-	// get the respective list4 entries and take care while sending the message
-	// peerNeedsBurst  =>{a=>  1.0,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"peer expects burst",lit=>{off=>0,on=>1}},
-	// expectAES       =>{a=>  1.7,s=>0.1,l=>4,min=>0  ,max=>1       ,c=>'lit'      ,f=>''      ,u=>''    ,d=>1,t=>"expect AES"        ,lit=>{off=>0,on=>1}},
-	ptr_CM[stcPeer.channel]->list[4]->load_list(stcPeer.idx_cur);
-	l4_0x01.ui = *ptr_CM[stcPeer.channel]->list[4]->ptr_to_val(0x01);
-	//l4_0x01.ui = ee_list.getRegAddr(stcPeer.channel, 4, stcPeer.idx_cur, 0x01);
-	// fillLvlUpThr    =>{a=>  4.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level upper threshold"},
-	// fillLvlLoThr    =>{a=>  5.0,s=>1  ,l=>4,min=>0  ,max=>255     ,c=>''         ,f=>''      ,u=>''    ,d=>1,t=>"fill level lower threshold"},
-	//dbg << F("s_l4_0x01=") << _HEXB(l4_0x01.ui) << F("\n");
-	//l4_0x01.ui = 0;		// disable burst - hardcoded
-	
-	preparePeerMessage(tmp_peer, 1);
-	
-	if (!snd_msg.mBody.FLAG.BIDI) {
-		stcPeer.slot[stcPeer.idx_cur >> 3] &=  ~(1<<(stcPeer.idx_cur & 0x07));					// clear bit, because it is a message without need to be repeated
-	}
-
-	stcPeer.idx_cur++;																			// increase counter for next time
-}*/
-
-/*void AS::preparePeerMessage(uint8_t *xPeer, uint8_t retries) {
-
-	// description --------------------------------------------------------
-	//    len  cnt  flg  typ  reID      toID      pl
-	// l> 0B   0A   A4   40   23 70 EC  1E 7A AD  02 01
-	// description --------------------------------------------------------
-	//                        reID      toID      BLL  Cnt  Val
-	// l> 0C   0A   A4   41   23 70 EC  1E 7A AD  02   01   200
-	// do something with the information ----------------------------------
-	//"41"          => { txt => "Sensor_event", params => {
-	// BUTTON = bit 0 - 5
-	// LONG   = bit 6
-	// LOWBAT = bit 7
-
-	snd_msg.mBody.MSG_LEN = stcPeer.len_payload + 9;												// set message length
-	snd_msg.mBody.FLAG.CFG   = 1;
-	snd_msg.mBody.FLAG.BIDI  = stcPeer.bidi;															// message flag
-	snd_msg.mBody.FLAG.BURST = l4_0x01.s.peerNeedsBurst;
-	
-	prepareToSend(snd_msg.MSG_CNT, stcPeer.msg_type, xPeer);
-
-	if (snd_msg.mBody.MSG_TYP == 0x41) {
-		snd_msg.mBody.BY10 = stcPeer.channel;
-		snd_msg.mBody.BY10 |= (bat.getStatus() << 7);													// battery bit
-		memcpy(snd_msg.buf+11, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
-		snd_msg.mBody.MSG_LEN++;
-	} else {
-		memcpy(snd_msg.buf+10, stcPeer.ptr_payload, stcPeer.len_payload);							// payload
-	}
-	snd_msg.max_retr = retries;																		// send only one time
 }*/
 
 
@@ -1215,45 +1280,35 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 
 #endif
 
-
-// - some helpers ----------------------------------
-// public:		//---------------------------------------------------------------------------------------------------------
-//- some helpers ----------------------------------------------------------------------------------------------------------
-
-
-inline uint8_t  isEmpty(void *ptr, uint8_t len) {
-	while (len > 0) {
-		len--;
-		if (*((uint8_t*)ptr + len)) return 0;
-	}
-	return 1;
-}
-//- -----------------------------------------------------------------------------------------------------------------------
-
 /**
- * @brief Initialize the random number generator
- */
+* @brief Initialize the random number generator
+*/
 void AS::initPseudoRandomNumberGenerator() {
-	srand(randomSeed ^ uint16_t (millis() & 0xFFFF));
+	srand(randomSeed ^ uint16_t(millis() & 0xFFFF));
 }
 
 /**
- * @brief Initialize the pseudo random number generator
- *        Take all bytes from uninitialized RAM and xor together
- */
+* @brief Initialize the pseudo random number generator
+*        Take all bytes from uninitialized RAM and xor together
+*/
 inline void AS::initRandomSeed() {
-	uint16_t *p = (uint16_t*) (RAMEND + 1);
+	uint16_t *p = (uint16_t*)(RAMEND + 1);
 	extern uint16_t __heap_start;
 	while (p >= &__heap_start + 1) {
-		randomSeed ^= * (--p);
+		randomSeed ^= *(--p);
 	}
-
 	initPseudoRandomNumberGenerator();
 }
 
 
 
 
+
+
+	
+	
+	
+//- some helpers ----------------------------------------------------------------------------------------------------------
 uint32_t byteTimeCvt(uint8_t tTime) {
 	const uint16_t c[8] = { 1,10,50,100,600,3000,6000,36000 };
 	return (uint32_t)(tTime & 0x1F) * c[tTime >> 5] * 100;
@@ -1265,7 +1320,7 @@ uint32_t intTimeCvt(uint16_t iTime) {
 	// take care of the byte order
 	#define LIT_ENDIAN ((1 >> 1 == 0) ? 1 : 0)
 	#if LIT_ENDIAN
-	iTime = (iTime >> 8) | (iTime << 8);
+		iTime = (iTime >> 8) | (iTime << 8);
 	#endif
 
 	// process the conversation
@@ -1274,6 +1329,17 @@ uint32_t intTimeCvt(uint16_t iTime) {
 		tByte = 2;
 		for (uint8_t i = 1; i < (iTime & 0x1F); i++) tByte *= 2;
 	} else tByte = 1;
-
-	return (uint32_t)tByte*(iTime>>5)*100;
+	return (uint32_t)tByte*(iTime >> 5) * 100;
 }
+
+uint8_t  isEmpty(void *ptr, uint8_t len) {
+	while (len > 0) {
+		len--;
+		if (*((uint8_t*)ptr + len)) return 0;
+	}
+	return 1;
+}
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+

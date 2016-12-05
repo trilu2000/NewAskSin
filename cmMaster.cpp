@@ -309,7 +309,7 @@ void cmMaster::INSTRUCTION_STOP_CHANGE(s_m1103xx *buf) {
 void cmMaster::INSTRUCTION_RESET(s_m1104xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_RESET\n"));
 	send_ACK();																				// prepare an ACK message
-	while (snd_msg.active) snd.poll();														// poll to get the ACK message send
+	while (snd_msg.active) hm.snd_poll();													// poll to get the ACK message send
 	clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
 	hm.init();																				// call the init function to get the device in factory status
 }
@@ -750,10 +750,18 @@ void send_INFO_TEMP() {
 void send_HAVE_DATA() {
 }
 
-void send_SWITCH(s_peer_table *peerDB) {
+//void send_SWITCH(s_peer_table *peerDB) {
+//}
+void send_TIMESTAMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_TIMESTAMP(s_peer_table *peerDB) {
-}
+
+/* 
+* @brief prepares a REMOTE message to all registered peers
+* This message is used by push buttone devices like the HM_PB_6_WM55 
+* @parameter bidi, 1 if we need an ACK, 0 if it is a repeated long
+*            *channel_module, ptr to the respective channel module, use "this"
+*            *ptr_payload, pointer to the payload, in this case it is a fixed 2 byte array
+*/
 void send_REMOTE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 	if (peer_msg.active) return;
 	peer_msg.active = (bidi) ? MSG_ACTIVE::PEER_BIDI : MSG_ACTIVE::PEER;
@@ -766,25 +774,25 @@ void send_REMOTE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 	peer_msg.max_retr = 3;
 	DBG(CM, F("CM:send_REMOTE peers:"), channel_module->peerDB.used_slots(), F(", payload:"), _HEX(ptr_payload, 2), ", bidi:", bidi, '\n');
 }
-void send_SENSOR_EVENT(s_peer_table *peerDB) {
+void send_SENSOR_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_SWITCH_LEVEL(s_peer_table *peerDB) {
+void send_SWITCH_LEVEL(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_SENSOR_DATA(s_peer_table *peerDB) {
+void send_SENSOR_DATA(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_GAS_EVENT(s_peer_table *peerDB) {
+void send_GAS_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_CLIMATE_EVENT(s_peer_table *peerDB) {
+void send_CLIMATE_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_SET_TEAM_TEMP(s_peer_table *peerDB) {
+void send_SET_TEAM_TEMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_THERMAL_CONTROL(s_peer_table *peerDB) {
+void send_THERMAL_CONTROL(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_POWER_EVENT_CYCLE(s_peer_table *peerDB) {
+void send_POWER_EVENT_CYCLE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_POWER_EVENT(s_peer_table *peerDB) {
+void send_POWER_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
-void send_WEATHER_EVENT(s_peer_table *peerDB) {
+void send_WEATHER_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 }
 
 /*
@@ -871,7 +879,7 @@ void process_peer_message(void) {
 	//dbg << "burst: " << flag->PEER_NEEDS_BURST << '\n';
 
 	sm->active = pm->active;																// set it active
-	snd.poll();																				// call send poll function direct, otherwise someone could change the snd_msg content
+	hm.snd_poll();																			// call send poll function direct, otherwise someone could change the snd_msg content
 }
 
 void process_list_message(void) {
@@ -916,7 +924,7 @@ void process_list_message(void) {
 		lm->active = LIST_ANSWER::NONE;
 		lm->cur_slc = 0;
 	}
-	snd.poll();
+	hm.snd_poll();
 }
 
 
