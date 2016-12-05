@@ -31,23 +31,6 @@
 } s_aes;*/
 
 
-/*
-* @brief Helper struct to remember on the pairing mode status in asksin main function
-*/
-typedef struct ts_pair_mode {
-	uint8_t   active;						// indicates status, 1 if config mode is active
-	waitTimer timer;						// pairing mode timeout
-} s_pair_mode;
-
-/*
-* @brief Helper struct to remember on the config mode status in asksin main function
-*/
-typedef struct ts_config_mode {
-	uint8_t   active;						// indicates status, 1 if config mode is active
-	uint8_t   idx_peer;						// and the peer index
-	s_list_table *list;						// pointer to the respective list
-	waitTimer timer;						// config mode timeout
-} s_config_mode;
 
 
 /* 
@@ -68,6 +51,8 @@ typedef struct ts_dev_operate {
 	uint8_t  *MAID;							// pointer to the master id, which is hold in cmMaintenance
 	uint8_t  *AES_FLAG;						// pointer to aes flag, handled in cmMaintenance
 } s_dev_operate;
+
+
 
 /*
 * @brief Every channel has two lists, the first list holds the configuration which is required to drive the channel,
@@ -487,5 +472,24 @@ typedef struct ts_peer_msg {
 	}
 
 } s_peer_msg;
+
+
+/*
+* @brief Helper struct to remember on the pairing mode status in asksin main function
+*/
+typedef struct ts_pair_mode {
+	uint8_t   active;						// indicates status, 1 if config mode is active
+	waitTimer timer;						// pairing mode timeout
+} s_pair_mode;
+
+/*
+* @brief Helper struct to remember on the config mode status in asksin main function
+*/
+typedef struct ts_config_mode {
+	uint8_t   active;						// indicates status, 1 if config mode is active
+	uint8_t   idx_peer;						// and the peer index
+	s_list_table *list;						// pointer to the respective list
+	waitTimer timer;						// config mode timeout
+} s_config_mode;
 
 #endif
