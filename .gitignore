@@ -44,3 +44,4 @@ __vm/
 *.filters
 ~$*.docx
 .project
+hmkey.h

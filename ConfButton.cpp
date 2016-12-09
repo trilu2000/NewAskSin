@@ -143,8 +143,8 @@ void CB::outSignal(uint8_t mode) {
 		uint8_t localResDis = *ptr_CM[0]->list[0]->ptr_to_val(0x18);								// get register address
 		//uint8_t localResDis = ee_list.getRegAddr(0, 0, 0, 0x18);								// get register address
 		//dbg << "x:" << localResDis <<'\n';
-		if (!localResDis) 																	// if local reset is not disabled, reset
-			hm.deviceReset(AS_RESET_CLEAR_EEPROM);
+		//if (!localResDis) 																	// if local reset is not disabled, reset
+			//hm.deviceReset(AS_RESET_CLEAR_EEPROM);
 		
 	}
 }

@@ -64,36 +64,6 @@
 
 
 
-	/**	- ---------------------------------------------------------------------------------------------------------------------
-	*
-	* @brief Template and some functions for debugging over serial interface
-	* http://aeroquad.googlecode.com/svn/branches/pyjamasam/WIFIReceiver/Streaming.h
-	*/
-
-	// template to enable dbg << "some text" << '\n' 
-
-/*	struct _HEXB {
-		uint8_t val;
-		_HEXB(uint8_t v) : val(v) {}
-	};
-	inline Print &operator <<(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
-
-	struct _HEX {
-		uint8_t *val;
-		uint8_t len;
-		_HEX(uint8_t *v, uint8_t l) : val(v), len(l) {}
-	};
-	inline Print &operator <<(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i + 1<arg.len) obj.print(' '); }; return obj; }
-
-	enum _eTIME { _TIME };
-	inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(getMillis()); obj.print(')'); return obj; }
-*/
-	// initialize the serial interface
-	//void    dbgStart(void);
-	//- -----------------------------------------------------------------------------------------------------------------------
-
-
-
 	//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
 	// all functions can be found in HAL_extern.h file, this are only the forward declarations to overcome the problem
 	// of handing over #defines from user folder to library folder in Arduino. No pin change interrupt neccasary any more.
@@ -184,5 +154,13 @@
 	extern uint16_t getAdcValue(uint8_t adcmux);
 	uint8_t  getBatteryVoltage(void);
 	//- -----------------------------------------------------------------------------------------------------------------------
+
+	//- randum number functions -----------------------------------------------------------------------------------------------
+	static uint16_t random_seed;
+	void init_random(void);
+	void get_random(uint8_t *buf);
+	inline void seed_random(void);
+	//- -----------------------------------------------------------------------------------------------------------------------
+
 
 #endif 

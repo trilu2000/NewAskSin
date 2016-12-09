@@ -26,7 +26,6 @@
 #include "Battery.h"
 
 
-
 /**
  * @short Main class for implementation of the AskSin protocol stack.
  * Every device needs exactly one instance of this class.
@@ -88,8 +87,9 @@ class AS {
 	* The intent is to overload them there by the respective user channel module and work with the information accordingly.
 	*/
 	void rcv_poll(void);																	// poll function
-	void getIntend(void);																	// checks the received string if addresses are known
-	void processMessage(void);
+	void get_intend(void);																	// checks the received string if addresses are known
+	void process_message(void);
+	void aes_challenge(void);
 
 	void snd_poll(void);																	// poll function, process if something is to send
 
@@ -121,7 +121,7 @@ class AS {
 
 	//uint8_t getChannelFromPeerDB(uint8_t *pIdx);
 
-	void initPseudoRandomNumberGenerator();
+	//void initPseudoRandomNumberGenerator();
 
 
 
@@ -145,12 +145,12 @@ class AS {
 	void prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr);
 
 	// - AES Signing related methods -------------------
-	void makeTmpKey(uint8_t *challenge);
+	//void makeTmpKey(uint8_t *challenge);
 	void payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc);
 
 	void sendSignRequest(uint8_t rememberBuffer);
 
-	inline void initRandomSeed();
+	//inline void initRandomSeed();
 	
 
 
@@ -217,6 +217,11 @@ extern const uint8_t HMSerialData[] PROGMEM;
 *                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
 */
 extern const uint8_t dev_static[] PROGMEM;
+
+/*
+* @brief Helper struct for all AES relevant variables
+*/
+extern s_aes_key aes_key;
 
 /*
 * @fn void everyTimeStart()

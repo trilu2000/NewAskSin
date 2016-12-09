@@ -20,17 +20,26 @@
 /*
 * @brief Helper struct for all AES relevant variables
 */
-/*typedef struct ts_aes {
+typedef struct ts_aes_key {
+	uint8_t  temp_hmkey[16];				// temp hmkey 
+	uint8_t  ACK_payload[4];
+	uint8_t  iv[16];
+
 	uint8_t  key_part_index;				// key part index
 	uint8_t  signing_request[6];			// placeholder for signing request
-	uint8_t  temp_hmkey[16];				// temp hmkey 
 	uint8_t  new_hmkey[16];					// new hmkey for key exchange
 	uint8_t  new_hmkey_index[1];			// new hmkey index
-	uint16_t randomSeed;					// random seed flag
-	uint8_t  resetStatus;					// reset status flag
-} s_aes;*/
+	uint8_t  reset_status;					// reset status flag
 
+	void clear_iv() {
+		memset(iv, 0x00, 16);
+	}
+	void make_temp_hmkey(uint8_t *hmkey, uint8_t *challenge) {
+		memcpy(temp_hmkey, hmkey, 16);
+		for (uint8_t i = 0; i < 6; i++) temp_hmkey[i] ^= challenge[i];
+	}
 
+} s_aes_key;
 
 
 /* 
@@ -245,9 +254,8 @@ typedef struct ts_peer_table {
 *
 * clear()      - function to reset flags
 */
-typedef struct ts_rcv_msg {
+typedef struct ts_receive_message {
 	uint8_t hasdata;					// flag that something is to process
-	uint8_t use_prev_buf;				// flag to store prev_buf is used
 
 	union {
 		uint8_t buf[MaxDataLen];		// initial buffer for received and decoded message string
@@ -309,15 +317,16 @@ typedef struct ts_rcv_msg {
 		s_m70xxxx m70xxxx;				// WEATHER_EVENT message	
 	};
 	uint8_t prev_buf[27];				// store the last receive message to verify with AES signed data.
+	uint8_t use_prev_buf;				// flag to store prev_buf is used
 
-	MSG_INTENT::E intent;				// remember the intent of the message, filled by receive class
+	MSG_INTENT::E intend;				// remember the intent of the message, filled by receive class
 	uint8_t peer[4];					// peer is stored as a 4 byte array, but most messages delivers it with a seperate channel field (byte 10)
 	uint8_t cnl;						// by getting the intent the peer is checked, here we are store the channel where the peer is registered in
 	uint8_t prev_MSG_CNT;				// remember the last message counter to check if it is a repeated message
 
 	void clear() {						// function to reset flags
 		hasdata = 0;
-		buf[0] = 0;
+		//buf[0] = 0;
 	}
 } s_rcv_msg;
 

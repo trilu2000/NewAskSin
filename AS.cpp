@@ -30,12 +30,15 @@
 #ifdef SUPPORT_AES
 	#include "aes.h"
 	aes128_ctx_t ctx; 																		// the context where the round keys are stored
+	s_aes_key aes_key;																		// keep the aes relevant variables
 #endif
+
 
 
 s_pair_mode   pair_mode;																	// helper structure for keeping track of active pairing mode
 s_config_mode config_mode;																	// helper structure for keeping track of active config mode
 
+//s_aes_key     aes_key;																		// struct for handling AES relevant variables
 s_dev_ident   dev_ident;																	// struct to hold the device identification related information									
 s_dev_operate dev_operate;																	// struct to hold all operational variables or pointers
 
@@ -98,8 +101,7 @@ void AS::init(void) {
 	initMillis();																			// start the millis counter
 	
 	cc.init();																				// init the rf module
-
-	initRandomSeed();
+	init_random();																			// generate the random seed
 
 	/* load list 0 and 1 defaults and inform the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
@@ -117,13 +119,14 @@ void AS::init(void) {
  * @brief Cyclic poll all related functions
  */
 void AS::poll(void) {
+
 	/* copy the decoded data into the receiver module if something was received
 	*  and poll the received buffer, it checks if something is in the queue  */
 	if (ccGetGDO0()) {																			// check if something is in the cc1101 receive buffer
 		cc.rcvData(rcv_msg.buf);																// if yes, get it into our receive processing struct
 		rcv_poll();																				// and poll the receive function to get intent and some basics
 	}
-	if (rcv_msg.hasdata) processMessage();														// check if we have to handle the receive buffer
+	if (rcv_msg.hasdata) process_message();														// check if we have to handle the receive buffer
 
 	/* handle the send module */
 	snd_poll();																					// check if there is something to send
@@ -133,10 +136,15 @@ void AS::poll(void) {
 		if (config_mode.timer.done()) config_mode.active = 0;									// when timer is done, set config flag to inactive
 	}
 
+	/* regular polls for the channel modules */
+	for (uint8_t i = 0; i < cnl_max; i++) {														// poll all the registered channel modules
+		ptr_CM[i]->poll();
+	}
+
 
 
 	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
-		deviceReset(resetStatus);
+		//deviceReset(resetStatus);
 	}
 
 	// time out the pairing timer
@@ -147,10 +155,6 @@ void AS::poll(void) {
 		}
 	}
 
-	// regular polls
-	for (uint8_t i = 0; i < cnl_max; i++) {													// poll the channel modules
-		ptr_CM[i]->poll();
-	}
 
 	btn.poll();																			// poll the config button
 	led.poll();																					// poll the led's
@@ -185,33 +189,32 @@ void AS::rcv_poll(void) {
 	rcv_msg.prev_MSG_CNT = rcv_msg.mBody.MSG_CNT;											// remember for next time
 
 	/* get the intend of the message */
-	getIntend();																			// no params neccassary while everything is in the recv struct
+	get_intend();																			// no params neccassary while everything is in the recv struct
 
 	/* filter out the footprint of MAX! devices
 	*  b> 0F 04 86 10 38 EB 06 00 00 00 0A 24 B8 0C 00 40  (1963077) */
-	if ((rcv_msg.mBody.MSG_LEN == 0x0f) && (*(uint8_t*)&rcv_msg.mBody.FLAG == 0x86) && (rcv_msg.intent == MSG_INTENT::BROADCAST)) {
+	if ((rcv_msg.mBody.MSG_LEN == 0x0f) && (*(uint8_t*)&rcv_msg.mBody.FLAG == 0x86) && (rcv_msg.intend == MSG_INTENT::BROADCAST)) {
 		rcv_msg.clear();
 		return;
 	}
 
-	DBG(RV, (char)rcv_msg.intent, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), ' ', _TIME, '\n');
+	DBG(RV, (char)rcv_msg.intend, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), ' ', _TIME, '\n');
 
 	/* sort out messages not needed to further processing */
-	if ((rcv_msg.intent == MSG_INTENT::LOGGING) || (rcv_msg.intent == MSG_INTENT::ERROR)) {
+	if ((rcv_msg.intend == MSG_INTENT::LOGGING) || (rcv_msg.intend == MSG_INTENT::ERROR)) {
 		rcv_msg.clear();																	// nothing to do any more
 		return;
 	}
 
 	/* broadcast messages not used, with one exception - serial pair request */
-	if ((rcv_msg.intent == MSG_INTENT::BROADCAST) && (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcv_msg.mBody.BY11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL)))
-		rcv_msg.intent = MSG_INTENT::MASTER;
+	if ((rcv_msg.intend == MSG_INTENT::BROADCAST) && (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcv_msg.mBody.BY11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL)))
+		rcv_msg.intend = MSG_INTENT::MASTER;
 
 	/* logging and error is already eliminated from further processing, now we can take out broadcasts */
-	if (rcv_msg.intent == MSG_INTENT::BROADCAST) {
+	if (rcv_msg.intend == MSG_INTENT::BROADCAST) {
 		rcv_msg.clear();																	// nothing to do any more
 		return;
 	}
-
 	rcv_msg.hasdata = 1;																	// signalize that something is to do
 }
 
@@ -220,7 +223,7 @@ void AS::rcv_poll(void) {
 * This function is part of the rcv_poll function and searches based on the sender and receiver address for the intend of the 
 * given message. It is important to know, because we work only on messages which are addressed to us and sent by a pair or peer.
 */
-void AS::getIntend() {
+void AS::get_intend() {
 	/* prepare the peer search */
 	memcpy(rcv_msg.peer, rcv_msg.mBody.SND_ID, 3);											// peer has 4 byte and the last byte indicates the channel but also lowbat and long message, therefore we copy it together in a seperate byte array
 	uint8_t buf10 = rcv_msg.buf[10];														// get the channel byte seperate
@@ -229,31 +232,31 @@ void AS::getIntend() {
 
 	/* it could come as a broadcast message - report it only while loging is enabled */
 	if (isEmpty(rcv_msg.mBody.RCV_ID, 3))													// broadcast message
-		rcv_msg.intent = MSG_INTENT::BROADCAST;
+		rcv_msg.intend = MSG_INTENT::BROADCAST;
 
 	/* it could be addressed to a different device - report it only while loging is enabled
 	*  memcmp gives 0 if string matches, any other value while no match */
 	else if (!isEqual(rcv_msg.mBody.RCV_ID, dev_ident.HMID, 3)) 							// not for us, only show as log message
-		rcv_msg.intent = MSG_INTENT::LOGGING;
+		rcv_msg.intend = MSG_INTENT::LOGGING;
 
 	/* because of the previous check, message is for us, check against master */
 	else if (isEqual(rcv_msg.mBody.SND_ID, dev_operate.MAID, 3))							// coming from master
-		rcv_msg.intent = MSG_INTENT::MASTER;
+		rcv_msg.intend = MSG_INTENT::MASTER;
 
 	/* message is for us, but not from master, maybe it is a peer message */
 	else if (rcv_msg.cnl = is_peer_valid(rcv_msg.peer))										// check if the peer is known and remember the channel
-		rcv_msg.intent = MSG_INTENT::PEER;
+		rcv_msg.intend = MSG_INTENT::PEER;
 
 	/* message is for us, but not from pair or peer, check if we were the sender and flag it as internal */
 	else if (isEqual(rcv_msg.mBody.SND_ID, dev_ident.HMID, 3))								// we were the sender, internal message
-		rcv_msg.intent = MSG_INTENT::INTERN;
+		rcv_msg.intend = MSG_INTENT::INTERN;
 
 	/* message is for us, but not from pair or peer or internal - check if we miss the master id because we are not paired */
 	else if (isEmpty(dev_operate.MAID, 3))													// for us, but pair is empty
-		rcv_msg.intent = MSG_INTENT::NOT_PAIRED;
+		rcv_msg.intend = MSG_INTENT::NOT_PAIRED;
 
 	else																					// should never happens
-		rcv_msg.intent = MSG_INTENT::ERROR;
+		rcv_msg.intend = MSG_INTENT::ERROR;
 }
 
 /**
@@ -262,11 +265,30 @@ void AS::getIntend() {
 * Sort out by several if's which message we received and delegates the reuqest for answer to the according class/function.
 * 
 */
-void AS::processMessage(void) {
+void AS::process_message(void) {
 	cmMaster *pCM;
 
-	/* first we check if AES is enabled and if the message is a valid SEND_AES_TO_ACTOR, if yes, we copy back the original message and process the request */
-	/* if AES is enabled and we didn't received a SEND_AES_TO_ACTOR, we send an AES_REQ */
+	/* first we check if AES is enabled and if the message is not an ACK type message or was already challanged, if so, we send back an AES_REQ */
+	if ((*dev_operate.AES_FLAG) && (rcv_msg.mBody.MSG_TYP != BY03(MSG_TYPE::ACK_MSG)) && (!rcv_msg.use_prev_buf)) {
+		/* received command
+		*  x> 10 01 A0 01 63 19 64 00 11 22 00 05 00 00 00 00 00  (17641)
+		*  we send an AES_REQ                 ___6 byte random_ __7th byte HM Key Number
+		*  <-11 01 A0 02 00 11 22 63 19 64 04 B8 91 CC 01 F3 73 00  (17671)
+		*  we receive an AES_REPLY          __encrypeted message start at byte 10, len is 16 byte
+		*  x> 19 01 A0 03 63 19 64 00 11 22 30 EB DC A1 C4 18 2A A2 2E F0 9B EC 96 9B 72 6A (17810)
+		*/
+		memcpy(rcv_msg.prev_buf, rcv_msg.buf, rcv_msg.mBody.MSG_LEN + 1);					// we store the initial message
+		rcv_msg.use_prev_buf = 1;
+		send_AES_REQ();																		// create an ACK_REQ message
+
+		/* here we make a temporarily key with the challenge and the HMKEY, as we need this for later signature verification */
+		aes_key.make_temp_hmkey(dev_ident.HMKEY, snd_msg.buf + 11);							// generate a temp key
+		aes128_init(aes_key.temp_hmkey, &ctx);												// generating the round keys from the 128 bit key
+
+		rcv_msg.clear();																	// nothing to do here any more
+		return;	
+	}
+
 
 	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::DEVICE_INFO)) {
 		/* not sure what to do with while received, probably nothing */
@@ -300,6 +322,29 @@ void AS::processMessage(void) {
 		if (rcv_msg.mBody.MSG_CNT == snd_msg.mBody.MSG_CNT) snd_msg.retr_cnt = 0xff;		// check if the message counter is similar and let the send function know
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::AES_REPLY)) {
+		/* we received an AES_REPLY, first we tell the send function that we received an answer. as the receive flag is not cleared, we will come back again */
+		if (snd_msg.active) {
+			snd_msg.retr_cnt = 0xff;														// we received an answer to our request, no need to resend
+			return;
+		}
+
+		/* now we decrypt it and check if the content compares to the last received message */
+		aes_key.clear_iv();
+		memcpy(aes_key.iv, rcv_msg.prev_buf + 11, rcv_msg.prev_buf[0] - 10);				// copy payload of initial message into IV
+		aes128_dec(rcv_msg.buf + 10, &ctx);													// decrypt payload with temporarily key first time
+
+		for (uint8_t i = 0; i < 16; i++) rcv_msg.buf[i + 10] ^= aes_key.iv[i];				// xor encrypted payload with iv
+		memcpy(aes_key.ACK_payload, rcv_msg.buf + 10, 4);									// and copy the payload
+		aes128_dec(rcv_msg.buf + 10, &ctx);													// decrypt payload with temporarily key again
+
+		DBG(AS, F("AS:HMKEY: "), _HEX(dev_ident.HMKEY, 10), F(", initial: "), _HEX(rcv_msg.prev_buf + 1, 10), F(", reply: "), _HEX(rcv_msg.buf + 16, 10), '\n');
+
+		/* compare decrypted message with original message, memcmp returns 0 if compare true, we send an ACK_AES and 
+		*  process the original message, or terminate the communication */
+		if (!memcmp(rcv_msg.buf + 16, rcv_msg.prev_buf + 1, 10)) {							// compare bytes 7-17 (first 9 byte are flags and addresses) of decrypted data with bytes 2-12 of msgOriginal
+			memcpy(rcv_msg.buf, rcv_msg.prev_buf, rcv_msg.prev_buf[0] +1 );					// restore the saved message to be processed
+			return;																			// rcv_msg.buf changed, will be worked through next time 
+		}
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SEND_AES)) {
 
@@ -341,7 +386,7 @@ void AS::processMessage(void) {
 		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
 		pCM->SWITCH(&rcv_msg.m3Exxxx);
 
-	} else if (rcv_msg.intent == MSG_INTENT::PEER) {
+	} else if (rcv_msg.intend == MSG_INTENT::PEER) {
 		/* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
 		pCM = ptr_CM[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
 		pCM->lstP.load_list(ptr_CM[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3
@@ -362,19 +407,12 @@ void AS::processMessage(void) {
 		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
 	}
 
+	//rcv_msg.hasdata = 0;
+	rcv_msg.use_prev_buf = 0;															// clear the prev buffer flag
 	rcv_msg.clear();
-	//return;
+	return;
 
-
-
-
-
-
-
-
-
-
-
+	/*
 
 	uint8_t by10 = rcv_msg.mBody.BY10 - 1;
 
@@ -407,7 +445,7 @@ void AS::processMessage(void) {
 		* This is an response (ACK) to an active message.
 		* In exception of AS_RESPONSE_AES_CHALLANGE message, we set retrCnt to 0xFF
 		*/
-		if ((snd_msg.active) && (rcv_msg.mBody.MSG_CNT == snd_msg.temp_MSG_CNT) && (rcv_msg.mBody.BY10 != AS_RESPONSE_AES_CHALLANGE)) {
+/*		if ((snd_msg.active) && (rcv_msg.mBody.MSG_CNT == snd_msg.temp_MSG_CNT) && (rcv_msg.mBody.BY10 != AS_RESPONSE_AES_CHALLANGE)) {
 			//snd_msg.retr_cnt = 0xFF;
 		}
 
@@ -418,7 +456,7 @@ void AS::processMessage(void) {
 			* 0A 05 80 02 63 19 63 01 02 04 00
 			*/
 			// nothing to do yet
-
+/*
 		}
 		else if (rcv_msg.mBody.BY10 == AS_RESPONSE_ACK_STATUS) {
 			/*
@@ -429,7 +467,7 @@ void AS::processMessage(void) {
 			* Action: Down=0x20, UP=0x10, LowBat=&0x80
 			*/
 			// nothing to do yet
-
+/*
 		}
 		else if (rcv_msg.mBody.BY10 == AS_RESPONSE_ACK2) {
 			// nothing to do yet
@@ -461,7 +499,7 @@ void AS::processMessage(void) {
 		*             Sender__ Receiver AES-Response-Data
 		* 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
 		*/
-		snd_msg.clear();																		// cleanup send module data;
+/*		snd_msg.clear();																		// cleanup send module data;
 
 		uint8_t iv[16];																		// 16 bytes initial vector
 		memset(iv, 0x00, 16);																// fill IV with 0x00;
@@ -482,7 +520,7 @@ void AS::processMessage(void) {
 																								/**
 																								* Compare decrypted message with original message
 																								*/
-#ifdef AES_DBG
+/*#ifdef AES_DBG
 		dbg << F(">>> compare: ") << _HEX(rcv_msg.buf + 10, 16) << " | " << _HEX(rcv.prevBuf, 11) << '\n';
 #endif
 
@@ -603,7 +641,7 @@ void AS::processMessage(void) {
 		* 				COUNTER  => "10,2", } },
 		*/
 
-		uint8_t pIdx;
+/*		uint8_t pIdx;
 		uint8_t cnl;// = getChannelFromPeerDB(&pIdx);
 
 		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rcv.mBdy.mTyp) << " by10: " << _HEXB(rcv.mBdy.by10)  << " by11: " << _HEXB(rcv.mBdy.by11) << " data: " << _HEX((rcv_msg.buf+10),(rcv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
@@ -627,9 +665,27 @@ void AS::processMessage(void) {
 		}
 
 	}
-
+*/
 	//rcv_msg.clear();																	// nothing to do any more
 }
+
+
+void AS::aes_challenge(void) {
+
+	if (!*dev_operate.AES_FLAG) return;														// no need to challenge
+	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::ACK_MSG)) return;							// ACK type messages don't need to be challenged
+
+	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::AES_REPLY)) {
+
+		return;
+
+	} else if (!rcv_msg.use_prev_buf) {
+	/* seems to be the first time we are here, therefore we store the initial message, send an AES_REQ and wait for an answer */
+
+		rcv_msg.clear();																	// nothing to do any more
+	}
+}
+
 
 
 /* ------------------------------------------------------------------------------------------------------------------------
@@ -663,8 +719,11 @@ void AS::snd_poll(void) {
 		/* check based on active flag if it is a message which needs to be prepared or only processed */
 		if (sm->active >= MSG_ACTIVE::ANSWER) {
 			sm->mBody.FLAG.RPTEN = 1;														// every message need this flag
-			sm->mBody.FLAG.BIDI = 0;														// ACK required, default no?
-
+			if (snd_msg.type == MSG_TYPE::AES_REQ) {										// only on AES_REQ we require an ACK
+				sm->mBody.FLAG.BIDI = 1;
+			} else {																		// default is no
+				sm->mBody.FLAG.BIDI = 0;
+			}
 			memcpy(sm->mBody.SND_ID, dev_ident.HMID, 3);									// we always send the message in our name
 
 			sm->mBody.MSG_TYP = BY03(sm->type);												// msg type
@@ -760,7 +819,7 @@ void AS::snd_poll(void) {
 
 
 
-
+/*
 
 #ifdef SUPPORT_AES
 	/**
@@ -772,7 +831,7 @@ void AS::snd_poll(void) {
 	 *
 	 * @param data pointer to aes ack data
 	 */
-	inline void AS::sendAckAES(uint8_t *data) {
+/*	inline void AS::sendAckAES(uint8_t *data) {
 		snd_msg.mBody.MSG_LEN = 0x0E;
 		snd_msg.mBody.FLAG.BIDI = 0;
 		snd_msg.mBody.BY10 = AS_RESPONSE_ACK;
@@ -1022,11 +1081,11 @@ void AS::sendHAVE_DATA(void) {
 	return cnl;
 }*/
 
-#ifdef SUPPORT_AES
+//#ifdef SUPPORT_AES
 	/*
 	 * @brief Loop thru channels and check if AES is activated for any channel.
 	 */
-	uint8_t AS::checkAnyChannelForAES(void) {
+/*	uint8_t AS::checkAnyChannelForAES(void) {
 		uint8_t i;
 		for (i = 1; i < cnl_max; i++) {														// check if AES activated for any channel
 			if (*ptr_CM[i]->list[1]->ptr_to_val(AS_REG_L1_AES_ACTIVE)) {
@@ -1045,7 +1104,7 @@ void AS::sendHAVE_DATA(void) {
 	 *             Sender__ Receiver Decrypted Payload with one key part
 	 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
 	 */
-	inline void AS::processMessageKeyExchange(void) {
+/*	inline void AS::processMessageKeyExchange(void) {
 		memcpy(rcv_msg.prev_buf, rcv_msg.buf, rcv_msg.buf[0]+1);												// remember this message
 //		rcv.prevBufUsed = 1;																		// ToDo: check if we need this here
 
@@ -1092,7 +1151,7 @@ void AS::sendHAVE_DATA(void) {
 	 * 5. The encrypted payload (ePL) was XORed with the IV -> ePl^IV
 	 * 6. Encrypt the ePl^IV width the generated temporarily again
 	 */
-	inline void AS::processMessageResponseAES_Challenge(void) {
+/*	inline void AS::processMessageResponseAES_Challenge(void) {
 		uint8_t i;
 
 		snd_msg.clear();																			// cleanup send module data;
@@ -1165,7 +1224,7 @@ inline void AS::processMessageConfigAESProtected() {
  *        Set all register to default 0x00, reset HMKEY, reset device via watchdog,
  *        and so on.
  */
-void AS::deviceReset(uint8_t clearEeprom) {
+/*void AS::deviceReset(uint8_t clearEeprom) {
 	if (clearEeprom == AS_RESET_CLEAR_EEPROM) {
 		clearEEPromBlock(0, 2);
 	}
@@ -1190,7 +1249,7 @@ void AS::deviceReset(uint8_t clearEeprom) {
  * @param mType    the message type
  * @param addrTo   pointer to receiver address
  */
-void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
+/*void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
 	uint8_t i;
 
 	snd_msg.mBody.MSG_CNT = mCounter;
@@ -1233,7 +1292,7 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 	 *
 	 * The Challenge consists 6 random bytes.
 	 */
-	void AS::sendSignRequest(uint8_t rememberBuffer) {
+/*	void AS::sendSignRequest(uint8_t rememberBuffer) {
 		if (rememberBuffer) {
 			memcpy(rcv_msg.prev_buf, rcv_msg.buf, rcv_msg.buf[0]+1);											// remember the message from buffer
 			rcv_msg.use_prev_buf = 1;
@@ -1255,7 +1314,7 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 		 * Here we make a temporarily key with the challenge and the HMKEY.
 		 * We need this for later signature verification.
 		 */
-		makeTmpKey(snd_msg.buf+11);
+/*		makeTmpKey(snd_msg.buf+11);
 
 		#ifdef AES_DBG
 			dbg << F(">>> signingRequestData  : ") << _HEX(snd_msg.buf+10, 7) << F(" <<<") << '\n';
@@ -1264,26 +1323,13 @@ void AS::sendINFO_PARAMETER_CHANGE(void) {
 		prepareToSend(rcv_msg.mBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv_msg.mBody.SND_ID);
 	}
 
-	/**
-	 * @brief Make a temporarily key for encrypting the sign response.
-	 *        The temporarily key was built by XORing the key with the challenge
-	 *
-	 * @param challenge   pointer to the challenge
-	 */
-	void AS::makeTmpKey(uint8_t *challenge) {
-		for (uint8_t i = 0; i < 16; i++) {
-			tempHmKey[i] = (i<6) ? (dev_ident.HMKEY[i] ^ challenge[i]) : dev_ident.HMKEY[i];
-		}
-
-		aes128_init(tempHmKey, &ctx);														// generating the round keys from the 128 bit key
-	}
 
 #endif
 
 /**
 * @brief Initialize the random number generator
 */
-void AS::initPseudoRandomNumberGenerator() {
+/*void AS::initPseudoRandomNumberGenerator() {
 	srand(randomSeed ^ uint16_t(millis() & 0xFFFF));
 }
 
@@ -1291,14 +1337,14 @@ void AS::initPseudoRandomNumberGenerator() {
 * @brief Initialize the pseudo random number generator
 *        Take all bytes from uninitialized RAM and xor together
 */
-inline void AS::initRandomSeed() {
+/*inline void AS::initRandomSeed() {
 	uint16_t *p = (uint16_t*)(RAMEND + 1);
 	extern uint16_t __heap_start;
 	while (p >= &__heap_start + 1) {
 		randomSeed ^= *(--p);
 	}
 	initPseudoRandomNumberGenerator();
-}
+}*/
 
 
 

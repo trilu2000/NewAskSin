@@ -9,6 +9,9 @@
 #ifndef _AS_ENUMDEFS_H
 #define _AS_ENUMDEFS_H
 
+namespace MSG_AES {
+	enum E : uint8_t { DONE = 0, NOT_NEEDED = 0, PEER = 'p', INTERN = 'i', LOGGING = 'l', NOT_PAIRED = 'x', ERROR = 'u', };
+};
 
 /*
 * @brief Intent of message, used for receive and send function
@@ -212,9 +215,14 @@ namespace MSG_TYPE {
 		ACK_MSG = 0x02ffffff,
 
 		/* 0x02 00 ff 0a * - ACK
-		*    LEN CNT FLAG BY03 SND       RCV       BY10   
+		*    LEN CNT FLAG BY03 SND       RCV       BY10
 		* m> 0A  16  80   02   63 19 64  33 11 22  00     */
 		ACK = 0x0200ff0a,
+
+		/* 0x02 00 ff 0e * - ACK_AES
+		*    LEN CNT FLAG BY03 SND       RCV       BY10  AUTH
+		* m> 0E  16  80   02   63 19 64  33 11 22  00    11 22 33 44 */
+		ACK_AUTH = 0x0200ff0e,
 
 		/* 0x02 01 ff 0e * - ACK_STATUS
 		*    LEN CNT FLAG BY03 SND       RCV       BY10   CNL VAL DUL  RSSI

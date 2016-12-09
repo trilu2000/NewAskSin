@@ -94,15 +94,15 @@ public://-----------------------------------------------------------------------
 	void ACK(s_m0200xx *buf);																// at the moment we need the ACK only to avoid
 	void ACK_STATUS(s_m0201xx *buf);														// resends in the send class, but here we can make it virtual
 	void ACK2(s_m0202xx *buf);																// to use it by the channel modules
-	void AES_REQ(s_m0204xx *buf);
+	//void AES_REQ(s_m0204xx *buf);
 	void NACK(s_m0280xx *buf);
 	void NACK_TARGET_INVALID(s_m0284xx *buf);
 	void ACK_NACK_UNKNOWN(s_m02xxxx *buf);
 
-	void AES_REPLY(s_m03xxxx *buf);
+	//void AES_REPLY(s_m03xxxx *buf);
 
-	void SEND_AES_TO_HMLAN(s_m0401xx *buf);
-	void SEND_AES_TO_ACTOR(s_m04xxxx *buf);
+	//void SEND_AES_TO_HMLAN(s_m0401xx *buf);
+	//void SEND_AES_TO_ACTOR(s_m04xxxx *buf);
 
 	//void INFO_SERIAL(s_m1000xx *buf);														// in client communication only as
 	//void INFO_PEER_LIST(s_m1001xx *buf);													// send functions required
@@ -219,7 +219,7 @@ void check_send_ACK_NACK(uint8_t ackOk);												// ACK or NACK on base of ac
 void send_ACK(void);																	// all different types of ACK are a response
 void send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn);							// to previous received messages 
 void send_ACK2(void);																	// RCV_ID will be taken in every case from the 
-void send_AES_REQ(s_m0204xx *buf);														// previous received string
+void send_AES_REQ(void);// s_m0204xx *buf);														// previous received string
 void send_NACK(void);
 void send_NACK_TARGET_INVALID(void);
 void send_ACK_NACK_UNKNOWN();

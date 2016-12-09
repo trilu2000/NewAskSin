@@ -264,9 +264,6 @@ void cmMaster::ACK_STATUS(s_m0201xx *buf) {
 void cmMaster::ACK2(s_m0202xx *buf) {
 	DBG(CM, F("CM:ACK2\n"));
 }
-void cmMaster::AES_REQ(s_m0204xx *buf) {
-	DBG(CM, F("CM:AES_REQ\n"));
-}
 void cmMaster::NACK(s_m0280xx *buf) {
 	DBG(CM, F("CM:NACK\n"));
 }
@@ -277,18 +274,6 @@ void cmMaster::ACK_NACK_UNKNOWN(s_m02xxxx *buf) {
 	DBG(CM, F("CM:ACK_NACK_UNKNOWN\n"));
 }
 
-
-void cmMaster::AES_REPLY(s_m03xxxx *buf) {
-	DBG(CM, F("CM:AES_REPLY\n"));
-}
-
-
-void cmMaster::SEND_AES_TO_HMLAN(s_m0401xx *buf) {
-	DBG(CM, F("CM:SEND_AES_TO_HMLAN\n"));
-}
-void cmMaster::SEND_AES_TO_ACTOR(s_m04xxxx *buf) {
-	DBG(CM, F("CM:SEND_AES_TO_ACTOR\n"));
-}
 
 void cmMaster::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_INHIBIT_OFF\n"));
@@ -566,8 +551,14 @@ void check_send_ACK_NACK(uint8_t ackOk) {
 */
 void send_ACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
-	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
-	snd_msg.type = MSG_TYPE::ACK;															// length and flags are set within the snd_msg struct
+
+	if (*dev_operate.AES_FLAG) {															// if aes is enabled, we have to answer with an ack_auth
+		snd_msg.type = MSG_TYPE::ACK_AUTH;													// length and flags are set within the snd_msg struct
+		memcpy(snd_msg.buf + 11, aes_key.ACK_payload, 4);									// 4 byte auth payload
+	} else {
+		snd_msg.type = MSG_TYPE::ACK;														// length and flags are set within the snd_msg struct
+	}
+	snd_msg.active = MSG_ACTIVE::ANSWER;											// for address, counter and to make it active
 }
 /**
 * @brief Send an ACK with status data
@@ -597,7 +588,11 @@ void send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
 }
 void send_ACK2(void) {
 }
-void send_AES_REQ(s_m0204xx *buf) {
+void send_AES_REQ() {
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::AES_REQ;														// length and flags are set within the snd_msg struct
+	get_random(snd_msg.buf + 11);															// six random bytes to the payload
+	snd_msg.buf[17] = dev_ident.HMKEY_INDEX;												// the 7th byte is the key index
 }
 /**
 * @brief Send a NACK (not ACK)
