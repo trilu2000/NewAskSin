@@ -552,13 +552,14 @@ void check_send_ACK_NACK(uint8_t ackOk) {
 void send_ACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
 
-	if (*dev_operate.AES_FLAG) {															// if aes is enabled, we have to answer with an ack_auth
+	if (aes_key.active == MSG_AES::AES_REPLY_OK) {											// if last message was a valid aes reply we have to answer with an ack_auth
 		snd_msg.type = MSG_TYPE::ACK_AUTH;													// length and flags are set within the snd_msg struct
 		memcpy(snd_msg.buf + 11, aes_key.ACK_payload, 4);									// 4 byte auth payload
 	} else {
 		snd_msg.type = MSG_TYPE::ACK;														// length and flags are set within the snd_msg struct
 	}
-	snd_msg.active = MSG_ACTIVE::ANSWER;											// for address, counter and to make it active
+	aes_key.active = MSG_AES::NONE;															// no need to remember on the last message
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 }
 /**
 * @brief Send an ACK with status data
@@ -589,6 +590,11 @@ void send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
 void send_ACK2(void) {
 }
 void send_AES_REQ() {
+	/* save the initial message for later use and prepare the temp key */
+	aes_key.prep_AES_REQ(dev_ident.HMKEY, rcv_msg.buf, snd_msg.buf);						// prepare the message, store received string and so on
+	rcv_msg.buf[0] = 0;																	// and terminate the further processing
+
+	/* create the message */
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::AES_REQ;														// length and flags are set within the snd_msg struct
 	get_random(snd_msg.buf + 11);															// six random bytes to the payload
@@ -845,6 +851,7 @@ void process_peer_message(void) {
 
 	/* build the message, set type, len, bidi and content */
 	sm->type = pm->type;																	// copy the type into the send message struct
+	sm->active = pm->active;																// set it active
 
 	/* take care of the payload - peer message means in any case that the payload starts at the same position in the string and
 	*  while it could have a different length, we calculate the length of the string by a hand over value */
@@ -853,7 +860,9 @@ void process_peer_message(void) {
 
 	/* send it as pair message if we have no peer registered */
 	if (!pm->peerDB->used_slots()) {														// if no peer is registered, we send the message to the pair
-		sm->active = MSG_ACTIVE::PAIR;														// should be handled from now on as a pair message
+		memcpy(sm->mBody.RCV_ID, dev_operate.MAID, 3);										// copy in the pair address
+		sm->mBody.MSG_CNT = sm->MSG_CNT;													// set the message counter
+		sm->MSG_CNT++;																		// increase the counter for next time use
 		pm->clear();																		// nothing to do here any more, while handled as pair message
 		return;																				// and return, otherwise some infos are overwritten
 	}
@@ -873,8 +882,7 @@ void process_peer_message(void) {
 	sm->mBody.FLAG.BURST = flag->PEER_NEEDS_BURST;											// set the burst flag
 	//dbg << "burst: " << flag->PEER_NEEDS_BURST << '\n';
 
-	sm->active = pm->active;																// set it active
-	hm.snd_poll();																			// call send poll function direct, otherwise someone could change the snd_msg content
+	//hm.snd_poll();																			// call send poll function direct, otherwise someone could change the snd_msg content
 }
 
 void process_list_message(void) {
@@ -919,7 +927,7 @@ void process_list_message(void) {
 		lm->active = LIST_ANSWER::NONE;
 		lm->cur_slc = 0;
 	}
-	hm.snd_poll();
+	//hm.snd_poll();
 }
 
 

@@ -11,6 +11,7 @@
 #include "wait_timer.h"
 #include "AS_enum_defs.h"
 #include "AS_message_defs.h"
+#include "aes.h"
 
 #ifndef _AS_TYPEDEFS_H
 #define _AS_TYPEDEFS_H
@@ -21,9 +22,16 @@
 * @brief Helper struct for all AES relevant variables
 */
 typedef struct ts_aes_key {
-	uint8_t  temp_hmkey[16];				// temp hmkey 
+	MSG_AES::E active;						// MSG_AES:: NONE, AES_REQ
+	uint8_t  has_ACK_payload;				// ACK payload flag
 	uint8_t  ACK_payload[4];
+
+	uint8_t  temp_hmkey[16];				// temp hmkey 
 	uint8_t  iv[16];
+	aes128_ctx_t ctx; 						// the context where the round keys are stored
+
+	uint8_t  prev_rcv_buf[MaxDataLen];		// store to save the previous received string
+	uint8_t  prev_snd_buf[MaxDataLen];		// store to save the previous send string
 
 	uint8_t  key_part_index;				// key part index
 	uint8_t  signing_request[6];			// placeholder for signing request
@@ -31,12 +39,41 @@ typedef struct ts_aes_key {
 	uint8_t  new_hmkey_index[1];			// new hmkey index
 	uint8_t  reset_status;					// reset status flag
 
-	void clear_iv() {
-		memset(iv, 0x00, 16);
+	void prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf) {
+		/* save the initial message for later use */
+		memcpy(prev_rcv_buf, rcv_buf, rcv_buf[0] + 1);			// we store the initial message
+		active = MSG_AES::AES_REQ;								// set the flag that something is in the buffer
+		/* here we make a temporarily key with the challenge and the HMKEY, as we need this for later signature verification */
+		make_temp_hmkey(hmkey, snd_buf + 11);					// generate a temp key
+		aes128_init(temp_hmkey, &ctx);							// generating the round keys from the 128 bit key
 	}
+	void check_AES_REPLY(uint8_t *hmkey, uint8_t *rcv_buf) {
+		/* decrypt it and check if the content compares to the last received message */
+		clear_iv(); 											// some cleanup
+		memcpy(iv, prev_rcv_buf + 11, prev_rcv_buf[0] - 10);	// copy payload of initial message into IV
+		aes128_dec(rcv_buf + 10, &ctx);							// decrypt payload with temporarily key first time
+		for (uint8_t i = 0; i < 16; i++) 
+			rcv_buf[i + 10] ^= iv[i];							// xor encrypted payload with iv
+		memcpy(ACK_payload, rcv_buf + 10, 4);					// and copy the payload
+		aes128_dec(rcv_buf + 10, &ctx);							// decrypt payload with temporarily key again
+		dbg << F("HMKEY: ") << _HEX(hmkey, 10) << F(", initial: ") << _HEX(prev_rcv_buf + 1, 10) << F(", reply: ") << _HEX(rcv_buf + 16, 10) << '\n';
+		/* compare decrypted message with original message, memcmp returns 0 if compare true, we send an ACK_AES and
+		*  process the original message, or terminate the communication */
+		if (!memcmp(rcv_buf + 16, prev_rcv_buf + 1, 10)) {		// compare bytes 7-17 (first 9 byte are flags and addresses) of decrypted data with bytes 2-12 of msgOriginal
+			memcpy(rcv_buf, prev_rcv_buf, prev_rcv_buf[0] + 1);	// restore the saved message to be processed
+			active = MSG_AES::AES_REPLY_OK;
+		} else {
+			rcv_buf[0] = 0;										// nothing to do any more
+			active = MSG_AES::NONE;
+		}
+	}
+
 	void make_temp_hmkey(uint8_t *hmkey, uint8_t *challenge) {
 		memcpy(temp_hmkey, hmkey, 16);
 		for (uint8_t i = 0; i < 6; i++) temp_hmkey[i] ^= challenge[i];
+	}
+	void clear_iv() {
+		memset(iv, 0x00, 16);
 	}
 
 } s_aes_key;
@@ -255,7 +292,6 @@ typedef struct ts_peer_table {
 * clear()      - function to reset flags
 */
 typedef struct ts_receive_message {
-	uint8_t hasdata;					// flag that something is to process
 
 	union {
 		uint8_t buf[MaxDataLen];		// initial buffer for received and decoded message string
@@ -316,8 +352,6 @@ typedef struct ts_receive_message {
 		s_m5fxxxx m5fxxxx;				// POWER_EVENT message
 		s_m70xxxx m70xxxx;				// WEATHER_EVENT message	
 	};
-	uint8_t prev_buf[27];				// store the last receive message to verify with AES signed data.
-	uint8_t use_prev_buf;				// flag to store prev_buf is used
 
 	MSG_INTENT::E intend;				// remember the intent of the message, filled by receive class
 	uint8_t peer[4];					// peer is stored as a 4 byte array, but most messages delivers it with a seperate channel field (byte 10)
@@ -325,8 +359,7 @@ typedef struct ts_receive_message {
 	uint8_t prev_MSG_CNT;				// remember the last message counter to check if it is a repeated message
 
 	void clear() {						// function to reset flags
-		hasdata = 0;
-		//buf[0] = 0;
+		buf[0] = 0;
 	}
 } s_rcv_msg;
 

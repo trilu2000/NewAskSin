@@ -27,18 +27,14 @@
 #include "AS.h"
 #include <avr/wdt.h>
 
-#ifdef SUPPORT_AES
-	#include "aes.h"
-	aes128_ctx_t ctx; 																		// the context where the round keys are stored
-	s_aes_key aes_key;																		// keep the aes relevant variables
-#endif
+
 
 
 
 s_pair_mode   pair_mode;																	// helper structure for keeping track of active pairing mode
 s_config_mode config_mode;																	// helper structure for keeping track of active config mode
 
-//s_aes_key     aes_key;																		// struct for handling AES relevant variables
+s_aes_key     aes_key;																		// struct for handling AES relevant variables
 s_dev_ident   dev_ident;																	// struct to hold the device identification related information									
 s_dev_operate dev_operate;																	// struct to hold all operational variables or pointers
 
@@ -126,7 +122,7 @@ void AS::poll(void) {
 		cc.rcvData(rcv_msg.buf);																// if yes, get it into our receive processing struct
 		rcv_poll();																				// and poll the receive function to get intent and some basics
 	}
-	if (rcv_msg.hasdata) process_message();														// check if we have to handle the receive buffer
+	if (rcv_msg.buf[0]) process_message();														// check if we have to handle the receive buffer
 
 	/* handle the send module */
 	snd_poll();																					// check if there is something to send
@@ -215,7 +211,7 @@ void AS::rcv_poll(void) {
 		rcv_msg.clear();																	// nothing to do any more
 		return;
 	}
-	rcv_msg.hasdata = 1;																	// signalize that something is to do
+	//rcv_msg.hasdata = 1;																	// signalize that something is to do
 }
 
 /*
@@ -227,7 +223,7 @@ void AS::get_intend() {
 	/* prepare the peer search */
 	memcpy(rcv_msg.peer, rcv_msg.mBody.SND_ID, 3);											// peer has 4 byte and the last byte indicates the channel but also lowbat and long message, therefore we copy it together in a seperate byte array
 	uint8_t buf10 = rcv_msg.buf[10];														// get the channel byte seperate
-	if (rcv_msg.use_prev_buf) buf10 = rcv_msg.prev_buf[10];									// if AES is active, we must get buf[10] from prevBuf[10]
+	if (aes_key.active) buf10 = aes_key.prev_rcv_buf[10];									// if AES is active, we must get buf[10] from prevBuf[10]
 	rcv_msg.peer[3] = buf10 & 0x3f;															// mask out long and battery low
 
 	/* it could come as a broadcast message - report it only while loging is enabled */
@@ -269,7 +265,7 @@ void AS::process_message(void) {
 	cmMaster *pCM;
 
 	/* first we check if AES is enabled and if the message is not an ACK type message or was already challanged, if so, we send back an AES_REQ */
-	if ((*dev_operate.AES_FLAG) && (rcv_msg.mBody.MSG_TYP != BY03(MSG_TYPE::ACK_MSG)) && (!rcv_msg.use_prev_buf)) {
+	if ((*dev_operate.AES_FLAG) && (rcv_msg.mBody.MSG_TYP != BY03(MSG_TYPE::ACK_MSG)) && (aes_key.active == MSG_AES::NONE)) {
 		/* received command
 		*  x> 10 01 A0 01 63 19 64 00 11 22 00 05 00 00 00 00 00  (17641)
 		*  we send an AES_REQ                 ___6 byte random_ __7th byte HM Key Number
@@ -277,15 +273,8 @@ void AS::process_message(void) {
 		*  we receive an AES_REPLY          __encrypeted message start at byte 10, len is 16 byte
 		*  x> 19 01 A0 03 63 19 64 00 11 22 30 EB DC A1 C4 18 2A A2 2E F0 9B EC 96 9B 72 6A (17810)
 		*/
-		memcpy(rcv_msg.prev_buf, rcv_msg.buf, rcv_msg.mBody.MSG_LEN + 1);					// we store the initial message
-		rcv_msg.use_prev_buf = 1;
 		send_AES_REQ();																		// create an ACK_REQ message
-
-		/* here we make a temporarily key with the challenge and the HMKEY, as we need this for later signature verification */
-		aes_key.make_temp_hmkey(dev_ident.HMKEY, snd_msg.buf + 11);							// generate a temp key
-		aes128_init(aes_key.temp_hmkey, &ctx);												// generating the round keys from the 128 bit key
-
-		rcv_msg.clear();																	// nothing to do here any more
+																							// nothing to do here any more
 		return;	
 	}
 
@@ -308,8 +297,6 @@ void AS::process_message(void) {
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(&rcv_msg.m01xx04);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(&rcv_msg.m01xx05);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(&rcv_msg.m01xx06);
-		//else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   ptr_CM[cm->list->cnl]->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
-		//else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   ptr_CM[cm->list->cnl]->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(&rcv_msg.m01xx09);
@@ -327,24 +314,8 @@ void AS::process_message(void) {
 			snd_msg.retr_cnt = 0xff;														// we received an answer to our request, no need to resend
 			return;
 		}
-
-		/* now we decrypt it and check if the content compares to the last received message */
-		aes_key.clear_iv();
-		memcpy(aes_key.iv, rcv_msg.prev_buf + 11, rcv_msg.prev_buf[0] - 10);				// copy payload of initial message into IV
-		aes128_dec(rcv_msg.buf + 10, &ctx);													// decrypt payload with temporarily key first time
-
-		for (uint8_t i = 0; i < 16; i++) rcv_msg.buf[i + 10] ^= aes_key.iv[i];				// xor encrypted payload with iv
-		memcpy(aes_key.ACK_payload, rcv_msg.buf + 10, 4);									// and copy the payload
-		aes128_dec(rcv_msg.buf + 10, &ctx);													// decrypt payload with temporarily key again
-
-		DBG(AS, F("AS:HMKEY: "), _HEX(dev_ident.HMKEY, 10), F(", initial: "), _HEX(rcv_msg.prev_buf + 1, 10), F(", reply: "), _HEX(rcv_msg.buf + 16, 10), '\n');
-
-		/* compare decrypted message with original message, memcmp returns 0 if compare true, we send an ACK_AES and 
-		*  process the original message, or terminate the communication */
-		if (!memcmp(rcv_msg.buf + 16, rcv_msg.prev_buf + 1, 10)) {							// compare bytes 7-17 (first 9 byte are flags and addresses) of decrypted data with bytes 2-12 of msgOriginal
-			memcpy(rcv_msg.buf, rcv_msg.prev_buf, rcv_msg.prev_buf[0] +1 );					// restore the saved message to be processed
-			return;																			// rcv_msg.buf changed, will be worked through next time 
-		}
+		aes_key.check_AES_REPLY(dev_ident.HMKEY, rcv_msg.buf);								// check the data, if ok, the last message will be restored, otherwise the hasdata flag will be 0
+		return;																				// next round to work on the restored message
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SEND_AES)) {
 
@@ -407,9 +378,8 @@ void AS::process_message(void) {
 		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
 	}
 
+	rcv_msg.buf[0] = 0;
 	//rcv_msg.hasdata = 0;
-	rcv_msg.use_prev_buf = 0;															// clear the prev buffer flag
-	rcv_msg.clear();
 	return;
 
 	/*
@@ -670,21 +640,7 @@ void AS::process_message(void) {
 }
 
 
-void AS::aes_challenge(void) {
 
-	if (!*dev_operate.AES_FLAG) return;														// no need to challenge
-	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::ACK_MSG)) return;							// ACK type messages don't need to be challenged
-
-	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::AES_REPLY)) {
-
-		return;
-
-	} else if (!rcv_msg.use_prev_buf) {
-	/* seems to be the first time we are here, therefore we store the initial message, send an AES_REQ and wait for an answer */
-
-		rcv_msg.clear();																	// nothing to do any more
-	}
-}
 
 
 
@@ -739,7 +695,7 @@ void AS::snd_poll(void) {
 			sm->mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;
 
 		} else if (sm->active == MSG_ACTIVE::PAIR) {
-			/* pair means - msg_cnt from snd_msg struct, rcv_id is master_id, bidi needed */
+			/* pair means - msg_cnt from snd_msg struct, rcv_id is master_id, bidi not needed */
 			memcpy(sm->mBody.RCV_ID, dev_operate.MAID, 3);
 			sm->mBody.MSG_CNT = sm->MSG_CNT;
 			sm->MSG_CNT++;
