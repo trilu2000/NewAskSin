@@ -82,6 +82,7 @@ namespace LIST_ANSWER {
 * -------------------------------------------
 * 0x02 ff ff ff * ACK_MSG
 * 0x02 00 ff 0a * - ACK
+* 0x02 00 ff 0e * - ACK_AES
 * 0x02 01 ff 0e * - ACK_STATUS
 * 0x02 02 ff 0a * - ACK2
 * 0x02 04 ff 11 * - AES_REQ

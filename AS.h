@@ -54,13 +54,6 @@ class AS {
 		uint8_t	ui;
 	} l4_0x01;
 
-	uint8_t  keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
-	uint8_t  signingRequestData[6];
-	uint8_t  tempHmKey[16];
-	uint8_t  newHmKey[16];
-	uint8_t  newHmKeyIndex[1];
-	uint16_t randomSeed = 0;
-	uint8_t  resetStatus = 0;
 
   public:		//---------------------------------------------------------------------------------------------------------
 	AS() {}																					// constructor

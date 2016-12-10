@@ -24,7 +24,7 @@
 typedef struct ts_aes_key {
 	MSG_AES::E active;						// MSG_AES:: NONE, AES_REQ
 	uint8_t  has_ACK_payload;				// ACK payload flag
-	uint8_t  ACK_payload[4];
+	uint8_t  ACK_payload[4];				// and the respective payload
 
 	uint8_t  temp_hmkey[16];				// temp hmkey 
 	uint8_t  iv[16];
@@ -44,9 +44,11 @@ typedef struct ts_aes_key {
 		memcpy(prev_rcv_buf, rcv_buf, rcv_buf[0] + 1);			// we store the initial message
 		active = MSG_AES::AES_REQ;								// set the flag that something is in the buffer
 		/* here we make a temporarily key with the challenge and the HMKEY, as we need this for later signature verification */
+		get_random(snd_buf + 11);								// six random bytes to the payload
 		make_temp_hmkey(hmkey, snd_buf + 11);					// generate a temp key
 		aes128_init(temp_hmkey, &ctx);							// generating the round keys from the 128 bit key
 	}
+
 	void check_AES_REPLY(uint8_t *hmkey, uint8_t *rcv_buf) {
 		/* decrypt it and check if the content compares to the last received message */
 		clear_iv(); 											// some cleanup
@@ -56,7 +58,7 @@ typedef struct ts_aes_key {
 			rcv_buf[i + 10] ^= iv[i];							// xor encrypted payload with iv
 		memcpy(ACK_payload, rcv_buf + 10, 4);					// and copy the payload
 		aes128_dec(rcv_buf + 10, &ctx);							// decrypt payload with temporarily key again
-		dbg << F("HMKEY: ") << _HEX(hmkey, 10) << F(", initial: ") << _HEX(prev_rcv_buf + 1, 10) << F(", reply: ") << _HEX(rcv_buf + 16, 10) << '\n';
+		//dbg << F("HMKEY: ") << _HEX(hmkey, 10) << F(", initial: ") << _HEX(prev_rcv_buf + 1, 10) << F(", reply: ") << _HEX(rcv_buf + 10, 16) << '\n';
 		/* compare decrypted message with original message, memcmp returns 0 if compare true, we send an ACK_AES and
 		*  process the original message, or terminate the communication */
 		if (!memcmp(rcv_buf + 16, prev_rcv_buf + 1, 10)) {		// compare bytes 7-17 (first 9 byte are flags and addresses) of decrypted data with bytes 2-12 of msgOriginal
@@ -72,6 +74,7 @@ typedef struct ts_aes_key {
 		memcpy(temp_hmkey, hmkey, 16);
 		for (uint8_t i = 0; i < 6; i++) temp_hmkey[i] ^= challenge[i];
 	}
+
 	void clear_iv() {
 		memset(iv, 0x00, 16);
 	}

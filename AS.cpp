@@ -11,11 +11,6 @@
 #include "00_debug-flag.h"
 
 
-/*
- * Comment out to disable AES support
- */
-#define SUPPORT_AES
-
  /*
  * On device reset the watchdog hart reset the entire device.
  * Comment out to disable this.
@@ -26,8 +21,6 @@
 
 #include "AS.h"
 #include <avr/wdt.h>
-
-
 
 
 
@@ -47,7 +40,7 @@ s_snd_msg     snd_msg;																		// same for send strings
  * @brief Initialize the AskSin Module
  */
 void AS::init(void) {
-	keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
+	//keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 
 	/* - init eeprom function if a i2c eeprom is used and 
 	* prepare the defaults incl eeprom address map for the channel modules */
@@ -139,9 +132,9 @@ void AS::poll(void) {
 
 
 
-	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
+//	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
 		//deviceReset(resetStatus);
-	}
+//	}
 
 	// time out the pairing timer
 	if (pair_mode.active) { 
@@ -189,10 +182,10 @@ void AS::rcv_poll(void) {
 
 	/* filter out the footprint of MAX! devices
 	*  b> 0F 04 86 10 38 EB 06 00 00 00 0A 24 B8 0C 00 40  (1963077) */
-	if ((rcv_msg.mBody.MSG_LEN == 0x0f) && (*(uint8_t*)&rcv_msg.mBody.FLAG == 0x86) && (rcv_msg.intend == MSG_INTENT::BROADCAST)) {
-		rcv_msg.clear();
-		return;
-	}
+	//if ((rcv_msg.mBody.MSG_LEN == 0x0f) && (*(uint8_t*)&rcv_msg.mBody.FLAG == 0x86) && (rcv_msg.intend == MSG_INTENT::BROADCAST)) {
+	//	rcv_msg.clear();
+	//	return;
+	//}
 
 	DBG(RV, (char)rcv_msg.intend, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), ' ', _TIME, '\n');
 
@@ -211,7 +204,6 @@ void AS::rcv_poll(void) {
 		rcv_msg.clear();																	// nothing to do any more
 		return;
 	}
-	//rcv_msg.hasdata = 1;																	// signalize that something is to do
 }
 
 /*
@@ -263,21 +255,6 @@ void AS::get_intend() {
 */
 void AS::process_message(void) {
 	cmMaster *pCM;
-
-	/* first we check if AES is enabled and if the message is not an ACK type message or was already challanged, if so, we send back an AES_REQ */
-	if ((*dev_operate.AES_FLAG) && (rcv_msg.mBody.MSG_TYP != BY03(MSG_TYPE::ACK_MSG)) && (aes_key.active == MSG_AES::NONE)) {
-		/* received command
-		*  x> 10 01 A0 01 63 19 64 00 11 22 00 05 00 00 00 00 00  (17641)
-		*  we send an AES_REQ                 ___6 byte random_ __7th byte HM Key Number
-		*  <-11 01 A0 02 00 11 22 63 19 64 04 B8 91 CC 01 F3 73 00  (17671)
-		*  we receive an AES_REPLY          __encrypeted message start at byte 10, len is 16 byte
-		*  x> 19 01 A0 03 63 19 64 00 11 22 30 EB DC A1 C4 18 2A A2 2E F0 9B EC 96 9B 72 6A (17810)
-		*/
-		send_AES_REQ();																		// create an ACK_REQ message
-																							// nothing to do here any more
-		return;	
-	}
-
 
 	if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::DEVICE_INFO)) {
 		/* not sure what to do with while received, probably nothing */
@@ -378,8 +355,7 @@ void AS::process_message(void) {
 		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
 	}
 
-	rcv_msg.buf[0] = 0;
-	//rcv_msg.hasdata = 0;
+	rcv_msg.clear();
 	return;
 
 	/*
@@ -656,10 +632,9 @@ void AS::snd_poll(void) {
 
 	if (sm->active == MSG_ACTIVE::NONE) return;												// nothing to do
 
-																							/* can only happen while an ack was received and AS:processMessage had send the retr_cnt to 0xff */
+	/* can only happen while an ack was received and AS:processMessage had send the retr_cnt to 0xff */
 	if (sm->retr_cnt == 0xff) {
 		sm->clear();																		// nothing to do any more
-
 		led.set(ack);																		// fire the status led
 		pom.stayAwake(100);																	// and stay awake for a short while
 		return;
@@ -776,32 +751,6 @@ void AS::snd_poll(void) {
 
 
 /*
-
-#ifdef SUPPORT_AES
-	/**
-	 * @brief Send an ACK of previous AES handshake
-	 *
-	 * Message description:
-	 *             Sender__ Receiver 04 bytes AES-Ack Data
-	 * 0A 24 80 02 1F B7 4A 63 19 63 XX XX XX XX
-	 *
-	 * @param data pointer to aes ack data
-	 */
-/*	inline void AS::sendAckAES(uint8_t *data) {
-		snd_msg.mBody.MSG_LEN = 0x0E;
-		snd_msg.mBody.FLAG.BIDI = 0;
-		snd_msg.mBody.BY10 = AS_RESPONSE_ACK;
-		snd_msg.mBody.BY11 = data[0];
-		memcpy(snd_msg.mBody.PAYLOAD, data+1, 3);
-
-		prepareToSend(rcv_msg.mBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv_msg.mBody.SND_ID);
-	}
-#endif
-
-
-
-
-
 
 void AS::sendINFO_POWER_EVENT(uint8_t *data) {
 	snd_msg.mBody.MSG_LEN = 15; // 15, 16 works somehow but 12 + 6 = 18

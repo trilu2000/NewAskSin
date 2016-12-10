@@ -80,6 +80,11 @@ void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
 
+	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
+		send_AES_REQ();																		// send a request
+		return;																				// nothing to do any more, wait and see
+	}
+
 	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
 		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry
 
@@ -111,6 +116,11 @@ void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
+
+	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
+		send_AES_REQ();																		// send a request
+		return;																				// nothing to do any more, wait and see
+	}
 
 	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
 		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry
@@ -165,6 +175,11 @@ void cmMaster::CONFIG_START(s_m01xx05 *buf) {
 	cm->list = list[buf->PARAM_LIST];														// short hand to the list table
 	cm->idx_peer = peerDB.get_idx(buf->PEER_ID);											// try to get the peer index
 
+	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
+		send_AES_REQ();																		// send a request
+		return;																				// nothing to do any more, wait and see
+	}
+
 	if ((cm->list) && (cm->idx_peer != 0xff)) {												// list and peer index found
 		cm->timer.set(2000);																// set timeout time, otherwise the channel will be open for write forever
 		cm->active = 1;																		// set active
@@ -186,6 +201,12 @@ void cmMaster::CONFIG_END(s_m01xx06 *buf) {
 	s_config_mode *cm = &config_mode;														// short hand to config mode struct
 	cm->timer.set(0);																		// clear the timer
 	cm->active = 0;																			// clear the flag
+
+	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
+		send_AES_REQ();																		// send a request
+		return;																				// nothing to do any more, wait and see
+	}
+
 	send_ACK();																				// send back that everything is ok
 
 	if (cm->list->lst < 2) {
@@ -211,6 +232,11 @@ void cmMaster::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
 */
 void cmMaster::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 	s_config_mode *cm = &config_mode;														// short hand to config mode struct
+
+	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
+		send_AES_REQ();																		// send a request
+		return;																				// nothing to do any more, wait and see
+	}
 
 	if (cm->active)  {																		// check if config is active, channel fit is checked in AS
 		cm->list->write_array(buf->DATA, buf->MSG_LEN - 11, cm->idx_peer);					// write the array into the list
@@ -592,12 +618,11 @@ void send_ACK2(void) {
 void send_AES_REQ() {
 	/* save the initial message for later use and prepare the temp key */
 	aes_key.prep_AES_REQ(dev_ident.HMKEY, rcv_msg.buf, snd_msg.buf);						// prepare the message, store received string and so on
-	rcv_msg.buf[0] = 0;																	// and terminate the further processing
+	rcv_msg.buf[0] = 0;																		// and terminate the further processing
 
 	/* create the message */
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::AES_REQ;														// length and flags are set within the snd_msg struct
-	get_random(snd_msg.buf + 11);															// six random bytes to the payload
 	snd_msg.buf[17] = dev_ident.HMKEY_INDEX;												// the 7th byte is the key index
 }
 /**
@@ -647,8 +672,6 @@ void send_INFO_SERIAL() {
 	s_m1000xx *msg = &snd_msg.m1000xx;														// short hand to info serial struct
 	memcpy(&msg->SERIALNO, dev_ident.SERIAL_NR, 10);										// copy the serial number
 
-	//snd_msg.mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// as it is an answer, we reflect the counter in the answer
-	//snd_msg.set_msg(MSG_TYPE::INFO_SERIAL, rcv_msg.mBody.SND_ID, rcv_msg.mBody.MSG_CNT);
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::INFO_SERIAL;													// length and flags are set within the snd_msg struct
 }
