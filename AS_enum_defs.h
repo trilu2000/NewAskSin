@@ -10,7 +10,7 @@
 #define _AS_ENUMDEFS_H
 
 namespace MSG_AES {
-	enum E : uint8_t { NONE = 0, AES_REQ = 1, AES_REPLY_OK = 2,};
+	enum E : uint8_t { NONE = 0, AES_REQ = 1, AES_REPLY_OK = 2,  };
 };
 
 /*

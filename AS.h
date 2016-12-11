@@ -45,15 +45,6 @@
 class AS {
   public:		//---------------------------------------------------------------------------------------------------------
 
-	union {
-		struct s_l4_0x01 {
-			uint8_t  peerNeedsBurst:1;			// 0x01, s:0, e:1
-			uint8_t  :6;
-			uint8_t  expectAES:1;				// 0x01, s:7, e:8
-		} s;
-		uint8_t	ui;
-	} l4_0x01;
-
 
   public:		//---------------------------------------------------------------------------------------------------------
 	AS() {}																					// constructor
@@ -83,69 +74,16 @@ class AS {
 	void rcv_poll(void);																	// poll function
 	void get_intend(void);																	// checks the received string if addresses are known
 	void process_message(void);
-	void aes_challenge(void);
 
 	void snd_poll(void);																	// poll function, process if something is to send
 
 
+	/* - hardware related functions without any relation to a specific channel */
+	void INSTRUCTION_RESET(s_m1104xx *buf);
+	void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
+	void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);
+	void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
 
-
-
-
-
-
-	// old functions, need to be reworked ---------------------------
-	inline void sendAckAES(uint8_t *data);
-	void sendINFO_POWER_EVENT(uint8_t *data);
-	void sendINFO_TEMP(void);
-	void sendHAVE_DATA(void);
-//	void sendSWITCH(void);
-//	void sendTimeStamp(void);
-//	void sendREMOTE(uint8_t channel, uint8_t *ptr_payload, uint8_t msg_flag = 0);
-//	void sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload);
-//	void sendSensorData(void);
-//	void sendClimateEvent(void);
-//	void sendSetTeamTemp(void);
-//	void sendWeatherEvent(void);
-//	void sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload);
-
-	//void processMessageAction11();
-	//void processMessageAction3E(uint8_t cnl, uint8_t pIdx);
-	void deviceReset(uint8_t clearEeprom);
-
-	//uint8_t getChannelFromPeerDB(uint8_t *pIdx);
-
-	//void initPseudoRandomNumberGenerator();
-
-
-
-  //private:		//---------------------------------------------------------------------------------------------------------
-
-	//inline void processMessageSwitchEvent();
-
-	inline void processMessageResponseAES_Challenge(void);
-	inline void processMessageResponseAES(void);
-	inline void processMessageKeyExchange(void);
-	uint8_t checkAnyChannelForAES(void);
-
-	inline void processMessageConfigAESProtected();
-
-
-			
-
-	// - send functions --------------------------------
-	void sendINFO_PARAMETER_CHANGE(void);
-
-	void prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr);
-
-	// - AES Signing related methods -------------------
-	//void makeTmpKey(uint8_t *challenge);
-	void payloadEncrypt(uint8_t *encPayload, uint8_t *msgToEnc);
-
-	void sendSignRequest(uint8_t rememberBuffer);
-
-	//inline void initRandomSeed();
-	
 
 
 };

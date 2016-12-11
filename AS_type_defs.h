@@ -33,10 +33,11 @@ typedef struct ts_aes_key {
 	uint8_t  prev_rcv_buf[MaxDataLen];		// store to save the previous received string
 	uint8_t  prev_snd_buf[MaxDataLen];		// store to save the previous send string
 
-	uint8_t  key_part_index;				// key part index
-	uint8_t  signing_request[6];			// placeholder for signing request
 	uint8_t  new_hmkey[16];					// new hmkey for key exchange
 	uint8_t  new_hmkey_index[1];			// new hmkey index
+
+	uint8_t  key_part_index;				// key part index
+	uint8_t  signing_request[6];			// placeholder for signing request
 	uint8_t  reset_status;					// reset status flag
 
 	void prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf) {
@@ -70,6 +71,19 @@ typedef struct ts_aes_key {
 		}
 	}
 
+	uint8_t check_SEND_AES_TO_ACTOR(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *rcv_buf) {
+		/* a new hmkey will be delivered in two messages, identifikation is based on the hmkey index in byte 11, the first 8 byte of
+		* the key are flagged by an even index, the next 8 byte by an odd index. the key index we have to remember has to be divided by 2 */
+		aes128_init(hmkey, &ctx);								// load HMKEY
+		aes128_dec(rcv_buf + 10, &ctx);							// decrypt payload width HMKEY first time
+		if (rcv_buf[10] != 0x01) return 0;						// byte 10 needs to be 0x01 
+		uint8_t slice = rcv_buf[11] & 1;						// we are here while it was a valid decrypt, now analyze if it is the first, or second part of the new hmkey 
+		memcpy(new_hmkey + (slice * 8), &rcv_buf[12], 8);		// copy content of the message in our temp hm key
+		new_hmkey_index[0] = rcv_buf[11] / 2;					// calculate the index variable
+		if (slice) return 1;									// and if complete, signalize it
+		else return 0;
+	}
+
 	void make_temp_hmkey(uint8_t *hmkey, uint8_t *challenge) {
 		memcpy(temp_hmkey, hmkey, 16);
 		for (uint8_t i = 0; i < 6; i++) temp_hmkey[i] ^= challenge[i];
@@ -89,7 +103,7 @@ typedef struct ts_dev_ident {
 	uint16_t MAGIC;							//  2 byte - magic byte
 	uint8_t  HMID[3];						//  3 byte - homematic id
 	uint8_t  SERIAL_NR[10];					// 10 byte - serial number
-	uint8_t  HMKEY_INDEX;					//  1 byte - aes key index
+	uint8_t  HMKEY_INDEX[1];				//  1 byte - aes key index
 	uint8_t  HMKEY[16];						// 16 byte - homematic aes key
 } s_dev_ident;
 

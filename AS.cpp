@@ -263,11 +263,24 @@ void AS::process_message(void) {
 		/* config request messages are used to configure a devive by writing registers and peers -
 		*  check the channel and forward for processing to the respective function */
 		if (rcv_msg.mBody.BY10 >= cnl_max) return;											// channel is out of range, return
-
 		uint8_t by11 = rcv_msg.mBody.BY11;													// short hand to byte 11 in the received string
 		pCM = ptr_CM[rcv_msg.mBody.BY10];													// short hand to the respective channel module instance
-		s_config_mode *cm = &config_mode;													// short hand to config mode struct
 
+		/* check if we need to challange the request */
+		switch (by11) {
+			case BY11(MSG_TYPE::CONFIG_PEER_ADD):
+			case BY11(MSG_TYPE::CONFIG_PEER_REMOVE):
+			case BY11(MSG_TYPE::CONFIG_START):
+			case BY11(MSG_TYPE::CONFIG_END):
+			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX1):
+			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX2):
+			if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+				send_AES_REQ();																	// send a request
+				return;																			// nothing to do any more, wait and see
+			}
+		}
+
+		/* challange done, now we can process the initial request */
 		if      (by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(&rcv_msg.m01xx01);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(&rcv_msg.m01xx02);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ(&rcv_msg.m01xx03);
@@ -280,10 +293,12 @@ void AS::process_message(void) {
 		else if (by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(&rcv_msg.m01xx0a);
 		else if (by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST(&rcv_msg.m01xx0e);
 
+
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::ACK_MSG)) {
 		/* at the moment we need the ACK message only for avoiding resends, so let the send_msg struct know about
 		*  a received ACK/NACK whatever - probably we have to change this function in the future */
 		if (rcv_msg.mBody.MSG_CNT == snd_msg.mBody.MSG_CNT) snd_msg.retr_cnt = 0xff;		// check if the message counter is similar and let the send function know
+
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::AES_REPLY)) {
 		/* we received an AES_REPLY, first we tell the send function that we received an answer. as the receive flag is not cleared, we will come back again */
@@ -294,33 +309,64 @@ void AS::process_message(void) {
 		aes_key.check_AES_REPLY(dev_ident.HMKEY, rcv_msg.buf);								// check the data, if ok, the last message will be restored, otherwise the hasdata flag will be 0
 		return;																				// next round to work on the restored message
 
+
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SEND_AES)) {
+		/* pair starts an key exchange, first message shows our key starting with byte 12 and the keyindex in byte 11 (-2) 
+		*  second message holds the new key starting with byte 12 and the new keyindex in byte 11 (again -2) */
+
+		/* challange the message */
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+			send_AES_REQ();																	// send a request
+			return;																			// nothing to do any more, wait and see
+		}
+
+		/* check the message in the aes_key struct, returns are 0 for doesnt fit, 1 key exchange started, 2 new key received */
+		uint8_t new_key = aes_key.check_SEND_AES_TO_ACTOR(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf);
+		if (new_key) {
+			//dbg << "new idx " << aes_key.new_hmkey_index[0] << ", new key " << _HEX(aes_key.new_hmkey, 16) << '\n';
+			memcpy(dev_ident.HMKEY, aes_key.new_hmkey, 16);									// store the new key
+			dev_ident.HMKEY_INDEX[0] = aes_key.new_hmkey_index[0];
+			setEEPromBlock(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));					// write it to the eeprom
+		}
+		send_ACK();																			// send ACK
+
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REPLY_MSG)) {
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::INSTRUCTION_MSG)) {
 		uint8_t by10 = rcv_msg.mBody.BY10;													// short hand to byte 10 in the received string
+		uint8_t mlen = rcv_msg.mBody.MSG_LEN;												// short hand to the message length
 
-		/* not channel related, do it in any case and clear rcv_msg */
-		pCM = ptr_CM[0];																	// we will process it in AS???
-		if      (by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER))   pCM->INSTRUCTION_ENTER_BOOTLOADER(&rcv_msg.m1183xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER2))  pCM->INSTRUCTION_ENTER_BOOTLOADER2(&rcv_msg.m11caxx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_ADAPTION_DRIVE_SET)) pCM->INSTRUCTION_ADAPTION_DRIVE_SET(&rcv_msg.m1187xx);
+		if (mlen == 0x0a) pCM = ptr_CM[0];													// some messages are channel independent, identification by length
+		else pCM = ptr_CM[rcv_msg.mBody.BY11];												// short hand to respective channel module instance
+
+		/* check if we need to challange the request */
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+			send_AES_REQ();																	// send a request
+			return;																			// nothing to do any more, wait and see
+		}
+
+		/* check if channel related, there are four messages in this category without a channel value, this will be handled here 
+		*  INSTRUCTION_RESET, INSTRUCTION_ENTER_BOOTLOADER, INSTRUCTION_ENTER_BOOTLOADER2, INSTRUCTION_ADAPTION_DRIVE_SET */
+		if      (by10 == BY10(MSG_TYPE::INSTRUCTION_RESET))              INSTRUCTION_RESET(&rcv_msg.m1104xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER))   INSTRUCTION_ENTER_BOOTLOADER(&rcv_msg.m1183xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_ADAPTION_DRIVE_SET)) INSTRUCTION_ADAPTION_DRIVE_SET(&rcv_msg.m1187xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER2))  INSTRUCTION_ENTER_BOOTLOADER2(&rcv_msg.m11caxx);
 
 		/* everything below is channel related */
-		pCM = ptr_CM[rcv_msg.mBody.BY11];													// short hand to respective channel module instance
-		if      (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))        pCM->INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
+		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))        pCM->INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
 		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))         pCM->INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
 		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SET))                pCM->INSTRUCTION_SET(&rcv_msg.m1102xx);
 		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE))        pCM->INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
-		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_RESET))              pCM->INSTRUCTION_RESET(&rcv_msg.m1104xx);
 		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LED))                pCM->INSTRUCTION_LED(&rcv_msg.m1180xx);
 		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))            pCM->INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
 		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_LEVEL))              pCM->INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
 		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))          pCM->INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
 		else if (by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))           pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
 
+
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::HAVE_DATA)) {
+
 
 	} else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::SWITCH)) {
 		/* to process this message we need to load the right list table for the respective peer index into memory
@@ -331,12 +377,24 @@ void AS::process_message(void) {
 		if (!rcv_msg.cnl) return;															// peer not found in any channel, return
 
 		pCM = ptr_CM[rcv_msg.cnl];															// short hand to the respective channel module
+		/* check if we need to challange the request */
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+			send_AES_REQ();																	// send a request
+			return;																			// nothing to do any more, wait and see
+		}
 		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
 		pCM->SWITCH(&rcv_msg.m3Exxxx);
+
 
 	} else if (rcv_msg.intend == MSG_INTENT::PEER) {
 		/* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
 		pCM = ptr_CM[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
+		/* check if we need to challange the request */
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+			send_AES_REQ();																	// send a request
+			return;																			// nothing to do any more, wait and see
+		}
+		/* forward to the respective channel function */
 		pCM->lstP.load_list(ptr_CM[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3
 		if      (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
 		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
@@ -350,6 +408,8 @@ void AS::process_message(void) {
 		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) pCM->POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
 		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::POWER_EVENT))       pCM->POWER_EVENT(&rcv_msg.m5fxxxx);
 		else if (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::WEATHER_EVENT))     pCM->WEATHER_EVENT(&rcv_msg.m70xxxx);
+
+
 	} else {
 		dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
 		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
@@ -360,25 +420,6 @@ void AS::process_message(void) {
 
 	/*
 
-	uint8_t by10 = rcv_msg.mBody.BY10 - 1;
-
-	// check which type of message was received
-	if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_DEVINFO) {
-		//TODO: do something with the information
-
-	}
-	else if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_CONFIG) {
-
-		if (rcv_msg.mBody.BY11 == AS_CONFIG_SERIAL_REQ) {
-			//processMessageConfigSerialReq();
-
-		}
-		else if (rcv_msg.mBody.BY11 == AS_CONFIG_PAIR_SERIAL) {
-			//processMessageConfigPairSerial();
-
-		}
-		else if (rcv_msg.mBody.BY11 == AS_CONFIG_STATUS_REQUEST) {
-			//processMessageConfigStatusRequest(by10);
 
 		}
 		else {
@@ -735,327 +776,81 @@ void AS::snd_poll(void) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+/* - hardware related functions without any relation to a specific channel */
+void AS::INSTRUCTION_RESET(s_m1104xx *buf) {
+	DBG(AS, F("CM:INSTRUCTION_RESET\n"));
+	send_ACK();																				// prepare an ACK message
+	while (snd_msg.active) snd_poll();														// poll to get the ACK message send
+	clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
+	init();																					// call the init function to get the device in factory status
+}
+void AS::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
+	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER\n"));
+}
+void AS::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
+	DBG(AS, F("CM:INSTRUCTION_ADAPTION_DRIVE_SET\n"));
+}
+void AS::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
+	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER2\n"));
+}
 
 
 
 /*
+ * @brief Process message MESSAGE_KEY_EXCHANGE.
+ *
+ * Message description:
+ *             Sender__ Receiver Decrypted Payload with one key part
+ * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
+*/
+/*inline void AS::processMessageKeyExchange(void) {
+	memcpy(rcv_msg.prev_buf, rcv_msg.buf, rcv_msg.buf[0]+1);												// remember this message
+//	rcv.prevBufUsed = 1;																		// ToDo: check if we need this here
 
-void AS::sendINFO_POWER_EVENT(uint8_t *data) {
-	snd_msg.mBody.MSG_LEN = 15; // 15, 16 works somehow but 12 + 6 = 18
-	uint8_t cnt;
+	aes128_init(dev_ident.HMKEY, &ctx);																// load HMKEY
+	aes128_dec(rcv_msg.buf+10, &ctx);															// decrypt payload width HMKEY first time
 
-	if ((rcv_msg.mBody.MSG_TYP == AS_MESSAGE_CONFIG) && (rcv_msg.mBody.BY11 == AS_CONFIG_STATUS_REQUEST)) {
-		cnt = rcv_msg.mBody.MSG_CNT;
-	} else {
-		cnt = snd_msg.MSG_CNT++;
-	}
-	#ifdef AS_DBG
-		Serial << F("sendINFO_POWER_EVENT cnt: ");
-		Serial.print(cnt, DEC);
+	#ifdef AES_DBG
+	dbg << F("decrypted buf: ") << _HEX(rcv_msg.buf+10, 16) << '\n';
 	#endif
 
-	//char* myBytes = reinterpret_cast<char*>(snd.mBdy.pyLd);
-
-
-	snd_msg.mBody.FLAG.BIDI = (isEmpty(dev_operate.MAID,3))?0:1;
-	//snd.mBdy.by10      = AS_MESSAGE_POWER_EVENT_CYCLIC;
-
-	// set payload
-	snd_msg.mBody.BY10 = data[0];
-	snd_msg.mBody.BY11 = data[1]; // first byte of payload
-	for (uint8_t i = 2; i < 6; i++){
-		//dbg << "AS::sendINFO_POWER_EVENT BYTES: ("<< i <<" " << _HEXB(myBytes[i]) << " = " <<_HEXB(snd.mBdy.pyLd[i]) << "\n";
-		snd_msg.mBody.PAYLOAD[i-2] = data[i];
-	}
-	//snd.mBdy.pyLd[0]   = state;
-	//snd.mBdy.pyLd[1]   = flag; // | (bt.getStatus() << 7);
-	//snd.mBdy.pyLd[2]   = cc.rssi;
-	#ifdef AS_DBG
-		Serial << F(" BIDI: ") << snd_msg.mBody->FLAG.BIDI << "\n";
-	#endif
-	prepareToSend(cnt, AS_MESSAGE_POWER_EVENT_CYCLIC, dev_operate.MAID);
-}
-
-void AS::sendINFO_TEMP(void) {
-	//TODO: make ready
-
-	//"10;p01=0A"   => { txt => "INFO_TEMP", params => {
-	//SET     => '2,4,$val=(hex($val)>>10)&0x3F',
-	//ACT     => '2,4,$val=hex($val)&0x3FF',
-	//ERR     => "6,2",
-	//VALVE   => "6,2",
-	//MODE    => "6,2" } },
-	// --------------------------------------------------------------------
-}
-
-void AS::sendHAVE_DATA(void) {
-	//TODO: make ready#
-
-	//"12"          => { txt => "HAVE_DATA"},
-	// --------------------------------------------------------------------
-}
-
-/*void AS::sendSWITCH(void) {
-	//TODO: make ready#
-
-	//"3E"          => { txt => "SWITCH"      , params => {
-	//DST      => "00,6",
-	//UNKNOWN  => "06,2",
-	//CHANNEL  => "08,2",
-	//COUNTER  => "10,2", } },
-	// --------------------------------------------------------------------
-}*/
-
-/*void AS::sendTimeStamp(void) {
-	//TODO: make ready#
-
-	//"3F"          => { txt => "TimeStamp"   , params => {
-	//UNKNOWN  => "00,4",
-	//TIME     => "04,2", } },
-	// --------------------------------------------------------------------
-}*/
-
-/**
- * @brief Send a remote Event
- *
- * TODO: need to be rework
- *
- * Message description:
-               Sender__ Receiver buttonByte counter
- * 0B 0A A4 40 23 70 EC 1E 7A AD 02         01
- *
- * btnByte: bits 0-5=Button Number (0-31), bit6=long press, bit7=low battery
- * counter: the counter increased at every button release.
- *
- * @param channel
- * @param burst
- * @param payload: pointer to payload
- */
-/*void AS::sendREMOTE(uint8_t channel, uint8_t *payload, uint8_t msg_flag) {
-	// burst flag is not needed, has to come out of list4, as well as AES flag
-	sendEvent(channel, 0, AS_MESSAGE_REMOTE_EVENT, payload, 2);
-}*/
-
-/**
- * @brief Send a sensor Event
- *
- * TODO: need to be rework
- *
- * Message description:
- *             Sender__ Receiver buttonByte counter value
- * 0C 0A A4 41 23 70 EC 1E 7A AD 02         01      200
- *
- * btnByte: bits 0-5=Button Number (0-31), bit6=long press, bit7=low battery
- * counter: the counter increased at every button release.
- * value:   the sensor value
- *
- * @param channel
- * @param burst
- * @param payload: pointer to payload
- */
-/*void AS::sendSensor_event(uint8_t channel, uint8_t burst, uint8_t *payload) {
-	sendEvent(channel, AS_MESSAGE_SENSOR_EVENT, burst, payload, 3);
-}*/
-
-/**
- * @brief Send an event with arbitrary payload
-
- * TODO: need to be rework
- *
- * Message description:
- *             Sender__ Receiver buttonByte counter value
- * 0C 0A A4 41 23 70 EC 1E 7A AD 02         01      200
- *
- * btnByte: bits 0-5=Button Number (0-31), bit6=long press, bit7=low battery
- * counter: the counter increased at every button release.
- * value:   the sensor value
-
- * Take care when sending generic events, since there are no consistency
- * checks if the specified event type and payload make any sense. Rather use
- * predefined special send methods.
- *
- * @param channel The channel
- * @param msg_type    Message type
- * @param msg_flag    Set to 1 for burst mode, or 0
- * @param payload     Pointer to payload
- * @param pyl_len     Length of payload in bytes, not more than 16
- * @attention The payload length may not exceed 16 bytes. If a greater value
- * for len is given, it is limited to 16 to prevent HM-CFG-LAN (v0.961) to crash.
- */
-/*void AS::sendEvent(uint8_t channel, uint8_t msg_type, uint8_t msg_flag, uint8_t *ptr_payload, uint8_t len_payload) {
-	if (len_payload>16) {
-		#ifdef AS_DBG
-		dbg << "AS::sendGenericEvent(" << channel << "," << msg_flag << ",0x" << _HEX(&msg_type,1) << "," << len_payload << ",...): payload exceeds max len of 16\n";
-		#endif
-		len_payload = 16;
-	}
-
-	stcPeer.ptr_payload = ptr_payload;
-	stcPeer.len_payload = len_payload + 1;
-	stcPeer.channel     = channel;
-	stcPeer.burst       = (msg_flag & AS_BURST) ? 1 : 0;										// not sure if it can be different for a whole peer list and has to come out of list4 of the respective channel
-	stcPeer.bidi        = (msg_flag & AS_ACK_REQ) ? 1 : 0;
-	//stcPeer.bidi        = (~payload[0] & AS_BUTTON_BYTE_LONGPRESS_BIT) ? 0 : 1;				// depends on long-key-press-bit (long didn't need ACK)	stcPeer.bidi   = (isEmpty(MAID,3)) ? 0 : 1;
-	//stcPeer.bidi        = (isEmpty(MAID,3)) ? 0 : 1;
-	stcPeer.msg_type    = msg_type;
-	stcPeer.active      = 1;
-}*/
-
-/*void AS::sendSensorData(void) {
-	//TODO: make ready#
-
-	//"53"          => { txt => "SensorData"  , params => {
-	//CMD => "00,2",
-	//Fld1=> "02,2",
-	//Val1=> '04,4,$val=(hex($val))',
-	//Fld2=> "08,2",
-	//Val2=> '10,4,$val=(hex($val))',
-	//Fld3=> "14,2",
-	//Val3=> '16,4,$val=(hex($val))',
-	//Fld4=> "20,2",
-	//Val4=> '24,4,$val=(hex($val))'} },
-}*/
-
-/*void AS::sendClimateEvent(void) {
-	//TODO: make ready#
-
-	//"58"          => { txt => "ClimateEvent", params => {
-	//CMD      => "00,2",
-	//ValvePos => '02,2,$val=(hex($val))', } },
-}*/
-
-/*void AS::sendSetTeamTemp(void) {
-	//TODO: make ready#
-
-	//"59"          => { txt => "setTeamTemp" , params => {
-	//CMD      => "00,2",
-	//desTemp  => '02,2,$val=((hex($val)>>2) /2)',
-	//mode     => '02,2,$val=(hex($val) & 0x3)',} },
-}*/
-
-/*void AS::sendWeatherEvent(void) {
-	//TODO: make ready#
-
-	//"70"          => { txt => "WeatherEvent", params => {
-	//TEMP     => '00,4,$val=((hex($val)&0x3FFF)/10)*((hex($val)&0x4000)?-1:1)',
-	//HUM      => '04,2,$val=(hex($val))', } },
-}*/
-
-
-
-/*
- * @brief get peered channel from peer db.
- *
- * @param pIdx must be a variable to receive the peer index
- *
- * @return channel number
- */
-/*uint8_t AS::getChannelFromPeerDB(uint8_t *pIdx) {
-	uint8_t cnl = 0;
-	uint8_t tmp;
-
-	// check if we have the peer in the database to get the channel
-	if ((rcv_msg.mBody.MSG_TYP == AS_MESSAGE_SWITCH_EVENT) && (rcv_msg.mBody.MSG_LEN == 0x0F)) {
-		tmp = rcv_msg.buf[13];																		// save byte13, because we will replace it
-		rcv_msg.buf[13] = rcv_msg.buf[14];																// copy the channel byte to the peer
-		cnl = is_peer_valid(rcv_msg.buf+10);													// check with the right part of the string
-		if (cnl != 0xff) {
-			*pIdx = ptr_CM[cnl]->peerDB.get_idx(rcv_msg.buf + 10);										// get the index of the respective peer in the channel store
-		}
-		rcv_msg.buf[13] = tmp;																		// get it back
-
-	} else {
-		cnl = is_peer_valid(rcv_msg.peer);
-		if (cnl != 0xff) {
-			*pIdx = ptr_CM[cnl]->peerDB.get_idx(rcv_msg.peer);										// get the index of the respective peer in the channel store
-		}
-	}
-
-	return cnl;
-}*/
-
-//#ifdef SUPPORT_AES
-	/*
-	 * @brief Loop thru channels and check if AES is activated for any channel.
-	 */
-/*	uint8_t AS::checkAnyChannelForAES(void) {
-		uint8_t i;
-		for (i = 1; i < cnl_max; i++) {														// check if AES activated for any channel
-			if (*ptr_CM[i]->list[1]->ptr_to_val(AS_REG_L1_AES_ACTIVE)) {
-			//if (ee_list.getRegAddr(i, 1, 0, AS_REG_L1_AES_ACTIVE)) {
-				return 1;
-			}
+	if (rcv_msg.buf[10] == 0x01) {																// the decrypted data must start with 0x01
+		keyPartIndex = (rcv_msg.buf[11] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
+	
+		if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE1) {
+			newHmKeyIndex[0] = rcv_msg.buf[11];
 		}
 
-		return 0;
-	}
-
-	/*
-	 * @brief Process message MESSAGE_KEY_EXCHANGE.
-	 *
-	 * Message description:
-	 *             Sender__ Receiver Decrypted Payload with one key part
-	 * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
-	 */
-/*	inline void AS::processMessageKeyExchange(void) {
-		memcpy(rcv_msg.prev_buf, rcv_msg.buf, rcv_msg.buf[0]+1);												// remember this message
-//		rcv.prevBufUsed = 1;																		// ToDo: check if we need this here
-
-		aes128_init(dev_ident.HMKEY, &ctx);																// load HMKEY
-		aes128_dec(rcv_msg.buf+10, &ctx);															// decrypt payload width HMKEY first time
+		memcpy(newHmKey + keyPartIndex, rcv_msg.buf+12, 8);
 
 		#ifdef AES_DBG
-			dbg << F("decrypted buf: ") << _HEX(rcv_msg.buf+10, 16) << '\n';
+		dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << '\n';
 		#endif
 
-		if (rcv_msg.buf[10] == 0x01) {																// the decrypted data must start with 0x01
-			keyPartIndex = (rcv_msg.buf[11] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
-			if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE1) {
-				newHmKeyIndex[0] = rcv_msg.buf[11];
-			}
-
-			memcpy(newHmKey + keyPartIndex, rcv_msg.buf+12, 8);
-
-			#ifdef AES_DBG
-				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << '\n';
-			#endif
-
-			sendSignRequest(0);
-
-		} else {
-			keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
-		}
+		sendSignRequest(0);
+	
+	} else {
+		keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 	}
+}
 
-	/*
-	 * @brief Process message RESPONSE_AES_CHALLANGE.
-	 *
-	 * Message description:
-	 *             Sender__ Receiver By10 By11  Challenge_____ KeyIndex
-	 * 11 24 80 02 1F B7 4A 63 19 63 02   04 01 02 03 04 05 06 02`
-	 *
-	 * The Encryption:
-	 * 1. The temporarily key was built by XORing the key with the challenge
-	 * 2. Prepare the payload:
-	 *    6 Random-Bytes___ The bytes 1-11 of the message to sign
-	 *    xx xx xx xx xx xx 0A A4 01 23 70 EC 1E 7A AD 02
-	 * 3. Encrypt the payload width the generated temporarily key first time -> ePL (encrypted Payload)
-	 * 4. IV (initial vector) was build from bytes 11 - n of the message to sign padded with 0x00
-	 * 5. The encrypted payload (ePL) was XORed with the IV -> ePl^IV
-	 * 6. Encrypt the ePl^IV width the generated temporarily again
-	 */
+/*
+ * @brief Process message RESPONSE_AES_CHALLANGE.
+ *
+ * Message description:
+ *             Sender__ Receiver By10 By11  Challenge_____ KeyIndex
+ * 11 24 80 02 1F B7 4A 63 19 63 02   04 01 02 03 04 05 06 02`
+ *
+ * The Encryption:
+ * 1. The temporarily key was built by XORing the key with the challenge
+ * 2. Prepare the payload:
+ *    6 Random-Bytes___ The bytes 1-11 of the message to sign
+ *    xx xx xx xx xx xx 0A A4 01 23 70 EC 1E 7A AD 02
+ * 3. Encrypt the payload width the generated temporarily key first time -> ePL (encrypted Payload)
+ * 4. IV (initial vector) was build from bytes 11 - n of the message to sign padded with 0x00
+ * 5. The encrypted payload (ePL) was XORed with the IV -> ePl^IV
+ * 6. Encrypt the ePl^IV width the generated temporarily again
+ */
 /*	inline void AS::processMessageResponseAES_Challenge(void) {
 		uint8_t i;
 
@@ -1088,42 +883,6 @@ void AS::sendHAVE_DATA(void) {
 #endif
 
 
-
-
-
-
-
-
-
-
-
-inline void AS::processMessageConfigAESProtected() {
-	#ifdef SUPPORT_AES
-		uint8_t aesActive = checkAnyChannelForAES();											// check if AES activated for any channel
-		if (aesActive == 1) {
-			sendSignRequest(1);
-
-		} else {
-	#endif
-			//uint8_t ackOk = processMessageConfig();
-			//check_send_ACK_NACK(ackOk);																// send appropriate answer
-
-	#ifdef SUPPORT_AES
-		}
-	#endif
-}
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * @brief Reset the Device
  *        Set all register to default 0x00, reset HMKEY, reset device via watchdog,
@@ -1141,120 +900,7 @@ inline void AS::processMessageConfigAESProtected() {
 		ld.set(welcome);
 	#endif
 }
-
-
-
-
-
-/**
- * @brief Set message type, sender and receiver address
- *        and set snd.active, so the message should send next time
- *
- * @param mCounter the message counter
- * @param mType    the message type
- * @param addrTo   pointer to receiver address
- */
-/*void AS::prepareToSend(uint8_t mCounter, uint8_t mType, uint8_t *receiverAddr) {
-	uint8_t i;
-
-	snd_msg.mBody.MSG_CNT = mCounter;
-	snd_msg.mBody.MSG_TYP = mType;
-	snd_msg.mBody.SND_ID[0] = dev_ident.HMID[0];
-	snd_msg.mBody.SND_ID[1] = dev_ident.HMID[1];
-	snd_msg.mBody.SND_ID[2] = dev_ident.HMID[2];
-	memcpy(snd_msg.mBody.RCV_ID, receiverAddr, 3);
-
-	snd_msg.active = MSG_ACTIVE::FORWARD;																				// remember to fire the message
-}
-
-
-
-void AS::sendINFO_PARAMETER_CHANGE(void) {
-	// TODO: make ready
-
-	//"10;p01=04"   => { txt => "INFO_PARAMETER_CHANGE", params => {
-	//CHANNEL => "2,2",
-	//PEER    => '4,8,$val=CUL_HM_id2Name($val)',
-	//PARAM_LIST => "12,2",
-	//DATA => '14,,$val =~ s/(..)(..)/ $1:$2/g', } },
-	// --------------------------------------------------------------------
-}
-
-
-
-
-// - AES Signing related methods -------------------
-
-#ifdef SUPPORT_AES
-	/**
-	 * @brief Send sign request to receiver
-	 *
-	 * @param rememberBuffer   set to 1 to force remember the current message for later processing
-	 *
-	 * Message description:
-	 *             Sender__ Receiver SigningRequest Challenge         KeyIndex
-	 * 11 24 80 02 1F B7 4A 63 19 63 04             XX XX XX XX XX XX 00
-	 *
-	 * The Challenge consists 6 random bytes.
-	 */
-/*	void AS::sendSignRequest(uint8_t rememberBuffer) {
-		if (rememberBuffer) {
-			memcpy(rcv_msg.prev_buf, rcv_msg.buf, rcv_msg.buf[0]+1);											// remember the message from buffer
-			rcv_msg.use_prev_buf = 1;
-		}
-
-		snd_msg.mBody.MSG_LEN = 0x11;
-		snd_msg.mBody.FLAG.BIDI = (isEmpty(dev_operate.MAID,3)) ? 0 : 1;
-		snd_msg.mBody.BY10 = AS_RESPONSE_AES_CHALLANGE;											// AES Challenge
-
-		initPseudoRandomNumberGenerator();
-
-		uint8_t i = 0;
-		for (i = 0; i < 6; i++) {																// random bytes to the payload
-			snd_msg.buf[11 + i] = (uint8_t)rand();
-		}
-		snd_msg.buf[17] = dev_ident.HMKEY_INDEX;																// the 7th byte is the key index
-
-		/*
-		 * Here we make a temporarily key with the challenge and the HMKEY.
-		 * We need this for later signature verification.
-		 */
-/*		makeTmpKey(snd_msg.buf+11);
-
-		#ifdef AES_DBG
-			dbg << F(">>> signingRequestData  : ") << _HEX(snd_msg.buf+10, 7) << F(" <<<") << '\n';
-		#endif
-
-		prepareToSend(rcv_msg.mBody.MSG_CNT, AS_MESSAGE_RESPONSE, rcv_msg.mBody.SND_ID);
-	}
-
-
-#endif
-
-/**
-* @brief Initialize the random number generator
 */
-/*void AS::initPseudoRandomNumberGenerator() {
-	srand(randomSeed ^ uint16_t(millis() & 0xFFFF));
-}
-
-/**
-* @brief Initialize the pseudo random number generator
-*        Take all bytes from uninitialized RAM and xor together
-*/
-/*inline void AS::initRandomSeed() {
-	uint16_t *p = (uint16_t*)(RAMEND + 1);
-	extern uint16_t __heap_start;
-	while (p >= &__heap_start + 1) {
-		randomSeed ^= *(--p);
-	}
-	initPseudoRandomNumberGenerator();
-}*/
-
-
-
-
-
 
 	
 	

@@ -116,15 +116,15 @@ public://-----------------------------------------------------------------------
 	virtual void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);
 	virtual void INSTRUCTION_SET(s_m1102xx *buf);
 	virtual void INSTRUCTION_STOP_CHANGE(s_m1103xx *buf);
-	void INSTRUCTION_RESET(s_m1104xx *buf);													// back to factory defaults
+	//void INSTRUCTION_RESET(s_m1104xx *buf);												// handled in AS
 	virtual void INSTRUCTION_LED(s_m1180xx *buf);	
 	virtual void INSTRUCTION_LED_ALL(s_m1181xx *buf);
 	virtual void INSTRUCTION_LEVEL(s_m1181xx *buf);	
 	virtual void INSTRUCTION_SLEEPMODE(s_m1182xx *buf);
-	void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
+	//void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);									// handled in AS
 	virtual void INSTRUCTION_SET_TEMP(s_m1186xx *buf);										// to be evaluated
-	void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);									// no idea about this message
-	void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
+	//void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);									// handled in AS
+	//void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);									// handled in AS
 
 	void HAVE_DATA(s_m12xxxx *buf);
 

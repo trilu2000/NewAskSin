@@ -80,11 +80,6 @@ void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
 
-	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
-		send_AES_REQ();																		// send a request
-		return;																				// nothing to do any more, wait and see
-	}
-
 	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
 		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry
 
@@ -116,11 +111,6 @@ void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
-
-	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
-		send_AES_REQ();																		// send a request
-		return;																				// nothing to do any more, wait and see
-	}
 
 	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
 		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry
@@ -175,11 +165,6 @@ void cmMaster::CONFIG_START(s_m01xx05 *buf) {
 	cm->list = list[buf->PARAM_LIST];														// short hand to the list table
 	cm->idx_peer = peerDB.get_idx(buf->PEER_ID);											// try to get the peer index
 
-	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
-		send_AES_REQ();																		// send a request
-		return;																				// nothing to do any more, wait and see
-	}
-
 	if ((cm->list) && (cm->idx_peer != 0xff)) {												// list and peer index found
 		cm->timer.set(2000);																// set timeout time, otherwise the channel will be open for write forever
 		cm->active = 1;																		// set active
@@ -201,11 +186,6 @@ void cmMaster::CONFIG_END(s_m01xx06 *buf) {
 	s_config_mode *cm = &config_mode;														// short hand to config mode struct
 	cm->timer.set(0);																		// clear the timer
 	cm->active = 0;																			// clear the flag
-
-	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
-		send_AES_REQ();																		// send a request
-		return;																				// nothing to do any more, wait and see
-	}
 
 	send_ACK();																				// send back that everything is ok
 
@@ -232,11 +212,6 @@ void cmMaster::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
 */
 void cmMaster::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 	s_config_mode *cm = &config_mode;														// short hand to config mode struct
-
-	if ((*lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
-		send_AES_REQ();																		// send a request
-		return;																				// nothing to do any more, wait and see
-	}
 
 	if (cm->active)  {																		// check if config is active, channel fit is checked in AS
 		cm->list->write_array(buf->DATA, buf->MSG_LEN - 11, cm->idx_peer);					// write the array into the list
@@ -269,7 +244,7 @@ void cmMaster::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
 		send_DEVICE_INFO(MSG_REASON::ANSWER);
 }
 /*
-* @brief Process message CONFIG_PAIR_SERIAL
+* @brief Process message CONFIG_STATUS_REQUEST
 * Virtual function to be overwritten by the respective channel module
 *
 * Message description:
@@ -314,16 +289,9 @@ void cmMaster::INSTRUCTION_SET(s_m1102xx *buf) {
 void cmMaster::INSTRUCTION_STOP_CHANGE(s_m1103xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_STOP_CHANGE\n"));
 }
-/*
-* @brief Reset to factory defaults
-*/
-void cmMaster::INSTRUCTION_RESET(s_m1104xx *buf) {
-	DBG(CM, F("CM:INSTRUCTION_RESET\n"));
-	send_ACK();																				// prepare an ACK message
-	while (snd_msg.active) hm.snd_poll();													// poll to get the ACK message send
-	clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
-	hm.init();																				// call the init function to get the device in factory status
-}
+
+//void cmMaster::INSTRUCTION_RESET(s_m1104xx *buf) {
+//}
 void cmMaster::INSTRUCTION_LED(s_m1180xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_LED\n"));
 }
@@ -336,18 +304,15 @@ void cmMaster::INSTRUCTION_LEVEL(s_m1181xx *buf) {
 void cmMaster::INSTRUCTION_SLEEPMODE(s_m1182xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_SLEEPMODE\n"));
 }
-void cmMaster::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
-	DBG(CM, F("CM:INSTRUCTION_ENTER_BOOTLOADER\n"));
-}
+//void cmMaster::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
+//}
 void cmMaster::INSTRUCTION_SET_TEMP(s_m1186xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_SET_TEMP\n"));
 }
-void cmMaster::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
-	DBG(CM, F("CM:INSTRUCTION_ADAPTION_DRIVE_SET\n"));
-}
-void cmMaster::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
-	DBG(CM, F("CM:INSTRUCTION_ENTER_BOOTLOADER2\n"));
-}
+//void cmMaster::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
+//}
+//void cmMaster::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
+//}
 
 
 void cmMaster::HAVE_DATA(s_m12xxxx *buf) {
@@ -623,7 +588,7 @@ void send_AES_REQ() {
 	/* create the message */
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::AES_REQ;														// length and flags are set within the snd_msg struct
-	snd_msg.buf[17] = dev_ident.HMKEY_INDEX;												// the 7th byte is the key index
+	snd_msg.buf[17] = dev_ident.HMKEY_INDEX[0];												// the 7th byte is the key index
 }
 /**
 * @brief Send a NACK (not ACK)
