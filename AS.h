@@ -5,6 +5,7 @@
 * - AskSin framework main class -------------------------------------------------------------------------------------------
 * - with a lot of support from many people at FHEM forum
 *   thanks a lot to martin876, dirk, pa-pa, martin, Dietmar63 and all i have not personal named here
+*   special thank you to https://git.zerfleddert.de/hmcfgusb/AES/ for bidcos(R) AES explanation
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 

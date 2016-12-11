@@ -5,23 +5,19 @@
 * - AskSin framework main class -------------------------------------------------------------------------------------------
 * - with a lot of support from many people at FHEM forum
 *   thanks a lot to martin876, dirk, pa-pa, martin, Dietmar63 and all i have not personal named here 
+*   special thank you to https://git.zerfleddert.de/hmcfgusb/AES/ for bidcos(R) AES explanation
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
 #include "00_debug-flag.h"
-
+#include "AS.h"
+#include <avr/wdt.h>
 
  /*
  * On device reset the watchdog hart reset the entire device.
  * Comment out to disable this.
  */
 #define WDT_RESET_ON_RESET
-
-
-
-#include "AS.h"
-#include <avr/wdt.h>
-
 
 
 s_pair_mode   pair_mode;																	// helper structure for keeping track of active pairing mode
@@ -418,242 +414,6 @@ void AS::process_message(void) {
 	rcv_msg.clear();
 	return;
 
-	/*
-
-
-		}
-		else {
-			processMessageConfigAESProtected();
-		}
-
-	}
-	else if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_RESPONSE) {
-		/*
-		* This is an response (ACK) to an active message.
-		* In exception of AS_RESPONSE_AES_CHALLANGE message, we set retrCnt to 0xFF
-		*/
-/*		if ((snd_msg.active) && (rcv_msg.mBody.MSG_CNT == snd_msg.temp_MSG_CNT) && (rcv_msg.mBody.BY10 != AS_RESPONSE_AES_CHALLANGE)) {
-			//snd_msg.retr_cnt = 0xFF;
-		}
-
-		if (rcv_msg.mBody.BY10 == AS_RESPONSE_ACK) {
-			/*
-			* Message description:
-			*             Sender__ Receiver ACK
-			* 0A 05 80 02 63 19 63 01 02 04 00
-			*/
-			// nothing to do yet
-/*
-		}
-		else if (rcv_msg.mBody.BY10 == AS_RESPONSE_ACK_STATUS) {
-			/*
-			* Message description:
-			*             Sender__ Receiver ACK Channel State Action RSSI
-			* 0E 08 80 02 1F B7 4A 23 70 D8 01  01      C8    80     27
-			*
-			* Action: Down=0x20, UP=0x10, LowBat=&0x80
-			*/
-			// nothing to do yet
-/*
-		}
-		else if (rcv_msg.mBody.BY10 == AS_RESPONSE_ACK2) {
-			// nothing to do yet
-
-#ifdef SUPPORT_AES
-		}
-		else if (rcv_msg.mBody.BY10 == AS_RESPONSE_AES_CHALLANGE) {
-			processMessageResponseAES_Challenge();
-
-			memcpy(snd_msg.buf + 10, snd_msg.prev_buf, 16);
-			prepareToSend(rcv_msg.mBody.MSG_CNT, AS_MESSAGE_RESPONSE_AES, rcv_msg.mBody.SND_ID);
-#endif
-
-		}
-		else if (rcv_msg.mBody.BY10 == AS_RESPONSE_NACK) {
-			// nothing to do yet
-
-		}
-		else if (rcv_msg.mBody.BY10 == AS_RESPONSE_NACK_TARGET_INVALID) {
-			// nothing to do yet
-
-		}
-
-#ifdef SUPPORT_AES
-	}
-	else if ((rcv_msg.mBody.MSG_TYP == AS_MESSAGE_RESPONSE_AES)) {
-		/*
-		* Message description:
-		*             Sender__ Receiver AES-Response-Data
-		* 0E 08 80 02 1F B7 4A 23 70 D8 6E 55 89 7F 12 6E 63 55 15 FF 54 07 69 B3 D8 A5
-		*/
-/*		snd_msg.clear();																		// cleanup send module data;
-
-		uint8_t iv[16];																		// 16 bytes initial vector
-		memset(iv, 0x00, 16);																// fill IV with 0x00;
-		memcpy(iv, rcv_msg.prev_buf + 11, rcv_msg.prev_buf[0] - 10);
-		aes128_dec(rcv_msg.buf + 10, &ctx);														// decrypt payload with temporarily key first time
-
-		for (uint8_t i = 0; i < 16; i++) rcv_msg.buf[i + 10] ^= iv[i];							// xor encrypted payload with iv
-
-		uint8_t authAck[4];
-		//memcpy(authAck, rcv_msg.buf + 10, 4);
-		authAck[0] = rcv_msg.buf[10];
-		authAck[1] = rcv_msg.buf[11];
-		authAck[2] = rcv_msg.buf[12];
-		authAck[3] = rcv_msg.buf[13];
-
-		aes128_dec(rcv_msg.buf + 10, &ctx);														// decrypt payload with temporarily key again
-
-																								/**
-																								* Compare decrypted message with original message
-																								*/
-/*#ifdef AES_DBG
-		dbg << F(">>> compare: ") << _HEX(rcv_msg.buf + 10, 16) << " | " << _HEX(rcv.prevBuf, 11) << '\n';
-#endif
-
-		// memcmp returns 0 if compare true
-		if (!memcmp(rcv_msg.buf + 16, rcv_msg.prev_buf + 1, 10)) {										// compare bytes 7-17 of decrypted data with bytes 2-12 of msgOriginal
-#ifdef AES_DBG
-			dbg << F("Signature check OK\n");
-#endif
-
-			sendAckAES(authAck);															// send AES-Ack
-
-			if (keyPartIndex == AS_STATUS_KEYCHANGE_INACTIVE) {
-				memcpy(rcv_msg.buf, rcv_msg.prev_buf, rcv_msg.prev_buf[0] + 1);								// restore the last received message for processing from saved buffer
-				rcv_msg.use_prev_buf = 0;
-
-				if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_CONFIG) {
-					//processMessageConfig();
-
-				}
-				else if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_ACTION) {
-					//processMessageAction11();
-
-				}
-				else if (rcv_msg.mBody.MSG_TYP >= AS_MESSAGE_SWITCH_EVENT) {
-					//uint8_t pIdx;
-					//uint8_t cnl = getChannelFromPeerDB(&pIdx);
-					//if (cnl > 0) {
-						//processMessageAction3E(cnl, pIdx);
-					//}
-				}
-
-			}
-			else if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE2) {
-				setEEPromBlock(15, 16, newHmKey);											// store HMKEY
-				getEEPromBlock(15, 16, dev_ident.HMKEY);
-				setEEPromBlock(14, 1, newHmKeyIndex);										// store used key index
-				dev_ident.HMKEY_INDEX = newHmKeyIndex[0];
-#ifdef AES_DBG
-				dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << F(" ID: ") << _HEXB(hmKeyIndex[0]) << '\n';
-#endif
-
-				keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
-			}
-
-		}
-		else {
-#ifdef AES_DBG
-			dbg << F("Signature check FAIL\n");
-#endif
-
-			// ToDo: Check if needed.
-			send_NACK();
-		}
-
-	}
-	else if ((rcv_msg.mBody.MSG_TYP == AS_MESSAGE_KEY_EXCHANGE)) {									// AES Key Exchange
-		processMessageKeyExchange();
-
-#endif
-
-	}
-	else if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_ACTION) {												// action message
-#ifdef SUPPORT_AES
-
-		uint8_t aesActiveForReset = 0;
-		if (rcv_msg.mBody.BY10 == AS_ACTION_RESET && rcv_msg.mBody.BY11 == 0x00) {						// device reset requested
-			aesActiveForReset = checkAnyChannelForAES();									// check if AES activated for any channel			}
-		}
-
-		// check if AES for the current channel active or aesActiveForReset @see above
-		if (*ptr_CM[rcv_msg.mBody.BY11]->list[1]->ptr_to_val(AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
-		//if (ee_list.getRegAddr(rcv_msg.mBody->BY11, 1, 0, AS_REG_L1_AES_ACTIVE) == 1 || aesActiveForReset == 1) {
-				sendSignRequest(1);
-
-		}
-		else {
-#endif
-
-			//processMessageAction11();
-			if (rcv_msg.mBody.FLAG.BIDI || resetStatus == AS_RESET) {
-				if (resetStatus == AS_RESET) {   //(ee.getRegListIdx(1, 3) == 0xFF || resetStatus == AS_RESET) {
-					send_ACK();
-				}
-				else {
-					uint8_t channel = rcv_msg.mBody.BY11;
-					if (rcv_msg.mBody.BY10 == AS_ACTION_RESET && rcv_msg.mBody.BY11 == 0x00) {
-						channel = 1;
-					}
-					//send_ACK_STATUS(channel, 0, 0);
-				}
-			}
-
-#ifdef SUPPORT_AES
-		}
-#endif
-
-	}
-	else if (rcv_msg.mBody.MSG_TYP == AS_MESSAGE_HAVE_DATA) {											// HAVE_DATA
-																										// TODO: Make ready
-
-	}
-	else if (rcv_msg.mBody.MSG_TYP >= AS_MESSAGE_SWITCH_EVENT) {
-		/*
-		* used by message type 3E (SWITCH), 3F (TIMESTAMP), 40 (REMOTE), 41 (SENSOR_EVENT),
-		*                      53 (SENSOR_DATA), 58 (CLIMATE_EVENT), 70 (WEATHER_EVENT)
-		*
-		* Message description:
-		*                             Sender__ Receiver channel counter
-		* Remote example: 0B 2D B4 40 23 70 D8 01 02 05 06      05
-		*
-		*                             Sender__ Receiver Destination na  channel counter
-		* Switch example: 0F 18 B0 3E FD 24 BE 01 02 05 23 70 D8    40  06      00
-		*
-		* "3E"          => { txt => "SWITCH"      , params => {
-		* 				DST      => "00,6",
-		* 				UNKNOWN  => "06,2",
-		* 				CHANNEL  => "08,2",
-		* 				COUNTER  => "10,2", } },
-		*/
-
-/*		uint8_t pIdx;
-		uint8_t cnl;// = getChannelFromPeerDB(&pIdx);
-
-		//dbg << "cnl: " << cnl << " pIdx: " << pIdx << " mTyp: " << _HEXB(rcv.mBdy.mTyp) << " by10: " << _HEXB(rcv.mBdy.by10)  << " by11: " << _HEXB(rcv.mBdy.by11) << " data: " << _HEX((rcv_msg.buf+10),(rcv.mBdy.mLen-9)) << '\n'; _delay_ms(100);
-
-		if (cnl > 0) {
-#ifdef SUPPORT_AES
-			// check if AES for the current channel active
-			if (*ptr_CM[cnl]->list[1]->ptr_to_val(AS_REG_L1_AES_ACTIVE) == 1) {
-			//if (ee_list.getRegAddr(cnl, 1, 0, AS_REG_L1_AES_ACTIVE) == 1) {
-					sendSignRequest(1);
-
-			}
-			else {
-#endif
-
-				//processMessageAction3E(cnl, pIdx);
-
-#ifdef SUPPORT_AES
-			}
-#endif
-		}
-
-	}
-*/
-	//rcv_msg.clear();																	// nothing to do any more
 }
 
 
