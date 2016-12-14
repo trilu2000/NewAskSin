@@ -19,11 +19,6 @@ waitTimer pwrTmr;																			// power timer functionality
 * @brief Initialize the power module
 */
 PW::PW() {
-	#ifdef PW_DBG																			// only if ee debug is set
-	dbgStart();																				// serial setup
-	dbg << F("PW.\n");																		// ...and some information
-	#endif
-
 	pwrMode = POWER_MODE_NO_SLEEP;															// set default
 }
 
@@ -73,7 +68,7 @@ void PW::poll(void) {
 
 	if (pwrMode == POWER_MODE_WAKEUP_ONRADIO) {												// check communication on power mode 1
 
-		tmpCCBurst = cc.detectBurst();
+		tmpCCBurst = hm.cc.detectBurst();
 		if ((tmpCCBurst) && (!chkCCBurst)) {												// burst detected for the first time
 			chkCCBurst = 1;																	// set the flag
 			
@@ -101,7 +96,7 @@ void PW::poll(void) {
 	}
 
 	// if we are here, we could go sleep. set cc module idle, switch off led's and sleep
-	cc.setIdle();																		// set communication module to idle
+	hm.cc.setIdle();																		// set communication module to idle
 	led.set(nothing);																	// switch off all led's
 
 	// start the respective watchdog timers

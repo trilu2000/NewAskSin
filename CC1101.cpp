@@ -12,7 +12,7 @@
 
 #include "CC1101.h"
 
-CC cc;																					// defined in CC1101.h, load it once
+//CC cc;																					// defined in CC1101.h, load it once
 
 //public:   //------------------------------------------------------------------------------------------------------------
 /*
@@ -141,7 +141,7 @@ init_failure:																			// catch problems
 * Length identification is done by byte[0] which holds the needed info.
 *
 */
-void    CC::sndData(uint8_t *buf, uint8_t burst) {	
+void    CC::sndData(uint8_t *buf, uint8_t burst) {
 	/* Going from RX to TX does not work if there was a reception less than 0.5
 	* sec ago. Due to CCA? Using IDLE helps to shorten this period(?)             */
 	uint8_t x, prev, buf2;																// size some variables
@@ -246,9 +246,9 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	*  seems there is a bug in the cc1101 chip, bug described in the errata note, 
 	*  solution is - go idle, flush the buffer and back to rx mode   */
 	//if (readReg(CC1101_RXBYTES, CC1101_STATUS)) {
-		strobe(CC1101_SIDLE);															// idle needed to flush the buffer
-		strobe(CC1101_SFRX);															// flush the receive buffer
-		strobe(CC1101_SRX);																// and back to receive mode
+	strobe(CC1101_SIDLE);																// idle needed to flush the buffer
+	strobe(CC1101_SFRX);																// flush the receive buffer
+	strobe(CC1101_SRX);																	// and back to receive mode
 	//	DBG(CC, F("RESET "));															// some debug ...
 	//}
 	DBG(CC, F(">> "), _HEX(buf, buf[0] + 1), _TIME, '\n' );

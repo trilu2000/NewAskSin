@@ -2,6 +2,8 @@
 #ifndef _REGISTER_h
 #define _REGISTER_h
 
+#define has_AES
+
 /**
 * @brief Libraries needed to run AskSin library
 */
@@ -10,6 +12,8 @@
 #include "hmkey.h"
 #include <cmMaintenance.h> 
 #include <cmRemote.h> 
+
+
 
 /**
 * @brief Stage the modules and declare external functions.
@@ -29,6 +33,7 @@ AS hm;
 const uint8_t cmMaintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
 const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x01,0x00,0x00,0x00,0x69, };
 const uint8_t cmMaintenance_ChnlLen = 6;
+
 
 cmMaster *ptr_CM[7] = {
 	new cmMaintenance(0),

@@ -20,7 +20,7 @@
 	#include <util/delay.h>
 	#include <util/atomic.h>
 	#include <avr/eeprom.h>
-
+	
 	#include "macros.h"
 	//#include "Print.h"
 	
@@ -53,6 +53,8 @@
 	#define SET_TCCRB()	    (REG_TCCRB = CLOCKSEL)
 	//- -----------------------------------------------------------------------------------------------------------------------
 
+	//- aes function ----------------------------------------------------------------------------------------------------------
+	//extern s_aes_key aes_key;
 
 	//- timer functions -------------------------------------------------------------------------------------------------------
 	#define HAS_OWN_MILLIS_TIMER
@@ -63,17 +65,16 @@
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 
-
 	//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
 	// all functions can be found in HAL_extern.h file, this are only the forward declarations to overcome the problem
 	// of handing over #defines from user folder to library folder in Arduino. No pin change interrupt neccasary any more.
-
 	extern void    ccInitHw(void);																// init all hardware pins related to the cc1101 module
 	extern uint8_t ccSendByte(uint8_t data);													// SPI send byte function
 	extern uint8_t ccGetGDO0(void);																// detects falling edge while received data
 	extern void    ccSelect(void);																// chip select and wait till ready
 	extern void    ccDeselect(void);															// chip deselect
 	//- -----------------------------------------------------------------------------------------------------------------------
+
 
 	//- led related functions -------------------------------------------------------------------------------------------------
 	struct s_blPat {							// struct for defining the blink pattern

@@ -22,14 +22,9 @@ void CB::config(uint8_t mode) {
 
 // private:		//---------------------------------------------------------------------------------------------------------
 CB::CB() {
-	#ifdef CB_DBG																			// only if ee debug is set
-	dbgStart();																				// serial setup
-	dbg << F("CB.\n");																		// ...and some information
-	#endif
 }
-//void CB::init(AS *ptrMain) {
-//	pHM = ptrMain;
-//}
+
+
 void CB::poll(void) {
 	#define detectLong      3000
 	#define repeatedLong    300

@@ -10,7 +10,7 @@
 #ifndef _cmMaster_H
 #define _cmMaster_H
 
-#include "AS.h"
+#include "CC1101.h"
 #include "HAL.h"
 #include "AS_type_defs.h"
 

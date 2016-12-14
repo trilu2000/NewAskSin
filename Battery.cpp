@@ -8,7 +8,9 @@
 
 //#define BT_DBG
 #include "Battery.h"
-#include "AS.h"
+#include "HAL.h" 
+#include "wait_timer.h"
+//#include "AS.h"
 
 BT bat;																						// declare battery status, defined in Battery.h
 waitTimer battTmr;																			// battery timer for duration check

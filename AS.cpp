@@ -23,10 +23,10 @@
 s_pair_mode   pair_mode;																	// helper structure for keeping track of active pairing mode
 s_config_mode config_mode;																	// helper structure for keeping track of active config mode
 
-s_aes_key     aes_key;																		// struct for handling AES relevant variables
 s_dev_ident   dev_ident;																	// struct to hold the device identification related information									
 s_dev_operate dev_operate;																	// struct to hold all operational variables or pointers
 
+s_aes_key     aes_key;																		// struct to hold and process all aes relevant things
 s_rcv_msg     rcv_msg;																		// struct to process received strings
 s_snd_msg     snd_msg;																		// same for send strings
 
@@ -320,7 +320,7 @@ void AS::process_message(void) {
 		uint8_t new_key = aes_key.check_SEND_AES_TO_ACTOR(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf);
 		if (new_key) {
 			//dbg << "new idx " << aes_key.new_hmkey_index[0] << ", new key " << _HEX(aes_key.new_hmkey, 16) << '\n';
-			memcpy(dev_ident.HMKEY, aes_key.new_hmkey, 16);									// store the new key
+			memcpy(dev_ident.HMKEY, aes_key.new_hmkey, 16);								// store the new key
 			dev_ident.HMKEY_INDEX[0] = aes_key.new_hmkey_index[0];
 			setEEPromBlock(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));					// write it to the eeprom
 		}

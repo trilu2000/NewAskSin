@@ -51,7 +51,7 @@
  * Interface to the hardware is done via the register byte address of the port
  * and hand over of the respective bit number within this byte
  */
-class CB {
+class CB  {
   public:		//---------------------------------------------------------------------------------------------------------
 
 	uint8_t scn;															// scenario indicator

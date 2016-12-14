@@ -12,10 +12,9 @@
 #define _CC_H
 
 #include "HAL.h"
-//#include "AS_typedefs.h"
 
 
-class CC {
+class CC  {
 private:  //--------------------------------------------------------------------------------------------------------------
 	#define CC1101_DATA_LEN         40										// maximum length of received bytes
 
@@ -203,8 +202,6 @@ private:  //--------------------------------------------------------------------
 	inline void    setActive(void);											// get the cc1101 back to active state
 	
 	inline void    strobe(uint8_t cmd);										// send command strobe to the CC1101 IC via SPI
-	//inline void    readBurst(uint8_t * buf, uint8_t regAddr, uint8_t len);	// read burst data from CC1101 via SPI
-	//inline void    writeBurst(uint8_t* buf, uint8_t regAddr, uint8_t len);	// write multiple registers into the CC1101 IC via SPI
 	inline uint8_t readReg(uint8_t regAddr, uint8_t regType);				// read CC1101 register via SPI
 	inline void    writeReg(uint8_t regAddr, uint8_t val);					// write single register into the CC1101 IC via SPI
 
@@ -213,7 +210,6 @@ private:  //--------------------------------------------------------------------
 
 };
 
-extern CC cc;
 
 #endif
 

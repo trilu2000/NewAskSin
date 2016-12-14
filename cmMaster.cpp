@@ -9,7 +9,7 @@
 
 #include "00_debug-flag.h"
 #include "cmMaster.h"
-
+#include "AS.h"
 
 uint8_t cnl_max = 0;																		// defined in cmMaster.h, increased by every instance which is initialized
 
@@ -549,7 +549,7 @@ void send_ACK(void) {
 	} else {
 		snd_msg.type = MSG_TYPE::ACK;														// length and flags are set within the snd_msg struct
 	}
-	aes_key.active = MSG_AES::NONE;															// no need to remember on the last message
+	aes_key.active = MSG_AES::NONE;														// no need to remember on the last message
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 }
 /**
@@ -573,7 +573,7 @@ void send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
 	msg->MSG_STATUS = stat;
 	*(uint8_t*)&msg->MSG_FLAG = actn;
 	msg->MSG_FLAG.LOWBAT = bat.getStatus();
-	msg->MSG_RSSI = cc.rssi;
+	msg->MSG_RSSI = hm.cc.rssi;
 
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::ACK_STATUS;													// length and flags are set within the snd_msg struct
@@ -674,7 +674,7 @@ void send_INFO_PEER_LIST(uint8_t cnl) {
 void send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id) {
 	s_list_msg   *lm =     &list_msg;														// short hand to the struct with all information for slice wise send
 	s_peer_table *peerDB = &ptr_CM[cnl]->peerDB;											// short hand to the respective peer table of the channel
-	s_list_table *list =   ptr_CM[cnl]->list[lst];											// short hand to the respective list table
+	s_list_table *list = ptr_CM[cnl]->list[lst];											// short hand to the respective list table
 
 	if (!list) return;																		// specific list is not available
 	uint8_t idx = peerDB->get_idx(peer_id);													// get the requested peer index
@@ -727,7 +727,7 @@ void send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag) {
 	msg->MSG_CNL = cnl;																		// copy in the channel
 	msg->MSG_STAT = stat;																	// the status of the channel
 	msg->UNKNOWN = flag;																	// needs investigation
-	msg->MSG_RSSI = cc.rssi;																// received rssi value
+	msg->MSG_RSSI = hm.cc.rssi;																// received rssi value
 
 	snd_msg.active = MSG_ACTIVE::PAIR;														// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;											// length and flags are set within the snd_msg struct

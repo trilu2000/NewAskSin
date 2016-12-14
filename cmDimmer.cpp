@@ -9,6 +9,7 @@
 #include "00_debug-flag.h"
 
 #include "cmDimmer.h"
+#include "AS.h"
 
 waitTimer adj_timer;																		// timer for dim-up/down
 uint32_t adj_delay;																			// calculate and store the adjustment time

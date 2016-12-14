@@ -13,7 +13,8 @@
 #define _NAS_H
 
 #include "AS_type_defs.h"
-#include "HAL.h"
+#include "AS_aes.h"
+
 #include "macros.h"
 #include "defines.h"
 #include "version.h"
@@ -25,6 +26,17 @@
 #include "StatusLed.h"
 #include "Power.h"
 #include "Battery.h"
+
+
+/*
+* @brief Struct to hold the buffer for any send or received string with some flags for further processing
+*/
+extern s_rcv_msg rcv_msg;
+extern s_snd_msg snd_msg;
+/*
+* @brief Helper struct for all AES relevant variables
+*/
+extern s_aes_key aes_key;
 
 
 
@@ -44,8 +56,11 @@
  * All send functions are used by sensor or actor classes like THSensor or Dimmer.
  */
 class AS {
-  public:		//---------------------------------------------------------------------------------------------------------
 
+  public:		//---------------------------------------------------------------------------------------------------------
+	CC cc;
+	//CB btn;
+	//PW pom;
 
   public:		//---------------------------------------------------------------------------------------------------------
 	AS() {}																					// constructor
@@ -89,12 +104,6 @@ class AS {
 
 };
 
-
-/*
-* @brief Struct to hold the buffer for any send or received string with some flags for further processing
-*/
-extern s_rcv_msg rcv_msg;
-extern s_snd_msg snd_msg;
 
 /*
 * @brief Global definition of a struct to hold the device identification related information.
@@ -151,10 +160,6 @@ extern const uint8_t HMSerialData[] PROGMEM;
 */
 extern const uint8_t dev_static[] PROGMEM;
 
-/*
-* @brief Helper struct for all AES relevant variables
-*/
-extern s_aes_key aes_key;
 
 /*
 * @fn void everyTimeStart()
