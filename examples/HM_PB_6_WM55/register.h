@@ -22,7 +22,8 @@
 * declaration is in the register.h but the functions needs
 * to be defined in the user sketch.
 */
-AS hm;
+AS hm;// = new AS;
+AES *aes = new HAS_AES;
 
 
 /*

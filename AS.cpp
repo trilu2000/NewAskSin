@@ -26,7 +26,6 @@ s_config_mode config_mode;																	// helper structure for keeping track
 s_dev_ident   dev_ident;																	// struct to hold the device identification related information									
 s_dev_operate dev_operate;																	// struct to hold all operational variables or pointers
 
-s_aes_key     aes_key;																		// struct to hold and process all aes relevant things
 s_rcv_msg     rcv_msg;																		// struct to process received strings
 s_snd_msg     snd_msg;																		// same for send strings
 
@@ -107,22 +106,22 @@ void AS::poll(void) {
 
 	/* copy the decoded data into the receiver module if something was received
 	*  and poll the received buffer, it checks if something is in the queue  */
-	if (ccGetGDO0()) {																			// check if something is in the cc1101 receive buffer
-		cc.rcvData(rcv_msg.buf);																// if yes, get it into our receive processing struct
-		rcv_poll();																				// and poll the receive function to get intent and some basics
+	if (ccGetGDO0()) {																		// check if something is in the cc1101 receive buffer
+		cc.rcvData(rcv_msg.buf);															// if yes, get it into our receive processing struct
+		rcv_poll();																			// and poll the receive function to get intent and some basics
 	}
-	if (rcv_msg.buf[0]) process_message();														// check if we have to handle the receive buffer
+	if (rcv_msg.buf[0]) process_message();													// check if we have to handle the receive buffer
 
 	/* handle the send module */
-	snd_poll();																					// check if there is something to send
+	snd_poll();																				// check if there is something to send
 
 	/* time out the config flag */
-	if (config_mode.active) {																	// check only if we are still in config mode
-		if (config_mode.timer.done()) config_mode.active = 0;									// when timer is done, set config flag to inactive
+	if (config_mode.active) {																// check only if we are still in config mode
+		if (config_mode.timer.done()) config_mode.active = 0;								// when timer is done, set config flag to inactive
 	}
 
 	/* regular polls for the channel modules */
-	for (uint8_t i = 0; i < cnl_max; i++) {														// poll all the registered channel modules
+	for (uint8_t i = 0; i < cnl_max; i++) {													// poll all the registered channel modules
 		ptr_CM[i]->poll();
 	}
 
@@ -141,12 +140,12 @@ void AS::poll(void) {
 	}
 
 
-	btn.poll();																			// poll the config button
-	led.poll();																					// poll the led's
-	bat.poll();																					// poll the battery check
+	btn.poll();																				// poll the config button
+	led.poll();																				// poll the led's
+	bat.poll();																				// poll the battery check
 		
 	// check if we could go to standby
-	pom.poll();																					// poll the power management
+	pom.poll();																				// poll the power management
 }
 
 
@@ -211,7 +210,7 @@ void AS::get_intend() {
 	/* prepare the peer search */
 	memcpy(rcv_msg.peer, rcv_msg.mBody.SND_ID, 3);											// peer has 4 byte and the last byte indicates the channel but also lowbat and long message, therefore we copy it together in a seperate byte array
 	uint8_t buf10 = rcv_msg.buf[10];														// get the channel byte seperate
-	if (aes_key.active) buf10 = aes_key.prev_rcv_buf[10];									// if AES is active, we must get buf[10] from prevBuf[10]
+	if (aes->active) buf10 = aes->prev_buf[10];												// if AES is active, we must get buf[10] from prevBuf[10]
 	rcv_msg.peer[3] = buf10 & 0x3f;															// mask out long and battery low
 
 	/* it could come as a broadcast message - report it only while loging is enabled */
@@ -270,9 +269,9 @@ void AS::process_message(void) {
 			case BY11(MSG_TYPE::CONFIG_END):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX1):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX2):
-			if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
-				send_AES_REQ();																	// send a request
-				return;																			// nothing to do any more, wait and see
+			if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+				send_AES_REQ();																// send a request
+				return;																		// nothing to do any more, wait and see
 			}
 		}
 
@@ -302,7 +301,7 @@ void AS::process_message(void) {
 			snd_msg.retr_cnt = 0xff;														// we received an answer to our request, no need to resend
 			return;
 		}
-		aes_key.check_AES_REPLY(dev_ident.HMKEY, rcv_msg.buf);								// check the data, if ok, the last message will be restored, otherwise the hasdata flag will be 0
+		aes->check_AES_REPLY(dev_ident.HMKEY, rcv_msg.buf);									// check the data, if ok, the last message will be restored, otherwise the hasdata flag will be 0
 		return;																				// next round to work on the restored message
 
 
@@ -311,17 +310,17 @@ void AS::process_message(void) {
 		*  second message holds the new key starting with byte 12 and the new keyindex in byte 11 (again -2) */
 
 		/* challange the message */
-		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
 
 		/* check the message in the aes_key struct, returns are 0 for doesnt fit, 1 key exchange started, 2 new key received */
-		uint8_t new_key = aes_key.check_SEND_AES_TO_ACTOR(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf);
+		uint8_t new_key = aes->check_SEND_AES_TO_ACTOR(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf);
 		if (new_key) {
 			//dbg << "new idx " << aes_key.new_hmkey_index[0] << ", new key " << _HEX(aes_key.new_hmkey, 16) << '\n';
-			memcpy(dev_ident.HMKEY, aes_key.new_hmkey, 16);								// store the new key
-			dev_ident.HMKEY_INDEX[0] = aes_key.new_hmkey_index[0];
+			memcpy(dev_ident.HMKEY, aes->new_hmkey, 16);									// store the new key
+			dev_ident.HMKEY_INDEX[0] = aes->new_hmkey_index[0];
 			setEEPromBlock(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));					// write it to the eeprom
 		}
 		send_ACK();																			// send ACK
@@ -337,7 +336,7 @@ void AS::process_message(void) {
 		else pCM = ptr_CM[rcv_msg.mBody.BY11];												// short hand to respective channel module instance
 
 		/* check if we need to challange the request */
-		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
@@ -374,7 +373,7 @@ void AS::process_message(void) {
 
 		pCM = ptr_CM[rcv_msg.cnl];															// short hand to the respective channel module
 		/* check if we need to challange the request */
-		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
@@ -386,7 +385,7 @@ void AS::process_message(void) {
 		/* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
 		pCM = ptr_CM[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
 		/* check if we need to challange the request */
-		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes_key.active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}

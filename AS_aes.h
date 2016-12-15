@@ -22,32 +22,50 @@ namespace MSG_AES {
 
 /*
 * @brief Helper class for all AES relevant variables
+* Virtual class to overwrite if AES should be available or not
+* defined in register.h as pointer and filled by NO_AES or HAS_AES
 */
-typedef struct ts_aes_key {
-
+class AES {
+  public:
 	MSG_AES::E active;											// MSG_AES:: NONE, AES_REQ
 	uint8_t  has_ACK_payload;									// ACK payload flag
 	uint8_t  ACK_payload[4];									// and the respective payload
 
 	uint8_t  new_hmkey[16];										// new hmkey for key exchange
 	uint8_t  new_hmkey_index[1];								// new hmkey index
-	uint8_t  prev_rcv_buf[MaxDataLen];							// store to save the previous received string
+	uint8_t  prev_buf[MaxDataLen];								// store to save the previous received string
 
+  protected:
 	uint8_t  temp_hmkey[16];									// temp hmkey 
 	uint8_t  iv[16];
 	aes128_ctx_t ctx; 											// the context where the round keys are stored
 
-	// not needed
-	//uint8_t  prev_snd_buf[MaxDataLen];							// store to save the previous send string
+	// not needed yet
+	//uint8_t  prev_snd_buf[MaxDataLen];						// store to save the previous send string
 	//uint8_t  key_part_index;									// key part index
 	//uint8_t  signing_request[6];								// placeholder for signing request
-	//uint8_t  reset_status;										// reset status flag
+	//uint8_t  reset_status;									// reset status flag
+  public:
+	virtual void prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf) {}
+	virtual void check_AES_REPLY(uint8_t *hmkey, uint8_t *rcv_buf) {}
+	virtual uint8_t check_SEND_AES_TO_ACTOR(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *rcv_buf) {}
+};
+extern AES *aes;
 
+
+class NO_AES : public AES {
+	void prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf) {}
+	void check_AES_REPLY(uint8_t *hmkey, uint8_t *rcv_buf) {}
+	uint8_t check_SEND_AES_TO_ACTOR(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *rcv_buf) {}
+};
+
+
+class HAS_AES : public AES {
 
 	void prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf) {
 
 		/* save the initial message for later use */
-		memcpy(prev_rcv_buf, rcv_buf, rcv_buf[0] + 1);			// we store the initial message
+		memcpy(prev_buf, rcv_buf, rcv_buf[0] + 1);				// we store the initial message
 		active = MSG_AES::AES_REQ;								// set the flag that something is in the buffer
 
 		/* here we make a temporarily key with the challenge and the HMKEY, as we need this for later signature verification */
@@ -60,7 +78,7 @@ typedef struct ts_aes_key {
 
 		/* decrypt it and check if the content compares to the last received message */
 		clear_iv(); 											// some cleanup
-		memcpy(iv, prev_rcv_buf + 11, prev_rcv_buf[0] - 10);	// copy payload of initial message into IV
+		memcpy(iv, prev_buf + 11, prev_buf[0] - 10);			// copy payload of initial message into IV
 		aes128_dec(rcv_buf + 10, &ctx);							// decrypt payload with temporarily key first time
 
 		for (uint8_t i = 0; i < 16; i++)
@@ -73,8 +91,8 @@ typedef struct ts_aes_key {
 
 		/* compare decrypted message with original message, memcmp returns 0 if compare true, we send an ACK_AES and
 		*  process the original message, or terminate the communication */
-		if (!memcmp(rcv_buf + 16, prev_rcv_buf + 1, 10)) {		// compare bytes 7-17 (first 9 byte are flags and addresses) of decrypted data with bytes 2-12 of msgOriginal
-			memcpy(rcv_buf, prev_rcv_buf, prev_rcv_buf[0] + 1);	// restore the saved message to be processed
+		if (!memcmp(rcv_buf + 16, prev_buf + 1, 10)) {			// compare bytes 7-17 (first 9 byte are flags and addresses) of decrypted data with bytes 2-12 of msgOriginal
+			memcpy(rcv_buf, prev_buf, prev_buf[0] + 1);			// restore the saved message to be processed
 			active = MSG_AES::AES_REPLY_OK;
 		} else {
 			rcv_buf[0] = 0;										// nothing to do any more
@@ -106,8 +124,8 @@ typedef struct ts_aes_key {
 	void clear_iv() {
 		memset(iv, 0x00, 16);
 	}
+};
 
-} s_aes_key;
 
 
 

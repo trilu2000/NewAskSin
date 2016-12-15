@@ -18,8 +18,6 @@
 
 
 
-
-
 /* 
 * @brief First bytes of eeprom holds all device specific information for identification
 */
@@ -99,6 +97,7 @@ typedef struct ts_list_table {
 	*/
 	uint8_t* ptr_to_val(uint8_t reg_addr) {	
 		uint8_t *pos_in_reg = (uint8_t*)memchr_P(reg, reg_addr, len);
+		//dbg << "ptr_to_val(" << _HEXB(reg_addr) << ") = "; if (!pos_in_reg) dbg << "NULL = "; dbg << _HEXB(*(val + (pos_in_reg - reg))) << '\n';
 		if (!pos_in_reg) return NULL;
 		return (val + (pos_in_reg - reg));
 	}
@@ -119,7 +118,7 @@ typedef struct ts_list_table {
 	*  msg length in peers per message
 	*/
 	uint8_t get_nr_slices_pairs(uint8_t byte_per_msg = 16) {
-		uint8_t slices = 0;	int16_t total = (len * 2);			// len of register + len of value
+		uint8_t slices = 0;	int16_t total = (len * 2) + 2;		// len of register + len of value + 2byte because of termination of string
 		while ((total -= byte_per_msg) > 0) slices++;
 		return ++slices;
 	}
@@ -128,10 +127,17 @@ typedef struct ts_list_table {
 		load_list(idx);											// load the eeprom content by idx into the value table
 		byte_per_msg /= 2;										// divided by 2 while we mix two arrays
 		uint8_t slc_start = slc * byte_per_msg;					// calculate the start point for reg and val
-		uint8_t slc_end = slc_start + byte_per_msg;				// calculate the corresponding end point
-		if (slc_end > len) slc_end = len;						// if calculated end point is bigger than the physical
 
-		for (uint8_t i = slc_start; i < slc_end; i++) {	memcpy_P(buf++, &reg[i], 1); memcpy(buf++, &val[i], 1);	}
+		uint8_t slc_end = slc_start + byte_per_msg;				// calculate the corresponding slice end byte
+		if (slc_end > (len + 1)) slc_end = len + 1;				// if calculated end point is bigger than the physical; + 1 because of terminating 00 00
+
+		for (uint8_t i = slc_start; i < slc_end; i++) {	
+			if (i >= len) {										// check the case that it is the last slice, because we have to add the terminating 00 00
+				memset(buf, 0, 2); 
+			} else {											// add the byte from reg and val to the buffer
+				memcpy_P(buf++, &reg[i], 1); memcpy(buf++, &val[i], 1);
+			}
+		}
 		return (slc_end - slc_start) * 2;
 	}
 

@@ -543,13 +543,13 @@ void check_send_ACK_NACK(uint8_t ackOk) {
 void send_ACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
 
-	if (aes_key.active == MSG_AES::AES_REPLY_OK) {											// if last message was a valid aes reply we have to answer with an ack_auth
+	if (aes->active == MSG_AES::AES_REPLY_OK) {											// if last message was a valid aes reply we have to answer with an ack_auth
 		snd_msg.type = MSG_TYPE::ACK_AUTH;													// length and flags are set within the snd_msg struct
-		memcpy(snd_msg.buf + 11, aes_key.ACK_payload, 4);									// 4 byte auth payload
+		memcpy(snd_msg.buf + 11, aes->ACK_payload, 4);									// 4 byte auth payload
 	} else {
 		snd_msg.type = MSG_TYPE::ACK;														// length and flags are set within the snd_msg struct
 	}
-	aes_key.active = MSG_AES::NONE;														// no need to remember on the last message
+	aes->active = MSG_AES::NONE;														// no need to remember on the last message
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 }
 /**
@@ -582,7 +582,7 @@ void send_ACK2(void) {
 }
 void send_AES_REQ() {
 	/* save the initial message for later use and prepare the temp key */
-	aes_key.prep_AES_REQ(dev_ident.HMKEY, rcv_msg.buf, snd_msg.buf);						// prepare the message, store received string and so on
+	aes->prep_AES_REQ(dev_ident.HMKEY, rcv_msg.buf, snd_msg.buf);						// prepare the message, store received string and so on
 	rcv_msg.buf[0] = 0;																		// and terminate the further processing
 
 	/* create the message */
@@ -658,7 +658,6 @@ void send_INFO_PEER_LIST(uint8_t cnl) {
 	lm->peer = peerDB;																		// pointer to the respective peerDB struct
 	lm->max_slc = peerDB->get_nr_slices();													// get an idea of the total needed slices
 	lm->timer.set(50);																		// some time between last message
-	//lm->active = 1;																			// and set it active
 	DBG(AS, F("AS:send_INFO_PEER_LIST, cnl:"), cnl, F(", slices:"), lm->max_slc, '\n');
 }
 
@@ -683,9 +682,8 @@ void send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id) 
 	lm->active = LIST_ANSWER::PARAM_RESPONSE_PAIRS;											// we want to get the param list as pairs
 	lm->peer_idx = peerDB->get_idx(peer_id);												// remember on the peer index
 	lm->list = list;																		// pointer to the respective list struct
-	lm->max_slc = list->get_nr_slices_pairs() + 1;											// get an idea of the total needed slices, plus one for closing 00 00 message
+	lm->max_slc = list->get_nr_slices_pairs();												// get an idea of the total needed slices, plus one for closing 00 00 message
 	lm->timer.set(50);																		// some time between last message
-	//lm->active = 1;																			// and set it active, while peer index is available
 	DBG(AS, F("AS:send_INFO_PARAM_RESPONSE_PAIRS, cnl:"), cnl, F(", lst:"), lst, F(", peer:"), _HEX(peer_id, 4), F(", idx:"), lm->peer_idx, F(", slices:"), lm->max_slc, '\n');
 }
 
@@ -892,13 +890,9 @@ void process_list_message(void) {
 
 	} else if (lm->active == LIST_ANSWER::PARAM_RESPONSE_PAIRS) {
 		/* process the INFO_PARAM_RESPONSE_PAIRS */
-		if ((lm->cur_slc + 1) < lm->max_slc) {												// within message processing, get the content													
-			payload_len = lm->list->get_slice_pairs(lm->peer_idx, lm->cur_slc, sm->buf + 11);// get the slice and the amount of bytes
-		} else {																			// last slice, terminating message
-			payload_len = 2;																// reflect it in the payload_len
-			memset(sm->buf + 11, 0, payload_len);											// write terminating zeros
-		}
-		sm->type = MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS;										// flags are set within the snd_msg struct
+		payload_len = lm->list->get_slice_pairs(lm->peer_idx, lm->cur_slc, sm->buf + 11);	// get the slice and the amount of bytes
+		if (payload_len == 2) sm->type = MSG_TYPE::INFO_PARAM_RESPONSE_SEQ;					// if it is a message with only terminating 00 00 then it is a INFO_PARAM_RESPONSE_SEQ
+		else sm->type = MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS;								// otherwise we send a INFO_PARAM_RESPONSE_PAIRS
 		//DBG(SN, F("SN:LIST_ANSWER::PARAM_RESPONSE_PAIRS cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
 		lm->cur_slc++;																		// increase slice counter
 

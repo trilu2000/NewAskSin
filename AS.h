@@ -33,10 +33,6 @@
 */
 extern s_rcv_msg rcv_msg;
 extern s_snd_msg snd_msg;
-/*
-* @brief Helper struct for all AES relevant variables
-*/
-extern s_aes_key aes_key;
 
 
 
@@ -99,8 +95,6 @@ class AS {
 	void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
 	void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);
 	void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
-
-
 
 };
 
