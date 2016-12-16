@@ -26,7 +26,7 @@ struct s_mFlg {
 	uint8_t WKUP   : 1;						// 0x01: send initially to keep the device awake
 	uint8_t WKMEUP : 1;						// 0x02: awake - hurry up to send messages
 	uint8_t CFG    : 1;						// 0x04: Device in Config mode
-	uint8_t        : 1;
+	uint8_t        : 1;						// 0x08: flag is set till key exchange happened, but only on AES_REPLY messages
 	uint8_t BURST  : 1;						// 0x10: set if burst is required by device
 	uint8_t BIDI   : 1;						// 0x20: response is expected
 	uint8_t RPTED  : 1;						// 0x40: repeated (repeater operation)

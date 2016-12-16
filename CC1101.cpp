@@ -9,10 +9,9 @@
 */
 
 #include "00_debug-flag.h"
-
 #include "CC1101.h"
+#include "HAL.h"
 
-//CC cc;																					// defined in CC1101.h, load it once
 
 //public:   //------------------------------------------------------------------------------------------------------------
 /*
@@ -212,6 +211,7 @@ snddata_failure:
 */
 void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIFO
 	u_rxStatus rxByte;																	// size the rx status byte
+	u_rvStatus rvByte;
 
 	/* we are here while GDO0 has indicated that something was received,
 	*  read the status register, if there is something in the buffer, get it...  */
@@ -230,7 +230,8 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 			}
 
 			rssi = ccSendByte(0);														// get the rssi status
-			/* LQI = */ ccSendByte(0);													// lqi not used
+			rvByte.VAL = ccSendByte(0);													// lqi not used
+			if (rvByte.FLAGS.CRC) DBG(CC, "CRC "); 
 			ccDeselect();																// and deselect
 
 			DBG(CC, buf[0], ' ');														// visualize the amount of received bytes
@@ -240,17 +241,15 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 			rssi /= 2; rssi += 72;
 
 		} else DBG(CC, F("error "), buf[0], ' ');										// visualize buffer too small
-	}	
+		if (!rvByte.FLAGS.CRC) buf[0] = 0;												// crc was failed, therefor buf[0] cleaned up
+	}
 
 	/* check if there was a failure and there are still bytes in the buffer, empty receive queue 
 	*  seems there is a bug in the cc1101 chip, bug described in the errata note, 
-	*  solution is - go idle, flush the buffer and back to rx mode   */
-	//if (readReg(CC1101_RXBYTES, CC1101_STATUS)) {
+	*  solution is - go idle, flush the buffer and back to rx mode all time */
 	strobe(CC1101_SIDLE);																// idle needed to flush the buffer
 	strobe(CC1101_SFRX);																// flush the receive buffer
 	strobe(CC1101_SRX);																	// and back to receive mode
-	//	DBG(CC, F("RESET "));															// some debug ...
-	//}
 	DBG(CC, F(">> "), _HEX(buf, buf[0] + 1), _TIME, '\n' );
 }
 

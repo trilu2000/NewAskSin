@@ -36,16 +36,18 @@ namespace MSG_REASON {
 
 /*
 * @brief active flag for send message to define how the message has to be prepared
-* NONE      - 0, nothing to do
-* FORWARD   - 1, send string is prepared, process the message
-* INTERN    - 2, internal string, no ack necassary
-* ANSWER    - 3, take message counter and snd_id from the received string, ack not needed
-* BROADCAST - 4, device initiated messages only, ack not required
-* PAIR      - 5, device initiated messages only, message counter from send function, ack required
-* PEER      - 6, device initiated message to all known peers of a channel, message counter from send function, ack required
+*        bit 1 reflects BIDI
+* NONE        -  0, nothing to do
+* FORWARD     -  2, send string is prepared, process the message
+* DEBUG       -  4, internal string, no ack necassary
+* ANSWER      -  6, take message counter and snd_id from the received string, ack not needed
+* ANSWER_BIDI -  7, take message counter and snd_id from the received string, ack needed
+* PAIR        -  9, device initiated messages only, message counter from send function, ack required
+* PEER        - 10, device initiated message to all known peers of a channel, message counter from send function, ack not required
+* PEER_BIDI   - 11, device initiated message to all known peers of a channel, message counter from send function, ack required
 */
 namespace MSG_ACTIVE {
-	enum E : uint8_t { NONE = 0, FORWARD = 1, DEBUG = 2, ANSWER = 3, PAIR = 4, PEER = 5, PEER_BIDI = 6, };
+	enum E : uint8_t { NONE = 0, INTERN = 2, DEBUG = 4, ANSWER = 6, ANSWER_BIDI = 7, PAIR = 9, PEER = 10, PEER_BIDI = 11, };
 };
 
 /*

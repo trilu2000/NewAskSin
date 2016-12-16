@@ -6,8 +6,8 @@
 //- global definition of type definition beside messages
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#include "HAL.h"
 #include "00_debug-flag.h"
+#include "HAL.h"
 #include "wait_timer.h"
 #include "AS_enum_defs.h"
 #include "AS_message_defs.h"
@@ -393,6 +393,10 @@ typedef struct ts_send_message {
 	waitTimer timer;					// send mode timeout
 
 	MSG_TYPE::E  type;					// set the message type for further processing in send function
+
+	void copy_rcv_id(uint8_t *buf) {
+		memcpy(mBody.RCV_ID, buf, 3);
+	}
 
 	void clear() {						// function to reset flags
 		active = MSG_ACTIVE::NONE;

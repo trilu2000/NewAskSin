@@ -136,7 +136,7 @@ void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 */
 void cmMaster::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
 	DBG(CM, F("CM:CONFIG_PEER_LIST_REQ\n"));
-	send_ACK();
+	//send_ACK();
 	send_INFO_PEER_LIST(buf->MSG_CNL);
 }
 /*
@@ -148,7 +148,7 @@ void cmMaster::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
 */
 void cmMaster::CONFIG_PARAM_REQ(s_m01xx04 *buf) {
 	DBG(CM, F("CM:CONFIG_PARAM_REQ\n"));
-	send_ACK();
+	//send_ACK();
 	send_INFO_PARAM_RESPONSE_PAIRS(buf->MSG_CNL, buf->PARAM_LIST, buf->PEER_ID);
 }
 /*
@@ -582,11 +582,11 @@ void send_ACK2(void) {
 }
 void send_AES_REQ() {
 	/* save the initial message for later use and prepare the temp key */
-	aes->prep_AES_REQ(dev_ident.HMKEY, rcv_msg.buf, snd_msg.buf);						// prepare the message, store received string and so on
+	aes->prep_AES_REQ(dev_ident.HMKEY, rcv_msg.buf, snd_msg.buf);							// prepare the message, store received string and so on
 	rcv_msg.buf[0] = 0;																		// and terminate the further processing
 
 	/* create the message */
-	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.active = MSG_ACTIVE::ANSWER_BIDI;												// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::AES_REQ;														// length and flags are set within the snd_msg struct
 	snd_msg.buf[17] = dev_ident.HMKEY_INDEX[0];												// the 7th byte is the key index
 }
@@ -657,7 +657,7 @@ void send_INFO_PEER_LIST(uint8_t cnl) {
 	lm->active = LIST_ANSWER::PEER_LIST;													// we want to get the peer list
 	lm->peer = peerDB;																		// pointer to the respective peerDB struct
 	lm->max_slc = peerDB->get_nr_slices();													// get an idea of the total needed slices
-	lm->timer.set(50);																		// some time between last message
+	lm->timer.set(15);																		// some time between last message
 	DBG(AS, F("AS:send_INFO_PEER_LIST, cnl:"), cnl, F(", slices:"), lm->max_slc, '\n');
 }
 
@@ -683,7 +683,7 @@ void send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id) 
 	lm->peer_idx = peerDB->get_idx(peer_id);												// remember on the peer index
 	lm->list = list;																		// pointer to the respective list struct
 	lm->max_slc = list->get_nr_slices_pairs();												// get an idea of the total needed slices, plus one for closing 00 00 message
-	lm->timer.set(50);																		// some time between last message
+	lm->timer.set(15);																		// some time between last message
 	DBG(AS, F("AS:send_INFO_PARAM_RESPONSE_PAIRS, cnl:"), cnl, F(", lst:"), lst, F(", peer:"), _HEX(peer_id, 4), F(", idx:"), lm->peer_idx, F(", slices:"), lm->max_slc, '\n');
 }
 
@@ -902,7 +902,7 @@ void process_list_message(void) {
 	}
 
 	sm->mBody.MSG_LEN = payload_len + 10;													// set the message len accordingly
-	sm->active = MSG_ACTIVE::PAIR;															// for address, counter and to make it active
+	sm->active = MSG_ACTIVE::ANSWER_BIDI;													// for address, counter and to make it active
 
 	if (lm->cur_slc >= lm->max_slc) {														// if everything is send, we could stop the struct
 		//DBG(SN, F("SN:LIST_ANSWER::DONE cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');

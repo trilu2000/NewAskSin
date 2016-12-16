@@ -16,7 +16,7 @@
 #include "AS_aes.h"
 
 #include "macros.h"
-#include "defines.h"
+//#include "defines.h"
 #include "version.h"
 #include "wait_timer.h"
 

@@ -11,7 +11,6 @@
 #ifndef _CC_H
 #define _CC_H
 
-#include "HAL.h"
 
 
 class CC  {
@@ -182,8 +181,6 @@ private:  //--------------------------------------------------------------------
 
 public:    //-------------------------------------------------------------------------------------------------------------
 	uint8_t rssi;															// signal strength
-	//uint8_t crc_ok;														// CRC OK for received message
-	//uint8_t	lqi;														// link quality
 	uint8_t pwr_down;														// module sleeping (power down)
 
 

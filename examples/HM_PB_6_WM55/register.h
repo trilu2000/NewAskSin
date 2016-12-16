@@ -8,11 +8,9 @@
 * @brief Libraries needed to run AskSin library
 */
 #include <AS.h> 
-#include "hardware.h"
 #include "hmkey.h"
 #include <cmMaintenance.h> 
 #include <cmRemote.h> 
-
 
 
 /**
@@ -22,7 +20,7 @@
 * declaration is in the register.h but the functions needs
 * to be defined in the user sketch.
 */
-AS hm;// = new AS;
+AS hm;
 AES *aes = new HAS_AES;
 
 
@@ -79,7 +77,6 @@ const uint8_t dev_static[] PROGMEM = {             // testID
 };
 
 
-
 /**
 * @brief Regular start function
 * This function is called by the main function every time when the device starts,
@@ -119,7 +116,7 @@ void firstTimeStart(void) {
 	*  address as array. please note: no defaults a written into the respective peer list, this has to be done manually */
 	uint8_t temp[] = { 0x01,0x02,0x01,0x01, };												// declare and fill array
 	ptr_CM[1]->peerDB.set_peer(0, temp);													// write it to index 0
-	//temp[2] = 0x02;																			// adjust array content
+	temp[2] = 0x02;																			// adjust array content
 	//ptr_CM[1]->peerDB.set_peer(1, temp);													// write to index 1
 	//temp[2] = 0x03;
 	//ptr_CM[1]->peerDB.set_peer(2, temp);
