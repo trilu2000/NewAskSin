@@ -23,7 +23,7 @@ void explain_msg(void) {
 	uint8_t *by11 = &rcv_msg.mBody.BY11;
 
 
-	if        (*by03 == BY03(MSG_TYPE::DEVICE_INFO)) {
+	if (*by03 == BY03(MSG_TYPE::DEVICE_INFO)) {
 
 	} else if (*by03 == BY03(MSG_TYPE::CONFIG_REQ)) {
 

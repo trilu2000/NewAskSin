@@ -326,6 +326,7 @@ void AS::process_message(void) {
 
 	} else if (*rcv_by03 == BY03(MSG_TYPE::REPLY_MSG)) {
 
+
 	} else if (*rcv_by03 == BY03(MSG_TYPE::INSTRUCTION_MSG)) {
 		//uint8_t by10 = rcv_msg.mBody.BY10;												// short hand to byte 10 in the received string
 		uint8_t mlen = rcv_msg.mBody.MSG_LEN;												// short hand to the message length
@@ -358,62 +359,58 @@ void AS::process_message(void) {
 		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))           pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
 
 
-	}
- else if (*rcv_by03 == BY03(MSG_TYPE::HAVE_DATA)) {
+	} else if (*rcv_by03 == BY03(MSG_TYPE::HAVE_DATA)) {
 
 
- }
- else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH)) {
+	} else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH)) {
 	 /* to process this message we need to load the right list table for the respective peer index into memory
 	 * need also to find the right channel to issue the message, depending on the peer address */
-	 memcpy(rcv_msg.peer, rcv_msg.m3Exxxx.PEER, 3);										// prepare a peer string
-	 rcv_msg.peer[3] = rcv_msg.m3Exxxx.P_CNL;
-	 rcv_msg.cnl = is_peer_valid(rcv_msg.peer);											// search for the peer channel
-	 if (!rcv_msg.cnl) return;															// peer not found in any channel, return
+		memcpy(rcv_msg.peer, rcv_msg.m3Exxxx.PEER, 3);										// prepare a peer string
+		rcv_msg.peer[3] = rcv_msg.m3Exxxx.P_CNL;
+		rcv_msg.cnl = is_peer_valid(rcv_msg.peer);											// search for the peer channel
+		if (!rcv_msg.cnl) return;															// peer not found in any channel, return
 
-	 pCM = ptr_CM[rcv_msg.cnl];															// short hand to the respective channel module
-	 /* check if we need to challange the request */
-	 if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
-		 send_AES_REQ();																	// send a request
-		 return;																			// nothing to do any more, wait and see
-	 }
-	 pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
-	 pCM->SWITCH(&rcv_msg.m3Exxxx);
+		pCM = ptr_CM[rcv_msg.cnl];															// short hand to the respective channel module
+		/* check if we need to challange the request */
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
+			send_AES_REQ();																	// send a request
+			return;																			// nothing to do any more, wait and see
+		}
+		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
+		pCM->SWITCH(&rcv_msg.m3Exxxx);
 
 
- }
- else if (rcv_msg.intend == MSG_INTENT::PEER) {
+	} else if (rcv_msg.intend == MSG_INTENT::PEER) {
 	 /* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
-	 pCM = ptr_CM[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
-	 /* check if we need to challange the request */
-	 if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
-		 send_AES_REQ();																	// send a request
-		 return;																			// nothing to do any more, wait and see
-	 }
-	 /* forward to the respective channel function */
-	 pCM->lstP.load_list(ptr_CM[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3
-	 if (*rcv_by03 == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH_LEVEL))      pCM->SWITCH_LEVEL(&rcv_msg.m42xxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_DATA))       pCM->SENSOR_DATA(&rcv_msg.m53xxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::GAS_EVENT))         pCM->GAS_EVENT(&rcv_msg.m54xxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::CLIMATE_EVENT))     pCM->CLIMATE_EVENT(&rcv_msg.m58xxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::SET_TEAM_TEMP))     pCM->SET_TEAM_TEMP(&rcv_msg.m59xxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::THERMAL_CONTROL))   pCM->THERMAL_CONTROL(&rcv_msg.m5axxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) pCM->POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT))       pCM->POWER_EVENT(&rcv_msg.m5fxxxx);
-	 else if (*rcv_by03 == BY03(MSG_TYPE::WEATHER_EVENT))     pCM->WEATHER_EVENT(&rcv_msg.m70xxxx);
+		pCM = ptr_CM[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
+		/* check if we need to challange the request */
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
+			send_AES_REQ();																	// send a request
+			return;																			// nothing to do any more, wait and see
+		}
+		/* forward to the respective channel function */
+		pCM->lstP.load_list(ptr_CM[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3
+		if (*rcv_by03 == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH_LEVEL))      pCM->SWITCH_LEVEL(&rcv_msg.m42xxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_DATA))       pCM->SENSOR_DATA(&rcv_msg.m53xxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::GAS_EVENT))         pCM->GAS_EVENT(&rcv_msg.m54xxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::CLIMATE_EVENT))     pCM->CLIMATE_EVENT(&rcv_msg.m58xxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::SET_TEAM_TEMP))     pCM->SET_TEAM_TEMP(&rcv_msg.m59xxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::THERMAL_CONTROL))   pCM->THERMAL_CONTROL(&rcv_msg.m5axxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) pCM->POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT))       pCM->POWER_EVENT(&rcv_msg.m5fxxxx);
+		else if (*rcv_by03 == BY03(MSG_TYPE::WEATHER_EVENT))     pCM->WEATHER_EVENT(&rcv_msg.m70xxxx);
 
 
- }
- else {
-	 dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
-	 DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
- }
+	} else {
+		dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
+		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
+	}
 
- rcv_msg.clear();
- return;
+	rcv_msg.clear();
+	return;
 
 }
 
@@ -473,12 +470,12 @@ void AS::snd_poll(void) {
 
 		} else if ((sm->active & 0xFE) == MSG_ACTIVE::ANSWER) {								// ANSWER_BIDI
 		/* it is an answer to the received message */
-			sm->copy_rcv_id(rcv_msg.mBody.SND_ID);											// use the address from the received message
+			memcpy(sm->mBody.RCV_ID, rcv_msg.mBody.SND_ID, 3);							// use the address from the received message
 			sm->mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// use the message counter from the received message
 
 		} else if (sm->active         == MSG_ACTIVE::PAIR) {
 		/* pair means - msg_cnt from snd_msg struct, rcv_id is master_id, bidi not needed */
-			sm->copy_rcv_id(dev_operate.MAID);												// use the registered master id
+			memcpy(sm->mBody.RCV_ID, dev_operate.MAID, 3);								// use the address from the received message
 			sm->mBody.MSG_CNT = sm->MSG_CNT;												// use own message counter
 			sm->MSG_CNT++;																	// increase counter for next try
 
