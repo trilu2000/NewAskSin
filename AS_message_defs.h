@@ -967,8 +967,8 @@ typedef struct ts_msg1181xx {
 	uint8_t       RCV_ID[3];				// by07 - receiver id, broadcast for 0
 	uint8_t       BY10;						// by10 - message type
 	uint8_t       CNL;						// by11 - channel
-	uint8_t       TIME;						// by12 - time
-	uint8_t       SPEED;					// by13 - speed
+	uint8_t       P_TIME;					// by12 - time
+	uint8_t       P_SPEED;					// by13 - speed
 } s_m1181xx; // INSTRUCTION_LEVEL message
 
 /*
