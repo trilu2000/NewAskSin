@@ -19,7 +19,7 @@
 	 * to be defined in the user sketch.
 	 */
 	AS hm;
-	AES *aes = new NO_AES;
+	AES *aes = new HAS_AES;
 
 
 	/*

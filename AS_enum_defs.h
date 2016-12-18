@@ -89,7 +89,7 @@ namespace LIST_ANSWER {
 * 0x02 84 ff 0a * - NACK_TARGET_INVALID
 * 0x02 ff ff 09 * - ACK_NACK_UNKNOWN, short string no byte 10 value
 * -------------------------------------------
-* 0x03 ff ff 09 * AES_REPLY
+* 0x03 ff ff 19 * AES_REPLY
 * -------------------------------------------
 * 0x04 ff ff ff * - SEND_AES
 * 0x04 01 ff 0c * - SEND_AES_TO_HMLAN
@@ -259,7 +259,7 @@ namespace MSG_TYPE {
 		/* 0x03 ff ff 09 * AES_REPLY
 		*    LEN CNT FLAG BY03 SND       RCV
 		* m> 09  16  80   03   63 19 64  33 11 22    */
-		AES_REPLY = 0x03ffff09,																	// length and By10 needs check
+		AES_REPLY = 0x03ffff19,																	// length and By10 needs check
 
 
 		/* 0x04 ff ff ff * -SEND_AES, placeholder only */

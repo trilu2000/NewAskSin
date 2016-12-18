@@ -86,7 +86,7 @@ void    CC::init(void) {
 		CC1101_MDMCFG2,   0x03,						// digital DC blocking filter enabled (better sensitivity), 2-FSK, Manchester encoding/decoding disabled, SYNC_MODE[2:0] 30/32 sync word bits detected
 		CC1101_MDMCFG1,   0x22,						// Forward Error Correction (FEC) disabled, NUM_PREAMBLE[2:0] 4 bytes, 
 		CC1101_DEVIATN,   0x34,						// 19.042969 kHz
-		CC1101_MCSM2,     0x01,						// RX_TIME[2:0]
+		CC1101_MCSM2,     0x01,	//01					// RX_TIME[2:0]
 		CC1101_MCSM1,     0x33, // EQ3 0x03, 0x3f	// TXOFF_MODE[1:0] 3 (11) : RX, RXOFF_MODE[1:0] 0 (00) : IDLE, CCA_MODE[1:0] 3 (11) : If RSSI below threshold unless currently receiving a packet
 		CC1101_MCSM0,     0x18,						// FS_AUTOCAL[1:0] 1 (01) : When going from IDLE to RX or TX (or FSTXON), 
 		CC1101_FOCCFG,    0x16,						// frequency compensation loop gain to be used before a sync word is detected 2 (10) : 3K, gain to be used after a sync word is detected 1 : K/2, Frequency offset compensation 3 (11) : ±BWCHAN/2

@@ -224,7 +224,7 @@ void send_NACK(void);
 void send_NACK_TARGET_INVALID(void);
 void send_ACK_NACK_UNKNOWN();
 
-void send_AES_REPLY();
+void send_AES_REPLY(uint8_t *payload);
 
 void send_SEND_AES_TO_HMLAN();
 void send_SEND_AES_TO_ACTOR();

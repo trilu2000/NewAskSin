@@ -619,7 +619,10 @@ void send_NACK_TARGET_INVALID(void) {
 void send_ACK_NACK_UNKNOWN() {
 }
 
-void send_AES_REPLY() {
+void send_AES_REPLY(uint8_t *payload) {
+	memcpy(snd_msg.buf + 10, payload, 16);													// payload starts at byte 10 and has a length of 16 byte
+	snd_msg.type = MSG_TYPE::AES_REPLY;														// prepare the send message, payload was filled already
+	snd_msg.active = MSG_ACTIVE::ANSWER_BIDI;												// answer the request but we need an ACK
 }
 
 void send_SEND_AES_TO_HMLAN() {

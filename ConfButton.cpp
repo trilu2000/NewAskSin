@@ -134,12 +134,14 @@ void CB::outSignal(uint8_t mode) {
 	} else if (mode == 6) {					// keyLongDouble
 		led.set(nothing);
 
-		// TODO: 0x18 localResDis available, take care of it
-		uint8_t localResDis = *ptr_CM[0]->list[0]->ptr_to_val(0x18);								// get register address
-		//uint8_t localResDis = ee_list.getRegAddr(0, 0, 0, 0x18);								// get register address
-		//dbg << "x:" << localResDis <<'\n';
-		//if (!localResDis) 																	// if local reset is not disabled, reset
-			//hm.deviceReset(AS_RESET_CLEAR_EEPROM);
-		
+		uint8_t *localResDis = ptr_CM[0]->list[0]->ptr_to_val(0x18);								// get register address
+		//dbg << "local reset disable = " << localResDis[0] << '\n';
+		if (localResDis) dbg << "addr\n";
+		else dbg << "NULL " << *localResDis << '\n';
+		//if (!localResDis[0]) { 																	// if local reset is not disabled, reset
+		//	clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
+		//	init();																					// call the init function to get the device in factory status
+
+		//}
 	}
 }

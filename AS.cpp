@@ -157,43 +157,28 @@ void AS::poll(void) {
 * The intent is to overload them there by the respective user channel module and work with the information accordingly.
 */
 void AS::rcv_poll(void) {
-
 	/* checks a received string for validity and intent */
-	if (rcv_msg.mBody.MSG_LEN < 9) {														// check if the string has all mandatory bytes, if not
-		DBG(RV, F("  too short...\n"));
-		rcv_msg.clear();																	// clear receive buffer
-		return;
-	}
+	if (rcv_msg.mBody.MSG_LEN < 9) goto clear_rcv_poll;										// check if the string has all mandatory bytes, if not
 
-	/* check for a repeated string which was already processed */
-	if ((rcv_msg.mBody.FLAG.RPTED) && (rcv_msg.prev_MSG_CNT == rcv_msg.mBody.MSG_CNT)) {	// check if message was already received
-		DBG(RV, F("  repeated ...\n"));
-		rcv_msg.clear();																	// clear receive buffer
-		return;
+	/* check for a repeated string which was already processed, after this the repeated flag doesn't matter anymore */
+	if ((rcv_msg.mBody.FLAG.RPTED) && (rcv_msg.prev_MSG_CNT == rcv_msg.mBody.MSG_CNT)) {
+		DBG(RV, F("  repeated...\n"));
+		goto clear_rcv_poll;
 	}
 	rcv_msg.prev_MSG_CNT = rcv_msg.mBody.MSG_CNT;											// remember for next time
+	rcv_msg.mBody.FLAG.RPTED = 0;															// clear the repeated flag
 
-	/* get the intend of the message */
-	get_intend();																			// no params neccassary while everything is in the recv struct
+	/* check the addresses in the message */
+	get_intend();
 
 	explain_msg();
 	//DBG(RV, (char)rcv_msg.intend, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), ' ', _TIME, '\n');
 
-	/* sort out messages not needed to further processing */
-	if ((rcv_msg.intend == MSG_INTENT::LOGGING) || (rcv_msg.intend == MSG_INTENT::ERROR)) {
-		rcv_msg.clear();																	// nothing to do any more
-		return;
-	}
+	/* only process messages for us from master or peer */
+	if ((rcv_msg.intend == MSG_INTENT::MASTER) || (rcv_msg.intend == MSG_INTENT::PEER)) return;
 
-	/* broadcast messages not used, with one exception - serial pair request */
-	if ((rcv_msg.intend == MSG_INTENT::BROADCAST) && (rcv_msg.mBody.MSG_TYP == BY03(MSG_TYPE::CONFIG_REQ)) && (rcv_msg.mBody.BY11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL)))
-		rcv_msg.intend = MSG_INTENT::MASTER;
-
-	/* logging and error is already eliminated from further processing, now we can take out broadcasts */
-	if (rcv_msg.intend == MSG_INTENT::BROADCAST) {
-		rcv_msg.clear();																	// nothing to do any more
-		return;
-	}
+clear_rcv_poll:
+	rcv_msg.clear();																		// nothing to do any more
 }
 
 /*
@@ -202,39 +187,52 @@ void AS::rcv_poll(void) {
 * given message. It is important to know, because we work only on messages which are addressed to us and sent by a pair or peer.
 */
 void AS::get_intend() {
-	/* prepare the peer search */
+	uint8_t *rcv_by03 = &rcv_msg.mBody.MSG_TYP;												// some shorthands
+	uint8_t *rcv_by10 = &rcv_msg.mBody.BY10;
+	uint8_t *rcv_by11 = &rcv_msg.mBody.BY11;
+
+	/* prepare the peer address for the search */
 	memcpy(rcv_msg.peer, rcv_msg.mBody.SND_ID, 3);											// peer has 4 byte and the last byte indicates the channel but also lowbat and long message, therefore we copy it together in a seperate byte array
-	uint8_t buf10 = rcv_msg.buf[10];														// get the channel byte seperate
-	if (aes->active) buf10 = aes->prev_buf[10];												// if AES is active, we must get buf[10] from prevBuf[10]
-	rcv_msg.peer[3] = buf10 & 0x3f;															// mask out long and battery low
+	rcv_msg.peer[3] = *rcv_by10;															// get the peer channel from the received string
+	rcv_msg.peer[3] &= 0x3f;																// mask out long and battery low
 
-	/* it could come as a broadcast message - report it only while loging is enabled */
-	if (isEmpty(rcv_msg.mBody.RCV_ID, 3))													// broadcast message
+	if (isEmpty(rcv_msg.mBody.RCV_ID, 3)) {
+		/* it could come as a broadcast message - report it only while loging is enabled */
 		rcv_msg.intend = MSG_INTENT::BROADCAST;
+		/* broadcast messages not used, with one exception - serial pair request */
+		if ((*rcv_by03 == BY03(MSG_TYPE::CONFIG_REQ)) && (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))) {
+			rcv_msg.intend = MSG_INTENT::MASTER;
+		}
 
-	/* it could be addressed to a different device - report it only while loging is enabled
-	*  memcmp gives 0 if string matches, any other value while no match */
-	else if (!isEqual(rcv_msg.mBody.RCV_ID, dev_ident.HMID, 3)) 							// not for us, only show as log message
+	} else if (!isEqual(rcv_msg.mBody.RCV_ID, dev_ident.HMID, 3)) {
+		/* it could be addressed to a different device - report it only while loging is enabled
+		*  memcmp gives 0 if string matches, any other value while no match */
 		rcv_msg.intend = MSG_INTENT::LOGGING;
 
-	/* because of the previous check, message is for us, check against master */
-	else if (isEqual(rcv_msg.mBody.SND_ID, dev_operate.MAID, 3))							// coming from master
+	} else if (isEqual(rcv_msg.mBody.SND_ID, dev_operate.MAID, 3)) {
+		/* because of the previous check, message is for us, check against master */
 		rcv_msg.intend = MSG_INTENT::MASTER;
 
-	/* message is for us, but not from master, maybe it is a peer message */
-	else if (rcv_msg.cnl = is_peer_valid(rcv_msg.peer))										// check if the peer is known and remember the channel
+	} else if (rcv_msg.cnl = is_peer_valid(rcv_msg.peer)) {
+		/* message is for us, but not from master, maybe it is a peer message */
 		rcv_msg.intend = MSG_INTENT::PEER;
 
-	/* message is for us, but not from pair or peer, check if we were the sender and flag it as internal */
-	else if (isEqual(rcv_msg.mBody.SND_ID, dev_ident.HMID, 3))								// we were the sender, internal message
+	} else if (isEqual(rcv_msg.mBody.SND_ID, dev_ident.HMID, 3)) {
+		/* message is for us, but not from pair or peer, check if we were the sender and flag it as internal */
 		rcv_msg.intend = MSG_INTENT::INTERN;
 
-	/* message is for us, but not from pair or peer or internal - check if we miss the master id because we are not paired */
-	else if (isEmpty(dev_operate.MAID, 3))													// for us, but pair is empty
+	} else if (isEmpty(dev_operate.MAID, 3)) {
+		/* message is for us, but not from pair or peer or internal - check if we miss the master id because we are not paired */
 		rcv_msg.intend = MSG_INTENT::NOT_PAIRED;
 
-	else																					// should never happens
-		rcv_msg.intend = MSG_INTENT::ERROR;
+	} else {
+		rcv_msg.intend = MSG_INTENT::ERROR;												// should never happens
+		/* an AES_REQ could come from a pair or peer, the peer address does not include the channel information -
+		*  therefor we check the send string and if the address is equal, we process as peer message */
+		if ((*rcv_by03 == BY03(MSG_TYPE::AES_REQ)) && (*rcv_by10 == BY10(MSG_TYPE::AES_REQ)) && (isEqual(rcv_msg.mBody.SND_ID, snd_msg.mBody.RCV_ID, 3))) {
+			rcv_msg.intend = MSG_INTENT::PEER;
+		} 
+	}
 }
 
 /**
@@ -288,10 +286,19 @@ void AS::process_message(void) {
 
 
 	} else if (*rcv_by03 == BY03(MSG_TYPE::ACK_MSG)) {
+		if (*rcv_by10 == BY10(MSG_TYPE::AES_REQ)) {
+		/* AES request is a speciality in this section, pair or peer is sending this request to challenge the last command we had send,
+		*  we have to use the 6 byte payload and generate a SEND_AES type message (* 0x02 04 ff 11 * - AES_REQ) */
+			//dbg << "AES_REQ, ind: " << _HEXB(rcv_msg.buf[17]) << ", data: " << _HEX(rcv_msg.buf+11, 6) << '\n';
+			aes->prep_AES_REPLY(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf + 11, snd_msg.buf);// prepare the reply
+			snd_msg.clear();																// clear send message
+			send_AES_REPLY(aes->prev_buf);													// and send it
+
+		} else if (rcv_msg.mBody.MSG_CNT == snd_msg.mBody.MSG_CNT) {
 		/* at the moment we need the ACK message only for avoiding resends, so let the send_msg struct know about
 		*  a received ACK/NACK whatever - probably we have to change this function in the future */
-		if (rcv_msg.mBody.MSG_CNT == snd_msg.mBody.MSG_CNT) snd_msg.retr_cnt = 0xff;		// check if the message counter is similar and let the send function know
-
+			snd_msg.retr_cnt = 0xff;														// check if the message counter is similar and let the send function know
+		}
 
 	} else if (*rcv_by03 == BY03(MSG_TYPE::AES_REPLY)) {
 		/* we received an AES_REPLY, first we tell the send function that we received an answer. as the receive flag is not cleared, we will come back again */
@@ -316,7 +323,7 @@ void AS::process_message(void) {
 		/* check the message in the aes_key struct, returns are 0 for doesnt fit, 1 key exchange started, 2 new key received */
 		uint8_t new_key = aes->check_SEND_AES_TO_ACTOR(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf);
 		if (new_key) {
-			//dbg << "new idx " << aes_key.new_hmkey_index[0] << ", new key " << _HEX(aes_key.new_hmkey, 16) << '\n';
+			dbg << "new idx " << aes->new_hmkey_index[0] << ", new key " << _HEX(aes->new_hmkey, 16) << '\n';
 			memcpy(dev_ident.HMKEY, aes->new_hmkey, 16);									// store the new key
 			dev_ident.HMKEY_INDEX[0] = aes->new_hmkey_index[0];
 			setEEPromBlock(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));					// write it to the eeprom
