@@ -175,7 +175,7 @@ void AS::rcv_poll(void) {
 	//DBG(RV, (char)rcv_msg.intend, F("> "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), ' ', _TIME, '\n');
 
 	/* only process messages for us from master or peer */
-	if ((rcv_msg.intend == MSG_INTENT::MASTER) || (rcv_msg.intend == MSG_INTENT::PEER)) return;
+	if ((rcv_msg.intend == MSG_INTENT::MASTER) || (rcv_msg.intend == MSG_INTENT::PEER) || (rcv_msg.intend == MSG_INTENT::NOT_PAIRED)) return;
 
 clear_rcv_poll:
 	rcv_msg.clear();																		// nothing to do any more
