@@ -35,6 +35,7 @@ typedef struct ts_dev_ident {
 typedef struct ts_dev_operate {
 	uint8_t  *MAID;							// pointer to the master id, which is hold in cmMaintenance
 	uint8_t  *AES_FLAG;						// pointer to aes flag, handled in cmMaintenance
+	uint8_t  reset = 0;						// 0 nothing to do, 2 factory defaults
 } s_dev_operate;
 
 
@@ -97,9 +98,10 @@ typedef struct ts_list_table {
 	*/
 	uint8_t* ptr_to_val(uint8_t reg_addr) {	
 		uint8_t *pos_in_reg = (uint8_t*)memchr_P(reg, reg_addr, len);
-		//dbg << "ptr_to_val(" << _HEXB(reg_addr) << ") = "; if (!pos_in_reg) dbg << "NULL = "; dbg << _HEXB(*(val + (pos_in_reg - reg))) << '\n';
-		if (!pos_in_reg) return NULL;
-		return (val + (pos_in_reg - reg));
+		//dbg << F("ptr_to_val(") << _HEXB(reg_addr) << F("), reg addr: ") << (uint16_t)reg << F(", pos in reg: ") << (uint16_t)pos_in_reg << F(", val addr: ") << (uint16_t)val << '\n';
+		if (pos_in_reg) pos_in_reg = (val + (pos_in_reg - reg));
+		//dbg << F("ptr_to_val(") << _HEXB(reg_addr) << F("), ret addr: ") << (uint16_t)pos_in_reg <<F(", cont: ") << _HEXB(*pos_in_reg) << '\n';
+		return pos_in_reg;
 	}
 
 	/* Writes values by a given register/value array into the local value array. 

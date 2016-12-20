@@ -82,11 +82,10 @@ void AS::init(void) {
 
 	/* - Initialize the hardware. All this functions are defined in HAL.h and HAL_extern.h 	*/
 	initLeds();																				// initialize the leds
-	initConfKey();																			// initialize the port for getting config key interrupts
 	initMillis();																			// start the millis counter
 	
-	cc.init();																				// init the rf module
-	init_random();																			// generate the random seed
+	com->init();																				// init the rf module
+	//init_random();																			// generate the random seed
 
 	/* load list 0 and 1 defaults and inform the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
@@ -107,8 +106,8 @@ void AS::poll(void) {
 
 	/* copy the decoded data into the receiver module if something was received
 	*  and poll the received buffer, it checks if something is in the queue  */
-	if (ccGetGDO0()) {																		// check if something is in the cc1101 receive buffer
-		cc.rcvData(rcv_msg.buf);															// if yes, get it into our receive processing struct
+	if (com->has_data()) {																	// check if something is in the cc1101 receive buffer
+		com->rcv_data(rcv_msg.buf);															// if yes, get it into our receive processing struct
 		rcv_poll();																			// and poll the receive function to get intent and some basics
 	}
 	if (rcv_msg.buf[0]) process_message();													// check if we have to handle the receive buffer
@@ -126,11 +125,15 @@ void AS::poll(void) {
 		ptr_CM[i]->poll();
 	}
 
+	/* check if the device needs a reset */
+	if (dev_operate.reset) {
+		if ((dev_operate.reset == 2) && (!snd_msg.active)) {								// check reset status, but wait till send is done
+			clearEEPromBlock(0, 2);															// clear the magic byte in eeprom
+			dev_operate.reset = 0;															// clear the reset flag
+			init();																			// call init function to set the defaults
+		}
+	}
 
-
-//	if (resetStatus == AS_RESET || resetStatus == AS_RESET_CLEAR_EEPROM) {
-		//deviceReset(resetStatus);
-//	}
 
 	// time out the pairing timer
 	if (pair_mode.active) { 
@@ -141,7 +144,7 @@ void AS::poll(void) {
 	}
 
 
-	btn.poll();																				// poll the config button
+	cbn->poll();																				// poll the config button
 	led.poll();																				// poll the led's
 	bat.poll();																				// poll the battery check
 		
@@ -519,7 +522,7 @@ void AS::snd_poll(void) {
 	/* check the retr count if there is something to send, while message timer was checked earlier */
 	if (sm->retr_cnt < sm->temp_max_retr) {													// not all sends done and timing is OK
 		uint8_t tBurst = sm->mBody.FLAG.BURST;												// get burst flag, while string will get encoded
-		cc.sndData(sm->buf, tBurst);														// send to communication module
+		com->snd_data(sm->buf, tBurst);														// send to communication module
 		sm->retr_cnt++;																		// remember that we had send the message
 
 		if (sm->mBody.FLAG.BIDI) sm->timer.set(sm->max_time);								// timeout is only needed while an ACK is requested
@@ -549,9 +552,10 @@ void AS::snd_poll(void) {
 void AS::INSTRUCTION_RESET(s_m1104xx *buf) {
 	DBG(AS, F("CM:INSTRUCTION_RESET\n"));
 	send_ACK();																				// prepare an ACK message
-	while (snd_msg.active) snd_poll();														// poll to get the ACK message send
-	clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
-	init();																					// call the init function to get the device in factory status
+	dev_operate.reset = 2;																	// set the reset flag and wait...
+	//if (snd_msg.active) snd_poll();														// poll to get the ACK message send
+	//clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
+	//init();																					// call the init function to get the device in factory status
 }
 void AS::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
 	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER\n"));

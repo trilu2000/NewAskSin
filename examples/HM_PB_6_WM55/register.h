@@ -22,7 +22,8 @@
 */
 AS hm;
 AES *aes = new HAS_AES;
-
+COM *com = new CC1101;
+CBN *cbn = new CBN(1, PIN_B0);
 
 /*
 * cmSwitch requires this functions in the user sketch:
@@ -83,11 +84,10 @@ const uint8_t dev_static[] PROGMEM = {             // testID
 * here we can setup everything which is needed for a proper device operation
 */
 void everyTimeStart(void) {
-	dbg << F("\nevery time start\n");
+	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
 
 	// channel 0 section 
 	led.set(welcome);
-	btn.config(1);
 	pom.setMode(POWER_MODE_NO_SLEEP);
 	bat.set(30, 3600000);
 	// channel 1 section 
@@ -107,7 +107,7 @@ void everyTimeStart(void) {
 * of eeprom variables, or setting a default link in the peer table for 2 channels
 */
 void firstTimeStart(void) {
-	dbg << F("\n\nnew magic!\n\n");
+	DBG(SER, F("\n\nnew magic!\n\n"));
 
 	/* add some peers to test - peers can be added per default, important if we want to build up combined devices.
 	*  by doing this, we can build a light switch by combing a remote and a switch channel.

@@ -20,7 +20,7 @@
 	 */
 	AS hm;
 	AES *aes = new HAS_AES;
-
+	COM *com = new CC1101;
 
 	/*
 	* cmSwitch requires this functions in the user sketch:

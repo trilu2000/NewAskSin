@@ -7,6 +7,7 @@
 #include "register.h"																			// configuration sheet
 
 
+
 //- arduino functions -----------------------------------------------------------------------------------------------------
 void setup() {
 	// - Hardware setup ---------------------------------------
@@ -26,11 +27,19 @@ void setup() {
 	DBG_START(SER, F("HM_PB_6_WM55\n"));
 	DBG(SER, F(LIB_VERSION_STRING));
 
-
 	// - AskSin related ---------------------------------------
 	hm.init();																					// init the asksin framework
-	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
 
+	uint8_t temp[6];
+	get_random(temp);
+	dbg << "x " << _HEX(temp, 6) << '\n';
+	get_random(temp);
+	dbg << "y " << _HEX(temp, 6) << '\n';
+	_delay_ms(1);
+	get_random(temp);
+	dbg << "z " << _HEX(temp, 6) << '\n';
+
+	
 	// - user related -----------------------------------------
 	sei();																						// enable interrupts
 }

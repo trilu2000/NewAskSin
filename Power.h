@@ -11,7 +11,8 @@
 
 #include "HAL.h"
 #include "ConfButton.h"
-#include "CC1101.h"
+
+
 
 /*
  * POWER_MODE_NO_SLEEP:       There is nothing to do. Devices active all time. No power savings.

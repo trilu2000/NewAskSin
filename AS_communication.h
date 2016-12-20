@@ -2,18 +2,44 @@
 *  AskSin driver implementation
 *  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 * - -----------------------------------------------------------------------------------------------------------------------
-* - AskSin cc1101 functions -----------------------------------------------------------------------------------------------
+* - AskSin communication functions ----------------------------------------------------------------------------------------
 * - with a lot of copy and paste from culfw firmware
 * - standby fix and some improvement from LineF@github.com
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#ifndef _CC_H
-#define _CC_H
+#ifndef _COM_H
+#define _COM_H
+
+
+extern void spi_select();													// functions needed for spi communication, HAL.h
+extern void spi_deselect();
+extern uint8_t spi_send_byte(uint8_t send_byte);
+
+
+class COM {
+public:  //----------------------------------------------------------------------------------------------------------------
+	uint8_t rssi;															// signal strength
+	uint8_t pwr_down;														// module sleeping (power down)
+
+	virtual void    init() {}												// initialize CC1101
+	virtual void    snd_data(uint8_t *buf, uint8_t burst) {}				// send data packet via RF
+	virtual void    rcv_data(uint8_t *buf) {}								// read data packet from RX FIFO
+	virtual uint8_t has_data() {};											// boolean value if data are received
+
+	virtual void    set_idle(void) {}										// put CC1101 into power-down state
+	virtual uint8_t detect_burst(void) {}									// detect burst signal, sleep while no signal, otherwise stay awake
+
+	void decode(uint8_t *buf);												// decodes the message
+	void encode(uint8_t *buf);												// encodes the message
+};
 
 
 
-class CC  {
+extern void cc1101_init();
+extern uint8_t cc1101_has_data();
+
+class CC1101 : public COM {
 private:  //--------------------------------------------------------------------------------------------------------------
 	#define CC1101_DATA_LEN         40										// maximum length of received bytes
 
@@ -179,32 +205,26 @@ private:  //--------------------------------------------------------------------
 	};
 
 
-public:    //-------------------------------------------------------------------------------------------------------------
-	uint8_t rssi;															// signal strength
+public:  //----------------------------------------------------------------------------------------------------------------
+	CC1101() {}																// constructor
+
+private:  //---------------------------------------------------------------------------------------------------------------
+	void    init();															// initialize CC1101
+	void    snd_data(uint8_t *buf, uint8_t burst);							// send data packet via RF
+	void    rcv_data(uint8_t *buf);											// read data packet from RX FIFO
+	uint8_t has_data(void);													// boolean value if data are received
+
+	void    set_idle(void);													// put CC1101 into power-down state
+	uint8_t detect_burst(void);												// detect burst signal, sleep while no signal, otherwise stay awake
+
+private:  //---------------------------------------------------------------------------------------------------------------
 	uint8_t pwr_down;														// module sleeping (power down)
 
-
-public:    //-------------------------------------------------------------------------------------------------------------
-	CC() {}																	// constructor
-
-	void    init();															// initialize CC1101
-	void    sndData(uint8_t *buf, uint8_t burst);							// send data packet via RF
-	void    rcvData(uint8_t *buf);											// read data packet from RX FIFO
-
-	void    setIdle(void);													// put CC1101 into power-down state
-	uint8_t detectBurst(void);												// detect burst signal, sleep while no signal, otherwise stay awake
-
-private:  //--------------------------------------------------------------------------------------------------------------
-		
 	inline void    setActive(void);											// get the cc1101 back to active state
 	
 	inline void    strobe(uint8_t cmd);										// send command strobe to the CC1101 IC via SPI
 	inline uint8_t readReg(uint8_t regAddr, uint8_t regType);				// read CC1101 register via SPI
 	inline void    writeReg(uint8_t regAddr, uint8_t val);					// write single register into the CC1101 IC via SPI
-
-	inline void    decode(uint8_t *buf);									// decodes the message
-	inline void    encode(uint8_t *buf);									// encodes the message
-
 };
 
 

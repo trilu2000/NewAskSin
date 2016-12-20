@@ -14,6 +14,7 @@
 
 #include "AS_type_defs.h"
 #include "AS_aes.h"
+#include "AS_communication.h"
 
 #include "macros.h"
 //#include "defines.h"
@@ -21,7 +22,7 @@
 #include "wait_timer.h"
 
 #include "cmMaster.h"
-#include "CC1101.h"
+//#include "CC1101.h"
 #include "ConfButton.h"
 #include "StatusLed.h"
 #include "Power.h"
@@ -34,7 +35,9 @@
 extern s_rcv_msg rcv_msg;
 extern s_snd_msg snd_msg;
 
-
+extern AES *aes;
+extern COM *com;
+extern CBN *cbn;
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.
@@ -54,7 +57,6 @@ extern s_snd_msg snd_msg;
 class AS {
 
   public:		//---------------------------------------------------------------------------------------------------------
-	CC cc;
 	//CB btn;
 	//PW pom;
 

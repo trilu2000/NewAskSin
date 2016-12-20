@@ -10,15 +10,18 @@
 #ifndef _cmMaster_H
 #define _cmMaster_H
 
-#include "CC1101.h"
 #include "HAL.h"
 #include "AS_type_defs.h"
 
+
 const uint8_t list_max = 5;
+
+
 
 namespace INFO {
 	enum E : uint8_t { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS, SND_ACTUATOR_STATUS_AGAIN };
 };
+
 
 class cmMaster {
 public://------------------------------------------------------------------------------------------------------------------

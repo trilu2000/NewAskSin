@@ -6,33 +6,45 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #ifndef _HAL_H
-	#define _HAL_H
+#define _HAL_H
 
-	#if defined(ARDUINO) && ARDUINO >= 100
-		#include "Arduino.h"
-	#else
-		#include "WProgram.h"
-	#endif
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
 
-	#include <avr/sleep.h>
-	#include <avr/power.h>
-	#include <avr/wdt.h>
-	#include <util/delay.h>
-	#include <util/atomic.h>
-	#include <avr/eeprom.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
+#include <avr/wdt.h>
+#include <util/delay.h>
+#include <util/atomic.h>
+#include <avr/eeprom.h>
 	
-	#include "macros.h"
-	//#include "Print.h"
+#include "macros.h"
+//#include "Print.h"
 	
-	//- MCU dependent HAL definitions -----------------------------------------------------------------------------------------
-	#if defined(__AVR_ATmega328P__)
-		#include "HAL_atmega328P.h"
-	#elif defined(__AVR_ATmega32U4__)
-		#include "HAL_atmega32U4.h"
-	#else
-		#error "No HAL definition for current MCU available!"
-	#endif
-	//- -----------------------------------------------------------------------------------------------------------------------
+//- MCU dependent HAL definitions -----------------------------------------------------------------------------------------
+#if defined(__AVR_ATmega328P__)
+	#include "HAL_atmega328P.h"
+#elif defined(__AVR_ATmega32U4__)
+	#include "HAL_atmega32U4.h"
+#else
+	#error "No HAL definition for current MCU available!"
+#endif
+//- -----------------------------------------------------------------------------------------------------------------------
+
+//- eeprom functions ------------------------------------------------------------------------------------------------------
+void initEEProm(void);
+void getEEPromBlock(uint16_t addr, uint8_t len, void *ptr);
+void setEEPromBlock(uint16_t addr, uint8_t len, void *ptr);
+void clearEEPromBlock(uint16_t addr, uint16_t len);
+//- -----------------------------------------------------------------------------------------------------------------------
+
+//- randum number functions -----------------------------------------------------------------------------------------------
+void get_random(uint8_t *buf);
+//- -----------------------------------------------------------------------------------------------------------------------
+
 
 
 	static uint16_t wdtSleep_TIME;
@@ -51,10 +63,6 @@
 
 	#define SET_TCCRA()	    (REG_TCCRA = _BV(BIT_WGM))
 	#define SET_TCCRB()	    (REG_TCCRB = CLOCKSEL)
-	//- -----------------------------------------------------------------------------------------------------------------------
-
-	//- aes function ----------------------------------------------------------------------------------------------------------
-	//extern s_aes_key aes_key;
 
 	//- timer functions -------------------------------------------------------------------------------------------------------
 	#define HAS_OWN_MILLIS_TIMER
@@ -65,15 +73,6 @@
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 
-	//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
-	// all functions can be found in HAL_extern.h file, this are only the forward declarations to overcome the problem
-	// of handing over #defines from user folder to library folder in Arduino. No pin change interrupt neccasary any more.
-	extern void    ccInitHw(void);																// init all hardware pins related to the cc1101 module
-	extern uint8_t ccSendByte(uint8_t data);													// SPI send byte function
-	extern uint8_t ccGetGDO0(void);																// detects falling edge while received data
-	extern void    ccSelect(void);																// chip select and wait till ready
-	extern void    ccDeselect(void);															// chip deselect
-	//- -----------------------------------------------------------------------------------------------------------------------
 
 
 	//- led related functions -------------------------------------------------------------------------------------------------
@@ -88,11 +87,6 @@
 	extern void    initLeds(void);																// initialize leds
 	extern void    ledRed(uint8_t stat);														// function in main sketch to drive leds
 	extern void    ledGrn(uint8_t stat);														// stat could be 0 for off, 1 for on, 2 for toggle
-	//- -----------------------------------------------------------------------------------------------------------------------
-
-	//- config key related functions ------------------------------------------------------------------------------------------
-	extern void    initConfKey(void);															// init the config key, function in user sketch
-	extern uint8_t checkConfKey(void);															// checks the conf key if there had something happened
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 	//- needed for 32u4 to prevent sleep, while USB didn't work in sleep ------------------------------------------------------
@@ -126,12 +120,6 @@
 
 
 
-	//- eeprom functions ------------------------------------------------------------------------------------------------------
-	void    initEEProm(void);
-	void    getEEPromBlock(uint16_t addr,uint8_t len,void *ptr);
-	void    setEEPromBlock(uint16_t addr,uint8_t len,void *ptr);
-	void    clearEEPromBlock(uint16_t addr, uint16_t len);
-	//- -----------------------------------------------------------------------------------------------------------------------
 
 
 	//- power management functions --------------------------------------------------------------------------------------------
@@ -156,12 +144,6 @@
 	uint8_t  getBatteryVoltage(void);
 	//- -----------------------------------------------------------------------------------------------------------------------
 
-	//- randum number functions -----------------------------------------------------------------------------------------------
-	static uint16_t random_seed;
-	void init_random(void);
-	void get_random(uint8_t *buf);
-	inline void seed_random(void);
-	//- -----------------------------------------------------------------------------------------------------------------------
 
 
 #endif 

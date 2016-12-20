@@ -6,142 +6,122 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-// #define CB_DBG
+#include "00_debug-flag.h"
 #include "ConfButton.h"
 #include "AS.h"
 
 
-CB btn;																						// declare config button, defined in ConfButton.h
-waitTimer btnTmr;																			// button timer functionality
-
 
 // public:		//---------------------------------------------------------------------------------------------------------
-void CB::config(uint8_t mode) {
-	scn = mode;
+CBN::CBN(uint8_t mode = 0) {
+	button_check.configured = 0;															// poll the pin make only sense if it was configured, store result here
+	button_check.scenario = mode;
+}
+CBN::CBN(uint8_t mode, uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC) {
+
+	registerPCINT(PINBIT, DDREG, PORTREG, PINREG, PCINR, PCIBYTE, PCICREG, PCIMASK, PCIEREG, VEC);// prepare hardware and register interrupt
+
+	button_ref.port = VEC;																	// port information for checking interrupt
+	button_ref.pin = PINBIT;																// pin information for checking interrupt
+	button_ref.status = checkPCINT(button_ref.port, button_ref.pin, 0);						// get the latest information
+
+	button_check.configured = 1;															// poll the pin make only sense if it was configured, store result here
+	button_check.scenario = mode;
 }
 
-// private:		//---------------------------------------------------------------------------------------------------------
-CB::CB() {
-}
 
-
-void CB::poll(void) {
+void CBN::poll(void) {
+	/* we check the following options - keyShort, keyLong, keyLongRelease, keyDblLong, keyDblLongRelease */
 	#define detectLong      3000
-	#define repeatedLong    300
 	#define timeoutDouble   1000
 	
-	if (!scn) return;																		// mode not set, nothing to do
-	
-	// 0 for button is pressed, 1 for released, 2 for falling and 3 for rising edge
-	btn = checkConfKey();																	// check input pin
+	if (!button_check.scenario) return;														// mode not set, nothing to do
+	if (!button_check.configured) return;													// pin info not set, nothing to do
 
-	if (btn == 2) {																			// button was just pressed
-		//dbg << "armed \n";
-		btnTmr.set(detectLong);																// set timer to detect a long
-		pom.stayAwake(detectLong+500);													// stay awake to check button status
-		armFlg = 1;																			// set it armed
-		return;
+	// 0 for button is pressed, 1 for released, 2 for falling and 3 for rising edge
+	button_ref.status = checkPCINT(button_ref.port, button_ref.pin, 1);						// check if an interrupt had happened
+
+	/* button was just pressed, start for every option */
+	if (button_ref.status == 2) {
+		timer.set(detectLong);																// set timer to detect a long
+		pom.stayAwake(detectLong + 100);													// stay awake to check button status
+		button_check.armed = 1;																// set it armed
+	}
+	if (!button_check.armed) return;														// nothing to do any more
+
+	/* button was just released, keyShortSingle, keyLongRelease, keyDblLongRelease */
+	if (button_ref.status == 3) {
+		timer.set(timeoutDouble);															// set timer to clear the repeated flags
+		pom.stayAwake(timeoutDouble + 100);													// stay awake to check button status
+
+		if ((button_check.last_long) && (!button_check.check_dbl)) {
+		/* keyLongRelease, could be the start of a keyDblLong */
+			button_check.check_dbl = 1;
+			button_check.last_long = 0;
+			button_action(MSG_CBN::keyLongRelease);
+
+		} else if ((button_check.last_long) && (button_check.check_dbl)) {
+		/* keyLongDblRelease, end of story */
+			button_action(MSG_CBN::keyDblLongRelease);
+
+		} else {
+		/* keyShortSingle */
+			button_action(MSG_CBN::keyShort);
+		}
 	}
 
-	if (!armFlg) return;																	// nothing to do any more
-	
-	
-	// check button status
-	if (btn == 3) {									// button was just released, keyShortSingle, keyShortDouble, keyLongRelease
-		//dbg << "3 lstLng:" << lstLng << " dblLng:" << dblLng << " lngRpt:" << lngRpt << " lstSht:" << lstSht << '\n';
+	/* button is still pressed or released but timer is running we have to wait */
+	if (!timer.done()) return;
 
-		btnTmr.set(timeoutDouble);															// set timer to clear the repeated flags
-		pom.stayAwake(timeoutDouble+500);													// stay awake to check button status
-		
-		if       ((lstLng) && (lngRpt)) {			// keyLongRelease
-			outSignal(5);
+	/* button is still pressed, but timed out, seems to be a keyLong or keyDblLong */
+	if (button_ref.status == 0) {
+		timer.set(detectLong);																// set timer to detect a long
+		pom.stayAwake(detectLong + 100);													// stay awake to check button status
+		if (button_check.last_long) return;													// we had recognized the status already
+		button_check.last_long = 1;															// remember that it was a long
+		if (button_check.check_dbl) button_action(MSG_CBN::keyDblLong);						// we had already a long, this time it is a double long
+		else button_action(MSG_CBN::keyLong);												// first time long
+	}
 
-		} else if (lstLng) {						// no action, only remember for a double
-			dblLng = 1;																		// waiting for a key long double
-
-		} else if (lstSht) {						// keyShortDouble
-			lstSht = 0;	
-			outSignal(2);	
-
-		} else if ((!lstLng) && (!dblLng)) {		// keyShortSingle
-			lstSht = 1;																		// waiting for a key short double
-			outSignal(1);
-
-		}
-		lstLng = lngRpt = 0;																// some cleanup
-		
-	} else if ((btn == 0) && (btnTmr.done() )) {	// button is still pressed, but timed out, seems to be a long
-		//dbg << "0 lstLng:" << lstLng << " dblLng:" << dblLng << " lngRpt:" << lngRpt << " lstSht:" << lstSht << '\n';
-
-		pom.stayAwake(detectLong+500);													// stay awake to check button status
-
-		if (lstLng) {								// keyLongRepeat
-			btnTmr.set(repeatedLong);														// set timer to detect a repeated long
-			lngRpt = 1;
-			outSignal(4);																	// last key state was a long, now it is a repeated long
-
-		} else if (dblLng) {						// keyLongDouble
-			btnTmr.set(detectLong);															// set timer to detect next long
-			outSignal(6);																	// double flag is set, means was the second time for a long													
-
-		} else {									// keyLongSingle
-			btnTmr.set(detectLong);															// set timer to detect a repeated long
-			lstLng = 1;																		// remember last was long
-			outSignal(3);																	// first time detect a long
-
-		}
-		
-		
-	} else if ((btn == 1) && (btnTmr.done() )) {	// button is not pressed for a longer time, check if the double flags timed out
-		//if (armFlg) dbg << "r\n";
-		armFlg = lstSht = lstLng = lngRpt = dblLng = 0;
-
+	/* button is not pressed for a longer time, clean up */
+	if (button_ref.status == 1) {
+		button_check.armed = 0;
+		button_check.last_long = 0;
+		button_check.check_dbl = 0;
 	}
 }
 
-void CB::outSignal(uint8_t mode) {
-	//RG::s_modTable *pModTbl = &modTbl[1];													// pointer to the respective line in the module table
+void CBN::button_action(MSG_CBN::E mode) {
+	//led.blinkRed();																		// show via led that we have some action in place
 
-	pom.stayAwake(500);																	// stay awake to fulfill the action
-	led.blinkRed();																		// show via led that we have some action in place
-	
-	#ifdef CB_DBG																			// only if ee debug is set
-		if (mode == 1) dbg << F("keyShortSingle\n");										// ...and some information
-		if (mode == 2) dbg << F("keyShortDouble\n");
-		if (mode == 3) dbg << F("keyLongSingle\n");
-		if (mode == 4) dbg << F("keyLongRepeat\n");
-		if (mode == 5) dbg << F("keyLongRelease\n");
-		if (mode == 6) dbg << F("keyLongDouble\n");
-		if (mode == 7) dbg << F("keyLongTimeout\n");
-	#endif
 
-	if        (mode == 1) {					// keyShortSingle
-		if (scn == 1) send_DEVICE_INFO(MSG_REASON::INITIAL);													// send pairing string
-		else if (scn == 2) ptr_CM[1]->set_toggle();										// send toggle to user module registered on channel 1
-		//else if (scn == 2) if (pModTbl->isActive) pModTbl->mDlgt(TOOGLE);					// send toggle to user module registered on channel 1
-		
-	} else if (mode == 2) {					// keyShortDouble
-		
-	} else if (mode == 3) {					// keyLongSingle
-		if      (scn == 1) led.set(key_long);
-		else if (scn == 2) send_DEVICE_INFO(MSG_REASON::INITIAL);											// send pairing string
+	DBG(CB, F("CBN: "));																	// ...and some information
+	if (mode == MSG_CBN::keyShort) {
+		DBG(CB, F("keyShort"));					
+		if (button_check.scenario == 1) send_DEVICE_INFO(MSG_REASON::INITIAL);				// send pairing string
+		else if (button_check.scenario == 2) ptr_CM[1]->set_toggle();						// send toggle to user module registered on channel 1
 
-	} else if (mode == 4) {					// keyLongRepeat
-		led.set(nothing);
+	} else if (mode == MSG_CBN::keyLong) {
+		DBG(CB, F("keyLong"));
+		led.set(key_long);
 
-	} else if (mode == 5) {					// keyLongRelease
+	} else if (mode == MSG_CBN::keyLongRelease) {
+		DBG(CB, F("keyLongRelease"));
+		if (button_check.scenario == 2) send_DEVICE_INFO(MSG_REASON::INITIAL);				// send pairing string
 
-	} else if (mode == 6) {					// keyLongDouble
-		led.set(nothing);
+	} else if (mode == MSG_CBN::keyDblLong) {
+		DBG(CB, F("keyDblLong"));
+		led.set(key_long);
 
-		uint8_t *localResDis = ptr_CM[0]->list[0]->ptr_to_val(0x18);								// get register address
-		//dbg << "local reset disable = " << localResDis[0] << '\n';
-		if (localResDis) dbg << "addr\n";
-		else dbg << "NULL " << *localResDis << '\n';
-		//if (!localResDis[0]) { 																	// if local reset is not disabled, reset
-		//	clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
-		//	init();																					// call the init function to get the device in factory status
+	} else if (mode == MSG_CBN::keyDblLongRelease) {
+		DBG(CB, F("keyDblLongRelease"));
 
-		//}
+		uint8_t *localResDis = ptr_CM[0]->lstC.ptr_to_val(0x18);							// get register address
+		if ((localResDis) && (*localResDis)) return;										// if we got a valid pointer and local reset disable flag is set, we cannot reset the device
+
+		DBG(CB, F(", set factory defaults"));
+		dev_operate.reset = 2;																// initiate the factory defaults
+
 	}
+	DBG(CB, '\n');
 }

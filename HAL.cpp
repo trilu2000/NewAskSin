@@ -9,7 +9,47 @@
 #include "HAL.h"
 #include "00_debug-flag.h"
 
-//- some macros for debugging ---------------------------------------------------------------------------------------------
+
+//- eeprom functions ------------------------------------------------------------------------------------------------------
+void initEEProm(void) {
+	// place the code to init a i2c eeprom
+}
+void getEEPromBlock(uint16_t addr, uint8_t len, void *ptr) {
+	eeprom_read_block((void*)ptr, (const void*)addr, len);									// AVR GCC standard function
+//dbg << "getEEPromBlock:" << addr << ", len:" << len << ", data:" << _HEX((uint8_t*)ptr, len) << '\n';
+}
+void setEEPromBlock(uint16_t addr, uint8_t len, void *ptr) {
+	eeprom_write_block((const void*)ptr, (void*)addr, len);									// AVR GCC standard function
+//dbg << "setEEPromBlock:" << addr << ", len:" << len << ", data:" << _HEX((uint8_t*)ptr, len) << '\n';
+}
+void clearEEPromBlock(uint16_t addr, uint16_t len) {
+	uint8_t tB = 0;
+	if (!len) return;
+	for (uint16_t l = 0; l < len; l++) {													// step through the bytes of eeprom
+		setEEPromBlock(addr + l, 1, (void*)&tB);
+	}
+	//dbg << "clearEEPromBlock:" << addr << ", len:" << len << '\n';
+}
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+//- randum number functions -----------------------------------------------------------------------------------------------
+void get_random(uint8_t *buf) {
+	/* not random, but most likely, as real random takes 200 byte more */
+
+	uint32_t time = getMillis();												// get current time 
+	memcpy(buf, (uint8_t*)&time, 4);											// copy the time into the array
+	memcpy(buf + 2, (uint8_t*)&time, 4);
+	for (uint8_t i = 0; i < 6; i++) {											// do some xors and byte shift
+		if (i) buf[i] ^= buf[i - 1];
+		else buf[0] ^= 0x35;
+		if (buf[i] & 1) buf[i] = (buf[i] >> 1) ^ 0xA0;
+		else buf[i] = (buf[i] >> 1);
+	}
+}
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
 
 // todo: customize baudrate
 // remove mcu dependencies
@@ -104,27 +144,6 @@ ISR(ISR_VECT) {
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-//- eeprom functions ------------------------------------------------------------------------------------------------------
-void    initEEProm(void) {
-	// place the code to init a i2c eeprom
-}
-void    getEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
-	eeprom_read_block( (void*)ptr, (const void*)addr, len );								// AVR GCC standard function
-	//dbg << "getEEPromBlock:" << addr << ", len:" << len << ", data:" << _HEX((uint8_t*)ptr, len) << '\n';
-}
-void    setEEPromBlock(uint16_t addr,uint8_t len,void *ptr) {
-	eeprom_write_block( (const void*)ptr, (void*)addr, len) ;								// AVR GCC standard function
-	//dbg << "setEEPromBlock:" << addr << ", len:" << len << ", data:" << _HEX((uint8_t*)ptr, len) << '\n';
-}
-void    clearEEPromBlock(uint16_t addr, uint16_t len) {
-	uint8_t tB=0;
-	if (!len) return;
-	for (uint16_t l = 0; l < len; l++) {													// step through the bytes of eeprom
-		setEEPromBlock(addr+l,1,(void*)&tB);
-	}
-	//dbg << "clearEEPromBlock:" << addr << ", len:" << len << '\n';
-}
-//- -----------------------------------------------------------------------------------------------------------------------
 
 
 //- battery measurement functions -----------------------------------------------------------------------------------------
@@ -169,22 +188,6 @@ uint16_t getAdcValue(uint8_t adcmux) {
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//- randum number functions -----------------------------------------------------------------------------------------------
-void init_random(void) {
-	uint16_t *p = (uint16_t*)(RAMEND + 1);
-	extern uint16_t __heap_start;
-	while (p >= &__heap_start + 1) random_seed ^= *(--p);
-}
-void seed_random(void) {
-	srand(random_seed ^ uint16_t(getMillis() & 0xFFFF));
-}
-void get_random(uint8_t *buf) {
-	seed_random();
-	for (uint8_t i = 0; i < 6; i++) {														// random bytes to the payload
-		buf[i] = (uint8_t)rand();
-	}
-}
-//- -----------------------------------------------------------------------------------------------------------------------
 
 
 //- -----------------------------------------------------------------------------------------------------------------------

@@ -15,61 +15,6 @@ extern void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag);
 
 
 
-//- cc1100 hardware functions ---------------------------------------------------------------------------------------------
-/**
-* @brief Initialisze the hardware setup of the cc1101 communication modul. No interrupt is used any more, while 
-* detecting a falling edge by constantly checking the GDO0 pin for a falling edge
-*/
-void    ccInitHw(void) {
-	SET_PIN_OUTPUT(CC_CS);																		// set chip select as output
-	SET_PIN_OUTPUT(CC_MOSI);																	// set MOSI as output
-	SET_PIN_INPUT(CC_MISO);																		// set MISO as input
-	SET_PIN_OUTPUT(CC_SCLK);																	// set SCK as output
-	SET_PIN_INPUT(CC_GDO0);																		// set GDO0 as input
-
-	SPCR = _BV(SPE) | _BV(MSTR);																// SPI enable, master, speed = CLK/4
-}
-
-/**
-* @brief With this function we are polling the GDO0 pin to detect a falling edge, while it signals that
-* there are some data in the receive buffer
-*/
-uint8_t ccGetGDO0(void) {
-	static uint8_t prev;
-	uint8_t curr = GET_PIN_STATUS(CC_GDO0);														// get the current pin status
-	if (prev == curr) return 0;																	// if nothing changed since last request then return a 0
-
-	prev = curr;																				// if we are here, a change was detected, so remember for next time
-	if (curr) return 0;																			// change was detected, but not a falling edge
-	return 1;																					// if we are here, it was a falling edge, so return a 1																	
-}
-
-/**
-* @brief Simple SPI send function. Byte to transmit is written in the send buffer and processed.
-* Wait for transfer finished is done by looping through the SPI register and checking the ready bit
-* @param data	Byte to transfer
-* @return		If an answer is given, it will be returned
-*/
-uint8_t ccSendByte(uint8_t data) {
-	SPDR = data;																				// send byte
-	while (!(SPSR & _BV(SPIF))); 																// wait until transfer finished
-	return SPDR;																				// return the data register
-}
-
-/**
-* @brief Chip select and deselect for the cc1101 module. Select is combined with a wait function
-* while we have to wait after a select till the modul is ready for communication
-*/
-void    ccSelect(void) {
-	SET_PIN_LOW(CC_CS);
-	while (GET_PIN_STATUS(CC_MISO));
-}
-void    ccDeselect(void) {
-	SET_PIN_HIGH(CC_CS);
-}
-//- -----------------------------------------------------------------------------------------------------------------------
-
-
 //- status led related functions -------------------------------------------------------------------------------------------------
 /**
 * @brief Definition of the blink pattern for the LED module. Reason for defining it here is the 
@@ -150,23 +95,23 @@ void    ledGrn(uint8_t stat) {
 * @brief Initialize the config key pin and register the port for a pin change interrupt.
 * Interuptflag will be polled while debouncing is needed.
 */
-void    initConfKey(void) {
-#ifdef CONFIG_KEY																				// check if the config key is defined
-	registerPCINT(CONFIG_KEY);
-#endif																				
-}
+//void    initConfKey(void) {
+//#ifdef CONFIG_KEY																				// check if the config key is defined
+//	registerPCINT(CONFIG_KEY);
+//#endif																				
+//}
 
 /**
 * Function is called from conbutton class to check the config key status
 * No parameter needed while config key is defined in hardware.h
 */
-uint8_t checkConfKey(void) {
-#ifdef CONFIG_KEY																				// check if the config key is defined
-	return checkPCINT(CONFIG_KEY, 1);															// checks the conf key if there had something happened, debounce set to 1
-#else
-	return 0;
-#endif
-}															
+//uint8_t checkConfKey(void) {
+//#ifdef CONFIG_KEY																				// check if the config key is defined
+//	return checkPCINT(CONFIG_KEY, 1);															// checks the conf key if there had something happened, debounce set to 1
+//#else
+//	return 0;
+//#endif
+//}															
 //- -----------------------------------------------------------------------------------------------------------------------
 
 

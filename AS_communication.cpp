@@ -2,15 +2,58 @@
 *  AskSin driver implementation
 *  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 * - -----------------------------------------------------------------------------------------------------------------------
-* - AskSin cc1101 functions -----------------------------------------------------------------------------------------------
+* - AskSin communication functions ----------------------------------------------------------------------------------------
 * - with a lot of copy and paste from culfw firmware
 * - standby fix and some improvement from LineF@github.com
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
 #include "00_debug-flag.h"
-#include "CC1101.h"
+#include "AS_communication.h"
 #include "HAL.h"
+
+
+/**
+* @brief Decode the incoming messages
+*        Note: this is no encryption!
+*
+* @param buf   pointer to buffer
+*/
+void    COM::decode(uint8_t *buf) {
+	uint8_t prev = buf[1];
+	buf[1] = (~buf[1]) ^ 0x89;
+
+	uint8_t i, t;
+	for (i = 2; i < buf[0]; i++) {
+		t = buf[i];
+		buf[i] = (prev + 0xDC) ^ buf[i];
+		prev = t;
+	}
+
+	buf[i] ^= buf[2];
+}
+
+/**
+* @brief Encode the outgoing messages
+*        Note: this is no encryption!
+*
+* @param buf   pointer to buffer
+*/
+void COM::encode(uint8_t *buf) {
+	buf[1] = (~buf[1]) ^ 0x89;
+	uint8_t buf2 = buf[2];
+	uint8_t prev = buf[1];
+
+	uint8_t i;
+	for (i = 2; i < buf[0]; i++) {
+		prev = (prev + 0xDC) ^ buf[i];
+		buf[i] = prev;
+	}
+
+	buf[i] ^= buf2;
+}
+
+
 
 
 //public:   //------------------------------------------------------------------------------------------------------------
@@ -29,18 +72,17 @@
 * ccSendByte() - forwarder to the SPI send and receive function
 *
 */
-void    CC::init(void) {	
-	//DBG_START(CC, F("CC.\n"));
+void    CC1101::init(void) {	
 
 	/* init the hardware to get access to the RF modul,
 	*  some deselect and selects to init the TRX868modul */
-	ccInitHw();																			
+	cc1101_init();									// init the hardware - defined in HAL_COM_extern.h
 
-	ccDeselect();																		
+	spi_deselect();																		
 	_delay_us(5);
-	ccSelect();
+	spi_select();
 	_delay_us(10);
-	ccDeselect();
+	spi_deselect();
 	_delay_us(41);
 
 	/* send a reset and wait some time for restart of the the device */
@@ -140,7 +182,7 @@ init_failure:																			// catch problems
 * Length identification is done by byte[0] which holds the needed info.
 *
 */
-void    CC::sndData(uint8_t *buf, uint8_t burst) {
+void    CC1101::snd_data(uint8_t *buf, uint8_t burst) {
 	/* Going from RX to TX does not work if there was a reception less than 0.5
 	* sec ago. Due to CCA? Using IDLE helps to shorten this period(?)             */
 	uint8_t x, prev, buf2;																// size some variables
@@ -163,7 +205,7 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {
 		_delay_ms(360);																	// according to ELV, devices get activated every 300ms, so send burst for 360ms
 		DBG(CC, F("BURST"), _TIME, ' ');												// some debug
 	}
-	//DBG(CC, F("O:"), _HEX(buf, buf[0]+1), ' ');											// some debug
+	//DBG(CC, F("O:"), _HEX(buf, buf[0]+1), ' ');										// some debug
 
 
 	/* former writeburst function, now done with ccSendByte while writing byte
@@ -171,18 +213,18 @@ void    CC::sndData(uint8_t *buf, uint8_t burst) {
 	prev = (~buf[1]) ^ 0x89;															// encode byte 1 of the given string
 	buf2 = buf[2];																		// remember byte 2, we need it on the end of string
 
-	ccSelect();																			// select CC1101
-	ccSendByte(CC1101_TXFIFO | WRITE_BURST);											// send register address
-	ccSendByte(buf[0]); DBG(CC, F("E:"), _HEXB(buf[0]), ' ');							// send byte 0, holds the length information
-	ccSendByte(prev);	DBG(CC, _HEXB(prev), ' ');										// send byte 1
+	spi_select();																		// select CC1101
+	spi_send_byte(CC1101_TXFIFO | WRITE_BURST);											// send register address
+	spi_send_byte(buf[0]); DBG(CC, F("E:"), _HEXB(buf[0]), ' ');						// send byte 0, holds the length information
+	spi_send_byte(prev);	DBG(CC, _HEXB(prev), ' ');									// send byte 1
 
 	for (uint8_t i = 2; i < buf[0]; i++) {												// process the string starting with byte 2
 		prev = (prev + 0xDC) ^ buf[i];													// encode current (i) byte
-		ccSendByte(prev); DBG(CC, _HEXB(prev), ' ');									// write it into the module buffer
+		spi_send_byte(prev); DBG(CC, _HEXB(prev), ' ');									// write it into the module buffer
 	}
 	prev = buf[buf[0]] ^ buf2;
-	ccSendByte(prev);	DBG(CC, _HEXB(prev), ' ');										// process the last byte
-	ccDeselect();																		// deselect CC1101
+	spi_send_byte(prev);	DBG(CC, _HEXB(prev), ' ');									// process the last byte
+	spi_deselect();																		// deselect CC1101
 	DBG(CC, F("#:"), buf[0]+1, _TIME, ' ');												// bytes are written in the send buffer, some debug
 
 	/* now wait till TX queue is finished and module enters RX mode automatically
@@ -209,7 +251,7 @@ snddata_failure:
 * which can be checked within the cc.rssi byte variable.
 * Received strings are automatically checked for their crc consistence.
 */
-void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIFO
+void    CC1101::rcv_data(uint8_t *buf) {														// read data packet from RX FIFO
 	u_rxStatus rxByte;																	// size the rx status byte
 	u_rvStatus rvByte;
 
@@ -223,16 +265,16 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 
 		if (buf[0] <= CC1101_DATA_LEN) {												// only if it fits in the buffer
 	
-			ccSelect();																	// select the module
-			ccSendByte(READ_BURST | CC1101_RXFIFO);										// switch into burst mode
+			spi_select();																// select the module
+			spi_send_byte(READ_BURST | CC1101_RXFIFO);									// switch into burst mode
 			for (uint8_t i = 1; i <= buf[0]; i++) {										// loop through the bytes
-				buf[i] = ccSendByte(0);													// get byte by byte
+				buf[i] = spi_send_byte(0);												// get byte by byte
 			}
 
-			rssi = ccSendByte(0);														// get the rssi status
-			rvByte.VAL = ccSendByte(0);													// lqi not used
+			rssi = spi_send_byte(0);													// get the rssi status
+			rvByte.VAL = spi_send_byte(0);												// lqi not used
 			if (rvByte.FLAGS.CRC) DBG(CC, "CRC "); 
-			ccDeselect();																// and deselect
+			spi_deselect();																// and deselect
 
 			DBG(CC, buf[0], ' ');														// visualize the amount of received bytes
 			decode(buf);																// decode the buffer
@@ -253,6 +295,14 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 	DBG(CC, F(">> "), _HEX(buf, buf[0] + 1), _TIME, '\n' );
 }
 
+/*
+* @brief Signalize if data are received by the cc1101 modul
+* it is a simple forward to the defined external function in HAL_COM_extern.h
+*/
+uint8_t CC1101::has_data(void) {
+	return cc1101_has_data();
+}
+
 /**
 * @brief Function to power down the cc1101 module in a sleep mode.
 * Activation is done by calling detectBurst() or sndData(). If that
@@ -260,7 +310,7 @@ void    CC::rcvData(uint8_t *buf) {														// read data packet from RX FIF
 * power down the cc1101 chip.
 * 
 */
-void    CC::setIdle() {																	// put CC1101 into power-down state
+void    CC1101::set_idle() {															// put CC1101 into power-down state
 	if (pwr_down)																		// do nothing if already powered down
 		return;
 	strobe(CC1101_SIDLE);																// coming from RX state, we need to enter the IDLE state first
@@ -280,7 +330,7 @@ void    CC::setIdle() {																	// put CC1101 into power-down state
 * If so, the device stays awake to receive a string and to double check the address.
 *
 */
-uint8_t CC::detectBurst(void) {
+uint8_t CC1101::detect_burst(void) {
 	// 10 7/10 5 in front of the received string; 33 after received string
 	// 10 - 00001010 - sync word found
 	// 7  - 00000111 - GDO0 = 1, GDO2 = 1
@@ -327,11 +377,11 @@ uint8_t CC::detectBurst(void) {
 * hardware and ensure it is back to work again.
 *
 */
-void   CC::setActive() {																// put CC1101 into active state
+void   CC1101::setActive() {															// put CC1101 into active state
 	if (!pwr_down)																		// do nothing if already active
 		return;
-	ccSelect();																			// wake up the communication module
-	ccDeselect();
+	spi_select();																		// wake up the communication module
+	spi_deselect();
 
 	for (uint8_t i = 0; i < 200; i++) {													// instead of delay, check the really needed time to wakeup
 		if (readReg(CC1101_MARCSTATE, CC1101_STATUS) != 0xff) break;
@@ -345,10 +395,10 @@ void   CC::setActive() {																// put CC1101 into active state
 * @brief Simple function to write a byte per strobe over the SPI bus
 *
 */
-void   CC::strobe(uint8_t cmd) {														// send command strobe to the CC1101 IC via SPI
-	ccSelect();																			// select CC1101
-	ccSendByte(cmd);																	// send strobe command
-	ccDeselect();																		// deselect CC1101
+void   CC1101::strobe(uint8_t cmd) {													// send command strobe to the CC1101 IC via SPI
+	spi_select();																		// select CC1101
+	spi_send_byte(cmd);																	// send strobe command
+	spi_deselect();																		// deselect CC1101
 }
 
 /**
@@ -359,11 +409,11 @@ void   CC::strobe(uint8_t cmd) {														// send command strobe to the CC11
 *
 * @returns the byte which were read
 */
-uint8_t CC::readReg(uint8_t regAddr, uint8_t regType) {									// read CC1101 register via SPI
-	ccSelect();																			// select CC1101
-	ccSendByte(regAddr | regType);														// send register address
-	uint8_t val = ccSendByte(0x00);														// read result
-	ccDeselect();																		// deselect CC1101
+uint8_t CC1101::readReg(uint8_t regAddr, uint8_t regType) {								// read CC1101 register via SPI
+	spi_select();																		// select CC1101
+	spi_send_byte(regAddr | regType);													// send register address
+	uint8_t val = spi_send_byte(0x00);													// read result
+	spi_deselect();																		// deselect CC1101
 	return val;
 }
 
@@ -374,50 +424,10 @@ uint8_t CC::readReg(uint8_t regAddr, uint8_t regType) {									// read CC1101 r
 * @val Byte value with the content which should be written
 *
 */
-void    CC::writeReg(uint8_t regAddr, uint8_t val) {									// write single register into the CC1101 IC via SPI
-	ccSelect();																			// select CC1101
-	ccSendByte(regAddr);																// send register address
-	ccSendByte(val);																	// send value
-	ccDeselect();																		// deselect CC1101
-}
-
-/**
-* @brief Decode the incoming messages
-*        Note: this is no encryption!
-*
-* @param buf   pointer to buffer
-*/
-void    CC::decode(uint8_t *buf) {
-	uint8_t prev = buf[1];
-	buf[1] = (~buf[1]) ^ 0x89;
-
-	uint8_t i, t;
-	for (i = 2; i < buf[0]; i++) {
-		t = buf[i];
-		buf[i] = (prev + 0xDC) ^ buf[i];
-		prev = t;
-	}
-
-	buf[i] ^= buf[2];
-}
-
-/**
-* @brief Encode the outgoing messages
-*        Note: this is no encryption!
-*
-* @param buf   pointer to buffer
-*/
-void CC::encode(uint8_t *buf) {
-	buf[1] = (~buf[1]) ^ 0x89;
-	uint8_t buf2 = buf[2];
-	uint8_t prev = buf[1];
-
-	uint8_t i;
-	for (i = 2; i < buf[0]; i++) {
-		prev = (prev + 0xDC) ^ buf[i];
-		buf[i] = prev;
-	}
-
-	buf[i] ^= buf2;
+void    CC1101::writeReg(uint8_t regAddr, uint8_t val) {								// write single register into the CC1101 IC via SPI
+	spi_select();																		// select CC1101
+	spi_send_byte(regAddr);																// send register address
+	spi_send_byte(val);																	// send value
+	spi_deselect();																		// deselect CC1101
 }
 
