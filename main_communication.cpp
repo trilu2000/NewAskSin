@@ -9,7 +9,7 @@
 */
 
 #include "00_debug-flag.h"
-#include "AS_communication.h"
+#include "main_communication.h"
 #include "HAL.h"
 
 

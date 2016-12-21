@@ -97,7 +97,7 @@ void PW::poll(void) {
 
 	// if we are here, we could go sleep. set cc module idle, switch off led's and sleep
 	com->set_idle();																		// set communication module to idle
-	led.set(nothing);																	// switch off all led's
+	led->set(nothing);																	// switch off all led's
 
 	// start the respective watchdog timers
 	cli();

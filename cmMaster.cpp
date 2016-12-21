@@ -524,7 +524,7 @@ void send_DEVICE_INFO(MSG_REASON::E reason) {
 
 	//pair_mode.active = 1;																	// set pairing flag
 	//pair_mode.timer.set(20000);															// set pairing time
-	led.set(pairing);																		// and visualize the status
+	led->set(pairing);																		// and visualize the status
 }
 /**
 * @brief Check if ACK required and send ACK or NACK
@@ -723,7 +723,6 @@ void send_INFO_PARAMETER_CHANGE() {
 void send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag) {
 	s_m1006xx *msg = &snd_msg.m1006xx;														// struct is easier to fill
 	s_mBody *rcvBody = &rcv_msg.mBody;														// short hand to received string
-	uint8_t bidi = 0;																		// per default we don't need an ACK
 
 	msg->MSG_CNL = cnl;																		// copy in the channel
 	msg->MSG_STAT = stat;																	// the status of the channel

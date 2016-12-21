@@ -48,7 +48,7 @@ void AS::init(void) {
 	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.	*/
 	uint16_t flashCRC = cm_calc_crc();														// calculate the crc of all channel module list0/1, list3/4
 	getEEPromBlock(0, sizeof(dev_ident), &dev_ident);										// get magic byte and all other information from eeprom
-	dbg << F("AS:init crc- flash:") << flashCRC << F(", eeprom: ") << dev_ident.MAGIC << '\n';	// some debug
+	//dbg << F("AS:init crc- flash:") << flashCRC << F(", eeprom: ") << dev_ident.MAGIC << '\n';	// some debug
 	DBG(AS, F("AS:init crc- flash:"), flashCRC, F(", eeprom: "), dev_ident.MAGIC, '\n');	// some debug
 
 	if (flashCRC != dev_ident.MAGIC) {	
@@ -84,8 +84,7 @@ void AS::init(void) {
 	initLeds();																				// initialize the leds
 	initMillis();																			// start the millis counter
 	
-	com->init();																				// init the rf module
-	//init_random();																			// generate the random seed
+	com->init();																			// init the rf module
 
 	/* load list 0 and 1 defaults and inform the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
@@ -97,6 +96,7 @@ void AS::init(void) {
 
 	/* - add this function in register.h to setup default values every start */
 	everyTimeStart();
+	led->set(welcome);																		// show something as status
 }
 
 /**
@@ -139,13 +139,13 @@ void AS::poll(void) {
 	if (pair_mode.active) { 
 		if (pair_mode.timer.done()) {
 			pair_mode.active = 0;
-			isEmpty(dev_operate.MAID, 3)? led.set(pair_err) : led.set(pair_suc);
+			isEmpty(dev_operate.MAID, 3)? led->set(pair_err) : led->set(pair_suc);
 		}
 	}
 
 
 	cbn->poll();																				// poll the config button
-	led.poll();																				// poll the led's
+	led->poll();																				// poll the led's
 	bat.poll();																				// poll the battery check
 		
 	// check if we could go to standby
@@ -444,7 +444,7 @@ void AS::snd_poll(void) {
 	/* can only happen while an ack was received and AS:processMessage had send the retr_cnt to 0xff */
 	if (sm->retr_cnt == 0xff) {
 		sm->clear();																		// nothing to do any more
-		led.set(ack);																		// fire the status led
+		led->set(ack);																		// fire the status led
 		pom.stayAwake(100);																	// and stay awake for a short while
 		return;
 	}
@@ -526,7 +526,7 @@ void AS::snd_poll(void) {
 		sm->retr_cnt++;																		// remember that we had send the message
 
 		if (sm->mBody.FLAG.BIDI) sm->timer.set(sm->max_time);								// timeout is only needed while an ACK is requested
-		led.set(send);																		// fire the status led
+		led->set(send);																		// fire the status led
 		pom.stayAwake(100);																	// and stay awake for a short while
 
 		DBG(SN, F("<- "), _HEX(sm->buf, sm->buf[0] + 1), ' ', _TIME, '\n');					// some debug
@@ -539,7 +539,7 @@ void AS::snd_poll(void) {
 		if (!sm->mBody.FLAG.BIDI) return;													// everything fine, ACK was not required
 
 		sm->timeout = 1;																	// set the time out only while an ACK or answer was requested
-		led.set(noack);																		// fire the status led
+		led->set(noack);																	// fire the status led
 		pom.stayAwake(100);																	// and stay awake for a short while
 
 		DBG(SN, F("  timed out "), _TIME, '\n');											// some debug

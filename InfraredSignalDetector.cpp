@@ -51,7 +51,7 @@ uint8_t InfraRedSignalDetector::powerInputChanged(){
 		reportedHigh = 1;
 		return 1;
 	} else {
-		led.set(key_long);
+		led->set(key_long);
 		reportedHigh = currentHigh;
 	}
 	return 0;

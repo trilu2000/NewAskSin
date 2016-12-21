@@ -13,18 +13,16 @@
 #define _NAS_H
 
 #include "AS_type_defs.h"
-#include "AS_aes.h"
-#include "AS_communication.h"
+#include "main_aes.h"
+#include "main_communication.h"
+#include "main_conf_button.h"
+#include "main_status_led.h"
 
 #include "macros.h"
-//#include "defines.h"
 #include "version.h"
 #include "wait_timer.h"
 
 #include "cmMaster.h"
-//#include "CC1101.h"
-#include "ConfButton.h"
-#include "StatusLed.h"
 #include "Power.h"
 #include "Battery.h"
 
@@ -38,6 +36,7 @@ extern s_snd_msg snd_msg;
 extern AES *aes;
 extern COM *com;
 extern CBN *cbn;
+extern LED *led;
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.
@@ -56,11 +55,7 @@ extern CBN *cbn;
  */
 class AS {
 
-  public:		//---------------------------------------------------------------------------------------------------------
-	//CB btn;
-	//PW pom;
-
-  public:		//---------------------------------------------------------------------------------------------------------
+public:  //----------------------------------------------------------------------------------------------------------------
 	AS() {}																					// constructor
 
 	/*

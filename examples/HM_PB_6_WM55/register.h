@@ -24,6 +24,7 @@ AS hm;
 AES *aes = new HAS_AES;
 COM *com = new CC1101;
 CBN *cbn = new CBN(1, PIN_B0);
+LED *led = new LED(2);
 
 /*
 * cmSwitch requires this functions in the user sketch:
@@ -87,7 +88,6 @@ void everyTimeStart(void) {
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
 
 	// channel 0 section 
-	led.set(welcome);
 	pom.setMode(POWER_MODE_NO_SLEEP);
 	bat.set(30, 3600000);
 	// channel 1 section 

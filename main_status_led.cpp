@@ -5,21 +5,17 @@
 //- AskSin status led functions -------------------------------------------------------------------------------------------
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define LD_DBG
-#include "StatusLed.h"
+#include "00_debug-flag.h"
+#include "main_status_led.h"
 #include "wait_timer.h"
 
-LD led;																							// declare status led, defines in StatusLed.h
-waitTimer ledTmr;																				// config timer functionality
 
-// public:		//---------------------------------------------------------------------------------------------------------
 
-// private:		//---------------------------------------------------------------------------------------------------------
-LD::LD() {
-	#ifdef LD_DBG																				// only if ee debug is set
-	dbgStart();																					// serial setup
-	dbg << F("LD.\n");																			// ...and some information
-	#endif
+																								
+LED::LED(uint8_t number_leds) {
+	if (number_leds == 0) ptr_pat = NULL;
+	else if (number_leds == 1) ptr_pat = led1_pat;
+	else if (number_leds == 2) ptr_pat = led2_pat;
 }
 
 /**
@@ -27,7 +23,9 @@ LD::LD() {
 * this class. Blinkpattern defined in HAL.H and declaration is done in HAL_extern.h
 * @param   stat    pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, welcome, key_long, nothing
 */
-void    LD::set(ledStat stat) {
+void LED::set(ledStat stat) {
+	if (!ptr_pat) return;																		// seems we do not have connected any leds
+	
 	#ifdef LD_DBG
 	dbg << "stat: " << stat << '\n';
 	#endif
@@ -38,7 +36,7 @@ void    LD::set(ledStat stat) {
 	if (stat == nothing) {																		// nothing, switch inactive
 		active = 0;
 	} else {																					// otherwise copy pattern from progmem and set some counter
-		memcpy_P(&blPtr, &blPat[stat], 10);														// cpoy the pattern from progmem
+		memcpy_P(&blPtr, &ptr_pat[stat], 10);													// cpoy the pattern from progmem
 		lCnt = 0;																				// set start position
 		dCnt = 1;
 		active = 1;																				// make module active
@@ -51,7 +49,7 @@ void    LD::set(ledStat stat) {
 * @brief By calling this function there is only a short red blink on the LED. Independent from
 * pattern processing within the poll function.
 */
-void    LD::blinkRed(void) {
+void LED::blinkRed(void) {
 	ledRed(0);																					// switch led off
 	_delay_ms(20);																				// wait
 	ledRed(1);																					// switch led on
@@ -63,12 +61,14 @@ void    LD::blinkRed(void) {
 * @brief Poll function has to be called regulary to process blink patterns. Done by the AS main class
 * by default.
 */
-void	LD::poll(void) {
+void LED::poll(void) {
+	if (!ptr_pat) return;																		// seems we do not have connected any leds
+
 	if (!active) return;																		// still waiting to do something
-	if (!ledTmr.done()) return;																	// active but timer not done
+	if (!timer.done()) return;																	// active but timer not done
 	
 	// if we are here we have something to do, set the led, timer and counter
-	ledTmr.set(blPtr.pat[lCnt] * 10);															// set the timer for next check up
+	timer.set(blPtr.pat[lCnt] * 10);															// set the timer for next check up
 
 	if (blPtr.led0 && blPtr.pat[lCnt]) {
 		ledRed((lCnt % 2)^1);																	// set the led

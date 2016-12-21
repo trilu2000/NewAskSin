@@ -28,10 +28,11 @@
 
 #define SER_DBG					// Main sketch debug function and messages
 //#define AS_DBG					// AskSin class debug (AS.cpp)
-//#define CC_DBG					// Communication class (CC1101.cpp)
+//#define CC_DBG					// Communication class (AS_communication.cpp)
 #define SN_DBG					// Send function (AS.cpp)
 #define RV_DBG					// Receive function (AS.cpp)
-#define CB_DBG					// Config button class (AS_confbutton)
+//#define CB_DBG					// Config button class (AS_conf_button.cpp)
+#define LD_DBG					// Status led class (AS_status_led.cpp)
 
 //#define CM_DBG					// Channel Master module (cmMaster.cpp)
 //#define MN_DBG					// Maintenance channel module (cmMaintenance.cpp)
@@ -101,6 +102,13 @@
 	#define DBG_CB(...) Serial ,__VA_ARGS__
 #else
 	#define DBG_CB(...) 
+#endif
+
+/* status led class */
+#ifdef LD_DBG
+	#define DBG_LD(...) Serial ,__VA_ARGS__
+#else
+	#define DBG_LD(...) 
 #endif
 
 /* channel master class */
