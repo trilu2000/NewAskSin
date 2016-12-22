@@ -95,7 +95,7 @@ void AS::init(void) {
 
 	/* - add this function in register.h to setup default values every start */
 	everyTimeStart();
-	//initLeds();																				// initialize the leds
+
 	led->init();																			// initialize the leds
 	led->set(LED_STAT::WELCOME);															// show something as status
 }
