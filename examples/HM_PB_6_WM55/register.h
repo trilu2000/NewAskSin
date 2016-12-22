@@ -24,7 +24,7 @@ AS hm;
 AES *aes = new HAS_AES;
 COM *com = new CC1101;
 CBN *cbn = new CBN(1, PIN_B0);
-LED *led = new LED(2);
+LED *led = new LED(&pin_D6, &pin_D4);
 
 /*
 * cmSwitch requires this functions in the user sketch:

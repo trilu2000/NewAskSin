@@ -12,11 +12,16 @@
 
 
 																								
-LED::LED(uint8_t number_leds) {
-	if (number_leds == 0) ptr_pat = NULL;
-	else ptr_pat = led2_pat;
+LED::LED(const s_pin_def *ptr_pin_red, const s_pin_def *ptr_pin_grn) {
+	pin_red = ptr_pin_red;
+	pin_grn = ptr_pin_grn;
 	op_pat[0].stat = LED_STAT::NONE;														// we need a clean start
 	op_pat[1].stat = LED_STAT::NONE;
+}
+
+void LED::init() {
+	set_pin_output(pin_red);
+	set_pin_output(pin_grn);
 }
 
 /**
@@ -43,8 +48,10 @@ void LED::set(LED_STAT::E stat) {
 	op_pat[0].slot_cnt = 0;
 	op_pat[0].repeat_cnt = 1;
 
-	ledRed(0);																				// new program starts, so switch leds off
-	ledGrn(0);
+	set_pin_low(pin_red);
+	set_pin_low(pin_grn);
+	//ledRed(0);																				// new program starts, so switch leds off
+	//ledGrn(0);
 	timer.set(5);																			// 50 ms all leds off before new sequence starts
 	//dbg << "set  op0{ " << op_pat[0].stat << ", " << op_pat[0].slot_cnt << ", " << op_pat[0].repeat_cnt << ", sline{ " << op_pat[0].sline.prio << ", " << op_pat[0].sline.repeat << ", " << op_pat[0].sline.led_red << ", " << op_pat[0].sline.led_grn << ", *pat, },};\n";
 }
@@ -55,26 +62,26 @@ void LED::set(LED_STAT::E stat) {
 * by default.
 */
 void LED::poll(void) {
-	if (!ptr_pat) return;																		// seems we do not have connected any leds
-	if (!op_pat[0].stat) return;																// no active profile
-	if (!timer.done()) return;																	// active but timer not done
 
-	uint8_t slot_len = _PGM_BYTE(op_pat[0].sline.pat[0]);										// get the length byte for the pattern string
+	if (!op_pat[0].stat) return;															// no active profile
+	if (!timer.done()) return;																// active but timer not done
+
+	uint8_t slot_len = _PGM_BYTE(op_pat[0].sline.pat[0]);									// get the length byte for the pattern string
 
 	/* check if we are done with the currently active pattern */
 	if (op_pat[0].slot_cnt >= slot_len) {
-		if ((!op_pat[0].sline.repeat) || (op_pat[0].sline.repeat > op_pat[0].repeat_cnt)) {		// we are in an endless loop, or not all repeats are done
-			op_pat[0].repeat_cnt++;																// start the next round
-			op_pat[0].slot_cnt = 0;																// from beginning
+		if ((!op_pat[0].sline.repeat) || (op_pat[0].sline.repeat > op_pat[0].repeat_cnt)) {	// we are in an endless loop, or not all repeats are done
+			op_pat[0].repeat_cnt++;															// start the next round
+			op_pat[0].slot_cnt = 0;															// from beginning
 
-		} else if (op_pat[1].stat) {															// done, check for previous action
-			memcpy(&op_pat[0], &op_pat[1], sizeof(s_op_pat));									// copy back the last status
+		} else if (op_pat[1].stat) {														// done, check for previous action
+			memcpy(&op_pat[0], &op_pat[1], sizeof(s_op_pat));								// copy back the last status
 			//dbg << "copy back\n";
 
-		} else {																				// nothing to do any more, clean up
+		} else {																			// nothing to do any more, clean up
 			op_pat[0].stat = LED_STAT::NONE;
 		}
-		return;																					// start again in the next poll call if necassary
+		return;																				// start again in the next poll call if necassary
 	}
 
 	/* adopt the new status, set counter, timer, leds */
@@ -82,13 +89,16 @@ void LED::poll(void) {
 	timer.set( _PGM_BYTE(op_pat[0].sline.pat[op_pat[0].slot_cnt]) * 10);
 
 	/* on even we switch off the respective led, odd means on */
-	if (op_pat[0].slot_cnt % 2) {																// identify odd
-		ledRed(op_pat[0].sline.led_red);
-		ledGrn(op_pat[0].sline.led_grn);
+	if (op_pat[0].slot_cnt % 2) {															// identify odd
+		if (op_pat[0].sline.led_red) set_pin_high(pin_red);													// and set led accordingly
+		if (op_pat[0].sline.led_grn) set_pin_high(pin_grn);	
+		//ledGrn(op_pat[0].sline.led_grn);
 
 	} else {
-		ledRed(0);	
-		ledGrn(0);
+		set_pin_low(pin_red);
+		set_pin_low(pin_grn);
+		//ledRed(0);																			// or off
+		//ledGrn(0);
 
 	}
 	//dbg << "poll op0{ " << op_pat[0].stat << ", " << op_pat[0].slot_cnt << ", " << op_pat[0].repeat_cnt << ", sline{ " << op_pat[0].sline.prio << ", " << op_pat[0].sline.repeat << ", " << op_pat[0].sline.led_red << ", " << op_pat[0].sline.led_grn << ", *pat, },};\n";

@@ -1,3 +1,5 @@
+
+
 #define power_serial_enable()   power_usart0_enable();
 #define UCSR                    UCSR0B
 #define RXEN                    RXEN0
@@ -16,6 +18,9 @@
 
 //- pin definition ----------------------------------------------------------------------------------------------------------
 #define PCINT_PCIE_SIZE        3																// amount of pin change interrupt vectors
+
+const s_pin_def pin_D4 = { PORTD4, &DDRD, &PORTD, &PIND, 20, PCINT20, &PCICR, &PCMSK2, PCIE2, 2 }; 
+const s_pin_def pin_D6 = { PORTD6, &DDRD, &PORTD, &PIND, 22, PCINT22, &PCICR, &PCMSK2, PCIE2, 2 }; 
 
 #define PIN_B0   PORTB0, &DDRB, &PORTB, &PINB,  0,  PCINT0, &PCICR, &PCMSK0, PCIE0,0 
 #define PIN_B1   PORTB1, &DDRB, &PORTB, &PINB,  1,  PCINT1, &PCICR, &PCMSK0, PCIE0,0 

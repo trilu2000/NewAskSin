@@ -16,12 +16,7 @@
 /**
 * @brief LED patterns are defined in HAL.h and HAL_extern.h while we use different patterns depending on
 * the LED's connected to the hardware. LED's are defined in hardware.h in user sketch area...
-*/
-
-enum ledStat { pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, welcome, key_long, nothing = 255 };
-// https://www.homematic-inside.de/tecbase/homematic/generell/item/fehlercodes-und-ihre-bedeutungen
-
-/*
+*
 * DEV_BATTERY     LED blinks 1 x long, 2 x short, break (2 repeats) battery low
 *
 * PAIR_WAIT       LED blinks slowly orange	- pairing mode, wait for communication with master
@@ -39,11 +34,11 @@ enum ledStat { pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, w
 * WELCOME         LED blinks 3 x slow green - device ready
 * EEPROM_ERROR    LED 1 x long, 6 x short red - checksum of eeprom wrong, device reset
 *
+* https://www.homematic-inside.de/tecbase/homematic/generell/item/fehlercodes-und-ihre-bedeutungen
 */
 namespace LED_STAT {
 	enum E : uint8_t { NONE = 0, DEV_BATTERY, PAIR_WAIT, PAIR_SUCCESS, PAIR_ERROR, SEND_MSG, GOT_ACK, GOT_NACK, RESET_SLOW, RESET_FAST, WELCOME, EEPROM_ERROR,};
 };
-
 
 struct s_blink_pattern {					// struct for defining the blink pattern
 	uint8_t prio    : 2;					// 0 can be overwritten, 1 overwritten but restored, 2 cannot be overwritten
@@ -68,7 +63,7 @@ const uint8_t pat03[] PROGMEM =   {  2, 200, 10, };					// PAIR_SUCCESS    LED o
 const uint8_t pat11[] PROGMEM =   { 14,  50, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, };	// EEPROM_ERROR    LED 1 x long, 6 x short red - checksum of eeprom wrong, device reset
 
 
-const struct s_blink_pattern led2_pat[] PROGMEM = {	
+const struct s_blink_pattern ptr_pat[] PROGMEM = {
 /* prio, repeat, red, green, ptr to pat */
 	{ 2, 2, 1, 0, pat00, },	//  1 - DEV_BATTERY
 	{ 1, 0, 1, 1, pat01, },	//  2 - PAIR_WAIT
@@ -85,14 +80,13 @@ const struct s_blink_pattern led2_pat[] PROGMEM = {
 };
 
 
-
-
 class LED {
 public:		//---------------------------------------------------------------------------------------------------------
-	uint8_t active;															// something active
 
-	waitTimer timer;														// config timer functionality
-	s_blink_pattern *ptr_pat;												// blink pattern struct, see description above
+	const s_pin_def *pin_red;												// pointer to pin definition
+	const s_pin_def *pin_grn;
+
+	waitTimer timer;														// blink timer functionality
 
 	struct s_op_pat {
 		LED_STAT::E stat;													// pattern selector
@@ -102,7 +96,7 @@ public:		//---------------------------------------------------------------------
 	};
 	s_op_pat op_pat[2];														// array of two, 0 for current, 1 to restore previous
 
-	LED(uint8_t number_leds);												// class constructor
+	LED(const s_pin_def *ptr_pin_red, const s_pin_def *ptr_pin_grn);		// class constructor
 	void init(void);														// init function to make hardware ready
 
 	void set(LED_STAT::E stat);												// function to set the blink pattern
