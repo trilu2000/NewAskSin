@@ -14,8 +14,9 @@
 																								
 LED::LED(uint8_t number_leds) {
 	if (number_leds == 0) ptr_pat = NULL;
-	else if (number_leds == 1) ptr_pat = led1_pat;
-	else if (number_leds == 2) ptr_pat = led2_pat;
+	else ptr_pat = led2_pat;
+	op_pat[0].stat = LED_STAT::NONE;														// we need a clean start
+	op_pat[1].stat = LED_STAT::NONE;
 }
 
 /**
@@ -23,39 +24,31 @@ LED::LED(uint8_t number_leds) {
 * this class. Blinkpattern defined in HAL.H and declaration is done in HAL_extern.h
 * @param   stat    pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, welcome, key_long, nothing
 */
-void LED::set(ledStat stat) {
-	if (!ptr_pat) return;																		// seems we do not have connected any leds
-	
-	#ifdef LD_DBG
-	dbg << "stat: " << stat << '\n';
-	#endif
+void LED::set(LED_STAT::E stat) {
+	if (!ptr_pat) return;																	// check if we have something to do while a blink pattern structure is configured 
 
-	ledRed(0);																					// new program starts, so switch leds off
-	ledGrn(0);
+	/* if anything is active, we need to check if we are able to overrule or to remember for later use */
+	if (op_pat[0].stat) {
+		if (op_pat[0].sline.prio == 1) {													// active but can be be overwritten
+			memcpy(&op_pat[1], &op_pat[0], sizeof(s_op_pat));								// store the scenario
 
-	if (stat == nothing) {																		// nothing, switch inactive
-		active = 0;
-	} else {																					// otherwise copy pattern from progmem and set some counter
-		memcpy_P(&blPtr, &ptr_pat[stat], 10);													// cpoy the pattern from progmem
-		lCnt = 0;																				// set start position
-		dCnt = 1;
-		active = 1;																				// make module active
+		} else if (op_pat[0].sline.prio == 2) {												// active, but cannot be overwritten
+			return;																			// leave set function
+		}
 	}
 
-	if (blPtr.len == 0) stat = nothing;															// some sanity on blink pointer
+	/* prepare the next blink pattern, by copying the pattern content from progmem in our operational struct and fixing some values */
+	memcpy_P(&op_pat[0].sline, &ptr_pat[stat-1], sizeof(s_blink_pattern));
+	op_pat[0].stat = stat;
+	op_pat[0].slot_cnt = 0;
+	op_pat[0].repeat_cnt = 1;
+
+	ledRed(0);																				// new program starts, so switch leds off
+	ledGrn(0);
+	timer.set(5);																			// 50 ms all leds off before new sequence starts
+	//dbg << "set  op0{ " << op_pat[0].stat << ", " << op_pat[0].slot_cnt << ", " << op_pat[0].repeat_cnt << ", sline{ " << op_pat[0].sline.prio << ", " << op_pat[0].sline.repeat << ", " << op_pat[0].sline.led_red << ", " << op_pat[0].sline.led_grn << ", *pat, },};\n";
 }
 
-/**
-* @brief By calling this function there is only a short red blink on the LED. Independent from
-* pattern processing within the poll function.
-*/
-void LED::blinkRed(void) {
-	ledRed(0);																					// switch led off
-	_delay_ms(20);																				// wait
-	ledRed(1);																					// switch led on
-	_delay_ms(20);																				// wait
-	ledRed(0);																					// switch led off
-}
 
 /**
 * @brief Poll function has to be called regulary to process blink patterns. Done by the AS main class
@@ -63,46 +56,40 @@ void LED::blinkRed(void) {
 */
 void LED::poll(void) {
 	if (!ptr_pat) return;																		// seems we do not have connected any leds
-
-	if (!active) return;																		// still waiting to do something
+	if (!op_pat[0].stat) return;																// no active profile
 	if (!timer.done()) return;																	// active but timer not done
-	
-	// if we are here we have something to do, set the led, timer and counter
-	timer.set(blPtr.pat[lCnt] * 10);															// set the timer for next check up
 
-	if (blPtr.led0 && blPtr.pat[lCnt]) {
-		ledRed((lCnt % 2)^1);																	// set the led
-		#ifdef LD_DBG
-		dbg << "lCnt:" << lCnt << " led0: " << ((lCnt % 2)^1) << '\n';
-		#endif
-	}
-	
-	if (blPtr.led1 && blPtr.pat[lCnt]) {
-		ledGrn((lCnt % 2)^1);
-		#ifdef LD_DBG
-		dbg << "lCnt:" << lCnt  << " led1: " << ((lCnt % 2)^1) << '\n';
-		#endif
-	}
-	lCnt++;																						// increase the pointer for the blink string
+	uint8_t slot_len = _PGM_BYTE(op_pat[0].sline.pat[0]);										// get the length byte for the pattern string
 
-	// check if position pointer runs out of string
-	if (lCnt >= blPtr.len) {																	// we are through the pattern 
-		if (blPtr.dur == 0) {																	// we are in an endless loop
-			lCnt = 0;
-			#ifdef LD_DBG
-			dbg << "lCnt 0\n";
-			#endif
+	/* check if we are done with the currently active pattern */
+	if (op_pat[0].slot_cnt >= slot_len) {
+		if ((!op_pat[0].sline.repeat) || (op_pat[0].sline.repeat > op_pat[0].repeat_cnt)) {		// we are in an endless loop, or not all repeats are done
+			op_pat[0].repeat_cnt++;																// start the next round
+			op_pat[0].slot_cnt = 0;																// from beginning
 
-		} else if (dCnt < blPtr.dur) {															// duration is not done
-			lCnt = 0;
-			dCnt++;
-			#ifdef LD_DBG
-			dbg << "lCnt 0, dCnt++\n";
-			#endif
+		} else if (op_pat[1].stat) {															// done, check for previous action
+			memcpy(&op_pat[0], &op_pat[1], sizeof(s_op_pat));									// copy back the last status
+			//dbg << "copy back\n";
 
-		} else {
-			set(nothing);
-
+		} else {																				// nothing to do any more, clean up
+			op_pat[0].stat = LED_STAT::NONE;
 		}
+		return;																					// start again in the next poll call if necassary
 	}
+
+	/* adopt the new status, set counter, timer, leds */
+	op_pat[0].slot_cnt++;
+	timer.set( _PGM_BYTE(op_pat[0].sline.pat[op_pat[0].slot_cnt]) * 10);
+
+	/* on even we switch off the respective led, odd means on */
+	if (op_pat[0].slot_cnt % 2) {																// identify odd
+		ledRed(op_pat[0].sline.led_red);
+		ledGrn(op_pat[0].sline.led_grn);
+
+	} else {
+		ledRed(0);	
+		ledGrn(0);
+
+	}
+	//dbg << "poll op0{ " << op_pat[0].stat << ", " << op_pat[0].slot_cnt << ", " << op_pat[0].repeat_cnt << ", sline{ " << op_pat[0].sline.prio << ", " << op_pat[0].sline.repeat << ", " << op_pat[0].sline.led_red << ", " << op_pat[0].sline.led_grn << ", *pat, },};\n";
 }

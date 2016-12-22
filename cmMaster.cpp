@@ -524,7 +524,7 @@ void send_DEVICE_INFO(MSG_REASON::E reason) {
 
 	//pair_mode.active = 1;																	// set pairing flag
 	//pair_mode.timer.set(20000);															// set pairing time
-	led->set(pairing);																		// and visualize the status
+	//led->set(LED_STAT::PAIR_WAIT);															// and visualize the status
 }
 /**
 * @brief Check if ACK required and send ACK or NACK

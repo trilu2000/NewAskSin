@@ -32,7 +32,7 @@
 #define SN_DBG					// Send function (AS.cpp)
 #define RV_DBG					// Receive function (AS.cpp)
 //#define CB_DBG					// Config button class (AS_conf_button.cpp)
-#define LD_DBG					// Status led class (AS_status_led.cpp)
+//#define LD_DBG					// Status led class (AS_status_led.cpp)
 
 //#define CM_DBG					// Channel Master module (cmMaster.cpp)
 //#define MN_DBG					// Maintenance channel module (cmMaintenance.cpp)

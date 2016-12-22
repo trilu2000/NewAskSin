@@ -20,7 +20,7 @@ extern void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag);
 * @brief Definition of the blink pattern for the LED module. Reason for defining it here is the 
 * limitation of Arduino while #defines from sketch area not seen in library folder
 */
-#if   defined(LED_RED) && defined(LED_GRN)														// two leds defined  
+/*#if   defined(LED_RED) && defined(LED_GRN)														// two leds defined  
 //LD ld;				///< status led
 
 const struct s_blPat blPat[] PROGMEM = {														// definition of struct and functionallity can be seen in StatusLed.h
@@ -50,7 +50,7 @@ const struct s_blPat blPat[] PROGMEM = {																// definition of struct 
 };
 #else																							// no led defined
 const struct s_blPat blPat[1] PROGMEM;															// definition of struct and functionallity can be seen in StatusLed.h
-#endif
+#endif*/
 
 /**
 * @brief Initialize the led pins, but only if there are some defined.

@@ -103,7 +103,7 @@ void CBN::button_action(MSG_CBN::E mode) {
 
 	} else if (mode == MSG_CBN::keyLong) {
 		DBG(CB, F("keyLong"));
-		led->set(key_long);
+		led->set(LED_STAT::RESET_SLOW);
 
 	} else if (mode == MSG_CBN::keyLongRelease) {
 		DBG(CB, F("keyLongRelease"));
@@ -111,7 +111,7 @@ void CBN::button_action(MSG_CBN::E mode) {
 
 	} else if (mode == MSG_CBN::keyDblLong) {
 		DBG(CB, F("keyDblLong"));
-		led->set(key_long);
+		led->set(LED_STAT::RESET_FAST);
 
 	} else if (mode == MSG_CBN::keyDblLongRelease) {
 		DBG(CB, F("keyDblLongRelease"));

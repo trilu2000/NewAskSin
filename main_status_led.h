@@ -41,7 +41,7 @@ enum ledStat { pairing, pair_suc, pair_err, send, ack, noack, bat_low, defect, w
 *
 */
 namespace LED_STAT {
-	enum E : uint8_t { NOTHING = 0, DEV_BATTERY, PAIR_WAIT, PAIR_ACTIVE, PAIR_SUCCESS, PAIR_ERROR, SEND_MSG, GOT_ACK, GOT_NACK, RESET_SLOW, RESET_FAST, WELCOME, EEPROM_ERROR,};
+	enum E : uint8_t { NONE = 0, DEV_BATTERY, PAIR_WAIT, PAIR_SUCCESS, PAIR_ERROR, SEND_MSG, GOT_ACK, GOT_NACK, RESET_SLOW, RESET_FAST, WELCOME, EEPROM_ERROR,};
 };
 
 
@@ -69,35 +69,22 @@ const uint8_t pat11[] PROGMEM =   { 14,  50, 10, 10, 10, 10, 10, 10, 10, 10, 10,
 
 
 const struct s_blink_pattern led2_pat[] PROGMEM = {	
-/* repeat, red, green, ptr to pat */
-	{ 2, 2, 1, 0, pat00, },	// DEV_BATTERY
-	{ 1, 0, 1, 1, pat01, },	// PAIR_WAIT
-//	{ 0, 0, 0, 1, pat02, },	// PAIR_ACTIVE, same as SEND_MSG
-	{ 2, 1, 0, 1, pat03, },	// PAIR_SUCCESS
-	{ 2, 1, 1, 0, pat03, },	// PAIR_ERROR
-	{ 0, 3, 1, 1, pat02, },	// SEND_MSG
-	{ 0, 2, 0, 1, pat02, },	// GOT_ACK
-	{ 0, 2, 1, 0, pat02, },	// GOT_NACK
-	{ 2, 0, 1, 0, pat01, },	// RESET_SLOW
-	{ 2, 0, 1, 0, pat02, },	// RESET_FAST
-	{ 0, 3, 0, 1, pat01, },	// WELCOME
-	{ 0, 1, 1, 0, pat11, },	// EEPROM_ERROR
+/* prio, repeat, red, green, ptr to pat */
+	{ 2, 2, 1, 0, pat00, },	//  1 - DEV_BATTERY
+	{ 1, 0, 1, 1, pat01, },	//  2 - PAIR_WAIT
+//	{ 0, 0, 0, 1, pat02, },	//      PAIR_ACTIVE, same as SEND_MSG
+	{ 2, 1, 0, 1, pat03, },	//  3 - PAIR_SUCCESS
+	{ 2, 1, 1, 0, pat03, },	//  4 - PAIR_ERROR
+	{ 0, 3, 1, 1, pat02, },	//  5 - SEND_MSG
+	{ 0, 2, 0, 1, pat02, },	//  6 - GOT_ACK
+	{ 0, 2, 1, 0, pat02, },	//  7 - GOT_NACK
+	{ 2, 0, 1, 0, pat01, },	//  8 - RESET_SLOW
+	{ 2, 0, 1, 0, pat02, },	//  9 - RESET_FAST
+	{ 0, 3, 0, 1, pat01, },	// 10 - WELCOME
+	{ 0, 1, 1, 0, pat11, },	// 11 - EEPROM_ERROR
 };
 
-const struct s_blink_pattern led1_pat[] PROGMEM = {	
-	{ 2,  0, 1, 1, pat00, },	// DEV_BATTERY
-	{ 1,  0, 1, 1, pat01, },	// PAIR_WAIT
-	{ 0,  0, 1, 1, pat02, },	// PAIR_ACTIVE
-	{ 2,  0, 1, 1, pat03, },	// PAIR_SUCCESS
-	{ 2,  0, 1, 1, pat03, },	// PAIR_ERROR
-	{ 0,  0, 1, 1, pat02, },	// SEND_MSG
-	{ 0,  0, 1, 1, pat02, },	// GOT_ACK
-	{ 0,  0, 1, 1, pat02, },	// GOT_NACK
-	{ 2,  0, 1, 1, pat01, },	// RESET_SLOW
-	{ 2,  0, 1, 1, pat02, },	// RESET_FAST
-	{ 0,  0, 1, 1, pat01, },	// WELCOME
-	{ 0,  0, 1, 1, pat11, },	// EEPROM_ERROR
-};
+
 
 
 class LED {
@@ -107,23 +94,19 @@ public:		//---------------------------------------------------------------------
 	waitTimer timer;														// config timer functionality
 	s_blink_pattern *ptr_pat;												// blink pattern struct, see description above
 
-	struct {
+	struct s_op_pat {
 		LED_STAT::E stat;													// pattern selector
 		uint8_t slot_cnt;													// counter for positioning inside of blink string
 		uint8_t repeat_cnt;													// duration counter
-	} op_pat[2];															// array of two, 0 for current, 1 to restore previous
-
-	struct s_blPat blPtr;													// empty blink pattern struct
-	uint8_t lCnt;															// counter for positioning inside of blink string
-	uint8_t dCnt;															// duration counter
+		s_blink_pattern sline;												// space to copy in the respective pattern line
+	};
+	s_op_pat op_pat[2];														// array of two, 0 for current, 1 to restore previous
 
 	LED(uint8_t number_leds);												// class constructor
 	void init(void);														// init function to make hardware ready
 
-	void set(ledStat stat);													// function to set the blink pattern
+	void set(LED_STAT::E stat);												// function to set the blink pattern
 	void poll(void);														// poll function to process blink pattern
-
-	void blinkRed(void);													// blocking blink pattern, not processed via poll
 };
 
 
