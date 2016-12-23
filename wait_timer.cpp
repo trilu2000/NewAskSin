@@ -23,7 +23,7 @@ waitTimer::waitTimer() {
 */
 uint8_t  waitTimer::done(void) {
 	if (!armed) return 1;																		// not armed, so nothing to do
-	if ((getMillis() - startTime) < checkTime) return 0;										// not ready yet
+	if ((get_millis() - startTime) < checkTime) return 0;										// not ready yet
 	checkTime = 0;
 	armed = 0;																					// if we are here, timeout was happened, next loop status 1 will indicated
 	return 1;
@@ -37,7 +37,7 @@ uint8_t  waitTimer::done(void) {
 void     waitTimer::set(uint32_t ms) {
 	armed = ms ? 1 : 0;
 	if (armed) {
-		startTime = getMillis();
+		startTime = get_millis();
 		checkTime = ms;
 	}
 }
@@ -49,6 +49,6 @@ void     waitTimer::set(uint32_t ms) {
 */
 uint32_t waitTimer::remain(void) {
 	if (!armed) return 0;
-	return (checkTime - (getMillis() - startTime));
+	return (checkTime - (get_millis() - startTime));
 }
 

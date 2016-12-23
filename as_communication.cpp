@@ -9,7 +9,7 @@
 */
 
 #include "00_debug-flag.h"
-#include "main_communication.h"
+#include "as_communication.h"
 #include "HAL.h"
 
 
@@ -72,11 +72,25 @@ void COM::encode(uint8_t *buf) {
 * ccSendByte() - forwarder to the SPI send and receive function
 *
 */
+CC1101::CC1101(const s_pin_def *ptr_pin_miso, const s_pin_def *ptr_pin_mosi, const s_pin_def *ptr_pin_sck, const s_pin_def *ptr_pin_csl, const s_pin_def *ptr_pin_gdo0) {
+	pin_miso = ptr_pin_miso;
+	pin_mosi = ptr_pin_mosi;
+	pin_sck = ptr_pin_sck;
+	pin_csl = ptr_pin_csl;
+	pin_gdo0 = ptr_pin_gdo0;
+}
 void    CC1101::init(void) {	
 
 	/* init the hardware to get access to the RF modul,
 	*  some deselect and selects to init the TRX868modul */
-	cc1101_init();									// init the hardware - defined in HAL_COM_extern.h
+	set_pin_output(pin_csl);																// set chip select as output
+	set_pin_output(pin_mosi);																// set MOSI as output
+	set_pin_input(pin_miso);																// set MISO as input
+	set_pin_output(pin_sck);																// set SCK as output
+	set_pin_input(pin_gdo0);																// set GDO0 as input
+	enable_spi();																			// enable spi
+
+	//cc1101_init();									// init the hardware - defined in HAL_COM_extern.h
 
 	spi_deselect();																		
 	_delay_us(5);
@@ -233,7 +247,8 @@ void    CC1101::snd_data(uint8_t *buf, uint8_t burst) {
 	while (readReg(CC1101_MARCSTATE, CC1101_STATUS) == MARCSTATE_TX) {					// waits until module gets ready
 		_delay_ms(1);																	// wait some time while looping
 		if (!--x) goto snddata_failure;													// otherwise we could loop forever on a missing module
-	} DBG(CC, F("TX"), _TIME, F(" \n"));												// we are back in rx mode
+	} 
+	DBG(CC, F("TX"), _TIME, F(" \n"));													// we are back in rx mode
 
 	return;																				// nothing to do any more, return
 
@@ -300,7 +315,13 @@ void    CC1101::rcv_data(uint8_t *buf) {														// read data packet from R
 * it is a simple forward to the defined external function in HAL_COM_extern.h
 */
 uint8_t CC1101::has_data(void) {
-	return cc1101_has_data();
+	static uint8_t prev;
+	uint8_t curr = get_pin_status(pin_gdo0);												// get the current pin status
+	if (prev == curr) return 0;																// if nothing changed since last request then return a 0
+
+	prev = curr;																			// if we are here, a change was detected, so remember for next time
+	if (curr) return 0;																		// change was detected, but not a falling edge
+	else return 1;																			// if we are here, it was a falling edge, so return a 1																	
 }
 
 /**
@@ -429,5 +450,18 @@ void    CC1101::writeReg(uint8_t regAddr, uint8_t val) {								// write single 
 	spi_send_byte(regAddr);																// send register address
 	spi_send_byte(val);																	// send value
 	spi_deselect();																		// deselect CC1101
+}
+
+
+/*
+* @brief Chip select and deselect for the cc1101 module. Select is combined with a wait function
+* while we have to wait after a select till the modul is ready for communication
+*/
+void CC1101::spi_select(void) {
+	set_pin_low(pin_csl);
+	while (get_pin_status(pin_miso));
+}
+void CC1101::spi_deselect(void) {
+	set_pin_high(pin_csl);
 }
 

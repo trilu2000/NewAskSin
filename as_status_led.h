@@ -37,7 +37,7 @@
 * https://www.homematic-inside.de/tecbase/homematic/generell/item/fehlercodes-und-ihre-bedeutungen
 */
 namespace LED_STAT {
-	enum E : uint8_t { NONE = 0, DEV_BATTERY, PAIR_WAIT, PAIR_SUCCESS, PAIR_ERROR, SEND_MSG, GOT_ACK, GOT_NACK, RESET_SLOW, RESET_FAST, WELCOME, EEPROM_ERROR,};
+	enum E : uint8_t { NONE = 0, DEV_BATTERY, PAIR_WAIT, PAIR_SUCCESS, PAIR_ERROR, SEND_MSG, GOT_ACK, GOT_NACK, RESET_SLOW, RESET_FAST, WELCOME, EEPROM_ERROR, LED_RED_L, };
 };
 
 struct s_blink_pattern {					// struct for defining the blink pattern
@@ -60,7 +60,8 @@ const uint8_t pat03[] PROGMEM =   {  2, 200, 10, };					// PAIR_SUCCESS    LED o
 //const uint8_t pat08[] PROGMEM = {  2,  50, 50, };					// RESET_SLOW      LED blinks slowly red - start of device reset seq (wait for another long keypress, or a short keypress to terminate the sequence)
 //const uint8_t pat09[] PROGMEM = {  2,  10, 10, };					// RESET_FAST      LED blinkt schnell rot - reset to factory defaults
 //const uint8_t pat10[] PROGMEM = {  2,  50, 50, };					// WELCOME         LED blinks 3 x slow green - device ready
-const uint8_t pat11[] PROGMEM =   { 14,  50, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, };	// EEPROM_ERROR    LED 1 x long, 6 x short red - checksum of eeprom wrong, device reset
+const uint8_t pat11[] PROGMEM = { 14,  50, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, };	// EEPROM_ERROR    LED 1 x long, 6 x short red - checksum of eeprom wrong, device reset
+const uint8_t pat12[] PROGMEM = { 2,  50, 10, };					// LED_RED_L       LED 1 x long - key press
 
 
 const struct s_blink_pattern ptr_pat[] PROGMEM = {
@@ -77,6 +78,7 @@ const struct s_blink_pattern ptr_pat[] PROGMEM = {
 	{ 2, 0, 1, 0, pat02, },	//  9 - RESET_FAST
 	{ 0, 3, 0, 1, pat01, },	// 10 - WELCOME
 	{ 0, 1, 1, 0, pat11, },	// 11 - EEPROM_ERROR
+	{ 0, 1, 1, 0, pat12, },	// 12 - LED_RED_L
 };
 
 
@@ -100,6 +102,7 @@ public:		//---------------------------------------------------------------------
 	void init(void);														// init function to make hardware ready
 
 	void set(LED_STAT::E stat);												// function to set the blink pattern
+	void stop(void);														// stop led 
 	void poll(void);														// poll function to process blink pattern
 };
 

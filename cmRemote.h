@@ -52,8 +52,6 @@ private:  //--------------------------------------------------------------------
 	} button_check;
 	
 	struct s_button_ref {
-		uint8_t port;																		// port information for checking interrupt
-		uint8_t pin;																		// pin information for checking interrupt
 		uint8_t status;																		// variable to store current status in polling function
 		uint8_t counter = 0;																// channel specific message counter
 	} button_ref;
@@ -65,16 +63,18 @@ private:  //--------------------------------------------------------------------
 		uint8_t counter          : 8;														// will be increased in buttonAction function
 	} button_info;																			// holds the details for the send event message
 
+	s_pin_def *key_pin = NULL;
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	cmRemote(const uint8_t peer_max);														// constructor
+	cmRemote(const uint8_t peer_max, const s_pin_def *ptr_key_pin);								// constructor
+	cmRemote(const uint8_t peer_max);														// constructor, without pin
 	virtual void cm_init();																	// overwrite the init function in cmMaster
 
 	virtual void cm_poll(void);																// poll function, driven by HM loop
 
 	/* register a pc interrupt to the respective pin. definition of the pins are stored in HAL_atmega.h */
-	virtual void cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);
+	//virtual void cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);
 	
 	virtual void button_action(uint8_t event);
 

@@ -7,7 +7,7 @@
 /**
 * @brief Libraries needed to run AskSin library
 */
-#include <AS.h> 
+#include <as_main.h> 
 #include "hmkey.h"
 #include <cmMaintenance.h> 
 #include <cmRemote.h> 
@@ -22,8 +22,8 @@
 */
 AS hm;
 AES *aes = new HAS_AES;
-COM *com = new CC1101;
-CBN *cbn = new CBN(1, PIN_B0);
+COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
+CBN *cbn = new CBN(1, &pin_B0);
 LED *led = new LED(&pin_D6, &pin_D4);
 
 /*
@@ -38,13 +38,14 @@ const uint8_t cmMaintenance_ChnlLen = 6;
 
 cmMaster *ptr_CM[7] = {
 	new cmMaintenance(0),
-	new cmRemote(11),
-	new cmRemote(10),
-	new cmRemote(10),
-	new cmRemote(10),
-	new cmRemote(10),
-	new cmRemote(10),
+	new cmRemote(11, &pin_C0),
+	new cmRemote(10, &pin_C1),
+	new cmRemote(10, &pin_C2),
+	new cmRemote(10, &pin_C3),
+	new cmRemote(10, &pin_C4),
+	new cmRemote(10, &pin_C5),
 };
+
 
 
 /*
@@ -90,13 +91,13 @@ void everyTimeStart(void) {
 	// channel 0 section 
 	pom.setMode(POWER_MODE_NO_SLEEP);
 	bat.set(30, 3600000);
-	// channel 1 section 
-	ptr_CM[1]->cm_init_pin(PIN_C0);
-	ptr_CM[2]->cm_init_pin(PIN_C1);
-	ptr_CM[3]->cm_init_pin(PIN_C2);
-	ptr_CM[4]->cm_init_pin(PIN_C3);
-	ptr_CM[5]->cm_init_pin(PIN_C4);
-	ptr_CM[6]->cm_init_pin(PIN_C5);
+
+	//ptr_CM[1]->cm_init_pin(PIN_C0);
+	//ptr_CM[2]->cm_init_pin(PIN_C1);
+	//ptr_CM[3]->cm_init_pin(PIN_C2);
+	//ptr_CM[4]->cm_init_pin(PIN_C3);
+	//ptr_CM[5]->cm_init_pin(PIN_C4);
+	//ptr_CM[6]->cm_init_pin(PIN_C5);
 }
 
 /**

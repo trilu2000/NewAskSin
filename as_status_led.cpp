@@ -6,7 +6,7 @@
 //- -----------------------------------------------------------------------------------------------------------------------
 
 #include "00_debug-flag.h"
-#include "main_status_led.h"
+#include "as_status_led.h"
 #include "wait_timer.h"
 
 
@@ -50,12 +50,17 @@ void LED::set(LED_STAT::E stat) {
 
 	set_pin_low(pin_red);
 	set_pin_low(pin_grn);
-	//ledRed(0);																				// new program starts, so switch leds off
-	//ledGrn(0);
 	timer.set(5);																			// 50 ms all leds off before new sequence starts
 	//dbg << "set  op0{ " << op_pat[0].stat << ", " << op_pat[0].slot_cnt << ", " << op_pat[0].repeat_cnt << ", sline{ " << op_pat[0].sline.prio << ", " << op_pat[0].sline.repeat << ", " << op_pat[0].sline.led_red << ", " << op_pat[0].sline.led_grn << ", *pat, },};\n";
 }
 
+void LED::stop(void) {
+	op_pat[0].stat = LED_STAT::NONE;
+	timer.set(0);																
+	set_pin_low(pin_red);
+	set_pin_low(pin_grn);
+
+}
 
 /**
 * @brief Poll function has to be called regulary to process blink patterns. Done by the AS main class

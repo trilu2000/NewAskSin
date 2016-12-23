@@ -7,7 +7,7 @@
 */
 
 #include "00_debug-flag.h"
-#include "AS.h"
+#include "as_main.h"
 
 /**------------------------------------------------------------------------------------------------------------------------
 *- mandatory functions for every new module to communicate within HM protocol stack -
@@ -19,6 +19,34 @@
 *        Setup of class specific things is done here
 */
 #include "cmRemote.h"
+
+/**
+* @brief This function has to be called to handover all pin information to initialize the hardware port/pin
+* and to register the pin change interrupt. The channel module will remember on the pin information and poll the
+* pin status. If a change/interrupt is recognized, the module will act accordingly.
+* There is a more passive option to use this module. Helpful if you don't use a dedicated pin per channel.
+* In such a case you can call the buttonAction() directly from user sketch.
+* @param   port/pin information    PIN_C2
+*/
+cmRemote::cmRemote(const uint8_t peer_max, const s_pin_def *ptr_key_pin) : cmMaster(peer_max) {
+	key_pin = ptr_key_pin;
+
+	lstC.lst = 1;																			// setup the channel list with all dependencies
+	lstC.reg = cmRemote_ChnlReg;
+	lstC.def = cmRemote_ChnlDef;
+	lstC.len = sizeof(cmRemote_ChnlReg);
+
+	lstP.lst = 4;																			// setup the peer list with all dependencies
+	lstP.reg = cmRemote_PeerReg;
+	lstP.def = cmRemote_PeerDef;
+	lstP.len = sizeof(cmRemote_PeerReg);
+
+	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
+	lstP.val = new uint8_t[lstP.len];
+
+	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
+	l4 = (s_l4*)lstP.val;
+}
 
 cmRemote::cmRemote(const uint8_t peer_max) : cmMaster(peer_max) {
 
@@ -35,50 +63,32 @@ cmRemote::cmRemote(const uint8_t peer_max) : cmMaster(peer_max) {
 	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
 	lstP.val = new uint8_t[lstP.len];
 
-
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
 	l4 = (s_l4*)lstP.val;
-
 }
 
 void cmRemote::cm_init() {
+	if (key_pin) {
+		register_PCINT(key_pin);
+		button_ref.status = check_PCINT(key_pin, 0);										// get the latest information
+		button_check.configured = 1;														// poll the pin make only sense if it was configured, store result here
+		DBG(RE, F("RE:init_pin, cnl: "), lstC.cnl, F(", pin: "), key_pin->PINBIT, F(", port: "), key_pin->VEC, F(", LONG_PRESS_TIME: "), byteTimeCvt(l1->LONG_PRESS_TIME), F(", DBL_PRESS_TIME: "), byteTimeCvt(l1->DBL_PRESS_TIME), F(", AES_ACTIVE: "), l1->AES_ACTIVE, '\n');
+	}
+
 	initRemote(lstC.cnl);																	// call external init function to set the input pins
 	DBG(RE, F("cmRemote, cnl: "), lstC.cnl, '\n');
-
 }
 
 /**------------------------------------------------------------------------------------------------------------------------
 *- user defined functions -
 * ------------------------------------------------------------------------------------------------------------------------- */
 
-/**
-* @brief This function has to be called to handover all pin information to initialize the hardware port/pin
-* and to register the pin change interrupt. The channel module will remember on the pin information and poll the
-* pin status. If a change/interrupt is recognized, the module will act accordingly.
-* There is a more passive option to use this module. Helpful if you don't use a dedicated pin per channel.
-* In such a case you can call the buttonAction() directly from user sketch.
-* @param   port/pin information    PIN_C2
-*/
-void cmRemote::cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC) {
-
-	registerPCINT(PINBIT, DDREG, PORTREG, PINREG, PCINR, PCIBYTE, PCICREG, PCIMASK, PCIEREG, VEC);// prepare hardware and register interrupt
-
-	button_ref.port = VEC;																	// port information for checking interrupt
-	button_ref.pin = PINBIT;																// pin information for checking interrupt
-	button_ref.status = checkPCINT(button_ref.port, button_ref.pin, 0);						// get the latest information
-
-	button_check.configured = 1;															// poll the pin make only sense if it was configured, store result here
-	DBG(RE, F("RE:init_pin, cnl: "), lstC.cnl, F(", pin: "), button_ref.pin, F(", port: "), button_ref.port, F(", LONG_PRESS_TIME: "), byteTimeCvt(l1->LONG_PRESS_TIME), F(", DBL_PRESS_TIME: "), byteTimeCvt(l1->DBL_PRESS_TIME), F(", AES_ACTIVE: "), l1->AES_ACTIVE, '\n');
-}
-
-
-
 void cmRemote::cm_poll(void) {
 	#define repeatedLong 250
 	process_peer_message();																	// if we want to send a peer message we have to poll the peer send processing
 
 	if (!button_check.configured) return;													// if port is not configured, poll makes no sense
-	button_ref.status = checkPCINT(button_ref.port, button_ref.pin, 1);						// check if an interrupt had happened
+	button_ref.status = check_PCINT(key_pin, 1);											// check if an interrupt had happened
 
 	/* button was just pressed, start for every option */
 	if (button_ref.status == 2) {

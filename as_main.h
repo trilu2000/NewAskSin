@@ -13,10 +13,10 @@
 #define _NAS_H
 
 #include "AS_type_defs.h"
-#include "main_aes.h"
-#include "main_communication.h"
-#include "main_conf_button.h"
-#include "main_status_led.h"
+#include "as_aes.h"
+#include "as_communication.h"
+#include "as_conf_button.h"
+#include "as_status_led.h"
 
 #include "macros.h"
 #include "version.h"

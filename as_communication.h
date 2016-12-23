@@ -39,6 +39,15 @@ public:  //---------------------------------------------------------------------
 extern void cc1101_init();
 extern uint8_t cc1101_has_data();
 
+/* @brief communication module contructor
+*  CC1101(*ptr_pin_miso, *ptr_pin_mosi, *ptr_pin_sck, *ptr_pin_csl, *ptr_pin_gdo0);
+*
+*  @param *ptr_pin_miso  pointer to MISO pin definition
+*  @param *ptr_pin_mosi  pointer to MOSI pin definition
+*  @param *ptr_pin_sck   pointer to Clock pin definition
+*  @param *ptr_pin_csl   pointer to Chip select pin definition
+*  @param *ptr_pin_gdo0  pointer to GDO0 pin definition
+*/
 class CC1101 : public COM {
 private:  //--------------------------------------------------------------------------------------------------------------
 	#define CC1101_DATA_LEN         40										// maximum length of received bytes
@@ -206,10 +215,11 @@ private:  //--------------------------------------------------------------------
 
 
 public:  //----------------------------------------------------------------------------------------------------------------
-	CC1101() {}																// constructor
+	CC1101(const s_pin_def *ptr_pin_miso, const s_pin_def *ptr_pin_mosi, const s_pin_def *ptr_pin_sck, const s_pin_def *ptr_pin_csl, const s_pin_def *ptr_pin_gdo0);
 
 private:  //---------------------------------------------------------------------------------------------------------------
-	void    init();															// initialize CC1101
+	void    init(void);														// init the hw  and module
+
 	void    snd_data(uint8_t *buf, uint8_t burst);							// send data packet via RF
 	void    rcv_data(uint8_t *buf);											// read data packet from RX FIFO
 	uint8_t has_data(void);													// boolean value if data are received
@@ -218,6 +228,12 @@ private:  //--------------------------------------------------------------------
 	uint8_t detect_burst(void);												// detect burst signal, sleep while no signal, otherwise stay awake
 
 private:  //---------------------------------------------------------------------------------------------------------------
+	const s_pin_def *pin_miso;												// pointer to pin definition
+	const s_pin_def *pin_mosi;
+	const s_pin_def *pin_sck;
+	const s_pin_def *pin_csl;
+	const s_pin_def *pin_gdo0;
+
 	uint8_t pwr_down;														// module sleeping (power down)
 
 	inline void    setActive(void);											// get the cc1101 back to active state
@@ -225,6 +241,11 @@ private:  //--------------------------------------------------------------------
 	inline void    strobe(uint8_t cmd);										// send command strobe to the CC1101 IC via SPI
 	inline uint8_t readReg(uint8_t regAddr, uint8_t regType);				// read CC1101 register via SPI
 	inline void    writeReg(uint8_t regAddr, uint8_t val);					// write single register into the CC1101 IC via SPI
+
+	//uint8_t spi_send_byte(uint8_t send_byte);
+	inline void spi_select(void);
+	inline void spi_deselect(void);
+	//uint8_t has_data(void);
 };
 
 

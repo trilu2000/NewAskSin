@@ -8,7 +8,7 @@
 
 //#define PW_DBG
 #include "Power.h"
-#include "AS.h"
+#include "as_main.h"
 
 PW pom;																						// declare power management, defined in Power.h
 waitTimer pwrTmr;																			// power timer functionality

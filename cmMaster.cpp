@@ -9,7 +9,7 @@
 
 #include "00_debug-flag.h"
 #include "cmMaster.h"
-#include "AS.h"
+#include "as_main.h"
 
 uint8_t cnl_max = 0;																		// defined in cmMaster.h, increased by every instance which is initialized
 

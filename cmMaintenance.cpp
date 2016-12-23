@@ -8,7 +8,7 @@
 */
 
 #include "00_debug-flag.h"
-#include "AS.h"
+#include "as_main.h"
 
 /**------------------------------------------------------------------------------------------------------------------------
 *- mandatory functions for every new module to communicate within HM protocol stack -

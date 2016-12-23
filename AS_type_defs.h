@@ -77,12 +77,12 @@ typedef struct ts_list_table {
 
 	/* load the respective list from the eeprom  */
 	void load_list(uint8_t idx = 0) {							
-		getEEPromBlock(get_ee_addr(idx), len, val);
+		get_eeprom(get_ee_addr(idx), len, val);
 	}
 
 	/* writes the respective list to the eeprom  */
 	void save_list(uint8_t idx = 0) {
-		setEEPromBlock(get_ee_addr(idx), len, val);
+		set_eeprom(get_ee_addr(idx), len, val);
 	}
 
 	/* load defaults from PROGMEM  */
@@ -162,18 +162,18 @@ typedef struct ts_peer_table {
 
 	uint8_t *get_peer(uint8_t idx) {							// reads a peer address by idx from the database into the struct peer
 		if (idx >= max) return NULL;
-		getEEPromBlock(ee_addr + (idx * 4), 4, dont_use_peer);
+		get_eeprom(ee_addr + (idx * 4), 4, dont_use_peer);
 		return dont_use_peer;
 	}
 
 	void set_peer(uint8_t idx, uint8_t *buf) {					// writes the peer to the by idx defined place in the database
 		if (idx >= max) return;
-		setEEPromBlock(ee_addr + (idx * 4), 4, buf);
+		set_eeprom(ee_addr + (idx * 4), 4, buf);
 	}
 
 	void clear_peer(uint8_t idx) {								// clears the peer in the by idx defined place in the database
 		if (idx >= max) return;									// to secure we are in the range
-		clearEEPromBlock(ee_addr + (idx * 4), 4);				// clear the specific eeprom block
+		clear_eeprom(ee_addr + (idx * 4), 4);				// clear the specific eeprom block
 	}
 
 	uint8_t get_idx(uint8_t *buf) {								// returns the idx of the given peer, or 0xff if not found. don't use the peer array of the struct, it will be overwritten!
@@ -188,7 +188,7 @@ typedef struct ts_peer_table {
 	}
 
 	void clear_all() {											// clear all peers
-		clearEEPromBlock(ee_addr, max * 4);
+		clear_eeprom(ee_addr, max * 4);
 	}
 
 	uint8_t used_slots() {										// returns the amount of used slots
@@ -206,7 +206,7 @@ typedef struct ts_peer_table {
 	uint8_t get_slice(uint8_t slice_nr, uint8_t *buf, uint8_t byte_per_msg = 16) {	// cpoies all known peers into the given buffer, as msg length is limited we use multipe messages
 		uint8_t byteCnt = 0, slcCnt = 0;						// start the byte and slice counter
 		for (uint8_t i = 0; i < max; i++) {						// step through the possible peer slots
-			getEEPromBlock(ee_addr + (i * 4), 4, &buf[byteCnt]);// get the peer
+			get_eeprom(ee_addr + (i * 4), 4, &buf[byteCnt]);	// get the peer
 			if (!*(uint32_t*)&buf[byteCnt]) continue;			// continue if peer is empty
 			byteCnt += 4; 										// increase the byte counter while not empty 
 			if (byteCnt >= byte_per_msg) {						// string is full

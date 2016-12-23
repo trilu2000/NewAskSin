@@ -11,7 +11,7 @@
 
 #include "00_debug-flag.h"
 #include "AS_explain_msg.h"
-#include "AS.h"
+#include "as_main.h"
 #include <avr/wdt.h>
 
  /*
@@ -40,15 +40,14 @@ void AS::init(void) {
 
 	/* - init eeprom function if a i2c eeprom is used and 
 	* prepare the defaults incl eeprom address map for the channel modules */
-	initEEProm();		
+	init_eeprom();		
 	uint16_t pAddr = cm_prep_default(sizeof(dev_ident));
 
 	/* - First time start check is done via comparing a magic number at the start of the eeprom
 	* with the CRC of the different lists in the channel modules. Every time there was a
 	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.	*/
 	uint16_t flashCRC = cm_calc_crc();														// calculate the crc of all channel module list0/1, list3/4
-	getEEPromBlock(0, sizeof(dev_ident), &dev_ident);										// get magic byte and all other information from eeprom
-	//dbg << F("AS:init crc- flash:") << flashCRC << F(", eeprom: ") << dev_ident.MAGIC << '\n';	// some debug
+	get_eeprom(0, sizeof(dev_ident), &dev_ident);										// get magic byte and all other information from eeprom
 	DBG(AS, F("AS:init crc- flash:"), flashCRC, F(", eeprom: "), dev_ident.MAGIC, '\n');	// some debug
 
 	if (flashCRC != dev_ident.MAGIC) {	
@@ -71,8 +70,8 @@ void AS::init(void) {
 		* order in dev_ident struct   *	MAGIC *, * HMID[3] *, * SERIAL_NR[10] *, * HMKEY[16] *, * HMKEY_INDEX *
 		* we can copy the complete struct with a 2 byte offset in regards to the magic byte */
 		dev_ident.MAGIC = flashCRC;															// set new magic number
-		memcpy_P(((uint8_t*)&dev_ident) + 2, HMSerialData, sizeof(dev_ident) - 2);						// copy from PROGMEM
-		setEEPromBlock(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));
+		memcpy_P(((uint8_t*)&dev_ident) + 2, HMSerialData, sizeof(dev_ident) - 2);			// copy from PROGMEM
+		set_eeprom(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));
 		while (!eeprom_is_ready());
 		DBG(AS, F("AS:writing new magic byte\n"));											// some debug
 
@@ -81,9 +80,7 @@ void AS::init(void) {
 	}
 
 	/* - Initialize the hardware. All this functions are defined in HAL.h and HAL_extern.h 	*/
-	initMillis();																			// start the millis counter
-	
-	com->init();																			// init the rf module
+	init_millis();																			// start the millis counter
 
 	/* load list 0 and 1 defaults and inform the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
@@ -96,8 +93,11 @@ void AS::init(void) {
 	/* - add this function in register.h to setup default values every start */
 	everyTimeStart();
 
+	com->init();																			// init the rf module
+	cbn->init();																			// init the config button
 	led->init();																			// initialize the leds
 	led->set(LED_STAT::WELCOME);															// show something as status
+
 }
 
 /**
@@ -129,7 +129,7 @@ void AS::poll(void) {
 	/* check if the device needs a reset */
 	if (dev_operate.reset) {
 		if ((dev_operate.reset == 2) && (!snd_msg.active)) {								// check reset status, but wait till send is done
-			clearEEPromBlock(0, 2);															// clear the magic byte in eeprom
+			clear_eeprom(0, 2);																// clear the magic byte in eeprom
 			dev_operate.reset = 0;															// clear the reset flag
 			init();																			// call init function to set the defaults
 		}
@@ -329,8 +329,8 @@ void AS::process_message(void) {
 		if (new_key) {
 			dbg << "new idx " << aes->new_hmkey_index[0] << ", new key " << _HEX(aes->new_hmkey, 16) << '\n';
 			memcpy(dev_ident.HMKEY, aes->new_hmkey, 16);									// store the new key
-			dev_ident.HMKEY_INDEX[0] = aes->new_hmkey_index[0];
-			setEEPromBlock(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));					// write it to the eeprom
+			dev_ident.HMKEY_INDEX[0] = aes->new_hmkey_index[0];	
+			set_eeprom(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));						// write it to the eeprom
 		}
 		send_ACK();																			// send ACK
 

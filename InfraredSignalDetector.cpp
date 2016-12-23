@@ -28,7 +28,7 @@ void InfraRedSignalDetector::setLimit(uint8_t sensitivity){
 }
 
 uint8_t InfraRedSignalDetector::powerInputChanged(){
-	unsigned long now = getMillis();
+	unsigned long now = get_millis();
 
 	//return (random(0, 100001) > 90001) ? 1 : 0;
 

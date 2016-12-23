@@ -14,15 +14,12 @@
 	#include "WProgram.h"
 #endif
 
-#include <avr/sleep.h>
-#include <avr/power.h>
-#include <avr/wdt.h>
 #include <util/delay.h>
 #include <util/atomic.h>
-#include <avr/eeprom.h>
-	
+#include <stdint.h>
+
+
 #include "macros.h"
-//#include "Print.h"
 
 
 //- MCU dependent HAL definitions -----------------------------------------------------------------------------------------
@@ -32,23 +29,69 @@
 	#error "No HAL definition for current MCU available!"
 #endif
 
-#if defined(__AVR_ATmega328P__)
-	#include "HAL_atmega_328P.h"
-#elif defined(__AVR_ATmega_32U4__)
-	#include "HAL_atmega_32U4.h"
-#else
-	#error "No HAL definition for current MCU available!"
-#endif
 
 
+
+/*-- pin functions --------------------------------------------------------------------------------------------------------
+* all pins defined as a struct, holding all information regarding port, pin, ddr, etc.
+* as we support different arduino hw i tried to make it as flexible as possible. everything is defined in seperate 
+* hw specific files. the struct and pin manipulation function is defined in HAL_atmega.h because it is similar for all
+* ATMEL hardware, the pin structs are defined in HAL_atmega_<model> while different for each cpu type. here we reference
+* only on the functions defined in HAL_<type>_<model>.
+*/
+extern void set_pin_output(const s_pin_def *ptr_pin);
+extern void set_pin_input(const s_pin_def *ptr_pin);
+extern void set_pin_high(const s_pin_def *ptr_pin);
+extern void set_pin_low(const s_pin_def *ptr_pin);
+extern void set_pin_toogle(const s_pin_def *ptr_pin);
+extern uint8_t get_pin_status(const s_pin_def *ptr_pin);
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//- eeprom functions ------------------------------------------------------------------------------------------------------
-void initEEProm(void);
-void getEEPromBlock(uint16_t addr, uint8_t len, void *ptr);
-void setEEPromBlock(uint16_t addr, uint8_t len, void *ptr);
-void clearEEPromBlock(uint16_t addr, uint16_t len);
+
+/*-- interrupt functions --------------------------------------------------------------------------------------------------
+* interrupts again are very hardware supplier related, therefor we define her some external functions which needs to be 
+* defined in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
+* you can also use the arduino standard timer for a specific hardware by interlinking the function call to getmillis()
+*/
+extern void register_PCINT(const s_pin_def *ptr_pin);
+extern uint8_t check_PCINT(const s_pin_def *ptr_pin);
+extern uint8_t check_PCINT(uint8_t port, uint8_t pin, uint8_t debounce);
+extern void maintain_PCINT(uint8_t vec);
 //- -----------------------------------------------------------------------------------------------------------------------
+
+
+/*-- spi functions --------------------------------------------------------------------------------------------------------
+* spi is very hardware supplier related, therefor we define her some external functions which needs to be defined
+* in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
+*/
+extern void enable_spi(void);
+extern uint8_t spi_send_byte(uint8_t send_byte);
+
+
+/*-- eeprom functions -----------------------------------------------------------------------------------------------------
+* eeprom is very hardware supplier related, therefor we define her some external functions which needs to be defined
+* in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
+*/
+extern void init_eeprom(void);
+extern void get_eeprom(uint16_t addr, uint8_t len, void *ptr);
+extern void set_eeprom(uint16_t addr, uint8_t len, void *ptr);
+extern void clear_eeprom(uint16_t addr, uint16_t len);
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+/*-- timer functions ------------------------------------------------------------------------------------------------------
+* timer is very hardware supplier related, therefor we define her some external functions which needs to be defined
+* in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
+* you can also use the arduino standard timer for a specific hardware by interlinking the function call to getmillis()
+*/
+extern void init_millis(void);
+extern uint32_t get_millis(void);
+extern void add_millis(uint32_t ms);
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+
+
 
 //- randum number functions -----------------------------------------------------------------------------------------------
 void get_random(uint8_t *buf);
@@ -58,37 +101,9 @@ void get_random(uint8_t *buf);
 
 	static uint16_t wdtSleep_TIME;
 
-	//- timer functions -------------------------------------------------------------------------------------------------------
-	// https://github.com/zkemble/millis/blob/master/millis/
-	#define REG_TCCRA		TCCR0A
-	#define REG_TCCRB		TCCR0B
-	#define REG_TIMSK		TIMSK0
-	#define REG_OCR			OCR0A
-	#define BIT_OCIE		OCIE0A
-	#define BIT_WGM			WGM01
-	#define CLOCKSEL        (_BV(CS01)|_BV(CS00))
-	#define PRESCALER       64
-	#define ISR_VECT		TIMER0_COMPA_vect
-
-	#define SET_TCCRA()	    (REG_TCCRA = _BV(BIT_WGM))
-	#define SET_TCCRB()	    (REG_TCCRB = CLOCKSEL)
-
-	//- timer functions -------------------------------------------------------------------------------------------------------
-	#define HAS_OWN_MILLIS_TIMER
-	typedef uint32_t tMillis;
-	extern void    initMillis(void);
-	extern tMillis getMillis(void);
-	extern void    addMillis(tMillis ms);
-	//- -----------------------------------------------------------------------------------------------------------------------
 
 
 
-
-	//- led related functions -------------------------------------------------------------------------------------------------
-	//extern void    initLeds(void);																// initialize leds
-	//extern void    ledRed(uint8_t stat);														// function in main sketch to drive leds
-	//extern void    ledGrn(uint8_t stat);														// stat could be 0 for off, 1 for on, 2 for toggle
-	//- -----------------------------------------------------------------------------------------------------------------------
 
 	//- needed for 32u4 to prevent sleep, while USB didn't work in sleep ------------------------------------------------------
 	extern void    initWakeupPin(void);															// init the wakeup pin

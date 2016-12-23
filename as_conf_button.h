@@ -49,17 +49,14 @@ class CBN  {
 		uint8_t            : 2;
 	} button_check;
 	  
-	struct s_button_ref {
-		uint8_t port;														// port information for checking interrupt
-		uint8_t pin;														// pin information for checking interrupt
-		uint8_t status;														// variable to store current status in polling function
-		uint8_t counter = 0;												// channel specific message counter
-	} button_ref;
-
 	waitTimer timer;														// button timer functionality
+	uint8_t status;															// variable to store current status in polling function
+	const s_pin_def *key_pin;
 
-	CBN(uint8_t mode = 0);
-	CBN(uint8_t mode, uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);																	// constructor 
+	CBN(const uint8_t mode, const s_pin_def *ptr_pin);
+	CBN(const uint8_t mode = 0);
+
+	void init(void);														// initialize the config key
 	void poll(void);														// poll to process status of button
 	void button_action(MSG_CBN::E mode);									// function to drive the output signal
 };

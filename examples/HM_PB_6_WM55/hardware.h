@@ -13,26 +13,26 @@
 
 	//#define EXT_BATTERY_MEASUREMENT										// comment out to use internal battery measurement
 	#define BATTERY_FACTOR             17									// see excel table
-	#define DEBOUNCE                   5
+	//#define DEBOUNCE                   5
 
 #if defined(__AVR_ATmega328P__)
 	//- hardware specific general setup
 	//#define PCINT_CALLBACK												// enables the pin change interrupt callback in user sketch
 
 	//- cc1100 hardware CS and GDO0 definitions -------------------------------------------------------------------
-	#define COM_CS                 PIN_B2									// chip select
-	#define COM_GDO0               PIN_D2									// GDO0 pin, identify data received on falling edge
-	#define COM_MISO               PIN_B4									// SPI port MISO
-	#define COM_MOSI               PIN_B3									// SPI port MOSI
-	#define COM_SCLK               PIN_B5									// SPI port Clock
+	//#define COM_CS                 PIN_B2									// chip select
+	//#define COM_GDO0               PIN_D2									// GDO0 pin, identify data received on falling edge
+	//#define COM_MISO               PIN_B4									// SPI port MISO
+	//#define COM_MOSI               PIN_B3									// SPI port MOSI
+	//#define COM_SCLK               PIN_B5									// SPI port Clock
 
 	//- LED's definition ------------------------------------------------------------------------------------------
-	#define LED_RED                PIN_D6									// define the red led pin port
-	#define LED_GRN                PIN_D4									// define the green led		
-	#define LED_ACTIVE_LOW         0										// leds connected to GND = 0, VCC = 1
+	//#define LED_RED                PIN_D6									// define the red led pin port
+	//#define LED_GRN                PIN_D4									// define the green led		
+	//#define LED_ACTIVE_LOW         0										// leds connected to GND = 0, VCC = 1
 
 	//- configuration key  ----------------------------------------------------------------------------------------
-	#define CONFIG_KEY             PIN_B0									// define the config key pin port
+	//#define CONFIG_KEY             PIN_B0									// define the config key pin port
 
 	//- battery external measurement functions --------------------------------------------------------------------
 	#define BATT_ENABLE            PIN_D7									// define battery measurement enable pin, has to be low to start measuring

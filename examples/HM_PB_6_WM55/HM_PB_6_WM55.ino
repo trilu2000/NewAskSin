@@ -3,7 +3,7 @@
 
 
 //- load library's --------------------------------------------------------------------------------------------------------
-#include <AS.h>																					// ask sin framework
+#include <as_main.h>																			// ask sin framework
 #include "register.h"																			// configuration sheet
 
 
@@ -107,7 +107,7 @@ void dumpEEprom() {
 
 	DBG(SER, F("\nEEPROM content\n\n"));
 	uint8_t *e = new uint8_t[32];
-	getEEPromBlock(0, 32, e);
+	get_eeprom(0, 32, e);
 	DBG(SER, F("Magic:"), _HEX(e, 2), F("("), *(uint16_t*)e, F("), HMID:"), _HEX(e + 2, 3), F(", SERIAL:"), _HEX(e + 5, 10), F("\nKEY_IDX:"), _HEX(e + 15, 1), F(", KEY:"), _HEX(e + 16, 16), F("\n\n"));
 
 	for (uint8_t i = 0; i < cnl_max; i++) {														// stepping through channels
@@ -131,14 +131,14 @@ void dumpEEprom() {
 					uint8_t *p = peer->get_peer(k);												// process peer
 					DBG(SER, F("peer   "), _HEXB(k), F(": "), _HEX(p, 4), F(" ("), peer->ee_addr + (k * 4), F(")\n"));
 					pAddr = list->ee_addr + (k * list->len);									// process list
-					getEEPromBlock(pAddr, list->len, x);
+					get_eeprom(pAddr, list->len, x);
 					DBG(SER, F("eeprom "), _HEXB(k), F(": "), _HEX(x, list->len), F(" ("), pAddr, F(")\n"));
 				}
 
 			}
 			else {
 				DBG(SER, F("cmModul:   "), _HEX(list->val, list->len), '\n');
-				getEEPromBlock(list->ee_addr, list->len, x);
+				get_eeprom(list->ee_addr, list->len, x);
 				DBG(SER, F("eeprom:    "), _HEX(x, list->len), '\n');
 
 			}
