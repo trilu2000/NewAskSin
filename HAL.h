@@ -53,7 +53,6 @@ extern uint8_t get_pin_status(const s_pin_def *ptr_pin);
 */
 extern void register_PCINT(const s_pin_def *ptr_pin);
 extern uint8_t check_PCINT(const s_pin_def *ptr_pin);
-extern uint8_t check_PCINT(uint8_t port, uint8_t pin, uint8_t debounce);
 extern void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag);
 extern void maintain_PCINT(uint8_t vec);
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -89,6 +88,16 @@ extern void add_millis(uint32_t ms);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
+/*-- battery measurement functions ----------------------------------------------------------------------------------------
+* battery measurements is done in two ways, internal measurement based on atmel specs, or external measurement via a voltage 
+* divider with one pin to enable and another to measure the adc value. both is hardware and vendor related, you will find the
+* code definition in HAL_<vendor>.h
+*/
+extern uint8_t get_internal_voltage(void);
+extern void init_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure);
+extern uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2);
+
+//- -----------------------------------------------------------------------------------------------------------------------
 
 
 

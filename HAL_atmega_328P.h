@@ -13,7 +13,8 @@
 
 //- adc definitions ---------------------------------------------------------------------------------------------------------
 #define AVR_BANDGAP_VOLTAGE     1100UL															// band gap reference for Atmega328p
-
+const uint8_t admux_internal = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+const uint8_t admux_external = _BV(REFS1) | _BV(REFS0);											// | _BV(measurement pin)
 
 //- pin definition ----------------------------------------------------------------------------------------------------------
 #define PCINT_PCIE_SIZE        3																// amount of pin change interrupt vectors

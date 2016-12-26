@@ -30,6 +30,7 @@ void setup() {
 	// - AskSin related ---------------------------------------
 	hm.init();																				// init the asksin framework
 
+	dbg << get_external_voltage(&pin_B4, &pin_B5, 10, 40) << '\n';
 	
 	// - user related -----------------------------------------
 	//pci_ptr = &pci_callback;																// register pin change interrupt callback function
