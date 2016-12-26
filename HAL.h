@@ -14,8 +14,6 @@
 	#include "WProgram.h"
 #endif
 
-#include <util/delay.h>
-#include <util/atomic.h>
 #include <stdint.h>
 
 
@@ -56,6 +54,7 @@ extern uint8_t get_pin_status(const s_pin_def *ptr_pin);
 extern void register_PCINT(const s_pin_def *ptr_pin);
 extern uint8_t check_PCINT(const s_pin_def *ptr_pin);
 extern uint8_t check_PCINT(uint8_t port, uint8_t pin, uint8_t debounce);
+extern void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag);
 extern void maintain_PCINT(uint8_t vec);
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -93,6 +92,36 @@ extern void add_millis(uint32_t ms);
 
 
 
+/*-- serial print functions -----------------------------------------------------------------------------------------------
+* template and some functions for debugging over serial interface
+* based on arduino serial class, so should work with all hardware served in arduino
+* http://aeroquad.googlecode.com/svn/branches/pyjamasam/WIFIReceiver/Streaming.h
+*/
+#define dbg Serial
+template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; }
+
+#define _HI_HEX_BITS(x)  char((x>>4)>9?(x>>4)+55:(x>>4)+48)
+#define _LO_HEX_BITS(x)  char((x&0xF)>9?(x&0xF)+55:(x&0xF)+48)
+
+struct _HEXB {
+	uint8_t val;
+	_HEXB(uint8_t v) : val(v) {}
+};
+inline Print &operator <<(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
+
+struct _HEX {
+	uint8_t *val;
+	uint8_t len;
+	_HEX(uint8_t *v, uint8_t l) : val(v), len(l) {}
+};
+inline Print &operator <<(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i <= arg.len) obj.print(' '); }; return obj; }
+
+enum _eTIME { _TIME };
+inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(get_millis()); obj.print(')'); return obj; }
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+
 //- randum number functions -----------------------------------------------------------------------------------------------
 void get_random(uint8_t *buf);
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -112,27 +141,6 @@ void get_random(uint8_t *buf);
 
 
 
-	//- pin interrupts --------------------------------------------------------------------------------------------------------
-	/**
-	* @brief Structure to handle information raised by the interrupt function
-	*
-	* @param *PINR  Pointer to PIN register, to read the PIN status
-	* @param prev   To remember on the previus status of the port, to identify which PIN was raising the interrupt
-	* @param mask   Mask byte to clean out bits which are not registered for interrupt detection
-	*/
-	struct  s_pcint_vector_byte {
-		volatile uint8_t *PINR;																		// pointer to the port where pin status can be read
-		uint8_t curr;
-		uint8_t prev;
-		uint8_t mask;
-		uint32_t time;
-	};
-	extern volatile s_pcint_vector_byte pcint_vector_byte[];										// size of the table depending on avr type in the cpp file
-	extern void    registerPCINT(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);
-	extern uint8_t checkPCINT(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC, uint8_t debounce);
-	extern uint8_t checkPCINT(uint8_t port, uint8_t pin, uint8_t debounce);							// function to poll if an interrupt had happened, gives also status of pin
-	extern void    maintainPCINT(uint8_t vec);														// collects all interrupt vectors and maintains the callback address for external pin change interrupt handling
-	//- -----------------------------------------------------------------------------------------------------------------------
 
 
 

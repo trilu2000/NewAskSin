@@ -27,6 +27,7 @@
 */
 
 #define SER_DBG					// Main sketch debug function and messages
+#define DMP_DBG					// EEprom dump function, only in combination with SER_DBG
 //#define AS_DBG					// AskSin class debug (AS.cpp)
 //#define CC_DBG					// Communication class (AS_communication.cpp)
 #define SN_DBG					// Send function (AS.cpp)
@@ -51,7 +52,11 @@
 */
 
 
-#define dbg Serial
+template<class T> inline Print &operator ,(Print &obj, T arg) { obj.print(arg); return obj; }
+inline Print &operator  ,(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
+inline Print &operator  ,(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i <= arg.len) obj.print(' '); }; return obj; }
+inline Print &operator  ,(Print &obj, _eTIME arg) { obj.print('('); obj.print(get_millis()); obj.print(')'); return obj; }
+
 
 #define PRIMITIVE_CAT(a, b, ...) a ## b(__VA_ARGS__)
 
@@ -147,38 +152,6 @@
 #endif
 
 
-/**	- ---------------------------------------------------------------------------------------------------------------------
-*
-* @brief Template and some functions for debugging over serial interface
-* http://aeroquad.googlecode.com/svn/branches/pyjamasam/WIFIReceiver/Streaming.h
-*/
-
-// template to enable DBG, "sometext", $a, '\n';
-template<class T> inline Print &operator ,(Print &obj, T arg) { obj.print(arg); return obj; }
-template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; }
-
-
-#define _HI_HEX_BITS(x)  char((x>>4)>9?(x>>4)+55:(x>>4)+48)
-#define _LO_HEX_BITS(x)  char((x&0xF)>9?(x&0xF)+55:(x&0xF)+48)
-
-struct _HEXB {
-	uint8_t val;
-	_HEXB(uint8_t v) : val(v) {}
-};
-inline Print &operator  ,(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
-inline Print &operator <<(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
-
-struct _HEX {
-	uint8_t *val;
-	uint8_t len;
-	_HEX(uint8_t *v, uint8_t l) : val(v), len(l) {}
-};
-inline Print &operator  ,(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i<=arg.len) obj.print(' '); }; return obj; }
-inline Print &operator <<(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i<=arg.len) obj.print(' '); }; return obj; }
-
-enum _eTIME { _TIME };
-inline Print &operator  ,(Print &obj, _eTIME arg) { obj.print('('); obj.print(get_millis()); obj.print(')'); return obj; }
-inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(get_millis()); obj.print(')'); return obj; }
 
 
 

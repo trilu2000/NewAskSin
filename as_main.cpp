@@ -10,8 +10,8 @@
 */
 
 #include "00_debug-flag.h"
-#include "AS_explain_msg.h"
 #include "as_main.h"
+#include "as_analyze.h"
 #include <avr/wdt.h>
 
  /*

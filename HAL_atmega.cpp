@@ -65,9 +65,16 @@ uint8_t check_PCINT(const s_pin_def *ptr_pin, uint8_t debounce) {
 	else return 2;																			// pin is 0, old was 1
 }
 
+void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag) = NULL;
+
 void maintain_PCINT(uint8_t vec) {
 	pcint_vector[vec].curr = *pcint_vector[vec].PINREG & pcint_vector[vec].mask;			// read the pin port and mask out only pins registered
 	pcint_vector[vec].time = get_millis();													// store the time, if debounce is asked for
+
+	if (pci_ptr) {
+		uint8_t pin_int = pcint_vector[vec].curr ^ pcint_vector[vec].prev;					// evaluate the pin which raised the interrupt
+		pci_ptr(vec, pin_int, pcint_vector[vec].curr & pin_int);							// callback the interrupt function in user sketch
+	}
 }
 
 ISR(PCINT0_vect) {

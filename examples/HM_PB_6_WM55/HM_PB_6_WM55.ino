@@ -3,8 +3,8 @@
 
 
 //- load library's --------------------------------------------------------------------------------------------------------
-#include <as_main.h>																			// ask sin framework
-#include "register.h"																			// configuration sheet
+#include <as_main.h>																		// ask sin framework
+#include "register.h"																		// configuration sheet
 
 
 
@@ -13,39 +13,32 @@ void setup() {
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
 
-	EIMSK = 0;																					// disable external interrupts
-	ADCSRA = 0;																					// ADC off
-	power_all_disable();																		// and everything else
+	EIMSK = 0;																				// disable external interrupts
+	ADCSRA = 0;																				// ADC off
+	power_all_disable();																	// and everything else
 
-	//DDRB = DDRC = DDRD = 0x00;																// everything as input
-	//PORTB = PORTC = PORTD = 0x00;																// pullup's off
+	//DDRB = DDRC = DDRD = 0x00;															// everything as input
+	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
 	// todo: timer0 and SPI should enable internally
 	power_timer0_enable();
-	power_spi_enable();																			// enable only needed functions
+	power_spi_enable();																		// enable only needed functions
 
 	DBG_START(SER, F("HM_PB_6_WM55\n"));
 	DBG(SER, F(LIB_VERSION_STRING));
 
 	// - AskSin related ---------------------------------------
-	hm.init();																					// init the asksin framework
+	hm.init();																				// init the asksin framework
 
-
-//	for (uint8_t i = 0; i < 10; i++) {
-//		uint8_t len = _PGM_BYTE(led->ptr_pat[i].len);
-//		uint8_t dur = _PGM_BYTE(led->ptr_pat[i].dur);
-//		uint8_t led0 = _PGM_BYTE(led->ptr_pat[i].led0);
-//		uint8_t led1 = _PGM_BYTE(led->ptr_pat[i].led1);
-//		dbg << i << ": " << len << ", " << dur << ", " << led0 << ", " << led1 << '\n';
-//	}
 	
 	// - user related -----------------------------------------
-	sei();																						// enable interrupts
+	//pci_ptr = &pci_callback;																// register pin change interrupt callback function
+	sei();																					// enable interrupts
 }
 
 void loop() {
 	// - AskSin related ---------------------------------------
-	hm.poll();																					// poll the homematic main loop
+	hm.poll();																				// poll the homematic main loop
 
 	// - user related -----------------------------------------
 
@@ -60,96 +53,18 @@ void cmRemote::initRemote(uint8_t channel) {
 }
 
 
-
-
-//- predefined functions --------------------------------------------------------------------------------------------------
-#ifdef SER_DBG
-/*
-* @brief Serial debug function to enter byte strings in the serial console.
-*        They are forwarded to the send/receive function and processed like
-*		 the cc1101 buffer
+/* 
+*  @brief this is the registered callback function for the pin change interrupt. there are 3 parameters as a hand over to identify the 
+*  pin which has raised the interrupt and if it was a falling or raising edge. 
+*  registering of this function has to be done in init by writing the callback function address into the callback pointer 'pci_ptr = &pci_callback;'
+*  <vec> returns the port which had raised the interrupt. as vec is depending on the cpu type, you will find the definition in HAL_<vendor>_<type>. 
+*  <pin> is the byte value of the pin which has raised the interrupt. 1 = pin0, 2 = pin1, 4 = pin2, 8 = pin3, 16 = pin4, etc... 
+*  <flag> to indentify a falling or raising edge. 0 = falling, value above 0 = raising 
 */
-void serialEvent() {
-
-	static uint8_t i = 0;																		// it is a high byte next time
-	while (Serial.available()) {
-
-		uint8_t inChar = (uint8_t)Serial.read();												// read a byte
-
-		if (inChar == 'x') {
-			dumpEEprom();
-			Serial.flush();
-			i = 0;
-			return;
-		}
-		else if (inChar == 's') {
-			DBG(SER, F("con: "), _HEX(snd_msg.buf, snd_msg.buf[0] + 1), '\n');
-			snd_msg.temp_max_retr = 1;
-			snd_msg.active = MSG_ACTIVE::DEBUG;
-			i = 0;
-			return;
-		}
-
-		if ((inChar>96) && (inChar<103)) inChar -= 87;											// a - f
-		else if ((inChar>64) && (inChar<71))  inChar -= 55;										// A - F
-		else if ((inChar>47) && (inChar<58))  inChar -= 48;										// 0 - 9
-		else continue;
-
-		if (i % 2 == 0) snd_msg.buf[i / 2] = inChar << 4;											// high byte
-		else snd_msg.buf[i / 2] |= inChar;															// low byte
-
-		i++;
-	}
-}
-
-void dumpEEprom() {
-	uint16_t pAddr;
-
-	DBG(SER, F("\nEEPROM content\n\n"));
-	uint8_t *e = new uint8_t[32];
-	get_eeprom(0, 32, e);
-	DBG(SER, F("Magic:"), _HEX(e, 2), F("("), *(uint16_t*)e, F("), HMID:"), _HEX(e + 2, 3), F(", SERIAL:"), _HEX(e + 5, 10), F("\nKEY_IDX:"), _HEX(e + 15, 1), F(", KEY:"), _HEX(e + 16, 16), F("\n\n"));
-
-	for (uint8_t i = 0; i < cnl_max; i++) {														// stepping through channels
-
-		for (uint8_t j = 0; j < 5; j++) {														// stepping through available lists
-			s_list_table *list = ptr_CM[i]->list[j];											// short hand to list table
-			s_peer_table *peer = &ptr_CM[i]->peerDB;											// short hand to peer db
-			if (!list) continue;																// skip if pointer is empty
-
-			uint8_t *x = new uint8_t[list->len];												// size an array as data buffer
-			DBG(SER, F("cnl:"), _HEXB(list->cnl), F(", lst:"), _HEXB(list->lst), F(", sLen:"), _HEXB(list->len), F(", pAddr:"), list->ee_addr, '\n');
-
-			memcpy_P(x, list->reg, list->len);
-			DBG(SER, F("register:  "), _HEX(x, list->len), '\n');
-			memcpy_P(x, list->def, list->len);
-			DBG(SER, F("default:   "), _HEX(x, list->len), '\n');
-
-			if (j == 3 || j == 4) {
-				DBG(SER, F("cmModul:\n"));
-				for (uint8_t k = 0; k < peer->max; k++) {
-					uint8_t *p = peer->get_peer(k);												// process peer
-					DBG(SER, F("peer   "), _HEXB(k), F(": "), _HEX(p, 4), F(" ("), peer->ee_addr + (k * 4), F(")\n"));
-					pAddr = list->ee_addr + (k * list->len);									// process list
-					get_eeprom(pAddr, list->len, x);
-					DBG(SER, F("eeprom "), _HEXB(k), F(": "), _HEX(x, list->len), F(" ("), pAddr, F(")\n"));
-				}
-
-			}
-			else {
-				DBG(SER, F("cmModul:   "), _HEX(list->val, list->len), '\n');
-				get_eeprom(list->ee_addr, list->len, x);
-				DBG(SER, F("eeprom:    "), _HEX(x, list->len), '\n');
-
-			}
-			delete x;
-			DBG(SER, '\n');
-		}
-	}
-	delete e;
+void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag) {
+	dbg << F("v:") << vec << F(", p:") << pin << F(", f:") << flag << '\n';
 }
 
 
 
-#endif
 
