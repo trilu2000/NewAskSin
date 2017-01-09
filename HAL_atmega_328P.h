@@ -12,9 +12,9 @@
 
 
 //- adc definitions ---------------------------------------------------------------------------------------------------------
-#define AVR_BANDGAP_VOLTAGE     1100UL															// band gap reference for Atmega328p
-const uint8_t admux_internal = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
-const uint8_t admux_external = _BV(REFS1) | _BV(REFS0);											// | _BV(measurement pin)
+const uint8_t admux_internal = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);					// internal ADMUX register setup
+const uint8_t admux_external = _BV(REFS1) | _BV(REFS0);											// | measurement pin
+const uint16_t ref_v_external = 1100;																// internal reference voltage in 10mv
 
 //- pin definition ----------------------------------------------------------------------------------------------------------
 #define PCINT_PCIE_SIZE        3																// amount of pin change interrupt vectors
@@ -35,7 +35,7 @@ const s_pin_def pin_C3 = { PORTC3, &DDRC, &PORTC, &PINC, 11, PCINT11, &PCICR, &P
 const s_pin_def pin_C4 = { PORTC4, &DDRC, &PORTC, &PINC, 12, PCINT12, &PCICR, &PCMSK1, PCIE1, 1 };
 const s_pin_def pin_C5 = { PORTC5, &DDRC, &PORTC, &PINC, 13, PCINT13, &PCICR, &PCMSK1, PCIE1, 1 };
 const s_pin_def pin_C6 = { PORTC6, &DDRC, &PORTC, &PINC, 14, PCINT14, &PCICR, &PCMSK1, PCIE1, 1 };
-//const s_pin_def pin_C7= {PORTC7, &DDRC, &PORTC, &PINC, 15, PCINT15, &PCICR, &PCMSK1, PCIE1, 1 }; 
+const s_pin_def pin_C7=  {      7, &DDRC, &PORTC, &PINC, 15,       7, &PCICR, &PCMSK1, PCIE1, 1 }; 
 
 const s_pin_def pin_D0 = { PORTD0, &DDRD, &PORTD, &PIND, 16, PCINT16, &PCICR, &PCMSK2, PCIE2, 2 };
 const s_pin_def pin_D1 = { PORTD1, &DDRD, &PORTD, &PIND, 17, PCINT17, &PCICR, &PCMSK2, PCIE2, 2 };

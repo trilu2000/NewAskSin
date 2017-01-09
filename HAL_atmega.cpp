@@ -205,37 +205,28 @@ ISR(ISR_VECT) {
 
 //-- battery measurement functions ----------------------------------------------------------------------------------------
 uint8_t get_internal_voltage(void) {
-	/* read 1.1V reference against AVcc
-	*  set the reference to Vcc and the measurement to the internal 1.1V reference */
-//	#if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-//		ADMUX = _BV(REFS0) | _BV(MUX4) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
-//	#elif defined (__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__)
-//		ADMUX = _BV(MUX5) | _BV(MUX0);
-//	#elif defined (__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
-//		ADMUX = _BV(MUX3) | _BV(MUX2);
-//	#endif  
-
 	uint16_t result = get_adc_value(admux_internal);										// get the adc value on base of the predefined adc register setup
 	result = 11253L / result;																// calculate Vcc (in mV); 11253 = 1.1*1023*10 (*10 while we want to get 10mv)
 	return (uint8_t)result;																	// Vcc in millivolts
 }
 
-uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2) {
+uint16_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2) {
 	/* set the pins to enable measurement */
 	set_pin_output(ptr_enable);																// set the enable pin as output
 	set_pin_low(ptr_enable);																// and to gnd, while measurement goes from VCC over the resistor network to GND
 	set_pin_input(ptr_measure);																// set the ADC pin as input
-	set_pin_low(ptr_measure);
+	//set_pin_high(ptr_measure);
 
 	/* call the adc get function to get the adc value, do some mathematics on the result */
-	uint16_t result = get_adc_value(admux_internal | _BV(ptr_measure->PINBIT));				// get the adc value on base of the predefined adc register setup
-	result = 11253L / result;																// calculate Vcc (in mV); 11253 = 1.1*1023*10 (*10 while we want to get 10mv)
+	uint16_t result = get_adc_value(admux_external | ptr_measure->PINBIT);					// get the adc value on base of the predefined adc register setup
+	result = ((result * ref_v_external) / 103) / z1;										// calculate vcc between gnd and measurement pin 
+	result = result * (z1 + z2) / 100;														// interpolate result to vcc 
 
 	/* finally, we set both pins as input again to waste no energy over the resistor network to VCC */
 	set_pin_input(ptr_enable);	
 	set_pin_input(ptr_measure);	
 
-	return (uint8_t)result;																	// Vcc in millivolts
+	return result;																			// Vcc in millivolts
 }
 
 uint16_t get_adc_value(uint8_t reg_admux) {
@@ -243,14 +234,16 @@ uint16_t get_adc_value(uint8_t reg_admux) {
 	
 	/* enable and set adc */
 	power_adc_enable();																		// start adc 
-	ADMUX = reg_admux;																			// set adc
+
+	ADMUX = reg_admux;																		// set adc
+	ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1);										// enable ADC and set ADC pre scaler
 
 	/* measure the adc */
-	_delay_ms(1);																			// wait for Vref to settle
+	_delay_ms(2);																			// wait for Vref to settle
+
 	ADCSRA |= _BV(ADSC);																	// start conversion
 	while (bit_is_set(ADCSRA, ADSC));														// measuring
 
-	/* read the result from adc register */
 	//uint8_t low = ADCL;																	// must read ADCL first - it then locks ADCH  
 	//uint8_t high = ADCH;																	// unlocks both
 	//uint16_t result = (high << 8) | low;

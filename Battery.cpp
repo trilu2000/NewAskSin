@@ -36,7 +36,7 @@ BT::BT() {
 void    BT::poll(void) {
 	if (!battTmr.done() ) return;															// timer still running
 
-	measureTenthVolt = getBatteryVoltage();
+	//measureTenthVolt = getBatteryVoltage();
 	bState = (measureTenthVolt < checkTenthVolt) ? 1 : 0;									// set the battery status
 
 	#ifdef BT_DBG																			// only if ee debug is set

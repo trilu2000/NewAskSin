@@ -88,13 +88,13 @@ extern void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag);
 /*************************************
 *** Battery measurement functions ***
 *************************************/
-void    initExtBattMeasurement(void);
-void    switchExtBattMeasurement(uint8_t stat);
+//void    initExtBattMeasurement(void);
+//void    switchExtBattMeasurement(uint8_t stat);
 
 /**
 * get the voltage off battery
 */
-uint8_t  getBatteryVoltage(void) {
+/*uint8_t  getBatteryVoltage(void) {
 #if defined EXT_BATTERY_MEASUREMENT
 	initExtBattMeasurement();
 	switchExtBattMeasurement(1);
@@ -116,21 +116,21 @@ uint8_t  getBatteryVoltage(void) {
 #endif
 
 	return (uint8_t)adcValue;
-}
+}*/
 
 /**
 * Initialize battery measurement pin for external battery measurement
 */
-void    initExtBattMeasurement(void) {
+/*void    initExtBattMeasurement(void) {
 	SET_PIN_INPUT(BATT_MEASURE);						// set the ADC pin as input
 	SET_PIN_INPUT(BATT_ENABLE);						// set the measurement enable pin as input, otherwise we waste energy over the resistor network against VCC
-}
+}*/
 
 /**
 * activate / deactivate battery measurement pin
 * @param	stat	1: activate, 0: deactivate
 */
-void    switchExtBattMeasurement(uint8_t stat) {
+/*void    switchExtBattMeasurement(uint8_t stat) {
 	if (stat == 1) {
 		SET_PIN_OUTPUT(BATT_ENABLE);					// set pin as out put
 		SET_PIN_LOW(BATT_ENABLE);						// set low to measure the resistor network
@@ -142,7 +142,7 @@ void    switchExtBattMeasurement(uint8_t stat) {
 		// todo: check
 		SET_PIN_HIGH(BATT_MEASURE);					// switch on pull up, otherwise we waste energy over the resistor network against VCC
 	}
-}
+}*/
 //- -----------------------------------------------------------------------------------------------------------------------
 
 

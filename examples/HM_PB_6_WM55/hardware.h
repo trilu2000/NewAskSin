@@ -35,8 +35,8 @@
 	//#define CONFIG_KEY             PIN_B0									// define the config key pin port
 
 	//- battery external measurement functions --------------------------------------------------------------------
-	#define BATT_ENABLE            PIN_D7									// define battery measurement enable pin, has to be low to start measuring
-	#define BATT_MEASURE           PIN_C1									// define battery measure pin, where ADC gets the measurement
+	//#define BATT_ENABLE            PIN_D7									// define battery measurement enable pin, has to be low to start measuring
+	//#define BATT_MEASURE           PIN_C1									// define battery measure pin, where ADC gets the measurement
 
 
 #elif defined(__AVR_ATmega32U4__)

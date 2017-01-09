@@ -66,7 +66,7 @@ void clear_eeprom(uint16_t addr, uint16_t len);
 //-- timer functions ------------------------------------------------------------------------------------------------------
 // https://github.com/zkemble/millis/blob/master/millis/
 #define TIMER2
-void init_millis(void);
+void init_millis(uint8_t timer);
 uint32_t get_millis(void);
 void add_millis(uint32_t ms);
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -75,6 +75,6 @@ void add_millis(uint32_t ms);
 //-- battery measurement functions ----------------------------------------------------------------------------------------
 // http://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
 uint8_t get_internal_voltage(void);
-uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2);
+uint16_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2);
 uint16_t get_adc_value(uint8_t reg_admux);
 //- -----------------------------------------------------------------------------------------------------------------------

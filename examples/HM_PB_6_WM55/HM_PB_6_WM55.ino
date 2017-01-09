@@ -5,7 +5,9 @@
 //- load library's --------------------------------------------------------------------------------------------------------
 #include <as_main.h>																		// ask sin framework
 #include "register.h"																		// configuration sheet
+#include "wait_timer.h"
 
+waitTimer xtimer;
 
 
 //- arduino functions -----------------------------------------------------------------------------------------------------
@@ -30,8 +32,6 @@ void setup() {
 	// - AskSin related ---------------------------------------
 	hm.init();																				// init the asksin framework
 
-	dbg << get_external_voltage(&pin_B4, &pin_B5, 10, 40) << '\n';
-	
 	// - user related -----------------------------------------
 	//pci_ptr = &pci_callback;																// register pin change interrupt callback function
 	sei();																					// enable interrupts
@@ -42,7 +42,10 @@ void loop() {
 	hm.poll();																				// poll the homematic main loop
 
 	// - user related -----------------------------------------
-
+	if (xtimer.done()) {
+		dbg << "r:" << get_external_voltage(&pin_D7, &pin_C6, 10, 45) << '\n';
+		xtimer.set(3000);
+	}
 }
 
 
