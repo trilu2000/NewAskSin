@@ -102,7 +102,7 @@ ISR(WDT_vect) {
 
 
 //- battery measurement functions -----------------------------------------------------------------------------------------
-uint16_t getAdcValue(uint8_t adcmux) {
+/*uint16_t getAdcValue(uint8_t adcmux) {
 	uint16_t adcValue = 0;
 
 	#if defined(__AVR_ATmega32U4__)												// save content of Power Reduction Register
@@ -140,7 +140,7 @@ uint16_t getAdcValue(uint8_t adcmux) {
 	//dbg << "x:" << adcValue << '\n';
 
 	return adcValue;															// return the measured value
-}
+}*/
 //- -----------------------------------------------------------------------------------------------------------------------
 
 

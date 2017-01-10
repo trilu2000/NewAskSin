@@ -247,7 +247,7 @@ void cmDimmer::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 		lstP.val[39] = 0x26;
 	}
 
-	DBG(DM, F("DM"), lstC.cnl, F(":request_peer_defaults CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", idx:"), _HEXB(idx), '\n' );
+	DBG(DM, F("DM"), lstC.cnl, F(":request_peer_defaults CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", idx:"), _HEX(idx), '\n' );
 }
 
 /*
@@ -374,7 +374,7 @@ void cmDimmer::REMOTE(s_m40xxxx *buf) {
 
 	/* some debug */
 	DBG(DM, F("DM"), lstC.cnl, F(":trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
-	DBG(DM, F("JT_ONDELAY:"), _HEXB(l3->JT_ONDELAY), F(", ONDELAY_T:"), _HEXB(l3->ONDELAY_TIME), F(", JT_RAMPON:"), _HEXB(l3->JT_RAMPON), F(", RAMPON_T:"), _HEXB(l3->RAMPON_TIME), F(", JT_ON:"), _HEXB(l3->JT_ON), F(", ON_T:"), _HEXB(l3->ON_TIME), F(", JT_OFFDELAY:"), _HEXB(l3->JT_OFFDELAY), F(", OFFDELAY_T:"), _HEXB(l3->OFFDELAY_TIME), F(", JT_RAMPOFF:"), _HEXB(l3->JT_RAMPOFF), F(", RAMPOFF_T:"), _HEXB(l3->RAMPOFF_TIME), F(", JT_OFF:"), _HEXB(l3->JT_OFF), F(", OFF_T:"), _HEXB(l3->OFF_TIME), '\n');
+	DBG(DM, F("JT_ONDELAY:"), _HEX(l3->JT_ONDELAY), F(", ONDELAY_T:"), _HEX(l3->ONDELAY_TIME), F(", JT_RAMPON:"), _HEX(l3->JT_RAMPON), F(", RAMPON_T:"), _HEX(l3->RAMPON_TIME), F(", JT_ON:"), _HEX(l3->JT_ON), F(", ON_T:"), _HEX(l3->ON_TIME), F(", JT_OFFDELAY:"), _HEX(l3->JT_OFFDELAY), F(", OFFDELAY_T:"), _HEX(l3->OFFDELAY_TIME), F(", JT_RAMPOFF:"), _HEX(l3->JT_RAMPOFF), F(", RAMPOFF_T:"), _HEX(l3->RAMPOFF_TIME), F(", JT_OFF:"), _HEX(l3->JT_OFF), F(", OFF_T:"), _HEX(l3->OFF_TIME), '\n');
 	DBG(DM, F("lst3: "), _HEX(lstP.val, lstP.len), '\n');
 }
 /**
@@ -425,7 +425,7 @@ void cmDimmer::SENSOR_EVENT(s_m41xxxx *buf) {
 
 	/* some debug */
 	DBG(DM, F("DM"), lstC.cnl, F(":trigger41, value:"), buf->VALUE, F(", cond_table:"), ctTbl, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
-	DBG(DM, F("CT_ONDELAY:"), _HEXB(l3->CT_ONDELAY), F(", CT_RAMPON:"), _HEXB(l3->CT_RAMPON), F(", CT_ON:"), _HEXB(l3->CT_ON), F(", CT_OFFDELAY:"), _HEXB(l3->CT_OFFDELAY), F(", CT_RAMPOFF:"), _HEXB(l3->CT_RAMPOFF), F(", CT_OFF:"), _HEXB(l3->CT_OFF), '\n');
+	DBG(DM, F("CT_ONDELAY:"), _HEX(l3->CT_ONDELAY), F(", CT_RAMPON:"), _HEX(l3->CT_RAMPON), F(", CT_ON:"), _HEX(l3->CT_ON), F(", CT_OFFDELAY:"), _HEX(l3->CT_OFFDELAY), F(", CT_RAMPOFF:"), _HEX(l3->CT_RAMPOFF), F(", CT_OFF:"), _HEX(l3->CT_OFF), '\n');
 
 	/* forward the request if needed, if not we answer with an ACK */
 	if (do_or_not) REMOTE((s_m40xxxx*)(bll_cnt - 10));

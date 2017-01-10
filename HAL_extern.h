@@ -9,9 +9,9 @@
 *
 */
 //volatile s_pcint_vector_byte pcint_vector_byte[PCINT_PCIE_SIZE];
-#ifdef PCINT_CALLBACK
-extern void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag);
-#endif
+//#ifdef PCINT_CALLBACK
+//extern void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag);
+//#endif
 
 
 

@@ -17,6 +17,7 @@
 #include "as_communication.h"
 #include "as_conf_button.h"
 #include "as_status_led.h"
+#include "as_battery.h"
 
 #include "macros.h"
 #include "version.h"
@@ -24,7 +25,6 @@
 
 #include "cmMaster.h"
 #include "Power.h"
-#include "Battery.h"
 
 
 /*
@@ -37,6 +37,7 @@ extern AES *aes;
 extern COM *com;
 extern CBN *cbn;
 extern LED *led;
+extern BAT *bat;
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.

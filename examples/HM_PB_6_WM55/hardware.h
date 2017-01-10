@@ -12,7 +12,7 @@
 #define _HARDWARE_h
 
 	//#define EXT_BATTERY_MEASUREMENT										// comment out to use internal battery measurement
-	#define BATTERY_FACTOR             17									// see excel table
+	//#define BATTERY_FACTOR             17									// see excel table
 	//#define DEBOUNCE                   5
 
 #if defined(__AVR_ATmega328P__)

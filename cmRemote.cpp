@@ -162,7 +162,7 @@ void cmRemote::button_action(uint8_t event) {
 
 	if ((event == 3) || (event == 4)) button_info.longpress = 1;							// set the long key flag if requested
 	else button_info.longpress = 0;															// otherwise it is a short
-	button_info.lowbat = bat.getStatus();
+	button_info.lowbat = bat->get_status();
 	button_info.channel = lstC.cnl;
 	button_info.counter = button_ref.counter;
 

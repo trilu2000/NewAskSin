@@ -193,7 +193,7 @@ void dumpEEprom(void) {
 			if (!list) continue;															// skip if pointer is empty
 
 			uint8_t *x = new uint8_t[list->len];											// size an array as data buffer
-			dbg << F("cnl:") << _HEXB(list->cnl) << F(", lst:") << _HEXB(list->lst) << F(", sLen:") << _HEXB(list->len) << F(", pAddr:") << list->ee_addr << '\n';
+			dbg << F("cnl:") << _HEX(list->cnl) << F(", lst:") << _HEX(list->lst) << F(", sLen:") << _HEX(list->len) << F(", pAddr:") << list->ee_addr << '\n';
 
 			memcpy_P(x, list->reg, list->len);
 			dbg << F("register:  ") << _HEX(x, list->len) << '\n';
@@ -204,10 +204,10 @@ void dumpEEprom(void) {
 				dbg << F("cmModul:\n");
 				for (uint8_t k = 0; k < peer->max; k++) {
 					uint8_t *p = peer->get_peer(k);											// process peer
-					dbg << F("peer   ") << _HEXB(k) << F(": ") << _HEX(p, 4) << F(" (") << peer->ee_addr + (k * 4) << F(")\n");
+					dbg << F("peer   ") << _HEX(k) << F(": ") << _HEX(p, 4) << F(" (") << peer->ee_addr + (k * 4) << F(")\n");
 					pAddr = list->ee_addr + (k * list->len);								// process list
 					get_eeprom(pAddr, list->len, x);
-					dbg << F("eeprom ") << _HEXB(k) << F(": ") << _HEX(x, list->len) << F(" (") << pAddr << F(")\n");
+					dbg << F("eeprom ") << _HEX(k) << F(": ") << _HEX(x, list->len) << F(" (") << pAddr << F(")\n");
 				}
 
 			} else {

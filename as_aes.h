@@ -46,7 +46,7 @@ class AES {
 	virtual void check_AES_REPLY(uint8_t *hmkey, uint8_t *rcv_buf) {}
 	virtual uint8_t check_SEND_AES_TO_ACTOR(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *rcv_buf) {}
 };
-extern AES *aes;
+//extern AES *aes;
 
 
 class NO_AES : public AES {

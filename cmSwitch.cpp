@@ -197,7 +197,7 @@ void cmSwitch::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 		lstP.val[10] = lstP.val[21] = 0x63;
 	} 
 
-	DBG(SW, F("cmSwitch:request_peer_defaults CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", idx:"), _HEXB(idx), '\n' );
+	DBG(SW, F("cmSwitch:request_peer_defaults CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", idx:"), _HEX(idx), '\n' );
 }
 
 /*
@@ -312,7 +312,7 @@ void cmSwitch::REMOTE(s_m40xxxx *buf) {
 
 	/* some debug */
 	DBG(SW, F("trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
-	DBG(SW, F("JT_ONDELAY:"), _HEXB(l3->JT_ONDELAY), F(", ONDELAY_T:"), _HEXB(l3->ONDELAY_TIME), F(", JT_ON:"), _HEXB(l3->JT_ON), F(", ON_T:"), _HEXB(l3->ON_TIME), F(", JT_OFFDELAY:"), _HEXB(l3->JT_OFFDELAY), F(", OFFDELAY_T:"), _HEXB(l3->OFFDELAY_TIME), F(", JT_OFF:"), _HEXB(l3->JT_OFF), F(", OFF_T:"), _HEXB(l3->OFF_TIME), '\n');
+	DBG(SW, F("JT_ONDELAY:"), _HEX(l3->JT_ONDELAY), F(", ONDELAY_T:"), _HEX(l3->ONDELAY_TIME), F(", JT_ON:"), _HEX(l3->JT_ON), F(", ON_T:"), _HEX(l3->ON_TIME), F(", JT_OFFDELAY:"), _HEX(l3->JT_OFFDELAY), F(", OFFDELAY_T:"), _HEX(l3->OFFDELAY_TIME), F(", JT_OFF:"), _HEX(l3->JT_OFF), F(", OFF_T:"), _HEX(l3->OFF_TIME), '\n');
 	DBG(SW, F("lst3: "), _HEX(lstP.val, lstP.len), '\n');
 }
 /**
@@ -361,7 +361,7 @@ void cmSwitch::SENSOR_EVENT(s_m41xxxx *buf) {
 
 	/* some debug */
 	DBG(SW, F("trigger41, value:"), buf->VALUE, F(", cond_table:"), ctTbl, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
-	DBG(SW, F("CT_ONDELAY:"), _HEXB(l3->CT_ONDELAY), F(", CT_ON:"), _HEXB(l3->CT_ON), F(", CT_OFFDELAY:"), _HEXB(l3->CT_OFFDELAY), F(", CT_OFF:"), _HEXB(l3->CT_OFF), '\n');
+	DBG(SW, F("CT_ONDELAY:"), _HEX(l3->CT_ONDELAY), F(", CT_ON:"), _HEX(l3->CT_ON), F(", CT_OFFDELAY:"), _HEX(l3->CT_OFFDELAY), F(", CT_OFF:"), _HEX(l3->CT_OFF), '\n');
 
 	/* forward the request if needed, if not we answer with an ACK */
 	if (do_or_not) REMOTE((s_m40xxxx*)(bll_cnt - 10));

@@ -210,7 +210,7 @@ uint8_t get_internal_voltage(void) {
 	return (uint8_t)result;																	// Vcc in millivolts
 }
 
-uint16_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2) {
+uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2) {
 	/* set the pins to enable measurement */
 	set_pin_output(ptr_enable);																// set the enable pin as output
 	set_pin_low(ptr_enable);																// and to gnd, while measurement goes from VCC over the resistor network to GND

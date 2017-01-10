@@ -229,15 +229,15 @@ void    CC1101::snd_data(uint8_t *buf, uint8_t burst) {
 
 	spi_select();																		// select CC1101
 	spi_send_byte(CC1101_TXFIFO | WRITE_BURST);											// send register address
-	spi_send_byte(buf[0]); DBG(CC, F("E:"), _HEXB(buf[0]), ' ');						// send byte 0, holds the length information
-	spi_send_byte(prev);	DBG(CC, _HEXB(prev), ' ');									// send byte 1
+	spi_send_byte(buf[0]); DBG(CC, F("E:"), _HEX(buf[0]), ' ');						// send byte 0, holds the length information
+	spi_send_byte(prev);	DBG(CC, _HEX(prev), ' ');									// send byte 1
 
 	for (uint8_t i = 2; i < buf[0]; i++) {												// process the string starting with byte 2
 		prev = (prev + 0xDC) ^ buf[i];													// encode current (i) byte
-		spi_send_byte(prev); DBG(CC, _HEXB(prev), ' ');									// write it into the module buffer
+		spi_send_byte(prev); DBG(CC, _HEX(prev), ' ');									// write it into the module buffer
 	}
 	prev = buf[buf[0]] ^ buf2;
-	spi_send_byte(prev);	DBG(CC, _HEXB(prev), ' ');									// process the last byte
+	spi_send_byte(prev);	DBG(CC, _HEX(prev), ' ');									// process the last byte
 	spi_deselect();																		// deselect CC1101
 	DBG(CC, F("#:"), buf[0]+1, _TIME, ' ');												// bytes are written in the send buffer, some debug
 

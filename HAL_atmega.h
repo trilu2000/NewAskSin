@@ -45,6 +45,7 @@ uint8_t get_pin_status(const s_pin_def *ptr_pin);
 #define DEBOUNCE  5
 void register_PCINT(const s_pin_def *ptr_pin);
 uint8_t check_PCINT(const s_pin_def *ptr_pin, uint8_t debounce);
+// pointer for callback defined in HAL_<vendor>.cpp
 void maintain_PCINT(uint8_t vec);
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -75,6 +76,6 @@ void add_millis(uint32_t ms);
 //-- battery measurement functions ----------------------------------------------------------------------------------------
 // http://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
 uint8_t get_internal_voltage(void);
-uint16_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2);
+uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2);
 uint16_t get_adc_value(uint8_t reg_admux);
 //- -----------------------------------------------------------------------------------------------------------------------

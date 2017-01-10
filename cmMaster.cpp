@@ -43,11 +43,11 @@ void cmMaster::info_config_change(void) {
 * no need for sending an answer here, for information only
 */
 void cmMaster::info_peer_add(s_m01xx01 *buf) {
-	DBG(CM, F("CM:info_peer_add, peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n');
+	DBG(CM, F("CM:info_peer_add, peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n');
 }
 
 void cmMaster::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
-	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEXB(idx), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n' );
+	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEX(idx), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n' );
 }
 
 
@@ -100,7 +100,7 @@ void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 	}
 	info_peer_add(buf);																		// inform the user module of the added peer
 
-	DBG(CM, F("CM:CONFIG_PEER_ADD, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
+	DBG(CM, F("CM:CONFIG_PEER_ADD, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
 	check_send_ACK_NACK(ret_byte);
 }
 /*
@@ -124,7 +124,7 @@ void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 			ret_byte++;																		// increase success
 		}
 	}
-	DBG(CM, F("CM:CONFIG_PEER_REMOVE, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEXB(buf->PEER_CNL[0]), F(", CNL_B:"), _HEXB(buf->PEER_CNL[1]), '\n');
+	DBG(CM, F("CM:CONFIG_PEER_REMOVE, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n');
 	check_send_ACK_NACK(ret_byte);
 }
 /*
@@ -216,7 +216,7 @@ void cmMaster::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 	if (cm->active)  {																		// check if config is active, channel fit is checked in AS
 		cm->list->write_array(buf->DATA, buf->MSG_LEN - 11, cm->idx_peer);					// write the array into the list
 		send_ACK();																			// we are fine
-		DBG(CM, F("CM:CONFIG_WRITE_INDEX2, cnl:"), buf->MSG_CNL, F(", lst:"), cm->lst, F(", idx:"), cm->idx_peer, '\n');
+		DBG(CM, F("CM:CONFIG_WRITE_INDEX2, cnl:"), buf->MSG_CNL, F(", lst:"), cm->list->lst, F(", idx:"), cm->idx_peer, '\n');
 	} else send_NACK();
 }
 /*
@@ -390,7 +390,7 @@ void send_status(s_cm_status *cm, uint8_t cnl) {
 	else if (cm->value >  cm->set_value) cm->f.DOWN = 1;
 
 	if (!cm->delay.done())               cm->f.DELAY = 1;
-	if (bat.getStatus())                 cm->f.LOWBAT = 1;;
+	//if (bat->getStatus())                cm->f.LOWBAT = 1;;
 
 	/* check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status */
 	if (cm->message_type == INFO::SND_ACK_STATUS)
@@ -572,7 +572,7 @@ void send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
 	msg->MSG_CNL = chnl;
 	msg->MSG_STATUS = stat;
 	*(uint8_t*)&msg->MSG_FLAG = actn;
-	msg->MSG_FLAG.LOWBAT = bat.getStatus();
+	msg->MSG_FLAG.LOWBAT = bat->get_status();
 	msg->MSG_RSSI = com->rssi;
 
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active

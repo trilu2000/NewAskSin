@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 
-#include "macros.h"
+//#include "macros.h"
 
 
 //- MCU dependent HAL definitions -----------------------------------------------------------------------------------------
@@ -95,8 +95,7 @@ extern void add_millis(uint32_t ms);
 */
 extern uint8_t get_internal_voltage(void);
 extern void init_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure);
-extern uint16_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2);
-
+extern uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -109,21 +108,21 @@ extern uint16_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_de
 #define dbg Serial
 template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; }
 
-#define _HI_HEX_BITS(x)  char((x>>4)>9?(x>>4)+55:(x>>4)+48)
-#define _LO_HEX_BITS(x)  char((x&0xF)>9?(x&0xF)+55:(x&0xF)+48)
-
-struct _HEXB {
-	uint8_t val;
-	_HEXB(uint8_t v) : val(v) {}
-};
-inline Print &operator <<(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
-
+const char num2char[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',  'A', 'B', 'C', 'D', 'E', 'F', };
 struct _HEX {
 	uint8_t *val;
 	uint8_t len;
-	_HEX(uint8_t *v, uint8_t l) : val(v), len(l) {}
+	_HEX(uint8_t v) : val(&v), len(1) {}
+	_HEX(uint8_t *v, uint8_t l = 1) : val(v), len(l) {}
 };
-inline Print &operator <<(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i <= arg.len) obj.print(' '); }; return obj; }
+inline Print &operator <<(Print &obj, const _HEX &arg) { 
+	for (uint8_t i = 0; i<arg.len; i++) {
+		if (i) obj.print(' ');
+		obj.print(num2char[arg.val[i] >> 4]);
+		obj.print(num2char[arg.val[i] & 0xF]);
+	}
+	return obj; 
+}
 
 enum _eTIME { _TIME };
 inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(get_millis()); obj.print(')'); return obj; }
@@ -136,16 +135,39 @@ void get_random(uint8_t *buf);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
+//- some macros and definitions -------------------------------------------------------------------------------------------
+#define _PGM_BYTE(x) pgm_read_byte(&x)										// short hand for PROGMEM read
+#define _PGM_WORD(x) pgm_read_word(&x)
+//- -----------------------------------------------------------------------------------------------------------------------
 
-	static uint16_t wdtSleep_TIME;
+
+//- conversation for message enum -----------------------------------------------------------------------------------------
+#define BIG_ENDIAN ((1 >> 1 == 0) ? 0 : 1)
+#if BIG_ENDIAN
+#define BY03(x)   ( (uint8_t) (( (uint32_t)(x) >> 0) ) )
+#define BY10(x)   ( (uint8_t) (( (uint32_t)(x) >> 8) ) )
+#define BY11(x)   ( (uint8_t) (( (uint32_t)(x) >> 16) ) )
+#define MLEN(x)   ( (uint8_t) (( (uint32_t)(x) >> 24) ) )
+#else
+#define BY03(x)   ( (uint8_t) (( (uint32_t)(x) >> 24) ) )
+#define BY10(x)   ( (uint8_t) (( (uint32_t)(x) >> 16) ) )
+#define BY11(x)   ( (uint8_t) (( (uint32_t)(x) >> 8) ) )
+#define MLEN(x)   ( (uint8_t) (( (uint32_t)(x) >> 0) ) )
+#endif
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+static uint16_t wdtSleep_TIME;
 
 
 
 
 
 	//- needed for 32u4 to prevent sleep, while USB didn't work in sleep ------------------------------------------------------
-	extern void    initWakeupPin(void);															// init the wakeup pin
-	extern uint8_t checkWakeupPin(void);														// we can setup a pin which avoid sleep mode
+//	extern void    initWakeupPin(void);															// init the wakeup pin
+//	extern uint8_t checkWakeupPin(void);														// we can setup a pin which avoid sleep mode
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -170,11 +192,11 @@ void get_random(uint8_t *buf);
 
 	//- battery measurement functions -----------------------------------------------------------------------------------------
 	// http://jeelabs.org/2013/05/17/zero-powe-battery-measurement/
-	#define BAT_NUM_MESS_ADC                  20								// real measures to get the best average measure
-	#define BAT_DUMMY_NUM_MESS_ADC            40								// dummy measures to get the ADC working
+//	#define BAT_NUM_MESS_ADC                  20								// real measures to get the best average measure
+//	#define BAT_DUMMY_NUM_MESS_ADC            40								// dummy measures to get the ADC working
 
-	extern uint16_t getAdcValue(uint8_t adcmux);
-	uint8_t  getBatteryVoltage(void);
+//	extern uint16_t getAdcValue(uint8_t adcmux);
+//	uint8_t  getBatteryVoltage(void);
 	//- -----------------------------------------------------------------------------------------------------------------------
 
 

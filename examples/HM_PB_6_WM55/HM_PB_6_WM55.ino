@@ -35,6 +35,8 @@ void setup() {
 	// - user related -----------------------------------------
 	//pci_ptr = &pci_callback;																// register pin change interrupt callback function
 	sei();																					// enable interrupts
+
+	// some test
 }
 
 void loop() {
@@ -42,10 +44,10 @@ void loop() {
 	hm.poll();																				// poll the homematic main loop
 
 	// - user related -----------------------------------------
-	if (xtimer.done()) {
-		dbg << "r:" << get_external_voltage(&pin_D7, &pin_C6, 10, 45) << '\n';
-		xtimer.set(3000);
-	}
+//	if (xtimer.done()) {
+//		dbg << "r:" << get_external_voltage(&pin_D7, &pin_C6, 10, 45) << '\n';
+//		xtimer.set(3000);
+//	}
 }
 
 

@@ -12,7 +12,7 @@
 
 
 
-void    initWakeupPin(void) {
+/*void    initWakeupPin(void) {
 	#if defined(WAKE_UP_DDR)
 		//pinInput(WAKE_UP_DDR, WAKE_UP_PIN);											// set pin as input
 		//setPinHigh(WAKE_UP_PORT, WAKE_UP_PIN);										// enable internal pull up
@@ -25,4 +25,4 @@ uint8_t checkWakeupPin(void) {
 	#endif
 
 	return 0;																		// normal operation
-}
+}*/

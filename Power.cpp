@@ -32,7 +32,7 @@ void PW::setMode(uint8_t mode) {
 	dbg << F("PowerMode: ") << pwrMode << '\n';											// ...and some information
 	#endif
 
-	initWakeupPin();
+	//initWakeupPin();
 	setSleepMode();
 	stayAwake(2000);																		// startup means stay awake for next 2 seconds
 }
@@ -54,7 +54,7 @@ void PW::poll(void) {
 	
 	if (pwrMode == POWER_MODE_NO_SLEEP) return;												// no power savings, there for we can exit
 	if (!pwrTmr.done()) return;																// timer active, jump out
-	if (checkWakeupPin()) return;															// wakeup pin active
+	//if (checkWakeupPin()) return;															// wakeup pin active
 	
 	// some communication still active, jump out
 	if ((snd_msg.active) || (list_msg.active) || (config_mode.active) || (pair_mode.active) || (cbn->button_check.armed)) return;

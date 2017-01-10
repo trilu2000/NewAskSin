@@ -52,11 +52,7 @@
 */
 
 
-template<class T> inline Print &operator ,(Print &obj, T arg) { obj.print(arg); return obj; }
-inline Print &operator  ,(Print &obj, const _HEXB &arg) { obj.print(_HI_HEX_BITS(arg.val)); obj.print(_LO_HEX_BITS(arg.val)); return obj; }
-inline Print &operator  ,(Print &obj, const _HEX &arg) { for (uint8_t i = 0; i<arg.len; i++) { obj.print(_HI_HEX_BITS(arg.val[i])); obj.print(_LO_HEX_BITS(arg.val[i])); if (i <= arg.len) obj.print(' '); }; return obj; }
-inline Print &operator  ,(Print &obj, _eTIME arg) { obj.print('('); obj.print(get_millis()); obj.print(')'); return obj; }
-
+template<class T> inline Print &operator ,(Print &obj, T arg) { return obj << arg; }
 
 #define PRIMITIVE_CAT(a, b, ...) a ## b(__VA_ARGS__)
 

@@ -25,6 +25,9 @@ AES *aes = new HAS_AES;
 COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
 CBN *cbn = new CBN(1, &pin_B0);
 LED *led = new LED(&pin_D6, &pin_D4);
+BAT *bat = new NO_BAT();
+//BAT *bat = new INT_BAT(3600000, 30);								// ~170 byte more than no_bat
+//BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
 
 /*
 * cmSwitch requires this functions in the user sketch:
@@ -90,7 +93,7 @@ void everyTimeStart(void) {
 
 	// channel 0 section 
 	pom.setMode(POWER_MODE_NO_SLEEP);
-	bat.set(30, 3600000);
+	//bat.set(30, 3600000);
 }
 
 /**

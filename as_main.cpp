@@ -61,7 +61,7 @@ void AS::init(void) {
 			pList->load_default();															// copy from progmem into array
 			pList->save_list();																// write it into the eeprom
 			pPeer->clear_all();
-			DBG(AS, F("AS:write_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, '\n');
+			DBG(AS, F("AS:write_defaults, cnl:"), pList->cnl, F(", lst:"), pList->lst, F(", len:"), pList->len, '\n');
 		}
 
 		/* - First time detected
@@ -145,9 +145,9 @@ void AS::poll(void) {
 	}
 
 
-	cbn->poll();																				// poll the config button
-	led->poll();																				// poll the led's
-	bat.poll();																				// poll the battery check
+	cbn->poll();																			// poll the config button
+	led->poll();																			// poll the led's
+	bat->poll();																			// poll the battery check
 		
 	// check if we could go to standby
 	pom.poll();																				// poll the power management
@@ -293,7 +293,7 @@ void AS::process_message(void) {
 		if (*rcv_by10 == BY10(MSG_TYPE::AES_REQ)) {
 		/* AES request is a speciality in this section, pair or peer is sending this request to challenge the last command we had send,
 		*  we have to use the 6 byte payload and generate a SEND_AES type message (* 0x02 04 ff 11 * - AES_REQ) */
-			//dbg << "AES_REQ, ind: " << _HEXB(rcv_msg.buf[17]) << ", data: " << _HEX(rcv_msg.buf+11, 6) << '\n';
+			//dbg << "AES_REQ, ind: " << _HEX(rcv_msg.buf[17]) << ", data: " << _HEX(rcv_msg.buf+11, 6) << '\n';
 			aes->prep_AES_REPLY(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf + 11, snd_msg.buf);// prepare the reply
 			snd_msg.clear();																// clear send message
 			send_AES_REPLY(aes->prev_buf);													// and send it
@@ -598,7 +598,7 @@ void AS::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
 		memcpy(newHmKey + keyPartIndex, rcv_msg.buf+12, 8);
 
 		#ifdef AES_DBG
-		dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEXB(keyPartIndex) << '\n';
+		dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEX(keyPartIndex) << '\n';
 		#endif
 
 		sendSignRequest(0);
