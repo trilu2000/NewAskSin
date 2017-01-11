@@ -36,6 +36,7 @@ struct  s_pcint_vector {
 	uint8_t mask;
 	uint32_t time;
 };
+
 volatile s_pcint_vector pcint_vector[PCINT_PCIE_SIZE];
 
 void register_PCINT(const s_pin_def *ptr_pin) {
@@ -65,7 +66,7 @@ uint8_t check_PCINT(const s_pin_def *ptr_pin, uint8_t debounce) {
 	else return 2;																			// pin is 0, old was 1
 }
 
-void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag) = NULL;
+void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag) = NULL;								// call back function pointer
 
 void maintain_PCINT(uint8_t vec) {
 	pcint_vector[vec].curr = *pcint_vector[vec].PINREG & pcint_vector[vec].mask;			// read the pin port and mask out only pins registered
@@ -106,8 +107,8 @@ ISR(PCINT3_vect) {
 
 //-- spi functions --------------------------------------------------------------------------------------------------------
 void enable_spi(void) {
-	// SPI enable, master, speed = CLK/4
-	SPCR = _BV(SPE) | _BV(MSTR);
+	power_spi_enable();																		// enable only needed functions
+	SPCR = _BV(SPE) | _BV(MSTR);															// SPI enable, master, speed = CLK/4
 }
 
 uint8_t spi_send_byte(uint8_t send_byte) {
@@ -143,44 +144,36 @@ void clear_eeprom(uint16_t addr, uint16_t len) {
 
 //-- timer functions ------------------------------------------------------------------------------------------------------
 static volatile uint32_t milliseconds;
-#ifndef F_CPU
-#error "F_CPU not defined!"
-#endif
+static volatile uint8_t timer = 255;
 
-#ifdef TIMER0
-#define REG_TCRA        ( TCCR0A = _BV(WGM01) )
-#define REG_TCRB        ( TCCR0B = (_BV(CS01) | _BV(CS00)) )
-#define REG_OCRA        ( OCR0A = ((F_CPU / 64) / 1000) )
-#define POW_ENABLE      power_timer0_enable()
-#define REG_TMSK        ( TIMSK0 = _BV(OCIE0A) )
-#define ISR_VECT		TIMER0_COMPA_vect
-#endif
+void init_millis_timer0(int16_t correct_ms) {
+	timer = 0;
+	power_timer0_enable();
 
-#ifdef TIMER1
-#define REG_TCRA        ( TCCR1A = 0 )
-#define REG_TCRB        ( TCCR1B = (_BV(WGM12) | _BV(CS10) | _BV(CS11)) )
-#define REG_OCRA        ( OCR1A = ((F_CPU / 64) / 1000) )
-#define POW_ENABLE      power_timer1_enable()
-#define REG_TMSK        ( TIMSK1 = _BV(OCIE1A) )
-#define ISR_VECT		TIMER1_COMPA_vect
-#endif
+	TCCR0A = _BV(WGM01);
+	TCCR0B = (_BV(CS01) | _BV(CS00));
+	TIMSK0 = _BV(OCIE0A);
+	OCR0A = ((F_CPU / 64) / 1000) + correct_ms;
+}
 
-#ifdef TIMER2
-#define REG_TCRA        ( TCCR2A = _BV(WGM21) )
-#define REG_TCRB        ( TCCR2B = (_BV(CS21) | _BV(CS20)) )
-#define REG_OCRA        ( OCR2A = ((F_CPU / 32) / 1000) )
-#define POW_ENABLE      power_timer2_enable()
-#define REG_TMSK        ( TIMSK2 = _BV(OCIE2A) )
-#define ISR_VECT		TIMER2_COMPA_vect
-#endif
+void init_millis_timer1(int16_t correct_ms) {
+	timer = 1;
+	power_timer1_enable();
 
+	TCCR1A = 0;
+	TCCR1B = (_BV(WGM12) | _BV(CS10) | _BV(CS11));
+	TIMSK1 = _BV(OCIE1A);
+	OCR1A = ((F_CPU / 64) / 1000) + correct_ms;
+}
 
-void init_millis(void) {														
-	POW_ENABLE;
-	REG_TCRA;
-	REG_TCRB;
-	REG_TMSK;
-	REG_OCRA;
+void init_millis_timer2(int16_t correct_ms) {
+	timer = 2;
+	power_timer2_enable();
+
+	TCCR2A = _BV(WGM21);
+	TCCR2B = (_BV(CS21) | _BV(CS20));
+	TIMSK2 = _BV(OCIE2A);
+	OCR2A = ((F_CPU / 32) / 1000) + correct_ms;
 }
 
 uint32_t get_millis(void) {
@@ -197,8 +190,14 @@ void add_millis(uint32_t ms) {
 	}
 }
 
-ISR(ISR_VECT) {
-	++milliseconds;
+ISR(TIMER0_COMPA_vect) {
+	if (timer == 0) ++milliseconds;
+}
+ISR(TIMER1_COMPA_vect) {
+	if (timer == 1) ++milliseconds;
+}
+ISR(TIMER2_COMPA_vect) {
+	if (timer == 2) ++milliseconds;
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -253,3 +252,61 @@ uint16_t get_adc_value(uint8_t reg_admux) {
 	power_adc_disable();																	// stop adc
 	return result;
 }
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+//-- power management functions --------------------------------------------------------------------------------------------
+// http://donalmorrissey.blogspot.de/2010/04/sleeping-arduino-part-5-wake-up-via.html
+// http://www.mikrocontroller.net/articles/Sleep_Mode#Idle_Mode
+void startWDG32ms(void) {
+	WDTCSR |= (1 << WDCE) | (1 << WDE);
+	WDTCSR = (1 << WDIE) | (1 << WDP0);
+	wdtSleep_TIME = 32;
+}
+void startWDG64ms(void) {
+	WDTCSR |= (1 << WDCE) | (1 << WDE);
+	WDTCSR = (1 << WDIE) | (1 << WDP1);
+	wdtSleep_TIME = 64;
+}
+void startWDG250ms(void) {
+	WDTCSR |= (1 << WDCE) | (1 << WDE);
+	WDTCSR = (1 << WDIE) | (1 << WDP2);
+	wdtSleep_TIME = 256;
+}
+void startWDG8000ms(void) {
+	WDTCSR |= (1 << WDCE) | (1 << WDE);
+	WDTCSR = (1 << WDIE) | (1 << WDP3) | (1 << WDP0);
+	wdtSleep_TIME = 8192;
+}
+
+void setSleep(void) {
+	// some power savings by switching off some CPU functionality
+	ADCSRA = 0;																				// disable ADC
+	backupPwrRegs();																		// save content of power reduction register and set it to all off
+
+	sleep_enable();																			// enable sleep
+	offBrownOut();																			// turn off brown out detection
+
+	sleep_cpu();																			// goto sleep
+	// sleeping now
+	// --------------------------------------------------------------------------------------------------------------------
+	// wakeup will be here
+	sleep_disable();																		// first thing after waking from sleep, disable sleep...
+	recoverPwrRegs();																		// recover the power reduction register settings
+	//dbg << '.';																			// some debug
+}
+
+void    startWDG() {
+	WDTCSR = (1 << WDIE);
+}
+void    stopWDG() {
+	WDTCSR &= ~(1 << WDIE);
+}
+void    setSleepMode() {
+	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+}
+
+ISR(WDT_vect) {
+	add_millis(wdtSleep_TIME);																// nothing to do, only for waking up
+}
+//- -----------------------------------------------------------------------------------------------------------------------

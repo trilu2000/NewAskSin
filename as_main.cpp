@@ -36,7 +36,6 @@ s_snd_msg     snd_msg;																		// same for send strings
  * @brief Initialize the AskSin Module
  */
 void AS::init(void) {
-	//keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
 
 	/* - init eeprom function if a i2c eeprom is used and 
 	* prepare the defaults incl eeprom address map for the channel modules */
@@ -79,8 +78,6 @@ void AS::init(void) {
 		firstTimeStart();				
 	}
 
-	/* - Initialize the hardware. All this functions are defined in HAL.h and HAL_extern.h 	*/
-	init_millis();																			// start the millis counter
 
 	/* load list 0 and 1 defaults and inform the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
@@ -93,6 +90,7 @@ void AS::init(void) {
 	/* - add this function in register.h to setup default values every start */
 	everyTimeStart();
 
+	/* - Initialize the hardware. All this functions are defined in HAL.h and HAL_extern.h 	*/
 	com->init();																			// init the rf module
 	cbn->init();																			// init the config button
 	led->init();																			// initialize the leds

@@ -1,9 +1,16 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- Hardware abstraction layer --------------------------------------------------------------------------------------------
-//- -----------------------------------------------------------------------------------------------------------------------
+/*
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin hardware abstraction layer  ------------------------------------------------------------------------------------
+*  This is the central place where all hardware related functions are defined. Some are based on Arduino like debug print,
+*  but the majority is strongly based on the hardware vendor and cpu type. Therefor the HAL.h has a modular concept:
+*  HAL.h is the main template, all available functions are defined here, majority as external for sure
+*  Based on the hardware, a vendor hal will be included HAL_<vendor>.h
+*  Into the HAL_<vendor>.h there will be a CPU specific template included, HAL_<cpu>.h
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
+
 
 #ifndef _HAL_H
 #define _HAL_H
@@ -17,10 +24,9 @@
 #include <stdint.h>
 
 
-//#include "macros.h"
 
 
-//- MCU dependent HAL definitions -----------------------------------------------------------------------------------------
+//-- MCU dependent HAL definitions ----------------------------------------------------------------------------------------
 #if defined(__AVR__)
 	#include "HAL_atmega.h"
 #else
@@ -29,6 +35,11 @@
 
 
 
+/*************************************************************************************************************************/
+/*************************************************************************************************************************/
+/* - vendor and cpu specific functions --------------------------------------------------------------------------------- */
+/*************************************************************************************************************************/
+/*************************************************************************************************************************/
 
 /*-- pin functions --------------------------------------------------------------------------------------------------------
 * all pins defined as a struct, holding all information regarding port, pin, ddr, etc.
@@ -64,6 +75,7 @@ extern void maintain_PCINT(uint8_t vec);
 */
 extern void enable_spi(void);
 extern uint8_t spi_send_byte(uint8_t send_byte);
+//- -----------------------------------------------------------------------------------------------------------------------
 
 
 /*-- eeprom functions -----------------------------------------------------------------------------------------------------
@@ -82,7 +94,9 @@ extern void clear_eeprom(uint16_t addr, uint16_t len);
 * in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
 * you can also use the arduino standard timer for a specific hardware by interlinking the function call to getmillis()
 */
-extern void init_millis(void);
+extern void init_millis_timer0(int16_t correct_ms = 0);
+extern void init_millis_timer1(int16_t correct_ms = 0);
+extern void init_millis_timer2(int16_t correct_ms = 0);
 extern uint32_t get_millis(void);
 extern void add_millis(uint32_t ms);
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -99,6 +113,29 @@ extern uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
+/*-- power saving functions ----------------------------------------------------------------------------------------
+* As power saving is very hardware and vendor related, you will find the code definition in HAL_<vendor>.h
+*/
+extern void startWDG32ms(void);
+extern void startWDG64ms(void);
+extern void startWDG250ms(void);
+extern void startWDG8000ms(void);
+extern void setSleep(void);
+
+extern void startWDG();
+extern void stopWDG();
+extern void setSleepMode();
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+/*************************************************************************************************************************/
+/*************************************************************************************************************************/
+/* - arduino compatible functions -------------------------------------------------------------------------------------- */
+/*************************************************************************************************************************/
+/*************************************************************************************************************************/
 
 /*-- serial print functions -----------------------------------------------------------------------------------------------
 * template and some functions for debugging over serial interface
@@ -129,19 +166,24 @@ inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(ge
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-
-//- randum number functions -----------------------------------------------------------------------------------------------
+/*-- randum number functions ----------------------------------------------------------------------------------------------
+* Random number is needed for AES encryption, here we are generating a fake random number by xoring the timer.
+*/
 void get_random(uint8_t *buf);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-//- some macros and definitions -------------------------------------------------------------------------------------------
-#define _PGM_BYTE(x) pgm_read_byte(&x)										// short hand for PROGMEM read
+/*-- progmem macros -------------------------------------------------------------------------------------------------------
+* not sure if it is realy vendor independend, to be checked later...
+*/
+#define _PGM_BYTE(x) pgm_read_byte(&x)	
 #define _PGM_WORD(x) pgm_read_word(&x)
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-//- conversation for message enum -----------------------------------------------------------------------------------------
+/*-- conversation for message enum ----------------------------------------------------------------------------------------
+* macro to overcome the endian problem while converting a long number into a byte array
+*/
 #define BIG_ENDIAN ((1 >> 1 == 0) ? 0 : 1)
 #if BIG_ENDIAN
 #define BY03(x)   ( (uint8_t) (( (uint32_t)(x) >> 0) ) )
@@ -155,50 +197,6 @@ void get_random(uint8_t *buf);
 #define MLEN(x)   ( (uint8_t) (( (uint32_t)(x) >> 0) ) )
 #endif
 //- -----------------------------------------------------------------------------------------------------------------------
-
-
-
-
-static uint16_t wdtSleep_TIME;
-
-
-
-
-
-	//- needed for 32u4 to prevent sleep, while USB didn't work in sleep ------------------------------------------------------
-//	extern void    initWakeupPin(void);															// init the wakeup pin
-//	extern uint8_t checkWakeupPin(void);														// we can setup a pin which avoid sleep mode
-	//- -----------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-	//- power management functions --------------------------------------------------------------------------------------------
-	extern void    startWDG32ms(void);
-	extern void    startWDG64ms(void);
-	extern void    startWDG250ms(void);
-	extern void    startWDG8000ms(void);
-	extern void    setSleep(void);
-
-	extern void    startWDG();
-	extern void    stopWDG();
-	extern void    setSleepMode();
-	//- -----------------------------------------------------------------------------------------------------------------------
-
-
-	//- battery measurement functions -----------------------------------------------------------------------------------------
-	// http://jeelabs.org/2013/05/17/zero-powe-battery-measurement/
-//	#define BAT_NUM_MESS_ADC                  20								// real measures to get the best average measure
-//	#define BAT_DUMMY_NUM_MESS_ADC            40								// dummy measures to get the ADC working
-
-//	extern uint16_t getAdcValue(uint8_t adcmux);
-//	uint8_t  getBatteryVoltage(void);
-	//- -----------------------------------------------------------------------------------------------------------------------
-
 
 
 #endif 

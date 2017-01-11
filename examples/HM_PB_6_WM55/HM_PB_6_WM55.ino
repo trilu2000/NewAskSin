@@ -22,15 +22,13 @@ void setup() {
 	//DDRB = DDRC = DDRD = 0x00;															// everything as input
 	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-	// todo: timer0 and SPI should enable internally
-	power_timer0_enable();
-	power_spi_enable();																		// enable only needed functions
+
+	// - AskSin related ---------------------------------------
+	init_millis_timer0();																	// init timer0
+	hm.init();																				// init the asksin framework
 
 	DBG_START(SER, F("HM_PB_6_WM55\n"));
 	DBG(SER, F(LIB_VERSION_STRING));
-
-	// - AskSin related ---------------------------------------
-	hm.init();																				// init the asksin framework
 
 	// - user related -----------------------------------------
 	//pci_ptr = &pci_callback;																// register pin change interrupt callback function
