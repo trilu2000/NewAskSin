@@ -6,26 +6,23 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-//#define PW_DBG
-#include "Power.h"
-#include "as_main.h"
+#include "newasksin.h"
 
-PW pom;																						// declare power management, defined in Power.h
-waitTimer pwrTmr;																			// power timer functionality
+//PW pom;																						// declare power management, defined in Power.h
 
 // private:		//---------------------------------------------------------------------------------------------------------
 
 /**
 * @brief Initialize the power module
 */
-PW::PW() {
-	pwrMode = POWER_MODE_NO_SLEEP;															// set default
+POM::POM(uint8_t power_mode) {
+	pwrMode = power_mode;																// set default
 }
 
 /**
  * @brief Set power mode
  */
-void PW::setMode(uint8_t mode) {
+/*void POM::setMode(uint8_t mode) {
 	pwrMode = mode;
 
 	#ifdef PW_DBG																			// only if pw debug is set
@@ -35,25 +32,25 @@ void PW::setMode(uint8_t mode) {
 	//initWakeupPin();
 	setSleepMode();
 	stayAwake(2000);																		// startup means stay awake for next 2 seconds
-}
+}*/
 
 /**
  * @brief Stay awake for specific time
  *
  * @param time in milliseconds for stay awake
  */
-void PW::stayAwake(uint16_t time) {
-	if (time < pwrTmr.remain()) return;														// set new timeout only if we have to add something
-	pwrTmr.set(time);
+void POM::stayAwake(uint16_t time) {
+	if (time < timer.remain()) return;														// set new timeout only if we have to add something
+	timer.set(time);
 }
 
 /**
  * @brief Check against active flag of various modules
  */
-void PW::poll(void) {
+void POM::poll(void) {
 	
 	if (pwrMode == POWER_MODE_NO_SLEEP) return;												// no power savings, there for we can exit
-	if (!pwrTmr.done()) return;																// timer active, jump out
+	if (!timer.done()) return;																// timer active, jump out
 	//if (checkWakeupPin()) return;															// wakeup pin active
 	
 	// some communication still active, jump out

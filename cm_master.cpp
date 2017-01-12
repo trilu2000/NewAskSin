@@ -7,18 +7,14 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#include "00_debug-flag.h"
-#include "cmMaster.h"
-#include "as_main.h"
+#include "newasksin.h"
 
-uint8_t cnl_max = 0;																		// defined in cmMaster.h, increased by every instance which is initialized
 
-s_peer_msg    peer_msg;																		// peer message array as buffer between send function and send processing
-s_list_msg    list_msg;																		// holds information to answer config list requests for peer or param lists
+
 
 
 //public://------------------------------------------------------------------------------------------------------------------
-cmMaster::cmMaster(const uint8_t peer_max) {
+cm_master::cm_master(const uint8_t peer_max) {
 	peerDB.max = peer_max;
 
 	lstC.cnl = cnl_max;																		// set the channel to the lists
@@ -34,7 +30,7 @@ cmMaster::cmMaster(const uint8_t peer_max) {
 * Herewith we can adapt changes given by the config change. Needs to be overwritten
 * by the respective channel module
 */
-void cmMaster::info_config_change(void) {
+void cm_master::info_config_change(void) {
 	DBG(CM, F("CM:config_change\n") );
 }
 /**
@@ -42,20 +38,20 @@ void cmMaster::info_config_change(void) {
 * 1st 3 bytes shows the peer address, 4th and 5th byte gives the peer channel
 * no need for sending an answer here, for information only
 */
-void cmMaster::info_peer_add(s_m01xx01 *buf) {
+void cm_master::info_peer_add(s_m01xx01 *buf) {
 	DBG(CM, F("CM:info_peer_add, peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n');
 }
 
-void cmMaster::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
+void cm_master::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEX(idx), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n' );
 }
 
 
-void cmMaster::init(void) {
+void cm_master::init(void) {
 	cm_init();																				// init the virtual poll function
 }
 
-void cmMaster::poll(void) {
+void cm_master::poll(void) {
 	cm_poll();																				// poll the virtual poll function 
 }
 
@@ -63,7 +59,7 @@ void cmMaster::poll(void) {
 * @brief This function is called at the moment by the config button class, it is to toogle the output
 * of an alligned channel. Needs to be overwritten by any actor class 
 */
-void cmMaster::set_toggle(void) {
+void cm_master::set_toggle(void) {
 	DBG(CM, F("CM:toggle\n") );
 }
 
@@ -76,7 +72,7 @@ void cmMaster::set_toggle(void) {
 * CONFIG_PEER_ADD message is send by the HM master to combine two client devices
 * request is forwarded by the AS:processMessage function
 */
-void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
+void cm_master::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
 
@@ -108,7 +104,7 @@ void cmMaster::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 * CONFIG_PEER_REMOVE message is send by the HM master to remove the binding of two client devices
 * request is forwarded by the AS:processMessage function
 */
-void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
+void cm_master::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
 
@@ -134,7 +130,7 @@ void cmMaster::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 * and prepare a struct with the required information to process it further in a seperate function call
 * request is forwarded by the AS:processMessage function
 */
-void cmMaster::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
+void cm_master::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
 	DBG(CM, F("CM:CONFIG_PEER_LIST_REQ\n"));
 	//send_ACK();
 	send_INFO_PEER_LIST(buf->MSG_CNL);
@@ -146,7 +142,7 @@ void cmMaster::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
 * and prepare a struct with the required information to process it further in a seperate function call
 * request is forwarded by the AS:processMessage function
 */
-void cmMaster::CONFIG_PARAM_REQ(s_m01xx04 *buf) {
+void cm_master::CONFIG_PARAM_REQ(s_m01xx04 *buf) {
 	DBG(CM, F("CM:CONFIG_PARAM_REQ\n"));
 	//send_ACK();
 	send_INFO_PARAM_RESPONSE_PAIRS(buf->MSG_CNL, buf->PARAM_LIST, buf->PEER_ID);
@@ -160,7 +156,7 @@ void cmMaster::CONFIG_PARAM_REQ(s_m01xx04 *buf) {
 *             Sender__ Receiver    Channel PeerID__ PeerChannel ParmList
 * 10 04 A0 01 63 19 63 01 02 04 01 05      00 00 00 00          00
 */
-void cmMaster::CONFIG_START(s_m01xx05 *buf) {
+void cm_master::CONFIG_START(s_m01xx05 *buf) {
 	s_config_mode *cm = &config_mode;														// short hand to config mode struct
 	cm->list = list[buf->PARAM_LIST];														// short hand to the list table
 	cm->idx_peer = peerDB.get_idx(buf->PEER_ID);											// try to get the peer index
@@ -182,7 +178,7 @@ void cmMaster::CONFIG_START(s_m01xx05 *buf) {
 *             Sender__ Receiver    Channel
 * 10 04 A0 01 63 19 63 01 02 04 01 06
 */
-void cmMaster::CONFIG_END(s_m01xx06 *buf) {
+void cm_master::CONFIG_END(s_m01xx06 *buf) {
 	s_config_mode *cm = &config_mode;														// short hand to config mode struct
 	cm->timer.set(0);																		// clear the timer
 	cm->active = 0;																			// clear the flag
@@ -199,7 +195,7 @@ void cmMaster::CONFIG_END(s_m01xx06 *buf) {
 /* 
 * todo: implement
 */
-void cmMaster::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
+void cm_master::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
 	DBG(CM, F("CM:CONFIG_WRITE_INDEX1\n"));
 }
 /*
@@ -210,7 +206,7 @@ void cmMaster::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
 *             Sender__ Receiver        Channel ConfigData: Register:BytePairs
 * 13 02 A0 01 63 19 63 01 02 04 00  08 02      01 0A 63 0B 19 0C 63
 */
-void cmMaster::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
+void cm_master::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 	s_config_mode *cm = &config_mode;														// short hand to config mode struct
 
 	if (cm->active)  {																		// check if config is active, channel fit is checked in AS
@@ -226,7 +222,7 @@ void cmMaster::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 *             Sender__ Receiver
 * 0B 77 A0 01 63 19 63 01 02 04 00 09
 */
-void cmMaster::CONFIG_SERIAL_REQ(s_m01xx09 *buf) {
+void cm_master::CONFIG_SERIAL_REQ(s_m01xx09 *buf) {
 	send_INFO_SERIAL();
 	DBG(CM, F("CM:CONFIG_SERIAL_REQ\n"));
 }
@@ -237,7 +233,7 @@ void cmMaster::CONFIG_SERIAL_REQ(s_m01xx09 *buf) {
 *             Sender__ Receiver       SerialNumber
 * 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
 */
-void cmMaster::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
+void cm_master::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
 	DBG(CM, F("CM:CONFIG_PAIR_SERIAL, cnl:"), _HEX(buf->SERIALNO,10), '\n');
 
 	if (isEqual(buf->SERIALNO, dev_ident.SERIAL_NR, 10)) 									// compare serial and send device info
@@ -251,112 +247,112 @@ void cmMaster::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
 *                Sender__  Receiver  CNL   BY11
 * l> 0B 40 A0 01 63 19 64  23 70 D8  01    0E     
 */
-void cmMaster::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
+void cm_master::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
 	DBG(CM, F("CM:CONFIG_STATUS_REQUEST\n"));
 }
 
 
-void cmMaster::ACK(s_m0200xx *buf) {
+void cm_master::ACK(s_m0200xx *buf) {
 	DBG(CM, F("CM:ACK\n"));
 }
-void cmMaster::ACK_STATUS(s_m0201xx *buf) {
+void cm_master::ACK_STATUS(s_m0201xx *buf) {
 	DBG(CM, F("CM:ACK_STATUS\n"));
 }
-void cmMaster::ACK2(s_m0202xx *buf) {
+void cm_master::ACK2(s_m0202xx *buf) {
 	DBG(CM, F("CM:ACK2\n"));
 }
-void cmMaster::NACK(s_m0280xx *buf) {
+void cm_master::NACK(s_m0280xx *buf) {
 	DBG(CM, F("CM:NACK\n"));
 }
-void cmMaster::NACK_TARGET_INVALID(s_m0284xx *buf) {
+void cm_master::NACK_TARGET_INVALID(s_m0284xx *buf) {
 	DBG(CM, F("CM:NACK_TARGET_INVALID\n"));
 }
-void cmMaster::ACK_NACK_UNKNOWN(s_m02xxxx *buf) {
+void cm_master::ACK_NACK_UNKNOWN(s_m02xxxx *buf) {
 	DBG(CM, F("CM:ACK_NACK_UNKNOWN\n"));
 }
 
 
-void cmMaster::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
+void cm_master::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_INHIBIT_OFF\n"));
 }
-void cmMaster::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
+void cm_master::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_INHIBIT_ON\n"));
 }
-void cmMaster::INSTRUCTION_SET(s_m1102xx *buf) {
+void cm_master::INSTRUCTION_SET(s_m1102xx *buf) {
 	dbg << "CM set\n";
 	DBG(CM, F("CM:INSTRUCTION_SET\n"));
 }
-void cmMaster::INSTRUCTION_STOP_CHANGE(s_m1103xx *buf) {
+void cm_master::INSTRUCTION_STOP_CHANGE(s_m1103xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_STOP_CHANGE\n"));
 }
 
-//void cmMaster::INSTRUCTION_RESET(s_m1104xx *buf) {
+//void cm_master::INSTRUCTION_RESET(s_m1104xx *buf) {
 //}
-void cmMaster::INSTRUCTION_LED(s_m1180xx *buf) {
+void cm_master::INSTRUCTION_LED(s_m1180xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_LED\n"));
 }
-void cmMaster::INSTRUCTION_LED_ALL(s_m1181xx *buf) {
+void cm_master::INSTRUCTION_LED_ALL(s_m1181xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_LED_ALL\n"));
 }
-void cmMaster::INSTRUCTION_LEVEL(s_m1181xx *buf) {
+void cm_master::INSTRUCTION_LEVEL(s_m1181xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_LEVEL\n"));
 }
-void cmMaster::INSTRUCTION_SLEEPMODE(s_m1182xx *buf) {
+void cm_master::INSTRUCTION_SLEEPMODE(s_m1182xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_SLEEPMODE\n"));
 }
-//void cmMaster::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
+//void cm_master::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
 //}
-void cmMaster::INSTRUCTION_SET_TEMP(s_m1186xx *buf) {
+void cm_master::INSTRUCTION_SET_TEMP(s_m1186xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_SET_TEMP\n"));
 }
-//void cmMaster::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
+//void cm_master::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
 //}
-//void cmMaster::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
+//void cm_master::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
 //}
 
 
-void cmMaster::HAVE_DATA(s_m12xxxx *buf) {
+void cm_master::HAVE_DATA(s_m12xxxx *buf) {
 	DBG(CM, F("CM:HAVE_DATA\n"));
 }
 
 
-void cmMaster::SWITCH(s_m3Exxxx *buf) {
+void cm_master::SWITCH(s_m3Exxxx *buf) {
 	DBG(CM, F("CM:SWITCH\n"));
 }
-void cmMaster::TIMESTAMP(s_m3fxxxx *buf) {
+void cm_master::TIMESTAMP(s_m3fxxxx *buf) {
 	DBG(CM, F("CM:TIMESTAMP\n"));
 }
-void cmMaster::REMOTE(s_m40xxxx *buf) {
+void cm_master::REMOTE(s_m40xxxx *buf) {
 	DBG(CM, F("CM:REMOTE\n"));
 }
-void cmMaster::SENSOR_EVENT(s_m41xxxx *buf) {
+void cm_master::SENSOR_EVENT(s_m41xxxx *buf) {
 	DBG(CM, F("CM:SENSOR_EVENT\n"));
 }
-void cmMaster::SWITCH_LEVEL(s_m42xxxx *buf) {
+void cm_master::SWITCH_LEVEL(s_m42xxxx *buf) {
 	DBG(CM, F("CM:SWITCH_LEVEL\n"));
 }
-void cmMaster::SENSOR_DATA(s_m53xxxx *buf) {
+void cm_master::SENSOR_DATA(s_m53xxxx *buf) {
 	DBG(CM, F("CM:SENSOR_DATA\n"));
 }
-void cmMaster::GAS_EVENT(s_m54xxxx *buf) {
+void cm_master::GAS_EVENT(s_m54xxxx *buf) {
 	DBG(CM, F("CM:GAS_EVENT\n"));
 }
-void cmMaster::CLIMATE_EVENT(s_m58xxxx *buf) {
+void cm_master::CLIMATE_EVENT(s_m58xxxx *buf) {
 	DBG(CM, F("CM:CLIMATE_EVENT\n"));
 }
-void cmMaster::SET_TEAM_TEMP(s_m59xxxx *buf) {
+void cm_master::SET_TEAM_TEMP(s_m59xxxx *buf) {
 	DBG(CM, F("CM:SET_TEAM_TEMP\n"));
 }
-void cmMaster::THERMAL_CONTROL(s_m5axxxx *buf) {
+void cm_master::THERMAL_CONTROL(s_m5axxxx *buf) {
 	DBG(CM, F("CM:THERMAL_CONTROL\n"));
 }
-void cmMaster::POWER_EVENT_CYCLE(s_m5exxxx *buf) {
+void cm_master::POWER_EVENT_CYCLE(s_m5exxxx *buf) {
 	DBG(CM, F("CM:POWER_EVENT_CYCLE\n"));
 }
-void cmMaster::POWER_EVENT(s_m5fxxxx *buf) {
+void cm_master::POWER_EVENT(s_m5fxxxx *buf) {
 	DBG(CM, F("CM:POWER_EVENT\n"));
 }
-void cmMaster::WEATHER_EVENT(s_m70xxxx *buf) {
+void cm_master::WEATHER_EVENT(s_m70xxxx *buf) {
 	DBG(CM, F("CM:WEATHER_EVENT\n"));
 }
 
@@ -378,7 +374,7 @@ void cmMaster::WEATHER_EVENT(s_m70xxxx *buf) {
 * polled by cmMaster poll function.
 */
 void send_status(s_cm_status *cm, uint8_t cnl) {
-	AS *phm = &hm;																			// short hand to main class
+	//AS *phm = &hm;																			// short hand to main class
 
 	if (snd_msg.active) return;																// send has already something to do
 	if (!cm->message_type) return;															// nothing to do
@@ -393,19 +389,19 @@ void send_status(s_cm_status *cm, uint8_t cnl) {
 	//if (bat->getStatus())                cm->f.LOWBAT = 1;;
 
 	/* check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status */
-	if (cm->message_type == INFO::SND_ACK_STATUS)
+	if (cm->message_type == STA_INFO::SND_ACK_STATUS)
 		send_ACK_STATUS(cnl, cm->value, cm->flag);
-	else if (cm->message_type == INFO::SND_ACTUATOR_STATUS)
+	else if (cm->message_type == STA_INFO::SND_ACTUATOR_STATUS)
 		send_INFO_ACTUATOR_STATUS(cnl, cm->value, cm->flag);
-	else if (cm->message_type == INFO::SND_ACTUATOR_STATUS_AGAIN)
+	else if (cm->message_type == STA_INFO::SND_ACTUATOR_STATUS_AGAIN)
 		send_INFO_ACTUATOR_STATUS(cnl, cm->value, cm->flag);
 
 	/* check if it is a stable status, otherwise schedule next check */
 	if (cm->f.DELAY) {																		// status is currently changing
-		cm->message_type = INFO::SND_ACTUATOR_STATUS_AGAIN;									// send next time a info status message
+		cm->message_type = STA_INFO::SND_ACTUATOR_STATUS_AGAIN;									// send next time a info status message
 		cm->message_delay.set(cm->delay.remain() + 100);									// check again when timer is finish
 
-	} else cm->message_type = INFO::NOTHING;												// no need for next time
+	} else cm->message_type = STA_INFO::NOTHING;												// no need for next time
 
 }
 
@@ -417,7 +413,7 @@ void send_status(s_cm_status *cm, uint8_t cnl) {
 uint16_t cm_prep_default(uint16_t ee_start_addr) {
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = ptr_CM[i];														// short hand to respective channel master	
+		cm_master *pCM = ptr_CM[i];														// short hand to respective channel master	
 		
 		pCM->list[pCM->lstC.lst] = &pCM->lstC;											// allign lstC to the list array
 		if (pCM->lstP.lst < 5) pCM->list[pCM->lstP.lst] = &pCM->lstP;					// because of the absence of lstP in channel0
@@ -432,7 +428,7 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 	}
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = ptr_CM[i];														// short hand to respective channel master	
+		cm_master *pCM = ptr_CM[i];														// short hand to respective channel master	
 		pCM->peerDB.ee_addr = ee_start_addr;											// write eeprom address into the peer table
 		ee_start_addr += pCM->peerDB.max * 4;											// create nwe eeprom start address depending on the space for max peers are used
 	}
@@ -446,7 +442,7 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 */
 uint8_t  is_peer_valid(uint8_t *peer) {
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmMaster *pCM = ptr_CM[i];														// short hand to respective channel master	
+		cm_master *pCM = ptr_CM[i];														// short hand to respective channel master	
 		if (pCM->peerDB.get_idx(peer) != 0xff) return i;								// ask the peer table to find the peer, if found, return the cnl
 	}
 	return 0;																			// nothing was found, return 0
@@ -741,7 +737,7 @@ void send_HAVE_DATA() {
 
 //void send_SWITCH(s_peer_table *peerDB) {
 //}
-void send_TIMESTAMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_TIMESTAMP(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
 
 /* 
@@ -751,7 +747,7 @@ void send_TIMESTAMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload
 *            *channel_module, ptr to the respective channel module, use "this"
 *            *ptr_payload, pointer to the payload, in this case it is a fixed 2 byte array
 */
-void send_REMOTE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_REMOTE(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 	if (peer_msg.active) return;
 	peer_msg.active = (bidi) ? MSG_ACTIVE::PEER_BIDI : MSG_ACTIVE::PEER;
 	peer_msg.type = MSG_TYPE::REMOTE;
@@ -763,25 +759,25 @@ void send_REMOTE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
 	peer_msg.max_retr = 3;
 	DBG(CM, F("CM:send_REMOTE peers:"), channel_module->peerDB.used_slots(), F(", payload:"), _HEX(ptr_payload, 2), ", bidi:", bidi, '\n');
 }
-void send_SENSOR_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_SENSOR_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_SWITCH_LEVEL(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_SWITCH_LEVEL(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_SENSOR_DATA(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_SENSOR_DATA(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_GAS_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_GAS_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_CLIMATE_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_CLIMATE_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_SET_TEAM_TEMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_SET_TEAM_TEMP(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_THERMAL_CONTROL(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_THERMAL_CONTROL(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_POWER_EVENT_CYCLE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_POWER_EVENT_CYCLE(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_POWER_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_POWER_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
-void send_WEATHER_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload) {
+void send_WEATHER_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload) {
 }
 
 /*

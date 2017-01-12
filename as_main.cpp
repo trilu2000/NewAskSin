@@ -9,26 +9,8 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#include "00_debug-flag.h"
-#include "as_main.h"
+#include "newasksin.h"
 #include "as_analyze.h"
-#include <avr/wdt.h>
-
- /*
- * On device reset the watchdog hart reset the entire device.
- * Comment out to disable this.
- */
-#define WDT_RESET_ON_RESET
-
-
-s_pair_mode   pair_mode;																	// helper structure for keeping track of active pairing mode
-s_config_mode config_mode;																	// helper structure for keeping track of active config mode
-
-s_dev_ident   dev_ident;																	// struct to hold the device identification related information									
-s_dev_operate dev_operate;																	// struct to hold all operational variables or pointers
-
-s_rcv_msg     rcv_msg;																		// struct to process received strings
-s_snd_msg     snd_msg;																		// same for send strings
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
@@ -81,7 +63,7 @@ void AS::init(void) {
 
 	/* load list 0 and 1 defaults and inform the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
-		cmMaster *pCM = ptr_CM[i];															// short hand to respective channel master	
+		cm_master *pCM = ptr_CM[i];															// short hand to respective channel master	
 		pCM->lstC.load_list();																// read the defaults in respective list0/1
 		pCM->info_config_change();															// inform the channel modules
 		pCM->init();																		// initialize the channel modules
@@ -146,9 +128,7 @@ void AS::poll(void) {
 	cbn->poll();																			// poll the config button
 	led->poll();																			// poll the led's
 	bat->poll();																			// poll the battery check
-		
-	// check if we could go to standby
-	pom.poll();																				// poll the power management
+	pom->poll();																			// poll the power management
 }
 
 
@@ -247,7 +227,7 @@ void AS::process_message(void) {
 	uint8_t *rcv_by03 = &rcv_msg.mBody.MSG_TYP;
 	uint8_t *rcv_by10 = &rcv_msg.mBody.BY10;
 	uint8_t *rcv_by11 = &rcv_msg.mBody.BY11;
-	cmMaster *pCM;
+	cm_master *pCM;
 
 	if (*rcv_by03 == BY03(MSG_TYPE::DEVICE_INFO)) {
 		/* not sure what to do with while received, probably nothing */
@@ -444,7 +424,7 @@ void AS::snd_poll(void) {
 	if (sm->retr_cnt == 0xff) {
 		sm->clear();																		// nothing to do any more
 		led->set(LED_STAT::GOT_ACK);														// fire the status led
-		pom.stayAwake(100);																	// and stay awake for a short while
+		pom->stayAwake(100);																	// and stay awake for a short while
 		return;
 	}
 
@@ -526,7 +506,7 @@ void AS::snd_poll(void) {
 
 		if (sm->mBody.FLAG.BIDI) sm->timer.set(sm->max_time);								// timeout is only needed while an ACK is requested
 		led->set(LED_STAT::SEND_MSG);														// fire the status led
-		pom.stayAwake(100);																	// and stay awake for a short while
+		pom->stayAwake(100);																	// and stay awake for a short while
 
 		DBG(SN, F("<- "), _HEX(sm->buf, sm->buf[0] + 1), ' ', _TIME, '\n');					// some debug
 
@@ -539,7 +519,7 @@ void AS::snd_poll(void) {
 
 		sm->timeout = 1;																	// set the time out only while an ACK or answer was requested
 		led->set(LED_STAT::GOT_NACK);														// fire the status led
-		pom.stayAwake(100);																	// and stay awake for a short while
+		pom->stayAwake(100);																	// and stay awake for a short while
 
 		DBG(SN, F("  timed out "), _TIME, '\n');											// some debug
 	}

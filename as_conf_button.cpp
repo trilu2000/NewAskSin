@@ -1,15 +1,12 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin config key function --------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
-//- -----------------------------------------------------------------------------------------------------------------------
+/**
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin config button class --------------------------------------------------------------------------------------------
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
 
-#include "00_debug-flag.h"
-#include "as_conf_button.h"
-#include "as_main.h"
-
+#include "newasksin.h"
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
@@ -25,7 +22,7 @@ CBN::CBN(const uint8_t mode = 0) {
 }
 
 void CBN::init(void) {
-	register_PCINT(key_pin);																	// prepare hardware and register interrupt
+	register_PCINT(key_pin);																// prepare hardware and register interrupt
 
 	status = check_PCINT(key_pin, 0);														// get the latest information
 
@@ -44,7 +41,7 @@ void CBN::poll(void) {
 	/* button was just pressed, start for every option */
 	if (status == 2) {
 		timer.set(detectLong);																// set timer to detect a long
-		pom.stayAwake(detectLong + 100);													// stay awake to check button status
+		pom->stayAwake(detectLong + 100);													// stay awake to check button status
 		button_check.armed = 1;																// set it armed
 	}
 	if (!button_check.armed) return;														// nothing to do any more
@@ -52,7 +49,7 @@ void CBN::poll(void) {
 	/* button was just released, keyShortSingle, keyLongRelease, keyDblLongRelease */
 	if (status == 3) {
 		timer.set(timeoutDouble);															// set timer to clear the repeated flags
-		pom.stayAwake(timeoutDouble + 100);													// stay awake to check button status
+		pom->stayAwake(timeoutDouble + 100);												// stay awake to check button status
 
 		if ((button_check.last_long) && (!button_check.check_dbl)) {
 		/* keyLongRelease, could be the start of a keyDblLong */
@@ -76,7 +73,7 @@ void CBN::poll(void) {
 	/* button is still pressed, but timed out, seems to be a keyLong or keyDblLong */
 	if (status == 0) {
 		timer.set(detectLong);																// set timer to detect a long
-		pom.stayAwake(detectLong + 100);													// stay awake to check button status
+		pom->stayAwake(detectLong + 100);													// stay awake to check button status
 		if (button_check.last_long) return;													// we had recognized the status already
 		button_check.last_long = 1;															// remember that it was a long
 		if (button_check.check_dbl) button_action(MSG_CBN::keyDblLong);						// we had already a long, this time it is a double long

@@ -8,7 +8,7 @@
 
 #include "00_debug-flag.h"
 #include "HAL.h"
-#include "wait_timer.h"
+#include "waittimer.h"
 #include "AS_enum_defs.h"
 #include "AS_message_defs.h"
 

@@ -9,7 +9,8 @@
 #ifndef _BAT_H
 #define _BAT_H
 
-#include "wait_timer.h"
+#include "HAL.h"
+#include "waittimer.h"
 
 
 class BAT {

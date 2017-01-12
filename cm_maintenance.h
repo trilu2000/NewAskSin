@@ -7,10 +7,10 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#ifndef _cmMaintenance_H
-#define _cmMaintenance_H
+#ifndef _CM_MAINTENANCE_H
+#define _CM_MAINTENANCE_H
 
-#include "cmMaster.h"
+#include "cm_master.h"
 
 
 /**
@@ -24,10 +24,10 @@
 * Has to be defined within the channel module or externally from the class
 */
 
-class cmMaintenance : public cmMaster {
+class cm_maintenance : public cm_master {
 public:  //----------------------------------------------------------------------------------------------------------------
 	
-	cmMaintenance(const uint8_t peer_max);													// constructor
+	cm_maintenance(const uint8_t peer_max);													// constructor
 
 	virtual void info_config_change(void);													// list1 on registered channel had changed
 	virtual void cm_poll(void);																// poll function, driven by HM loop
@@ -36,10 +36,6 @@ public:  //---------------------------------------------------------------------
 
 };
 
-extern const uint8_t cmMaintenance_ChnlLen;
-extern const uint8_t cmMaintenance_ChnlReg[];
-extern const uint8_t cmMaintenance_ChnlDef[];
-extern uint8_t cmMaintenance_ChnlVal[];
 
 
 #endif

@@ -7,23 +7,21 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#ifndef _cmMaster_H
-#define _cmMaster_H
+#ifndef _CM_MASTER_H
+#define _CM_MASTER_H
 
 #include "HAL.h"
-#include "AS_type_defs.h"
-
+#include "as_type_defs.h"
 
 const uint8_t list_max = 5;
 
 
-
-namespace INFO {
+namespace STA_INFO {
 	enum E : uint8_t { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS, SND_ACTUATOR_STATUS_AGAIN };
 };
 
 
-class cmMaster {
+class cm_master {
 public://------------------------------------------------------------------------------------------------------------------
 
 	/*
@@ -48,7 +46,7 @@ public://-----------------------------------------------------------------------
 	*/
 	s_peer_table peerDB;
 
-	cmMaster(const uint8_t peer_max);														// constructor
+	cm_master(const uint8_t peer_max);														// constructor
 																							
 	/*
 	* @brief Keep all information for sending an ACK_STATUS or INFO_ACTUATOR_STATUS at one place
@@ -149,13 +147,6 @@ public://-----------------------------------------------------------------------
 };
 
 
-/* as there is no way to get the channel by setting up the pointer array for channel modules we use this
-*  byte to identify the channel we are actually setting up, increased in the constructor...
-   the overall amount will be kept for runtime to step through the different instances. */
-extern uint8_t cnl_max;
-extern cmMaster *ptr_CM[];
-extern s_peer_msg peer_msg;
-extern s_list_msg list_msg;
 
 
 
@@ -256,19 +247,19 @@ void send_INFO_TEMP();
 
 void send_HAVE_DATA();
 
-//void send_SWITCH(s_peer_table *peerDB);												// peer related communication
-void send_TIMESTAMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);		// needed as send and receive function
-void send_REMOTE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);			// will be send to the peerlist, therefor
-void send_SENSOR_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);	// handover of the respective peerDB pointer
-void send_SWITCH_LEVEL(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);	// is mandatory
-void send_SENSOR_DATA(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
-void send_GAS_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
-void send_CLIMATE_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
-void send_SET_TEAM_TEMP(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
-void send_THERMAL_CONTROL(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
-void send_POWER_EVENT_CYCLE(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
-void send_POWER_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
-void send_WEATHER_EVENT(uint8_t bidi, cmMaster *channel_module, uint8_t *ptr_payload);
+//void send_SWITCH(s_peer_table *peerDB);													// peer related communication
+void send_TIMESTAMP(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);			// needed as send and receive function
+void send_REMOTE(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);			// will be send to the peerlist, therefor
+void send_SENSOR_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);		// handover of the respective peerDB pointer
+void send_SWITCH_LEVEL(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);		// is mandatory
+void send_SENSOR_DATA(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);
+void send_GAS_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);
+void send_CLIMATE_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);
+void send_SET_TEAM_TEMP(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);
+void send_THERMAL_CONTROL(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);
+void send_POWER_EVENT_CYCLE(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);
+void send_POWER_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);
+void send_WEATHER_EVENT(uint8_t bidi, cm_master *channel_module, uint8_t *ptr_payload);
 
 void process_peer_message(void);
 void process_list_message(void);

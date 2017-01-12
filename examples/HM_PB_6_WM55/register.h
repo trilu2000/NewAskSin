@@ -2,15 +2,12 @@
 #ifndef _REGISTER_h
 #define _REGISTER_h
 
-#define has_AES
 
 /**
 * @brief Libraries needed to run AskSin library
 */
-#include <as_main.h> 
+#include <newasksin.h> 
 #include "hmkey.h"
-#include <cmMaintenance.h> 
-#include <cmRemote.h> 
 
 /**
 * @brief Stage the modules and declare external functions.
@@ -27,25 +24,26 @@ LED *led = new LED(&pin_D6, &pin_D4);
 BAT *bat = new NO_BAT();
 //BAT *bat = new INT_BAT(3600000, 30);								// ~170 byte more than no_bat
 //BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
+POM *pom = new POM(POWER_MODE_NO_SLEEP);
 
 /*
 * cmSwitch requires this functions in the user sketch:
 * void cmSwitch::initSwitch(uint8_t channel);
 * void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
 */
-const uint8_t cmMaintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
-const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x01,0x00,0x00,0x00,0x69, };
-const uint8_t cmMaintenance_ChnlLen = 6;
+const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
+const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x01,0x00,0x00,0x00,0x69, };
+const uint8_t cm_maintenance_ChnlLen = 6;
 
 
-cmMaster *ptr_CM[7] = {
-	new cmMaintenance(0),
-	new cmRemote(11, &pin_C0),
-	new cmRemote(10, &pin_C1),
-	new cmRemote(10, &pin_C2),
-	new cmRemote(10, &pin_C3),
-	new cmRemote(10, &pin_C4),
-	new cmRemote(10, &pin_C5),
+cm_master *ptr_CM[7] = {
+	new cm_maintenance(0),
+	new cm_remote(11, &pin_C0),
+	new cm_remote(10, &pin_C1),
+	new cm_remote(10, &pin_C2),
+	new cm_remote(10, &pin_C3),
+	new cm_remote(10, &pin_C4),
+	new cm_remote(10, &pin_C5),
 };
 
 
@@ -90,9 +88,6 @@ const uint8_t dev_static[] PROGMEM = {             // testID
 void everyTimeStart(void) {
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
 
-	// channel 0 section 
-	pom.setMode(POWER_MODE_NO_SLEEP);
-	//bat.set(30, 3600000);
 }
 
 /**

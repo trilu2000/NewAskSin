@@ -2,14 +2,15 @@
 *  AskSin driver implementation
 *  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
 * - -----------------------------------------------------------------------------------------------------------------------
-* - AskSin wait timer functions -------------------------------------------------------------------------------------------
+* - AskSin wait timer class -----------------------------------------------------------------------------------------------
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#ifndef _WAIT_TIMER_H
-#define _WAIT_TIMER_H
+#ifndef _WAITTIMER_H
+#define _WAITTIMER_H
 
-#include "HAL.h"
+#include <stdint.h>
+
 
 /**
 * @short Timer class for non-blocking delays

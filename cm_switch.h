@@ -6,32 +6,32 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#ifndef _cmSwitch_H
-#define _cmSwitch_H
+#ifndef _CM_SWITCH_H
+#define _CM_SWITCH_H
 
-#include "cmMaster.h"
-
-// default settings are defined in cmSwitch.cpp - updatePeerDefaults
+#include "cm_master.h"
 
 
-const uint8_t cmSwitch_ChnlReg[] PROGMEM = { 0x08, };
-const uint8_t cmSwitch_ChnlDef[] PROGMEM = { 0x00, };
+const uint8_t cm_switch_ChnlReg[] PROGMEM = { 0x08, };
+const uint8_t cm_switch_ChnlDef[] PROGMEM = { 0x00, };
 
-const uint8_t cmSwitch_PeerReg[] PROGMEM = { 0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c, };
-const uint8_t cmSwitch_PeerDef[] PROGMEM = { 0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x01,0x44,0x44,0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x21,0x44,0x44, };
+const uint8_t cm_switch_PeerReg[] PROGMEM = { 0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c, };
+const uint8_t cm_switch_PeerDef[] PROGMEM = { 0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x01,0x44,0x44,0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x21,0x44,0x44, };
+
 
 #define NOT_USED 255
-namespace ACTION {
+namespace SW_ACTION {
 	enum E : uint8_t { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER };
 };
-namespace JT {
+namespace SW_JT {
 	enum E : uint8_t { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, ON = 0x03, OFFDELAY = 0x04, OFF = 0x06 };
 };
-namespace CT {
+namespace SW_CT {
 	enum E : uint8_t { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
 };
 
-class cmSwitch : public cmMaster {
+
+class cm_switch : public cm_master {
 private:  //---------------------------------------------------------------------------------------------------------------
 
 	struct s_l1 {
@@ -106,7 +106,7 @@ private:  //--------------------------------------------------------------------
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	cmSwitch(const uint8_t peer_max);														// constructor
+	cm_switch(const uint8_t peer_max);														// constructor
 
 	struct s_tr11 {
 		uint8_t  active;																	// trigger 11 active

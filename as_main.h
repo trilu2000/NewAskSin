@@ -9,35 +9,11 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#ifndef _NAS_H
-#define _NAS_H
+#ifndef _AS_MAIN_H
+#define _AS_MAIN_H
 
-#include "AS_type_defs.h"
-#include "as_aes.h"
-#include "as_communication.h"
-#include "as_conf_button.h"
-#include "as_status_led.h"
-#include "as_battery.h"
+#include "as_type_defs.h"
 
-#include "macros.h"
-#include "version.h"
-#include "wait_timer.h"
-
-#include "cmMaster.h"
-#include "Power.h"
-
-
-/*
-* @brief Struct to hold the buffer for any send or received string with some flags for further processing
-*/
-extern s_rcv_msg rcv_msg;
-extern s_snd_msg snd_msg;
-
-extern AES *aes;
-extern COM *com;
-extern CBN *cbn;
-extern LED *led;
-extern BAT *bat;
 
 /**
  * @short Main class for implementation of the AskSin protocol stack.
@@ -96,63 +72,6 @@ public:  //---------------------------------------------------------------------
 
 };
 
-
-/*
-* @brief Global definition of a struct to hold the device identification related information.
-*
-* First bytes of eeprom holds all device specific information for identification. Struct is used
-* to hold this information in memory on hand.
-*  2 byte - magic byte
-*  3 byte - homematic id
-* 10 byte - serial number
-*  1 byte - aes key index
-* 16 byte - homematic aes key
-*/
-extern s_dev_ident dev_ident;
-
-/*
-* @brief Global definition of a struct to hold all operational needed device variables
-* MAID is valid after initialization of AS with AS::init(). While not paired to a central,
-* MAID equals the broadcast address 000000. This is the case after first upload of a firmware
-* when an unconfigured EEprom is encountered (EEprom magic number does not match) or after a
-* reset of the device (RESET command sent by paired central or initiated by means of the
-* config button).
-*/
-extern s_dev_operate dev_operate;
-
-/*
-* @brief Helper structure for keeping track of active pairing mode
-*/
-extern s_pair_mode pair_mode;
-/*
-* @brief Helper structure for keeping track of active config mode
-*/
-extern s_config_mode config_mode;
-
-/*
-* @brief Global definition of device HMSerialData. Must be declared in user space.
-*
-* The HMSerialData holds the default HMID, HMSerial and HMKEY.
-* At every start, values of HMID and HMSerial was copied to related variables.
-* The HKEY was only copied at initial sketch start in the EEprom
-*/
-extern const uint8_t HMSerialData[] PROGMEM;
-/*
-* @brief Settings of HM device
-* firmwareVersion: The firmware version reported by the device
-*                  Sometimes this value is important for select the related device-XML-File
-*
-* modelID:         Important for identification of the device.
-*                  @See Device-XML-File /device/supported_types/type/parameter/const_value
-*
-* subType:         Identifier if device is a switch or a blind or a remote
-* DevInfo:         Sometimes HM-Config-Files are referring on byte 23 for the amount of channels.
-*                  Other bytes not known.
-*                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
-*/
-extern const uint8_t dev_static[] PROGMEM;
-
-
 /*
 * @fn void everyTimeStart()
 * @brief Callback for actions after bootup
@@ -160,6 +79,7 @@ extern const uint8_t dev_static[] PROGMEM;
 * This function is called when AS has started and before the main loop runs.
 */
 extern void everyTimeStart(void);
+
 /*
 * @fn void firstTimeStart()
 * @brief Callback for actions after EEprom deletion
@@ -171,7 +91,6 @@ extern void everyTimeStart(void);
 extern void firstTimeStart(void);
 
 
-extern AS hm;
 
 
 

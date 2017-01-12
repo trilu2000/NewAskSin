@@ -6,22 +6,20 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#ifndef _cmRemote_H
-#define _cmRemote_H
+#ifndef _CM_REMOTE_H
+#define _CM_REMOTE_H
 
-#include "cmMaster.h"
-
-// default settings are defined in cmRemote.cpp - updatePeerDefaults
+#include "cm_master.h"
 
 
-const uint8_t cmRemote_ChnlReg[] PROGMEM = { 0x04,0x08,0x09, };
-const uint8_t cmRemote_ChnlDef[] PROGMEM = { 0x40,0x00,0x00, };
+const uint8_t cm_remote_ChnlReg[] PROGMEM = { 0x04,0x08,0x09, };
+const uint8_t cm_remote_ChnlDef[] PROGMEM = { 0x40,0x00,0x00, };
 
-const uint8_t cmRemote_PeerReg[] PROGMEM = { 0x01, };
-const uint8_t cmRemote_PeerDef[] PROGMEM = { 0x00, };
+const uint8_t cm_remote_PeerReg[] PROGMEM = { 0x01, };
+const uint8_t cm_remote_PeerDef[] PROGMEM = { 0x00, };
 
 
-class cmRemote : public cmMaster {
+class cm_remote : public cm_master {
 private:  //---------------------------------------------------------------------------------------------------------------
 
 	struct s_l1 {
@@ -67,8 +65,8 @@ private:  //--------------------------------------------------------------------
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	cmRemote(const uint8_t peer_max, const s_pin_def *ptr_key_pin);								// constructor
-	cmRemote(const uint8_t peer_max);														// constructor, without pin
+	cm_remote(const uint8_t peer_max, const s_pin_def *ptr_key_pin);						// constructor
+	cm_remote(const uint8_t peer_max);														// constructor, without pin
 	virtual void cm_init();																	// overwrite the init function in cmMaster
 
 	virtual void cm_poll(void);																// poll function, driven by HM loop

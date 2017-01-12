@@ -6,10 +6,10 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -----------------------------------------------------------------------------------------------------------------------
 
-#ifndef _PW_H
-#define _PW_H
+#ifndef _AS_POWER_H
+#define _AS_POWER_H
 
-#include "HAL.h"
+#include "waittimer.h"
 
 
 
@@ -38,22 +38,22 @@
 #define POWER_MODE_WAKEUP_8000MS  5
 #define POWER_MODE_WAKEUP_EXT_INT 6
 
-class PW {
+class POM {
 public:		//---------------------------------------------------------------------------------------------------------
 
 	uint8_t pwrMode;														// remember the level of power savings
 	uint8_t chkCCBurst;
 	uint8_t comStat;
 	uint8_t tmpCCBurst;
-	
-	PW();
+	waitTimer timer;														// power timer functionality
 
-	void setMode(uint8_t mode);
+	POM(uint8_t power_mode);
+
+	//void setMode(uint8_t mode);
 	void stayAwake(uint16_t time);
 
 	void poll(void);
 };
 
-extern PW pom;																// declaration of power management class in AS.cpp
 
 #endif 

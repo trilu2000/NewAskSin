@@ -6,8 +6,8 @@
 //- with a lot of support from martin876 at FHEM forum
 //- -------------------------------------------------------------------------------------------------------------------
 
-#include "hardware.h"
-#include <HAL_extern.h>
+//#include "hardware.h"
+//#include <HAL_extern.h>
 //#include <HAL_COM_extern.h>
 
 

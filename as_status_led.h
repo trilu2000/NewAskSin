@@ -11,7 +11,7 @@
 #define _LD_H
 
 #include "HAL.h"
-#include "wait_timer.h"
+#include "waittimer.h"
 
 /**
 * @brief LED patterns are defined in HAL.h and HAL_extern.h while we use different patterns depending on

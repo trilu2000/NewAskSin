@@ -1,16 +1,16 @@
-//- -----------------------------------------------------------------------------------------------------------------------
-// AskSin driver implementation
-// 2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-//- -----------------------------------------------------------------------------------------------------------------------
-//- AskSin config key function --------------------------------------------------------------------------------------------
-//- with a lot of support from martin876 at FHEM forum
-//- -----------------------------------------------------------------------------------------------------------------------
+/**
+*  AskSin driver implementation
+*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
+* - -----------------------------------------------------------------------------------------------------------------------
+* - AskSin config button class --------------------------------------------------------------------------------------------
+* - -----------------------------------------------------------------------------------------------------------------------
+*/
 
-#ifndef _CBN_H
-#define _CBN_H
+#ifndef _AS_CONF_BUTTON_H
+#define _AS_CONF_BUTTON_H
 
-#include "HAL.h"
-#include "wait_timer.h"
+#include "waittimer.h"
+
 
 namespace MSG_CBN {
 	enum E : uint8_t { keyShort = 1, keyLong = 2, keyLongRelease = 3, keyDblLong = 4, keyDblLongRelease = 5, };

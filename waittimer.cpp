@@ -6,7 +6,9 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#include "wait_timer.h"
+#include "waittimer.h"
+#include "HAL.h"
+
 
 /**
 * @brief Constructor to initialize waittimer

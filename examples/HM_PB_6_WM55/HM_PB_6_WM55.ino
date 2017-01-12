@@ -3,9 +3,9 @@
 
 
 //- load library's --------------------------------------------------------------------------------------------------------
-#include <as_main.h>																		// ask sin framework
+#include <newasksin.h>																		// ask sin framework
 #include "register.h"																		// configuration sheet
-#include "wait_timer.h"
+#include "waittimer.h"
 
 waitTimer xtimer;
 
@@ -50,7 +50,7 @@ void loop() {
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
-void cmRemote::initRemote(uint8_t channel) {
+void cm_remote::initRemote(uint8_t channel) {
 	// setting the essentials for the respective remote channel if necassary
 	DBG(RE, F("initRemote: "), channel, '\n');
 
