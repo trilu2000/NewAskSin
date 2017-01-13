@@ -188,8 +188,8 @@ void dumpEEprom(void) {
 	for (uint8_t i = 0; i < cnl_max; i++) {													// stepping through channels
 
 		for (uint8_t j = 0; j < 5; j++) {													// stepping through available lists
-			s_list_table *list = ptr_CM[i]->list[j];										// short hand to list table
-			s_peer_table *peer = &ptr_CM[i]->peerDB;										// short hand to peer db
+			s_list_table *list = cmm[i]->list[j];											// short hand to list table
+			s_peer_table *peer = &cmm[i]->peerDB;											// short hand to peer db
 			if (!list) continue;															// skip if pointer is empty
 
 			uint8_t *x = new uint8_t[list->len];											// size an array as data buffer

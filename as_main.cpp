@@ -28,7 +28,7 @@ void AS::init(void) {
 	* with the CRC of the different lists in the channel modules. Every time there was a
 	* change in the configuration some addresses are changed and we have to rewrite the eeprom content.	*/
 	uint16_t flashCRC = cm_calc_crc();														// calculate the crc of all channel module list0/1, list3/4
-	get_eeprom(0, sizeof(dev_ident), &dev_ident);										// get magic byte and all other information from eeprom
+	get_eeprom(0, sizeof(dev_ident), &dev_ident);											// get magic byte and all other information from eeprom
 	DBG(AS, F("AS:init crc- flash:"), flashCRC, F(", eeprom: "), dev_ident.MAGIC, '\n');	// some debug
 
 	if (flashCRC != dev_ident.MAGIC) {	
@@ -37,12 +37,10 @@ void AS::init(void) {
 		* defaults are read from channel modules PROGMEM section, copied into the value byte array
 		* and written to the eeprom.  */
 		for (uint8_t i = 0; i < cnl_max; i++) {												// write the defaults in respective list0/1
-			s_list_table *pList = &ptr_CM[i]->lstC;											// short hand to list 
-			s_peer_table *pPeer = &ptr_CM[i]->peerDB;										// short hand to peer db
-			pList->load_default();															// copy from progmem into array
-			pList->save_list();																// write it into the eeprom
-			pPeer->clear_all();
-			DBG(AS, F("AS:write_defaults, cnl:"), pList->cnl, F(", lst:"), pList->lst, F(", len:"), pList->len, '\n');
+			cmm[i]->lstC.load_default();														// copy from progmem into array
+			cmm[i]->lstC.save_list();														// write it into the eeprom
+			cmm[i]->peerDB.clear_all();
+			DBG(AS, F("AS:write_defaults, cnl:"), cmm[i]->lstC.cnl, F(", lst:"), cmm[i]->lstC.lst, F(", len:"), cmm[i]->lstC.len, '\n');
 		}
 
 		/* - First time detected
@@ -63,10 +61,10 @@ void AS::init(void) {
 
 	/* load list 0 and 1 defaults and inform the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
-		cm_master *pCM = ptr_CM[i];															// short hand to respective channel master	
-		pCM->lstC.load_list();																// read the defaults in respective list0/1
-		pCM->info_config_change();															// inform the channel modules
-		pCM->init();																		// initialize the channel modules
+		//cm_master *pCM = cmm[i];															// short hand to respective channel master	
+		cmm[i]->lstC.load_list();															// read the defaults in respective list0/1
+		cmm[i]->info_config_change();														// inform the channel modules
+		cmm[i]->init();																		// initialize the channel modules
 	}
 
 	/* - add this function in register.h to setup default values every start */
@@ -103,7 +101,7 @@ void AS::poll(void) {
 
 	/* regular polls for the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// poll all the registered channel modules
-		ptr_CM[i]->poll();
+		cmm[i]->poll();
 	}
 
 	/* check if the device needs a reset */
@@ -227,7 +225,7 @@ void AS::process_message(void) {
 	uint8_t *rcv_by03 = &rcv_msg.mBody.MSG_TYP;
 	uint8_t *rcv_by10 = &rcv_msg.mBody.BY10;
 	uint8_t *rcv_by11 = &rcv_msg.mBody.BY11;
-	cm_master *pCM;
+	CM_MASTER *pCM;
 
 	if (*rcv_by03 == BY03(MSG_TYPE::DEVICE_INFO)) {
 		/* not sure what to do with while received, probably nothing */
@@ -237,7 +235,7 @@ void AS::process_message(void) {
 		*  check the channel and forward for processing to the respective function */
 		if (rcv_msg.mBody.BY10 >= cnl_max) return;											// channel is out of range, return
 		//uint8_t by11 = rcv_msg.mBody.BY11;												// short hand to byte 11 in the received string
-		pCM = ptr_CM[*rcv_by10];															// short hand to the respective channel module instance
+		//pCM = &cmm[*rcv_by10];															// short hand to the respective channel module instance
 
 		/* check if we need to challange the request */
 		switch (*rcv_by11) {
@@ -247,7 +245,7 @@ void AS::process_message(void) {
 			case BY11(MSG_TYPE::CONFIG_END):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX1):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX2):
-			if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+			if ((*cmm[*rcv_by10]->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
 				send_AES_REQ();																// send a request
 				return;																		// nothing to do any more, wait and see
 			}
@@ -307,7 +305,7 @@ void AS::process_message(void) {
 		if (new_key) {
 			dbg << "new idx " << aes->new_hmkey_index[0] << ", new key " << _HEX(aes->new_hmkey, 16) << '\n';
 			memcpy(dev_ident.HMKEY, aes->new_hmkey, 16);									// store the new key
-			dev_ident.HMKEY_INDEX[0] = aes->new_hmkey_index[0];	
+			dev_ident.HMKEY_INDEX[0] = aes->new_hmkey_index[0];
 			set_eeprom(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));						// write it to the eeprom
 		}
 		send_ACK();																			// send ACK
@@ -320,11 +318,11 @@ void AS::process_message(void) {
 		//uint8_t by10 = rcv_msg.mBody.BY10;												// short hand to byte 10 in the received string
 		uint8_t mlen = rcv_msg.mBody.MSG_LEN;												// short hand to the message length
 
-		if (mlen == 0x0a) pCM = ptr_CM[0];													// some messages are channel independent, identification by length
-		else pCM = ptr_CM[*rcv_by11];														// short hand to respective channel module instance
+		if (mlen == 0x0a) pCM = cmm[0];													// some messages are channel independent, identification by length
+		else pCM = cmm[*rcv_by11];															// short hand to respective channel module instance
 
 		/* check if we need to challange the request */
-		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
@@ -359,27 +357,27 @@ void AS::process_message(void) {
 		rcv_msg.cnl = is_peer_valid(rcv_msg.peer);											// search for the peer channel
 		if (!rcv_msg.cnl) return;															// peer not found in any channel, return
 
-		pCM = ptr_CM[rcv_msg.cnl];															// short hand to the respective channel module
+		//pCM = &cmm[rcv_msg.cnl];															// short hand to the respective channel module
 		/* check if we need to challange the request */
-		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
+		if ((*cmm[rcv_msg.cnl]->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) { // check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
-		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
-		pCM->SWITCH(&rcv_msg.m3Exxxx);
+		cmm[rcv_msg.cnl]->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3 with the respective index 
+		cmm[rcv_msg.cnl]->SWITCH(&rcv_msg.m3Exxxx);
 
 
 	} else if (rcv_msg.intend == MSG_INTENT::PEER) {
 	 /* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
-		pCM = ptr_CM[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
+		//pCM = &cmm[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
 		/* check if we need to challange the request */
-		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
+		if ((*cmm[rcv_msg.cnl]->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
 		/* forward to the respective channel function */
-		pCM->lstP.load_list(ptr_CM[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3
-		if (*rcv_by03 == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
+		cmm[rcv_msg.cnl]->lstP.load_list(cmm[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));		// load the respective list 3
+		if      (*rcv_by03 == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
 		else if (*rcv_by03 == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
 		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);
 		else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH_LEVEL))      pCM->SWITCH_LEVEL(&rcv_msg.m42xxxx);
@@ -424,7 +422,7 @@ void AS::snd_poll(void) {
 	if (sm->retr_cnt == 0xff) {
 		sm->clear();																		// nothing to do any more
 		led->set(LED_STAT::GOT_ACK);														// fire the status led
-		pom->stayAwake(100);																	// and stay awake for a short while
+		pom->stayAwake(100);																// and stay awake for a short while
 		return;
 	}
 
@@ -506,7 +504,7 @@ void AS::snd_poll(void) {
 
 		if (sm->mBody.FLAG.BIDI) sm->timer.set(sm->max_time);								// timeout is only needed while an ACK is requested
 		led->set(LED_STAT::SEND_MSG);														// fire the status led
-		pom->stayAwake(100);																	// and stay awake for a short while
+		pom->stayAwake(100);																// and stay awake for a short while
 
 		DBG(SN, F("<- "), _HEX(sm->buf, sm->buf[0] + 1), ' ', _TIME, '\n');					// some debug
 
@@ -519,7 +517,7 @@ void AS::snd_poll(void) {
 
 		sm->timeout = 1;																	// set the time out only while an ACK or answer was requested
 		led->set(LED_STAT::GOT_NACK);														// fire the status led
-		pom->stayAwake(100);																	// and stay awake for a short while
+		pom->stayAwake(100);																// and stay awake for a short while
 
 		DBG(SN, F("  timed out "), _TIME, '\n');											// some debug
 	}

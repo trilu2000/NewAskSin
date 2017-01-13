@@ -31,7 +31,7 @@ namespace SW_CT {
 };
 
 
-class cm_switch : public cm_master {
+class cm_switch : public CM_MASTER {
 private:  //---------------------------------------------------------------------------------------------------------------
 
 	struct s_l1 {

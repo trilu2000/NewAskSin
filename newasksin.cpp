@@ -26,3 +26,5 @@ uint8_t cnl_max = 0;																		// increased by every instance which is in
 
 s_peer_msg    peer_msg;																		// peer message array as buffer between send function and send processing
 s_list_msg    list_msg;																		// holds information to answer config list requests for peer or param lists
+
+AS *hm = &AS();																				// the newasksin main class

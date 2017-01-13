@@ -33,7 +33,7 @@
 
 
 
-/* forward declarations for all classes, structs needed by asksin, extern is used while majority is depending on device configuration and
+/* forward declarations for all classes and structs needed by asksin; extern is used while majority is depending on device configuration and
 *  therefor defined in register.h in user sketch folder...
 */
 
@@ -96,7 +96,7 @@ extern const uint8_t HMSerialData[] PROGMEM;
 */
 extern const uint8_t dev_static[] PROGMEM;
 
-extern AS hm;
+extern AS *hm;
 extern AES *aes;
 extern COM *com;
 extern CBN *cbn;
@@ -112,7 +112,7 @@ extern uint8_t cnl_max;
 extern s_peer_msg peer_msg;
 extern s_list_msg list_msg;
 
-extern cm_master *ptr_CM[];
+extern CM_MASTER *cmm[];
 
 extern const uint8_t cm_maintenance_ChnlLen;
 extern const uint8_t cm_maintenance_ChnlReg[];

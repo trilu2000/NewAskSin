@@ -28,7 +28,7 @@
 * In such a case you can call the buttonAction() directly from user sketch.
 * @param   port/pin information    PIN_C2
 */
-cm_remote::cm_remote(const uint8_t peer_max, const s_pin_def *ptr_key_pin) : cm_master(peer_max) {
+CM_REMOTE::CM_REMOTE(const uint8_t peer_max, const s_pin_def *ptr_key_pin) : CM_MASTER(peer_max) {
 	key_pin = ptr_key_pin;
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
@@ -41,14 +41,18 @@ cm_remote::cm_remote(const uint8_t peer_max, const s_pin_def *ptr_key_pin) : cm_
 	lstP.def = cm_remote_PeerDef;
 	lstP.len = sizeof(cm_remote_PeerReg);
 
-	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
-	lstP.val = new uint8_t[lstP.len];
+	static uint8_t lstCval[sizeof(cm_remote_ChnlReg)];
+	lstC.val = lstCval;
+	//lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
+	static uint8_t lstPval[sizeof(cm_remote_PeerReg)];
+	lstP.val = lstPval;
+	//lstP.val = new uint8_t[lstP.len];
 
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
 	l4 = (s_l4*)lstP.val;
 }
 
-cm_remote::cm_remote(const uint8_t peer_max) : cm_master(peer_max) {
+CM_REMOTE::CM_REMOTE(const uint8_t peer_max) : CM_MASTER(peer_max) {
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_remote_ChnlReg;
@@ -60,14 +64,18 @@ cm_remote::cm_remote(const uint8_t peer_max) : cm_master(peer_max) {
 	lstP.def = cm_remote_PeerDef;
 	lstP.len = sizeof(cm_remote_PeerReg);
 
-	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
-	lstP.val = new uint8_t[lstP.len];
+	static uint8_t lstCval[sizeof(cm_remote_ChnlReg)];
+	lstC.val = lstCval;
+	//lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
+	static uint8_t lstPval[sizeof(cm_remote_PeerReg)];
+	lstP.val = lstPval;
+	//lstP.val = new uint8_t[lstP.len];
 
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
 	l4 = (s_l4*)lstP.val;
 }
 
-void cm_remote::cm_init() {
+void CM_REMOTE::cm_init() {
 	if (key_pin) {
 		register_PCINT(key_pin);
 		button_ref.status = check_PCINT(key_pin, 0);										// get the latest information
@@ -83,7 +91,7 @@ void cm_remote::cm_init() {
 *- user defined functions -
 * ------------------------------------------------------------------------------------------------------------------------- */
 
-void cm_remote::cm_poll(void) {
+void CM_REMOTE::cm_poll(void) {
 	#define repeatedLong 250
 	process_peer_message();																	// if we want to send a peer message we have to poll the peer send processing
 
@@ -150,7 +158,7 @@ void cm_remote::cm_poll(void) {
 *                   4 - end of long key press
 *                 255 - key press, for stay awake issues
 */
-void cm_remote::button_action(uint8_t event) {
+void CM_REMOTE::button_action(uint8_t event) {
 	// at the moment this channel module will only work for channel > 0 while key for maintanance channel need
 	// some special functionality, like link to toogle and pairing
 

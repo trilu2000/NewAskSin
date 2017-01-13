@@ -31,7 +31,7 @@ namespace DM_CT {
 };
 
 
-class cm_dimmer : public cm_master {
+class CM_DIMMER : public CM_MASTER {
 private:  //---------------------------------------------------------------------------------------------------------------
 
 	struct s_l1 {
@@ -211,7 +211,7 @@ private:  //--------------------------------------------------------------------
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	cm_dimmer(const uint8_t peer_max);														// constructor
+	CM_DIMMER(const uint8_t peer_max);														// constructor
 
 	struct s_tr11 {
 		uint8_t  active;																	// trigger 11 active

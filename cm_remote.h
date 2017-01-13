@@ -19,7 +19,7 @@ const uint8_t cm_remote_PeerReg[] PROGMEM = { 0x01, };
 const uint8_t cm_remote_PeerDef[] PROGMEM = { 0x00, };
 
 
-class cm_remote : public cm_master {
+class CM_REMOTE : public CM_MASTER {
 private:  //---------------------------------------------------------------------------------------------------------------
 
 	struct s_l1 {
@@ -65,8 +65,8 @@ private:  //--------------------------------------------------------------------
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	cm_remote(const uint8_t peer_max, const s_pin_def *ptr_key_pin);						// constructor
-	cm_remote(const uint8_t peer_max);														// constructor, without pin
+	CM_REMOTE(const uint8_t peer_max, const s_pin_def *ptr_key_pin);						// constructor
+	CM_REMOTE(const uint8_t peer_max);														// constructor, without pin
 	virtual void cm_init();																	// overwrite the init function in cmMaster
 
 	virtual void cm_poll(void);																// poll function, driven by HM loop

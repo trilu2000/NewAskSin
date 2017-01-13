@@ -22,7 +22,7 @@ uint32_t adj_delay;																			// calculate and store the adjustment time
 *        Constructor of master class is processed first.
 *        Setup of class specific things is done here
 */
-cm_dimmer::cm_dimmer(const uint8_t peer_max) : cm_master(peer_max) {
+CM_DIMMER::CM_DIMMER(const uint8_t peer_max) : CM_MASTER(peer_max) {
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_dimmer_ChnlReg;
@@ -34,8 +34,12 @@ cm_dimmer::cm_dimmer(const uint8_t peer_max) : cm_master(peer_max) {
 	lstP.def = cm_dimmer_PeerDef;
 	lstP.len = sizeof(cm_dimmer_PeerReg);
 
-	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
-	lstP.val = new uint8_t[lstP.len];
+	static uint8_t lstCval[sizeof(cm_dimmer_ChnlReg)];										// create and allign the value arrays
+	lstC.val = lstCval;
+	//lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
+	static uint8_t lstPval[sizeof(cm_dimmer_PeerReg)];										// create and allign the value arrays
+	lstP.val = lstPval;
+	//lstP.val = new uint8_t[lstP.len];
 
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
 	l3 = (s_l3*)lstP.val;																	// reduced l3, description in cmSwitch.h at struct declaration
@@ -49,7 +53,7 @@ cm_dimmer::cm_dimmer(const uint8_t peer_max) : cm_master(peer_max) {
 * ------------------------------------------------------------------------------------------------------------------------- */
 
 
-void cm_dimmer::adjustStatus(void) {
+void CM_DIMMER::adjustStatus(void) {
 
 	if (cm_status.value == cm_status.set_value) return;										// nothing to do, return
 	if (!adj_timer.done()) return;															// timer not done, wait until then
@@ -70,7 +74,7 @@ void cm_dimmer::adjustStatus(void) {
 	DBG(DM, F("DM"), lstC.cnl, F(":adj val: "), cm_status.value, F(", set: "), cm_status.set_value, F(", quad: "), l1->CHARACTERISTIC, '\n';)
 }
 
-void cm_dimmer::cm_init(void) {
+void CM_DIMMER::cm_init(void) {
 
 	l3->ACTION_TYPE = DM_ACTION::INACTIVE;													// and secure that no action will happened in polling function
 	tr11.active = 0;																		// empty trigger 11 store
@@ -87,7 +91,7 @@ void cm_dimmer::cm_init(void) {
 	
 	DBG(DM, F("DM"), lstC.cnl, F(":init\n"));
 }
-void cm_dimmer::cm_poll(void) {
+void CM_DIMMER::cm_poll(void) {
 
 	send_status(&cm_status, lstC.cnl);														// check if there is some status to send, function call in cmMaster.cpp
 	adjustStatus();																			// check if something is to be set on the Relay channel
@@ -175,7 +179,7 @@ void cm_dimmer::cm_poll(void) {
 /*
 * @brief setToggle will be addressed by config button in mode 2 by a short key press here we can toggle the status of the actor
 */
-void cm_dimmer::set_toggle(void) {
+void CM_DIMMER::set_toggle(void) {
 	DBG(DM, F("DM"), lstC.cnl, F(":set_toggle\n") );
 
 	/* check for inhibit flag */
@@ -214,7 +218,7 @@ void cm_dimmer::set_toggle(void) {
 * and address/change the bytes direct. EEprom gets updated by the eeprom class
 * automatically.
 */
-void cm_dimmer::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
+void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	// if both peer channels are given, peer channel 01 default is the off dataset, peer channel 02 default is the on dataset
 	// if only one peer channel is given, then the default dataset is toogle
 	if (( buf->PEER_CNL[0] ) && ( buf->PEER_CNL[1] )) {		// dual peer add
@@ -251,7 +255,7 @@ void cm_dimmer::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 /*
 * @brief Received message handling forwarded by AS::processMessage
 */
-void cm_dimmer::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
+void CM_DIMMER::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
 	cm_status.message_type = STA_INFO::SND_ACTUATOR_STATUS;									// send next time a info status message
 	cm_status.message_delay.set(50);														// wait a short time to set status
 
@@ -265,7 +269,7 @@ void cm_dimmer::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
 * 14 byte - value, ramp_time
 * 16 byte - value, ramp_time, dura_time
 */ 
-void cm_dimmer::INSTRUCTION_SET(s_m1102xx *buf) {
+void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 	l3->ACTION_TYPE = DM_ACTION::INACTIVE;													// action type to off otherwise the polling function will overwrite
 
 	/* fill the struct depending on the message length */
@@ -288,14 +292,14 @@ void cm_dimmer::INSTRUCTION_SET(s_m1102xx *buf) {
 * @brief INSTRUCTION_INHIBIT_OFF avoids any status change via Sensor, Remote or set_toogle
 * Answer to a sensor or remote message is an NACK
 */
-void cm_dimmer::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
+void CM_DIMMER::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 	cm_status.inhibit = 0;
 	send_ACK();
 }
 /*
 * @brief INSTRUCTION_INHIBIT_ON, see INSTRUCTION_INHIBIT_OFF
 **/
-void cm_dimmer::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
+void CM_DIMMER::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 	cm_status.inhibit = 1;
 	send_ACK();
 }
@@ -304,7 +308,7 @@ void cm_dimmer::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 * restructure the message and forward it to the local cmSwitch::REMOTE(s_m40xxxx *buf) function...
 * -> 0F 09 B0 3E 63 19 64 33 11 22 23 70 D8 40 01 1D 
 */
-void cm_dimmer::SWITCH(s_m3Exxxx *buf) {
+void CM_DIMMER::SWITCH(s_m3Exxxx *buf) {
 	/* as we receive a s_m3Exxxx message and have to forward this message to the REMOTE function,
 	* we have to adjust the content, could be done by generating a new string or casting the message 
 	* message cast seems to be easier and more efficient... */
@@ -319,7 +323,7 @@ void cm_dimmer::SWITCH(s_m3Exxxx *buf) {
 * Bit 8 is not interesting for us, because it reflects the battery status of the peered devices, 
 * more interesting for the master...
 */
-void cm_dimmer::REMOTE(s_m40xxxx *buf) {
+void CM_DIMMER::REMOTE(s_m40xxxx *buf) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
 		send_NACK();
@@ -378,7 +382,7 @@ void cm_dimmer::REMOTE(s_m40xxxx *buf) {
 /**
 * @brief Function is called on messages comming from sensors.
 */
-void cm_dimmer::SENSOR_EVENT(s_m41xxxx *buf) {
+void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
 		send_NACK();

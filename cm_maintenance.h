@@ -24,10 +24,10 @@
 * Has to be defined within the channel module or externally from the class
 */
 
-class cm_maintenance : public cm_master {
+class CM_MAINTENANCE : public CM_MASTER {
 public:  //----------------------------------------------------------------------------------------------------------------
 	
-	cm_maintenance(const uint8_t peer_max);													// constructor
+	CM_MAINTENANCE(const uint8_t peer_max);													// constructor
 
 	virtual void info_config_change(void);													// list1 on registered channel had changed
 	virtual void cm_poll(void);																// poll function, driven by HM loop

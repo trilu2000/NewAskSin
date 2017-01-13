@@ -14,18 +14,16 @@ waitTimer xtimer;
 void setup() {
 	// - Hardware setup ---------------------------------------
 	// - everything off ---------------------------------------
-
+	power_all_disable();																	// and everything else
 	EIMSK = 0;																				// disable external interrupts
 	ADCSRA = 0;																				// ADC off
-	power_all_disable();																	// and everything else
 
 	//DDRB = DDRC = DDRD = 0x00;															// everything as input
 	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
-
 	// - AskSin related ---------------------------------------
 	init_millis_timer0();																	// init timer0
-	hm.init();																				// init the asksin framework
+	hm->init();																				// init the asksin framework
 
 	DBG_START(SER, F("HM_PB_6_WM55\n"));
 	DBG(SER, F(LIB_VERSION_STRING));
@@ -33,13 +31,11 @@ void setup() {
 	// - user related -----------------------------------------
 	//pci_ptr = &pci_callback;																// register pin change interrupt callback function
 	sei();																					// enable interrupts
-
-	// some test
 }
 
 void loop() {
 	// - AskSin related ---------------------------------------
-	hm.poll();																				// poll the homematic main loop
+	hm->poll();																				// poll the homematic main loop
 
 	// - user related -----------------------------------------
 //	if (xtimer.done()) {
@@ -50,7 +46,7 @@ void loop() {
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
-void cm_remote::initRemote(uint8_t channel) {
+void CM_REMOTE::initRemote(uint8_t channel) {
 	// setting the essentials for the respective remote channel if necassary
 	DBG(RE, F("initRemote: "), channel, '\n');
 

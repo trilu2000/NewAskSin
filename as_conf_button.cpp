@@ -10,7 +10,7 @@
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
-CBN::CBN(const uint8_t mode, const s_pin_def *ptr_pin) {
+CBN::CBN(uint8_t mode, s_pin_def *ptr_pin) {
 	key_pin = ptr_pin;
 	button_check.configured = 1;															// poll the pin make only sense if it was configured, store result here
 	button_check.scenario = mode;
@@ -49,7 +49,7 @@ void CBN::poll(void) {
 	/* button was just released, keyShortSingle, keyLongRelease, keyDblLongRelease */
 	if (status == 3) {
 		timer.set(timeoutDouble);															// set timer to clear the repeated flags
-		pom->stayAwake(timeoutDouble + 100);												// stay awake to check button status
+		pom->stayAwake(timeoutDouble + 100);													// stay awake to check button status
 
 		if ((button_check.last_long) && (!button_check.check_dbl)) {
 		/* keyLongRelease, could be the start of a keyDblLong */
@@ -98,7 +98,7 @@ void CBN::button_action(MSG_CBN::E mode) {
 		led->stop();
 		led->set(LED_STAT::LED_RED_L);
 		if (button_check.scenario == 1) send_DEVICE_INFO(MSG_REASON::INITIAL);				// send pairing string
-		else if (button_check.scenario == 2) ptr_CM[1]->set_toggle();						// send toggle to user module registered on channel 1
+		else if (button_check.scenario == 2) cmm[1]->set_toggle();							// send toggle to user module registered on channel 1
 
 	} else if (mode == MSG_CBN::keyLong) {
 		DBG(CB, F("keyLong"));
@@ -115,7 +115,7 @@ void CBN::button_action(MSG_CBN::E mode) {
 	} else if (mode == MSG_CBN::keyDblLongRelease) {
 		DBG(CB, F("keyDblLongRelease"));
 
-		uint8_t *localResDis = ptr_CM[0]->lstC.ptr_to_val(0x18);							// get register address
+		uint8_t *localResDis = cmm[0]->lstC.ptr_to_val(0x18);								// get register address
 		if ((localResDis) && (*localResDis)) return;										// if we got a valid pointer and local reset disable flag is set, we cannot reset the device
 
 		DBG(CB, F(", set factory defaults"));

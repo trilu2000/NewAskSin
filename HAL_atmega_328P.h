@@ -1,4 +1,8 @@
 
+#ifndef _HAL_ATMEGA_328_H
+#define _HAL_ATMEGA_328_H
+
+
 #define power_serial_enable()   power_usart0_enable();
 #define UCSR                    UCSR0B
 #define RXEN                    RXEN0
@@ -14,7 +18,7 @@
 //- adc definitions ---------------------------------------------------------------------------------------------------------
 const uint8_t admux_internal = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);					// internal ADMUX register setup
 const uint8_t admux_external = _BV(REFS1) | _BV(REFS0);											// | measurement pin
-const uint16_t ref_v_external = 1100;																// internal reference voltage in 10mv
+const uint16_t ref_v_external = 1100;															// internal reference voltage in 10mv
 
 //- pin definition ----------------------------------------------------------------------------------------------------------
 #define PCINT_PCIE_SIZE        3																// amount of pin change interrupt vectors
@@ -46,7 +50,7 @@ const s_pin_def pin_D5 = { PORTD5, &DDRD, &PORTD, &PIND, 21, PCINT21, &PCICR, &P
 const s_pin_def pin_D6 = { PORTD6, &DDRD, &PORTD, &PIND, 22, PCINT22, &PCICR, &PCMSK2, PCIE2, 2 };
 const s_pin_def pin_D7 = { PORTD7, &DDRD, &PORTD, &PIND, 23, PCINT23, &PCICR, &PCMSK2, PCIE2, 2 };
 
-
+/*
 #define PIN_B0   PORTB0, &DDRB, &PORTB, &PINB,  0,  PCINT0, &PCICR, &PCMSK0, PCIE0,0 
 #define PIN_B1   PORTB1, &DDRB, &PORTB, &PINB,  1,  PCINT1, &PCICR, &PCMSK0, PCIE0,0 
 #define PIN_B2   PORTB2, &DDRB, &PORTB, &PINB,  2,  PCINT2, &PCICR, &PCMSK0, PCIE0,0 
@@ -74,5 +78,6 @@ const s_pin_def pin_D7 = { PORTD7, &DDRD, &PORTD, &PIND, 23, PCINT23, &PCICR, &P
 #define PIN_D5   PORTD5, &DDRD, &PORTD, &PIND, 21, PCINT21, &PCICR, &PCMSK2, PCIE2,2 
 #define PIN_D6   PORTD6, &DDRD, &PORTD, &PIND, 22, PCINT22, &PCICR, &PCMSK2, PCIE2,2 
 #define PIN_D7   PORTD7, &DDRD, &PORTD, &PIND, 23, PCINT23, &PCICR, &PCMSK2, PCIE2,2 
+*/
 
-
+#endif

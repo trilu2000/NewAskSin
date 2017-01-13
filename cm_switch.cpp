@@ -19,7 +19,7 @@
 *        Setup of class specific things is done here
 */
 
-cm_switch::cm_switch(const uint8_t peer_max) : cm_master(peer_max) {
+cm_switch::cm_switch(const uint8_t peer_max) : CM_MASTER(peer_max) {
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_switch_ChnlReg;
@@ -31,8 +31,12 @@ cm_switch::cm_switch(const uint8_t peer_max) : cm_master(peer_max) {
 	lstP.def = cm_switch_PeerDef;
 	lstP.len = sizeof(cm_switch_PeerReg);
 
-	lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
-	lstP.val = new uint8_t[lstP.len];
+	static uint8_t lstCval[sizeof(cm_switch_ChnlReg)];										// create and allign the value arrays
+	lstC.val = lstCval;
+	//lstC.val = new uint8_t[lstC.len];					
+	static uint8_t lstPval[sizeof(cm_switch_PeerReg)];
+	lstP.val = lstPval;
+	//lstP.val = new uint8_t[lstP.len];
 
 
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
