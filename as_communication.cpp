@@ -10,16 +10,17 @@
 
 #include "00_debug-flag.h"
 #include "as_communication.h"
+#include "newasksin.h"
 #include "HAL.h"
 
 
-/**
+/*
 * @brief Decode the incoming messages
 *        Note: this is no encryption!
 *
 * @param buf   pointer to buffer
 */
-void    COM::decode(uint8_t *buf) {
+void     COM::decode(uint8_t *buf) {
 	uint8_t prev = buf[1];
 	buf[1] = (~buf[1]) ^ 0x89;
 
@@ -33,13 +34,13 @@ void    COM::decode(uint8_t *buf) {
 	buf[i] ^= buf[2];
 }
 
-/**
+/*
 * @brief Encode the outgoing messages
 *        Note: this is no encryption!
 *
 * @param buf   pointer to buffer
 */
-void COM::encode(uint8_t *buf) {
+void     COM::encode(uint8_t *buf) {
 	buf[1] = (~buf[1]) ^ 0x89;
 	uint8_t buf2 = buf[2];
 	uint8_t prev = buf[1];
@@ -52,9 +53,6 @@ void COM::encode(uint8_t *buf) {
 
 	buf[i] ^= buf2;
 }
-
-
-
 
 //public:   //------------------------------------------------------------------------------------------------------------
 /*
@@ -464,4 +462,6 @@ void CC1101::spi_select(void) {
 void CC1101::spi_deselect(void) {
 	set_pin_high(pin_csl);
 }
+
+
 

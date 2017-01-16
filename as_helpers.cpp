@@ -36,6 +36,45 @@ uint32_t intTimeCvt(uint16_t iTime) {
 	return (uint32_t)tByte*(iTime >> 5) * 100;
 }
 
+/*
+* @brief Decode the incoming messages
+*        Note: this is no encryption!
+*
+* @param buf   pointer to buffer
+*/
+void hm_decode(uint8_t *buf) {
+	uint8_t prev = buf[1];
+	buf[1] = (~buf[1]) ^ 0x89;
+
+	uint8_t i, t;
+	for (i = 2; i < buf[0]; i++) {
+		t = buf[i];
+		buf[i] = (prev + 0xDC) ^ buf[i];
+		prev = t;
+	}
+
+	buf[i] ^= buf[2];
+}
+
+/*
+* @brief Encode the outgoing messages
+*        Note: this is no encryption!
+*
+* @param buf   pointer to buffer
+*/
+void hm_encode(uint8_t *buf) {
+	buf[1] = (~buf[1]) ^ 0x89;
+	uint8_t buf2 = buf[2];
+	uint8_t prev = buf[1];
+
+	uint8_t i;
+	for (i = 2; i < buf[0]; i++) {
+		prev = (prev + 0xDC) ^ buf[i];
+		buf[i] = prev;
+	}
+
+	buf[i] ^= buf2;
+}
 
 
 //- byte array related helpers --------------------------------------------------------------------------------------------
