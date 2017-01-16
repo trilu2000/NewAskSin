@@ -70,6 +70,10 @@ public:  //---------------------------------------------------------------------
 	void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);
 	void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
 
+
+	/* - asksin relevant helpers */
+	inline uint8_t is_peer_valid(uint8_t *peer);											// search through all instances and ceck if we know the peer, returns the channel
+
 };
 
 /*
@@ -94,14 +98,6 @@ extern void firstTimeStart(void);
 
 
 
-//- some helpers ----------------------------------------------------------------------------------------------------------
-uint32_t byteTimeCvt(uint8_t tTime);
-uint32_t intTimeCvt(uint16_t iTime);
-
-uint8_t isEmpty(void *ptr, uint8_t len);												// check if a byte array is empty
-#define isEqual(p1,p2,len) memcmp(p1, p2, len)?0:1										// check if a byte array is equal
-
-//- -----------------------------------------------------------------------------------------------------------------------
 
 
 

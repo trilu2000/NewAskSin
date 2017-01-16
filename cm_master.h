@@ -13,12 +13,13 @@
 #include "HAL.h"
 #include "as_type_defs.h"
 
-const uint8_t list_max = 5;
 
 
 namespace STA_INFO {
 	enum E : uint8_t { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS, SND_ACTUATOR_STATUS_AGAIN };
 };
+
+const uint8_t list_max = 5;																	// max 5 lists per channel, list 0 to list 4
 
 
 class CM_MASTER {
@@ -147,6 +148,18 @@ public://-----------------------------------------------------------------------
 };
 
 
+//- channel master related helpers ----------------------------------------------------------------------------------------
+uint16_t cm_prep_default(uint16_t ee_start_addr);											// prepare the defaults incl eeprom address mapping
+
+uint16_t cm_calc_crc(void);																	// calculate the crc for lists in the modules
+uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf);							// calculates the crc for a PROGMEM byte array
+uint16_t crc16(uint16_t crc, uint8_t a);													// calculates the crc for a given byte
+
+//- -----------------------------------------------------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -176,14 +189,10 @@ typedef struct ts_cm_status {
 	uint8_t	  message_type;																	// indicator for sendStatus function
 	waitTimer message_delay;																// message timer for sending status
 } s_cm_status;
+
 void send_status(s_cm_status *cm, uint8_t cnl);												// help function to send status messages
 
-uint16_t cm_prep_default(uint16_t ee_start_addr);											// prepare the defaults incl eeprom address mapping
-uint8_t  is_peer_valid(uint8_t *peer);														// search through all instances and ceck if we know the peer, returns the channel
 
-uint16_t cm_calc_crc(void);																	// calculate the crc for lists in the modules
-inline uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf);						// calculates the crc for a PROGMEM byte array
-inline uint16_t crc16(uint16_t crc, uint8_t a);												// calculates the crc for a given byte
 
 
 

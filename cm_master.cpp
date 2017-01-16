@@ -359,6 +359,79 @@ void CM_MASTER::WEATHER_EVENT(s_m70xxxx *buf) {
 
 
 
+//- channel master related helpers ----------------------------------------------------------------------------------------
+/*
+* @brief Prepare defaults and read the defaults from the eeprom in the channel module space.
+*        We have to read only list0 or list 1 content, while list 3 or list 4 is read while received a peer message.
+*        After loading the defaults we inform the modules of this by calling the info_config_change function.
+*/
+uint16_t cm_prep_default(uint16_t ee_start_addr) {
+
+	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
+
+		cmm[i]->list[cmm[i]->lstC.lst] = &cmm[i]->lstC;									// allign lstC to the list array
+		if (cmm[i]->lstP.lst != 255) cmm[i]->list[cmm[i]->lstP.lst] = &cmm[i]->lstP;	// because of the absence of lstP in channel0
+
+		cmm[i]->lstC.ee_addr = ee_start_addr;											// write the eeprom address in the channel list
+		ee_start_addr += cmm[i]->lstC.len;												// create new address by adding the length of the list before
+		cmm[i]->lstP.ee_addr = ee_start_addr;											// write the eeprom address in the peer list
+		ee_start_addr += (cmm[i]->lstP.len * cmm[i]->peerDB.max);						// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
+
+																						// defaults loaded in the AS module init, on every time start
+		DBG(CM, F("CM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->lstC.val, pCM->lstC.len), '\n');
+	}
+
+	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
+		cmm[i]->peerDB.ee_addr = ee_start_addr;											// write eeprom address into the peer table
+		ee_start_addr += cmm[i]->peerDB.max * 4;										// create nwe eeprom start address depending on the space for max peers are used
+	}
+
+	return ee_start_addr;
+}
+
+/*
+* @brief Calculates and returns the crc number for all channel module lists.
+* This information is needed for the first time check. Within this check, we compare a stored
+* magic number with the calculated one and if they differ, we have a good indication that something
+* was changed in the configuration.
+*/
+uint16_t cm_calc_crc(void) {
+	uint16_t flashCRC = 0;																	// define and set the return value
+
+	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
+		s_peer_table *pPeer = &cmm[i]->peerDB;												// short hand to the peer database
+		for (uint8_t j = 0; j < list_max; j++) {											// step through all lists
+			s_list_table *pList = cmm[i]->list[j];											// short hand to list module
+			if (!pList) continue;															// skip on empty pointer
+			flashCRC = crc16_P(flashCRC, pList->len, pList->reg);							// and calculate the crc - arrays are in PROGMEM
+			flashCRC = crc16_P(flashCRC, pList->len, pList->def);
+			flashCRC = crc16(flashCRC, pPeer->max);
+			DBG(CM, F("CM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');					// some debug
+		}
+	}
+	return flashCRC;
+}
+uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf) {
+	for (uint8_t i = 0; i < len; i++) {														// step through all channels
+		uint8_t t = _PGM_BYTE(buf[i]);
+		crc = crc16(crc, t);
+	}
+	return crc;
+}
+uint16_t crc16(uint16_t crc, uint8_t a) {
+	crc ^= a;
+	for (uint8_t i = 0; i < 8; ++i) {
+		if (crc & 1) crc = (crc >> 1) ^ 0xA001;
+		else crc = (crc >> 1);
+	}
+	return crc;
+}
+//-------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
 
 
 
@@ -405,84 +478,10 @@ void send_status(s_cm_status *cm, uint8_t cnl) {
 
 }
 
-/*
-* @brief Prepare defaults and read the defaults from the eeprom in the channel module space.
-*        We have to read only list0 or list 1 content, while list 3 or list 4 is read while received a peer message.
-*        After loading the defaults we inform the modules of this by calling the info_config_change function.
-*/
-uint16_t cm_prep_default(uint16_t ee_start_addr) {
 
-	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		
-		cmm[i]->list[cmm[i]->lstC.lst] = &cmm[i]->lstC;									// allign lstC to the list array
-		if (cmm[i]->lstP.lst < 5) cmm[i]->list[cmm[i]->lstP.lst] = &cmm[i]->lstP;		// because of the absence of lstP in channel0
 
-		cmm[i]->lstC.ee_addr = ee_start_addr;											// write the eeprom address in the channel list
-		ee_start_addr += cmm[i]->lstC.len;												// create new address by adding the length of the list before
-		cmm[i]->lstP.ee_addr = ee_start_addr;											// write the eeprom address in the peer list
-		ee_start_addr += (cmm[i]->lstP.len * cmm[i]->peerDB.max);						// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
 
-		// defaults loaded in the AS module init, on every time start
-		DBG(CM, F("CM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->lstC.val, pCM->lstC.len), '\n');
-	}
 
-	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		cmm[i]->peerDB.ee_addr = ee_start_addr;											// write eeprom address into the peer table
-		ee_start_addr += cmm[i]->peerDB.max * 4;										// create nwe eeprom start address depending on the space for max peers are used
-	}
-
-	return ee_start_addr;
-}
-
-/*
-* @brief Search for a 4 byte peer address in all channel instances and returns
-*        the channel number where the peer was found. Returns 0 if nothing was found.
-*/
-uint8_t  is_peer_valid(uint8_t *peer) {
-	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		//cm_master *pCM = &cmm[i];														// short hand to respective channel master	
-		if (cmm[i]->peerDB.get_idx(peer) != 0xff) return i;								// ask the peer table to find the peer, if found, return the cnl
-	}
-	return 0;																			// nothing was found, return 0
-}
-
-/*
-* @brief Calculates and returns the crc number for all channel module lists.
-* This information is needed for the first time check. Within this check, we compare a stored
-* magic number with the calculated one and if they differ, we have a good indication that something
-* was changed in the configuration.
-*/
-uint16_t cm_calc_crc(void) {
-	uint16_t flashCRC = 0;																// define and set the return value
-
-	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels
-		s_peer_table *pPeer = &cmm[i]->peerDB;											// short hand to the peer database
-		for (uint8_t j = 0; j < list_max; j++) {										// step through all lists
-			s_list_table *pList = cmm[i]->list[j];										// short hand to list module
-			if (!pList) continue;														// skip on empty pointer
-			flashCRC = crc16_P(flashCRC, pList->len, pList->reg);						// and calculate the crc - arrays are in PROGMEM
-			flashCRC = crc16_P(flashCRC, pList->len, pList->def);
-			flashCRC = crc16(flashCRC, pPeer->max);
-			DBG(CM, F("CM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');				// some debug
-		}
-	}
-	return flashCRC;
-}
-inline uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf) {
-	for (uint8_t i = 0; i < len; i++) {													// step through all channels
-		uint8_t t = _PGM_BYTE(buf[i]);
-		crc = crc16(crc, t);
-	}
-	return crc;
-}
-inline uint16_t crc16(uint16_t crc, uint8_t a) {
-	crc ^= a;
-	for (uint8_t i = 0; i < 8; ++i) {
-		if (crc & 1) crc = (crc >> 1) ^ 0xA001;
-		else crc = (crc >> 1);
-	}
-	return crc;
-}
 
 
 

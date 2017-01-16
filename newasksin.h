@@ -15,6 +15,7 @@
 #include "as_type_defs.h"
 
 #include "as_main.h"
+#include "as_helpers.h"
 #include "as_aes.h"
 #include "as_communication.h"
 #include "as_conf_button.h"
@@ -108,6 +109,7 @@ extern POM *pom;
 *  byte to identify the channel we are actually setting up, increased in the constructor...
 the overall amount will be kept for runtime to step through the different instances. */
 extern uint8_t cnl_max;
+extern const uint8_t list_max;
 
 extern s_peer_msg peer_msg;
 extern s_list_msg list_msg;

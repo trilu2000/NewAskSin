@@ -488,11 +488,6 @@ void AS::snd_poll(void) {
 		if (!sm->temp_max_retr)
 			sm->temp_max_retr = (sm->mBody.FLAG.BIDI) ? sm->max_retr : 1;					// send once while not requesting an ACK
 
-		/* Copy the complete message to msgToSign. We need them for later AES signing.
-		*  We need copy the message to position after 5 of the buffer.
-		*  The bytes 0-5 remain free. These 5 bytes and the first byte of the copied message
-		*  will fill with 6 bytes random data later.	*/
-		//memcpy(&sm->prev_buf[5], sm->buf, (sm->buf[0] > 26) ? 27 : sm->buf[0] + 1);
 	}
 
 
@@ -531,8 +526,8 @@ void AS::INSTRUCTION_RESET(s_m1104xx *buf) {
 	send_ACK();																				// prepare an ACK message
 	dev_operate.reset = 2;																	// set the reset flag and wait...
 	//if (snd_msg.active) snd_poll();														// poll to get the ACK message send
-	//clearEEPromBlock(0, 2);																	// delete the magic byte in eeprom 
-	//init();																					// call the init function to get the device in factory status
+	//clearEEPromBlock(0, 2);																// delete the magic byte in eeprom 
+	//init();																				// call the init function to get the device in factory status
 }
 void AS::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
 	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER\n"));
@@ -543,6 +538,20 @@ void AS::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
 void AS::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
 	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER2\n"));
 }
+
+
+
+/*
+* @brief Search for a 4 byte peer address in all channel instances and returns
+*        the channel number where the peer was found. Returns 0 if nothing was found.
+*/
+uint8_t AS::is_peer_valid(uint8_t *peer) {
+	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
+		if (cmm[i]->peerDB.get_idx(peer) != 0xff) return i;									// ask the peer table to find the peer, if found, return the cnl
+	}
+	return 0;																				// nothing was found, return 0
+}
+
 
 
 
@@ -655,38 +664,6 @@ void AS::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
 	
 	
 	
-//- some helpers ----------------------------------------------------------------------------------------------------------
-uint32_t byteTimeCvt(uint8_t tTime) {
-	const uint16_t c[8] = { 1,10,50,100,600,3000,6000,36000 };
-	return (uint32_t)(tTime & 0x1F) * c[tTime >> 5] * 100;
-}
-
-uint32_t intTimeCvt(uint16_t iTime) {
-	if (iTime == 0) return 0;
-
-	// take care of the byte order
-	#define LIT_ENDIAN ((1 >> 1 == 0) ? 1 : 0)
-	#if LIT_ENDIAN
-		iTime = (iTime >> 8) | (iTime << 8);
-	#endif
-
-	// process the conversation
-	uint8_t tByte;
-	if ((iTime & 0x1F) != 0) {
-		tByte = 2;
-		for (uint8_t i = 1; i < (iTime & 0x1F); i++) tByte *= 2;
-	} else tByte = 1;
-	return (uint32_t)tByte*(iTime >> 5) * 100;
-}
-
-uint8_t  isEmpty(void *ptr, uint8_t len) {
-	while (len > 0) {
-		len--;
-		if (*((uint8_t*)ptr + len)) return 0;
-	}
-	return 1;
-}
-//- -----------------------------------------------------------------------------------------------------------------------
 
 
 

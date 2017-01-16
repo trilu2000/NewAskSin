@@ -173,7 +173,7 @@ typedef struct ts_peer_table {
 
 	void clear_peer(uint8_t idx) {								// clears the peer in the by idx defined place in the database
 		if (idx >= max) return;									// to secure we are in the range
-		clear_eeprom(ee_addr + (idx * 4), 4);				// clear the specific eeprom block
+		clear_eeprom(ee_addr + (idx * 4), 4);					// clear the specific eeprom block
 	}
 
 	uint8_t get_idx(uint8_t *buf) {								// returns the idx of the given peer, or 0xff if not found. don't use the peer array of the struct, it will be overwritten!

@@ -3,47 +3,43 @@
 #define _REGISTER_H
 
 
-/**
-* @brief Libraries needed to run AskSin library
+/*
+*  @brief libraries needed to run AskSin library, everything is defined within the newasksin.h file 
 */
 #include <newasksin.h> 
 #include "hmkey.h"
 
-/**
-* @brief Stage the modules and declare external functions.
-*
-* This functions are the call backs for user modules,
-* declaration is in the register.h but the functions needs
-* to be defined in the user sketch.
+/*
+*  @brief definition of all classes which are necassary to run asksin
 */
-AES *aes = &HAS_AES();
-COM *com = &CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
-CBN *cbn = &CBN(1, &pin_B0);
-LED *led = &LED(&pin_D6, &pin_D4);
-BAT *bat = &NO_BAT();
-//BAT *bat = &INT_BAT(3600000, 30);								// ~170 byte more than no_bat
-//BAT *bat = &EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
-POM *pom = &POM(POWER_MODE_NO_SLEEP);
+static AES *aes = new HAS_AES();
+static COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
+static CBN *cbn = new CBN(1, &pin_B0);
+static LED *led = new LED(&pin_D6, &pin_D4);
+static BAT *bat = new NO_BAT();
+//static BAT *bat = new INT_BAT(3600000, 30);							// ~170 byte more than no_bat
+//static BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
+static POM *pom = new POM(POWER_MODE_NO_SLEEP);
 
 
 /*
-* cmSwitch requires this functions in the user sketch:
-* void cmSwitch::initSwitch(uint8_t channel);
-* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
+*  @brief cm_maintenance requires this declaration in the user sketch to make registers flexible
 */
 const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
 const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x01,0x00,0x00,0x00,0x69, };
 const uint8_t cm_maintenance_ChnlLen = 6;
 
-
-CM_MASTER *cmm[7] = {
-	&CM_MAINTENANCE(0),
-	&CM_REMOTE(11, &pin_C0),
-	&CM_REMOTE(10, &pin_C1),
-	&CM_REMOTE(10, &pin_C2),
-	&CM_REMOTE(10, &pin_C3),
-	&CM_REMOTE(10, &pin_C4),
-	&CM_REMOTE(10, &pin_C5),
+/*
+*  @brief definition of the device functionallity per channel
+*/
+static CM_MASTER *cmm[7] = {
+	new CM_MAINTENANCE(0),
+	new CM_REMOTE(11, &pin_C0),
+	new CM_REMOTE(10, &pin_C1),
+	new CM_REMOTE(10, &pin_C2),
+	new CM_REMOTE(10, &pin_C3),
+	new CM_REMOTE(10, &pin_C4),
+	new CM_REMOTE(10, &pin_C5),
 };
 
 
