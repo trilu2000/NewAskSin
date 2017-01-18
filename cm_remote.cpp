@@ -93,7 +93,6 @@ void CM_REMOTE::cm_init() {
 
 void CM_REMOTE::cm_poll(void) {
 	#define repeatedLong 250
-	process_peer_message();																	// if we want to send a peer message we have to poll the peer send processing
 
 	if (!button_check.configured) return;													// if port is not configured, poll makes no sense
 	button_ref.status = check_PCINT(key_pin, 1);											// check if an interrupt had happened

@@ -38,7 +38,31 @@ typedef struct ts_dev_operate {
 	uint8_t  reset = 0;						// 0 nothing to do, 2 factory defaults
 } s_dev_operate;
 
-
+/*
+* @brief Sends the ACK_STATUS and answers CONFIG_STATUS_REQUEST by sending an INFO_ACTUATOR_STATUS message
+* As we dont need this function in all channel modules, it is defined outside of the master channel. To use this function set,
+* you have to define in the specific channel module a struct and poll the send_status function by handing over the defined
+* struct and the channel information.
+*/
+typedef struct ts_cm_status {
+	uint8_t   value;																		// module status byte, needed for list3 modules to answer status requests
+	uint8_t   set_value;																	// status to set on the Relay channel
+	union {
+		struct {
+			uint8_t NA : 3;
+			uint8_t UP : 1;
+			uint8_t DOWN : 1;
+			uint8_t ERROR : 1;
+			uint8_t DELAY : 1;
+			uint8_t LOWBAT : 1;
+		} f;
+		uint8_t   flag;																		// module down up low battery byte
+	};
+	uint8_t   inhibit = 0;																	// store for inhibit message
+	waitTimer delay;																		// delay timer for relay
+	uint8_t	  message_type;																	// indicator for sendStatus function
+	waitTimer message_delay;																// message timer for sending status
+} s_cm_status;
 
 /*
 * @brief Every channel has two lists, the first list holds the configuration which is required to drive the channel,

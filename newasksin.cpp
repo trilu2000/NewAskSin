@@ -22,8 +22,8 @@ static s_config_mode config_mode;															// helper structure for keeping 
 static s_rcv_msg rcv_msg;																	// struct to process received strings
 static s_snd_msg snd_msg;																	// same for send strings
 
-s_peer_msg    peer_msg;																		// peer message array as buffer between send function and send processing
-s_list_msg    list_msg;																		// holds information to answer config list requests for peer or param lists
+static s_peer_msg peer_msg;																	// peer message array as buffer between send function and send processing
+static s_list_msg list_msg;																	// holds information to answer config list requests for peer or param lists
 
 static AS *hm = new AS();																	// the newasksin main class
 static uint8_t cnl_max = 0;																	// increased by every instance which is initialized

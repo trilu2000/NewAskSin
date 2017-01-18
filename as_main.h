@@ -57,18 +57,20 @@ public:  //---------------------------------------------------------------------
 	* is set to 1. All receive functions are handled within the AS class - some forwarded to the channel module class.
 	* The intent is to overload them there by the respective user channel module and work with the information accordingly.
 	*/
-	void rcv_poll(void);																	// poll function
-	void get_intend(void);																	// checks the received string if addresses are known
-	void process_message(void);
+	inline void rcv_poll(void);																// poll function
+	inline void get_intend(void);															// checks the received string if addresses are known
+	inline void process_message(void);
 
-	void snd_poll(void);																	// poll function, process if something is to send
+	inline void snd_poll(void);																// poll function, process if something is to send
+	inline void process_list_message_poll(void);											// to answer peer and register list messages, because they are send in several strings due to the size
+	inline void process_peer_message_poll(void);											// peer message poll function, details are in peer_msg struct
 
 
-	/* - hardware related functions without any relation to a specific channel */
-	void INSTRUCTION_RESET(s_m1104xx *buf);
-	void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
-	void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);
-	void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
+	/* - device related functions without any relation to a specific channel */
+	inline void INSTRUCTION_RESET(s_m1104xx *buf);
+	inline void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
+	inline void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);
+	inline void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
 
 
 	/* - asksin relevant helpers */

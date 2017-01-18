@@ -62,5 +62,4 @@ void CM_MAINTENANCE::info_config_change(void) {
 }
 
 void CM_MAINTENANCE::cm_poll(void) {
-	process_list_message();														// check if something has to be send slice wise
 }

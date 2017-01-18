@@ -147,6 +147,7 @@ public://-----------------------------------------------------------------------
 
 };
 
+void process_send_status_poll(s_cm_status *cm, uint8_t cnl);								// help function to send status messages
 
 //- channel master related helpers ----------------------------------------------------------------------------------------
 uint16_t cm_prep_default(uint16_t ee_start_addr);											// prepare the defaults incl eeprom address mapping
@@ -164,33 +165,8 @@ uint16_t crc16(uint16_t crc, uint8_t a);													// calculates the crc for a
 
 
 //- helpers ---------------------------------------------------------------------------------------------------------------
-/*
-* @brief Sends the ACK_STATUS and answers CONFIG_STATUS_REQUEST by sending an INFO_ACTUATOR_STATUS message
-* As we dont need this function in all channel modules, it is defined outside of the master channel. To use this function set, 
-* you have to define in the specific channel module a struct and poll the send_status function by handing over the defined
-* struct and the channel information.
-*/
-typedef struct ts_cm_status {
-	uint8_t   value;																		// module status byte, needed for list3 modules to answer status requests
-	uint8_t   set_value;																	// status to set on the Relay channel
-	union {
-		struct {
-			uint8_t NA     : 3;
-			uint8_t UP     : 1;
-			uint8_t DOWN   : 1;
-			uint8_t ERROR  : 1;
-			uint8_t DELAY  : 1;
-			uint8_t LOWBAT : 1;
-		} f;
-		uint8_t   flag;																		// module down up low battery byte
-	};
-	uint8_t   inhibit = 0;																	// store for inhibit message
-	waitTimer delay;																		// delay timer for relay
-	uint8_t	  message_type;																	// indicator for sendStatus function
-	waitTimer message_delay;																// message timer for sending status
-} s_cm_status;
 
-void send_status(s_cm_status *cm, uint8_t cnl);												// help function to send status messages
+
 
 
 
@@ -270,7 +246,6 @@ void send_POWER_EVENT_CYCLE(uint8_t bidi, CM_MASTER *channel_module, uint8_t *pt
 void send_POWER_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload);
 void send_WEATHER_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload);
 
-void process_peer_message(void);
-void process_list_message(void);
+
 
 #endif

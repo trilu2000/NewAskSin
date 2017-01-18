@@ -77,7 +77,7 @@ void cm_switch::adjustStatus(void) {
 
 void cm_switch::cm_poll(void) {
 
-	send_status(&cm_status, lstC.cnl);														// check if there is some status to send, function call in cmMaster.cpp
+	process_send_status_poll(&cm_status, lstC.cnl);														// check if there is some status to send, function call in cmMaster.cpp
 	adjustStatus();																			// check if something is to be set on the Relay channel
 
 	// check if something is to do on the switch

@@ -37,7 +37,7 @@ void AS::init(void) {
 		* defaults are read from channel modules PROGMEM section, copied into the value byte array
 		* and written to the eeprom.  */
 		for (uint8_t i = 0; i < cnl_max; i++) {												// write the defaults in respective list0/1
-			cmm[i]->lstC.load_default();														// copy from progmem into array
+			cmm[i]->lstC.load_default();													// copy from progmem into array
 			cmm[i]->lstC.save_list();														// write it into the eeprom
 			cmm[i]->peerDB.clear_all();
 			DBG(AS, F("AS:write_defaults, cnl:"), cmm[i]->lstC.cnl, F(", lst:"), cmm[i]->lstC.lst, F(", len:"), cmm[i]->lstC.len, '\n');
@@ -93,6 +93,14 @@ void AS::poll(void) {
 
 	/* handle the send module */
 	snd_poll();																				// check if there is something to send
+
+	/* peer and register list messages are processed here */
+	process_list_message_poll();															// check if something has to be send slice wise
+
+	/* peer message poll, typically needed from channels with a list4 */
+	process_peer_message_poll();															// if we want to send a peer message we have to poll the peer send processing
+
+
 
 	/* time out the config flag */
 	if (config_mode.active) {																// check only if we are still in config mode
@@ -518,9 +526,142 @@ void AS::snd_poll(void) {
 	}
 }
 
+void AS::process_list_message_poll(void) {
+	s_snd_msg  *sm = &snd_msg;																// short hand to snd_msg struct
+	s_list_msg *lm = &list_msg;																// short hand
+
+	if (!lm->active) return;																// nothing to send, return
+	if (!lm->timer.done()) return;															// something to send but we have to wait
+	if (sm->active) return;																	// send is busy, wait....
+
+	uint8_t payload_len;
+
+	if (lm->active == LIST_ANSWER::PEER_LIST) {
+		/* process the INFO_PEER_LIST */
+		payload_len = lm->peer->get_slice(lm->cur_slc, sm->buf + 11);						// get the slice and the amount of bytes
+		sm->type = MSG_TYPE::INFO_PEER_LIST;												// flags are set within the snd_msg struct
+		//DBG(SN, F("SN:LIST_ANSWER::PEER_LIST cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
+		lm->cur_slc++;																		// increase slice counter
+
+	} else if (lm->active == LIST_ANSWER::PARAM_RESPONSE_PAIRS) {
+		/* process the INFO_PARAM_RESPONSE_PAIRS */
+		payload_len = lm->list->get_slice_pairs(lm->peer_idx, lm->cur_slc, sm->buf + 11);	// get the slice and the amount of bytes
+		if (payload_len == 2) sm->type = MSG_TYPE::INFO_PARAM_RESPONSE_SEQ;					// if it is a message with only terminating 00 00 then it is a INFO_PARAM_RESPONSE_SEQ
+		else sm->type = MSG_TYPE::INFO_PARAM_RESPONSE_PAIRS;								// otherwise we send a INFO_PARAM_RESPONSE_PAIRS
+		//DBG(SN, F("SN:LIST_ANSWER::PARAM_RESPONSE_PAIRS cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
+		lm->cur_slc++;																		// increase slice counter
+
+	} else if (lm->active == LIST_ANSWER::PARAM_RESPONSE_SEQ) {
+		/* process the INFO_PARAM_RESPONSE_SEQ
+		* not implemented yet */
+	}
+
+	sm->mBody.MSG_LEN = payload_len + 10;													// set the message len accordingly
+	sm->active = MSG_ACTIVE::ANSWER_BIDI;													// for address, counter and to make it active
+
+	if (lm->cur_slc >= lm->max_slc) {														// if everything is send, we could stop the struct
+		//DBG(SN, F("SN:LIST_ANSWER::DONE cur_slc:"), cl->cur_slc, F(", max_slc:"), cl->max_slc, F(", pay_len:"), payload_len, '\n');
+		lm->active = LIST_ANSWER::NONE;
+		lm->cur_slc = 0;
+	}
+}
+
+/*
+* @brief poll function to process peer messages.
+* Respective information needs to be in peer_msg struct, while herein the string preparation for the
+* send function is done. This function needs to be polled by at least on channel module which uses
+* one peer send function from the list above.
+*/
+void AS::process_peer_message_poll(void) {
+	s_peer_msg *pm = &peer_msg;																// short hand to peer message struct
+	s_snd_msg  *sm = &snd_msg;
+
+	/* checks if a peer message needs to be processed and if send is busy */
+	if (!pm->active) return;																// is there a peer message to send?
+	if (sm->active) return;																	// has send function something else to do first?
+
+	/* if we are here, it has one of the following reasons, first time call to send a peer message, prepare the pre-requisites,
+	*  or we have sent a message earlier which is processed now, check if it was the last message to send, or process the next slot */
+	/* first time message, check if peers are registered and prepare the peer slot table. if it is not the first time, then check
+	*  if the last message was not a timeout, cleanup the flag in the slot table and process the next message */
+	if ((!pm->slot_cnt) && (!pm->retr_cnt)) {
+		pm->prep_slot();
+		pm->retr_cnt++;
+		if (pm->active == MSG_ACTIVE::PEER) pm->max_retr = 1;								// todo: read it from list1 of the channel
+		//dbg << "prepare the slot table - msg:" << ((pm->active == MSG_ACTIVE::PEER_BIDI) ? "PEER_BIDI" : "") << ((pm->active == MSG_ACTIVE::PEER) ? "PEER" : "") << ", slot_cnt:" << pm->slot_cnt << ", max_retr:" << pm->max_retr << ", retr_cnt:" << pm->retr_cnt << '\n';
+
+	} else {
+		/* it is not the first time call, check if the last round was not timeout, clean the flag in the slot counter (flag was not necassarily set) */
+		if (!sm->timeout) pm->clear_slot(pm->slot_cnt);
+		pm->slot_cnt++;
+
+		/* start the next round while peer slot counter is above the limit; which indicates that all peers are processed */
+		if (pm->slot_cnt >= pm->peerDB->max) {
+			pm->retr_cnt++;
+			//dbg << "slot_cnt:" << pm->slot_cnt << ", max_retr:" << pm->max_retr << ", retr_cnt:" << pm->retr_cnt << '\n';
+
+			if (pm->retr_cnt > pm->max_retr) {												// check if we are done with all retries
+																							/* clean up the peer message processing while all retries are done */
+				pm->clear();																// cleanup the struct
+				sm->MSG_CNT++;																// and increase the message counter in the general send function for next time
+																							//dbg << "all peers done\n";
+			} else {
+				/* if we are not done, we start from begin of the slot table */
+				pm->slot_cnt = 0;
+				//dbg << "start next try\n";
+			}
+		}
+
+		/* goto next slot while the current slot is empty */
+		if (!pm->get_slot(pm->slot_cnt)) {
+			//dbg << "p_cnt: " << pm->slot_cnt << " nothing to do, next...\n";
+			return;
+		}
+	}
+
+	/* build the message, set type, len, bidi and content */
+	sm->type = pm->type;																	// copy the type into the send message struct
+	sm->active = pm->active;																// set it active
+
+	/* take care of the payload - peer message means in any case that the payload starts at the same position in the string and
+	*  while it could have a different length, we calculate the length of the string by a hand over value */
+	sm->mBody.MSG_LEN = pm->payload_len + 9;
+	memcpy(&sm->buf[10], pm->payload_ptr, pm->payload_len);
+
+	/* send it as pair message if we have no peer registered */
+	if (!pm->peerDB->used_slots()) {														// if no peer is registered, we send the message to the pair
+		memcpy(sm->mBody.RCV_ID, dev_operate.MAID, 3);										// copy in the pair address
+		sm->mBody.MSG_CNT = sm->MSG_CNT;													// set the message counter
+		sm->MSG_CNT++;																		// increase the counter for next time use
+		pm->clear();																		// nothing to do here any more, while handled as pair message
+		return;																				// and return, otherwise some infos are overwritten
+	}
+
+	/* set the peer address */
+	memcpy(sm->mBody.RCV_ID, pm->peerDB->get_peer(pm->slot_cnt), 3);
+	sm->temp_max_retr = 1;
+
+	/* we have at least one peer to process, load the respective list4 to check if a burst is needed */
+	pm->lstP->load_list(pm->slot_cnt);														// check if we need a burst, load the respective peer list
+	struct s_0x01 {
+		uint8_t PEER_NEEDS_BURST : 1;  // 0x01.0, s:1   d: false  
+		uint8_t                  : 6;  // 0x01.1, s:6   d:   
+		uint8_t EXPECT_AES       : 1;  // 0x01.7, s:1   d: false  
+	};
+	s_0x01 *flag = (s_0x01*)pm->lstP->ptr_to_val(0x01);										// set a pointer to the burst value
+	sm->mBody.FLAG.BURST = flag->PEER_NEEDS_BURST;											// set the burst flag
+	//dbg << "burst: " << flag->PEER_NEEDS_BURST << '\n';
+
+	//hm.snd_poll();																		// call send poll function direct, otherwise someone could change the snd_msg content
+}
 
 
-/* - hardware related functions without any relation to a specific channel */
+
+
+
+
+
+/* - device related functions without any relation to a specific channel */
 void AS::INSTRUCTION_RESET(s_m1104xx *buf) {
 	DBG(AS, F("CM:INSTRUCTION_RESET\n"));
 	send_ACK();																				// prepare an ACK message
