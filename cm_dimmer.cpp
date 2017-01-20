@@ -294,14 +294,14 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 */
 void CM_DIMMER::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 	cm_status.inhibit = 0;
-	send_ACK();
+	hm->send_ACK();
 }
 /*
 * @brief INSTRUCTION_INHIBIT_ON, see INSTRUCTION_INHIBIT_OFF
 **/
 void CM_DIMMER::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 	cm_status.inhibit = 1;
-	send_ACK();
+	hm->send_ACK();
 }
 /*
 * @brief Function is called on messages comming from master, simulating a remote or push button.
@@ -326,7 +326,7 @@ void CM_DIMMER::SWITCH(s_m3Exxxx *buf) {
 void CM_DIMMER::REMOTE(s_m40xxxx *buf) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
-		send_NACK();
+		hm->send_NACK();
 		return;
 	}
 
@@ -385,7 +385,7 @@ void CM_DIMMER::REMOTE(s_m40xxxx *buf) {
 void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
-		send_NACK();
+		hm->send_NACK();
 		return;
 	}
 

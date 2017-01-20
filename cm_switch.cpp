@@ -244,14 +244,14 @@ void cm_switch::INSTRUCTION_SET(s_m1102xx *buf) {
 */
 void cm_switch::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 	cm_status.inhibit = 0;
-	send_ACK();
+	hm->send_ACK();
 }
 /*
 * @brief INSTRUCTION_INHIBIT_ON, see INSTRUCTION_INHIBIT_OFF
 **/
 void cm_switch::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 	cm_status.inhibit = 1;
-	send_ACK();
+	hm->send_ACK();
 }
 /*
 * @brief Function is called on messages comming from master, simulating a remote or push button.
@@ -276,7 +276,7 @@ void cm_switch::SWITCH(s_m3Exxxx *buf) {
 void cm_switch::REMOTE(s_m40xxxx *buf) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
-		send_NACK();
+		hm->send_NACK();
 		return;
 	}
 
@@ -323,7 +323,7 @@ void cm_switch::REMOTE(s_m40xxxx *buf) {
 void cm_switch::SENSOR_EVENT(s_m41xxxx *buf) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
-		send_NACK();
+		hm->send_NACK();
 		return;
 	}
 

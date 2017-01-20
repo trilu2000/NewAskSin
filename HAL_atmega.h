@@ -44,7 +44,7 @@ struct s_pin_def {
 
 #if defined(__AVR_ATmega328P__)
 	#include "HAL_atmega_328P.h"
-#elif defined(__AVR_ATmega_32U4__)
+#elif defined(__AVR_ATmega32U4__)
 	#include "HAL_atmega_32U4.h"
 #else
 	#error "No HAL definition for current MCU available!"

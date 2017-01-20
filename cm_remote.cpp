@@ -173,7 +173,7 @@ void CM_REMOTE::button_action(uint8_t event) {
 	button_info.channel = lstC.cnl;
 	button_info.counter = button_ref.counter;
 
-	send_REMOTE((event != 3) ? 1 : 0, this, (uint8_t*)&button_info);
+	hm->send_REMOTE((event != 3) ? 1 : 0, this, (uint8_t*)&button_info);
 	if (event != 3) button_ref.counter++;													// increase the button counter
 }
 

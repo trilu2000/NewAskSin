@@ -146,6 +146,7 @@ void clear_eeprom(uint16_t addr, uint16_t len) {
 static volatile uint32_t milliseconds;
 static volatile uint8_t timer = 255;
 
+#ifdef hasTimer0
 void init_millis_timer0(int16_t correct_ms) {
 	timer = 0;
 	power_timer0_enable();
@@ -155,7 +156,9 @@ void init_millis_timer0(int16_t correct_ms) {
 	TIMSK0 = _BV(OCIE0A);
 	OCR0A = ((F_CPU / 64) / 1000) + correct_ms;
 }
+#endif
 
+#ifdef hasTimer1
 void init_millis_timer1(int16_t correct_ms) {
 	timer = 1;
 	power_timer1_enable();
@@ -165,7 +168,9 @@ void init_millis_timer1(int16_t correct_ms) {
 	TIMSK1 = _BV(OCIE1A);
 	OCR1A = ((F_CPU / 64) / 1000) + correct_ms;
 }
+#endif
 
+#ifdef hasTimer2
 void init_millis_timer2(int16_t correct_ms) {
 	timer = 2;
 	power_timer2_enable();
@@ -175,6 +180,7 @@ void init_millis_timer2(int16_t correct_ms) {
 	TIMSK2 = _BV(OCIE2A);
 	OCR2A = ((F_CPU / 32) / 1000) + correct_ms;
 }
+#endif
 
 uint32_t get_millis(void) {
 	uint32_t ms;

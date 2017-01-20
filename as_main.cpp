@@ -660,6 +660,303 @@ void AS::process_peer_message_poll(void) {
 
 
 
+/*
+* @brief Send device info
+* Could be an answer on a pair serial request, or initial send by the device
+* Only difference is the message counter - on own initialized send, we use the message
+* counter from the send class, on a pair serial request we take the counter value from the received string
+*
+* Message description:
+*             Sender__ Receiver fwVer type   Serial number                     class  pCnlA  pCnlB  unknown
+* 1A 94 84 00 1F B7 4A 01 02 04 15    00 6C  4B 45 51 30 32 33 37 33 39 36  10 41     01     00
+*/
+void AS::send_DEVICE_INFO(MSG_REASON::E reason) {
+	s_m00xxxx *msg = &snd_msg.m00xxxx;														// short hand to send buffer
+
+																							/* copy the payload from different sources */
+	memcpy_P(&msg->FIRMWARE, dev_static, 3);												// copy firmware and modelID
+	memcpy(&msg->SERIALNO, dev_ident.SERIAL_NR, 10);										// copy the serial number
+	memcpy_P(&msg->CLASS, dev_static + 3, 4);												// copy subtype and device info
+
+																							/* is it an answer to a CONFIG_PAIR_SERIAL request, or while we initiate the pairing process */
+	if (reason == MSG_REASON::ANSWER) {
+		snd_msg.active = MSG_ACTIVE::ANSWER;												// for address, counter and to make it active
+	}
+	else {
+		snd_msg.active = MSG_ACTIVE::PAIR;													// for address, counter and to make it active
+	}
+
+	/* BIDI is asked all time, will removed automatically if MAID is empty */
+	snd_msg.type = MSG_TYPE::DEVICE_INFO;													// length and flags are set within the snd_msg struct
+
+																							//pair_mode.active = 1;																	// set pairing flag
+																							//pair_mode.timer.set(20000);															// set pairing time
+																							//led->set(LED_STAT::PAIR_WAIT);															// and visualize the status
+}
+/**
+* @brief Check if ACK required and send ACK or NACK
+*/
+void AS::check_send_ACK_NACK(uint8_t ackOk) {
+	if (ackOk) send_ACK();																	// we are here to proof the result
+	else send_NACK();																		// and send an ACK or NACK
+}
+/**
+* @brief Send ACK message
+*
+* Message description:
+*             Sender__ Receiver ACK
+* 0A 24 80 02 1F B7 4A 63 19 63 00
+*/
+void AS::send_ACK(void) {
+	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
+
+	if (aes->active == MSG_AES::AES_REPLY_OK) {											// if last message was a valid aes reply we have to answer with an ack_auth
+		snd_msg.type = MSG_TYPE::ACK_AUTH;													// length and flags are set within the snd_msg struct
+		memcpy(snd_msg.buf + 11, aes->ACK_payload, 4);									// 4 byte auth payload
+	}
+	else {
+		snd_msg.type = MSG_TYPE::ACK;														// length and flags are set within the snd_msg struct
+	}
+	aes->active = MSG_AES::NONE;														// no need to remember on the last message
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+}
+/**
+* @brief Send an ACK with status data
+*
+* Message description:
+*             Sender__ Receiver ACK Cnl Stat Action RSSI
+* 0F 12 80 02 1E 7A AD 23 70 EC 01  01  BE   20     27    CC - dimmer
+* 0E 5C 80 02 1F B7 4A 63 19 63 01  01  C8   00     42       - pcb relay
+*
+* Action: Down=0x20, UP=0x10, LowBat=&0x80
+*
+* @param chnl
+* @param stat
+* @param actn
+*/
+void AS::send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
+	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ACK only while required
+	s_m0201xx *msg = &snd_msg.m0201xx;														// short hand to ACK Status struct while easier to fill
+	msg->MSG_CNL = chnl;
+	msg->MSG_STATUS = stat;
+	*(uint8_t*)&msg->MSG_FLAG = actn;
+	msg->MSG_FLAG.LOWBAT = bat->get_status();
+	msg->MSG_RSSI = com->rssi;
+
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::ACK_STATUS;													// length and flags are set within the snd_msg struct
+}
+void AS::send_ACK2(void) {
+}
+void AS::send_AES_REQ() {
+	/* save the initial message for later use and prepare the temp key */
+	aes->prep_AES_REQ(dev_ident.HMKEY, rcv_msg.buf, snd_msg.buf);							// prepare the message, store received string and so on
+	rcv_msg.buf[0] = 0;																		// and terminate the further processing
+
+																							/* create the message */
+	snd_msg.active = MSG_ACTIVE::ANSWER_BIDI;												// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::AES_REQ;														// length and flags are set within the snd_msg struct
+	snd_msg.buf[17] = dev_ident.HMKEY_INDEX[0];												// the 7th byte is the key index
+}
+/**
+* @brief Send a NACK (not ACK)
+*
+* Message description:
+*             Sender__ Receiver NACK
+* 0A 24 80 02 1F B7 4A 63 19 63 80
+*/
+void AS::send_NACK(void) {
+	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::NACK;															// length and flags are set within the snd_msg struct
+
+}
+/**
+* @brief Send a NACK (not ACK and target invalid)
+*
+* Message description:
+*             Sender__ Receiver NACK_TAGRET_INVALID
+* 0A 24 80 02 1F B7 4A 63 19 63 84
+*/
+void AS::send_NACK_TARGET_INVALID(void) {
+	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ACK only while required
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::NACK_TARGET_INVALID;											// length and flags are set within the snd_msg struct
+
+}
+void AS::send_ACK_NACK_UNKNOWN() {
+}
+
+void AS::send_AES_REPLY(uint8_t *payload) {
+	memcpy(snd_msg.buf + 10, payload, 16);													// payload starts at byte 10 and has a length of 16 byte
+	snd_msg.type = MSG_TYPE::AES_REPLY;														// prepare the send message, payload was filled already
+	snd_msg.active = MSG_ACTIVE::ANSWER_BIDI;												// answer the request but we need an ACK
+}
+
+void AS::send_SEND_AES_TO_HMLAN() {
+}
+void AS::send_SEND_AES_TO_ACTOR() {
+}
+
+/*
+* @brief Transmit the device serial number
+*
+*    LEN CNT FLAG BY03 SND       RCV       By10  SERIAL
+* m> 14  16  A0   10   63 19 64  33 11 22  00    01 02 03 04 05 06 07 08 09 10 * /
+*/
+void AS::send_INFO_SERIAL() {
+	s_m1000xx *msg = &snd_msg.m1000xx;														// short hand to info serial struct
+	memcpy(&msg->SERIALNO, dev_ident.SERIAL_NR, 10);										// copy the serial number
+
+	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::INFO_SERIAL;													// length and flags are set within the snd_msg struct
+}
+
+/**
+* @brief Send info peer list
+* Typical requested by a CONFIG_PEER_LIST_REQ. As this message could require more bytes then
+* it can send within one message, we prepare a slice wise sender struct. Progressed in the send class.
+*
+* Message description:
+*    LEN CNT FLAG BY03 SND       RCV       By10  PEER 1 to 4, empty peer terminates message
+* l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
+*/
+void AS::send_INFO_PEER_LIST(uint8_t cnl) {
+	s_list_msg   *lm = &list_msg;														// short hand to the struct with all information for slice wise send
+	s_peer_table *peerDB = &cmm[cnl]->peerDB;												// short hand to the respective peer table of the channel
+
+	lm->active = LIST_ANSWER::PEER_LIST;													// we want to get the peer list
+	lm->peer = peerDB;																		// pointer to the respective peerDB struct
+	lm->max_slc = peerDB->get_nr_slices();													// get an idea of the total needed slices
+	lm->timer.set(15);																		// some time between last message
+	DBG(AS, F("AS:send_INFO_PEER_LIST, cnl:"), cnl, F(", slices:"), lm->max_slc, '\n');
+}
+
+/**
+* @brief Send info param response pairs of values
+* Typical requested by a CONFIG_PARAM_REQ. As this message could require more bytes then
+* it can send within one message, we prepare a slice wise sender struct. Progressed in the send class.
+*
+* Message description:
+*    LEN CNT FLAG BY03 SND       RCV       By10  PEER 1 to 4, empty peer terminates message
+* l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
+*/
+void AS::send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id) {
+	s_list_msg   *lm = &list_msg;														// short hand to the struct with all information for slice wise send
+	s_peer_table *peerDB = &cmm[cnl]->peerDB;												// short hand to the respective peer table of the channel
+	s_list_table *list = cmm[cnl]->list[lst];												// short hand to the respective list table
+
+	if (!list) return;																		// specific list is not available
+	uint8_t idx = peerDB->get_idx(peer_id);													// get the requested peer index
+	if (idx == 0xff) return;																// nothing to do while index not found
+
+	lm->active = LIST_ANSWER::PARAM_RESPONSE_PAIRS;											// we want to get the param list as pairs
+	lm->peer_idx = peerDB->get_idx(peer_id);												// remember on the peer index
+	lm->list = list;																		// pointer to the respective list struct
+	lm->max_slc = list->get_nr_slices_pairs();												// get an idea of the total needed slices, plus one for closing 00 00 message
+	lm->timer.set(15);																		// some time between last message
+	DBG(AS, F("AS:send_INFO_PARAM_RESPONSE_PAIRS, cnl:"), cnl, F(", lst:"), lst, F(", peer:"), _HEX(peer_id, 4), F(", idx:"), lm->peer_idx, F(", slices:"), lm->max_slc, '\n');
+}
+
+/**
+* @brief Send info param response sequential - todo: implement
+* Typical requested by a CONFIG_PARAM_REQ. As this message could require more bytes then
+* it can send within one message, we prepare a slice wise sender struct. Progressed in the send class.
+*
+* Message description:
+*    LEN CNT FLAG BY03 SND       RCV       By10  PEER 1 to 4, empty peer terminates message
+* l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
+*/
+void AS::send_INFO_PARAM_RESPONSE_SEQ(uint8_t cnl, uint8_t lst, uint8_t *peer_id) {
+	//config_list_answer_slice.type = LIST_ANSWER::PARAM_RESPONSE_PAIRS;;					// we want to get the param list sequential
+	//config_list_answer_slice.list = ptr_CM[cnl]->list[lst];								// pointer to the respective list struct
+	//config_list_answer_slice.max_slc = ptr_CM[cnl]->list[lst]->get_nr_slices();			// get an idea of the total needed slices
+	//config_list_answer_slice.active = 1;													// and set it active
+}
+
+void AS::send_INFO_PARAMETER_CHANGE() {
+}
+
+/**
+* @brief Send info about an actor status
+*
+* Message description:
+*             Sender__  Receiver       Cnl  Stat flag  RSSI
+* 0E 40 A4 10 1F B7 4A  63 19 63  06   01   00   00    48 (148679)
+*
+* @param channel
+* @param state
+* @param flag: TODO: to be specified
+*/
+void AS::send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag) {
+	s_m1006xx *msg = &snd_msg.m1006xx;														// struct is easier to fill
+	s_mBody *rcvBody = &rcv_msg.mBody;														// short hand to received string
+
+	msg->MSG_CNL = cnl;																		// copy in the channel
+	msg->MSG_STAT = stat;																	// the status of the channel
+	msg->UNKNOWN = flag;																	// needs investigation
+	msg->MSG_RSSI = com->rssi;																// received rssi value
+
+	snd_msg.active = MSG_ACTIVE::PAIR;														// for address, counter and to make it active
+	snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;											// length and flags are set within the snd_msg struct
+}
+
+void AS::send_INFO_TEMP() {
+}
+
+void AS::send_HAVE_DATA() {
+}
+
+//void send_SWITCH(s_peer_table *peerDB) {
+//}
+void AS::send_TIMESTAMP(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+
+/*
+* @brief prepares a REMOTE message to all registered peers
+* This message is used by push buttone devices like the HM_PB_6_WM55
+* @parameter bidi, 1 if we need an ACK, 0 if it is a repeated long
+*            *channel_module, ptr to the respective channel module, use "this"
+*            *ptr_payload, pointer to the payload, in this case it is a fixed 2 byte array
+*/
+void AS::send_REMOTE(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+	if (peer_msg.active) return;
+	peer_msg.active = (bidi) ? MSG_ACTIVE::PEER_BIDI : MSG_ACTIVE::PEER;
+	peer_msg.type = MSG_TYPE::REMOTE;
+	peer_msg.peerDB = &channel_module->peerDB;
+	peer_msg.lstP = &channel_module->lstP;
+	peer_msg.lstC = &channel_module->lstC;
+	peer_msg.payload_ptr = ptr_payload;
+	peer_msg.payload_len = 2;
+	peer_msg.max_retr = 3;
+	DBG(CM, F("CM:send_REMOTE peers:"), channel_module->peerDB.used_slots(), F(", payload:"), _HEX(ptr_payload, 2), ", bidi:", bidi, '\n');
+}
+void AS::send_SENSOR_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_SWITCH_LEVEL(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_SENSOR_DATA(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_GAS_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_CLIMATE_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_SET_TEAM_TEMP(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_THERMAL_CONTROL(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_POWER_EVENT_CYCLE(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_POWER_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+void AS::send_WEATHER_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload) {
+}
+
+
+
+
+
+
 
 /* - device related functions without any relation to a specific channel */
 void AS::INSTRUCTION_RESET(s_m1104xx *buf) {

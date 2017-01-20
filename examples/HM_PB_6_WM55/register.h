@@ -12,14 +12,14 @@
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-static AES *aes = new HAS_AES();
-static COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
-static CBN *cbn = new CBN(1, &pin_B0);
-static LED *led = new LED(&pin_D6, &pin_D4);
-static BAT *bat = new NO_BAT();
-//static BAT *bat = new INT_BAT(3600000, 30);							// ~170 byte more than no_bat
-//static BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
-static POM *pom = new POM(POWER_MODE_NO_SLEEP);
+AES *aes = new HAS_AES();
+COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
+CBN *cbn = new CBN(1, &pin_B0);
+LED *led = new LED(&pin_D6, &pin_D4);
+BAT *bat = new NO_BAT();
+//BAT *bat = new INT_BAT(3600000, 30);								// ~170 byte more than no_bat
+//BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
+POM *pom = new POM(POWER_MODE_NO_SLEEP);
 
 
 /*
@@ -32,7 +32,7 @@ const uint8_t cm_maintenance_ChnlLen = 6;
 /*
 *  @brief definition of the device functionallity per channel
 */
-static CM_MASTER *cmm[7] = {
+CM_MASTER *cmm[7] = {
 	new CM_MAINTENANCE(0),
 	new CM_REMOTE(11, &pin_C0),
 	new CM_REMOTE(10, &pin_C1),

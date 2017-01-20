@@ -27,7 +27,7 @@
 */
 
 #define SER_DBG					// Main sketch debug function and messages
-#define DMP_DBG					// EEprom dump function, only in combination with SER_DBG
+//#define DMP_DBG					// EEprom dump function, only in combination with SER_DBG
 //#define AS_DBG					// AskSin class debug (AS.cpp)
 //#define CC_DBG					// Communication class (AS_communication.cpp)
 #define SN_DBG					// Send function (AS.cpp)

@@ -97,7 +97,7 @@ void CBN::button_action(MSG_CBN::E mode) {
 		DBG(CB, F("keyShort"));					
 		led->stop();
 		led->set(LED_STAT::LED_RED_L);
-		if (button_check.scenario == 1) send_DEVICE_INFO(MSG_REASON::INITIAL);				// send pairing string
+		if (button_check.scenario == 1) hm->send_DEVICE_INFO(MSG_REASON::INITIAL);				// send pairing string
 		else if (button_check.scenario == 2) cmm[1]->set_toggle();							// send toggle to user module registered on channel 1
 
 	} else if (mode == MSG_CBN::keyLong) {
@@ -106,7 +106,7 @@ void CBN::button_action(MSG_CBN::E mode) {
 
 	} else if (mode == MSG_CBN::keyLongRelease) {
 		DBG(CB, F("keyLongRelease"));
-		if (button_check.scenario == 2) send_DEVICE_INFO(MSG_REASON::INITIAL);				// send pairing string
+		if (button_check.scenario == 2) hm->send_DEVICE_INFO(MSG_REASON::INITIAL);				// send pairing string
 
 	} else if (mode == MSG_CBN::keyDblLong) {
 		DBG(CB, F("keyDblLong"));
