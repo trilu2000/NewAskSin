@@ -50,10 +50,20 @@ void setup() {
 	strobe(CC1101_SRES);
 	_delay_ms(10);
 
-	/* now we should be able to read the partnumber */
+	/* now we should be able to read the partnumber 
+	*  check the hw and version flag
+	*  PARTNUM | VERSION | Radio
+	* -------- | ------- | ------
+	*        0 |       3 | CC1100
+	*        0 |       4 | CC1101
+	*        0 |       5 | CC1100E
+	*        0 |       6 | CC430 RF1A
+	*        0 |       7 | CC110L
+	*      128 |       3 | CC2500
+	*/
 	uint8_t part_num = readReg(CC1101_PARTNUM, CC1101_STATUS);
 	uint8_t part_ver = readReg(CC1101_VERSION, CC1101_STATUS);
-	dbg << F("part number: ") << part_num << F(", version: ") << part_ver << '\n';
+	dbg << F("\npart number: ") << part_num << F(", version: ") << part_ver << '\n';
 
 
 	dbg << F("\nswitch over to the library communication modul...\n");
@@ -65,7 +75,7 @@ void setup() {
 void loop() {
 	if (com->has_data()) {
 		com->rcv_data(rcv_str);
-		//dbg << "data: " << _HEX(rcv_str, rcv_str[0]+1);
+		dbg << "l> " << _HEX(rcv_str, rcv_str[0]+1) << '\n';
 	}
 
 }

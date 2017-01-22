@@ -1,112 +1,107 @@
 
-#ifndef _REGISTER_h
-	#define _REGISTER_h
-	
-	/**
-	 * @brief Libraries needed to run AskSin library
-	 */
-	#include <AS.h> 
-	#include "hardware.h"
-	#include "hmkey.h"
-	#include <cmMaintenance.h> 
-	#include <cmDimmer.h> 
-
-	/**
-	 * @brief Stage the modules and declare external functions.
-	 *
-	 * This functions are the call backs for user modules,
-	 * declaration is in the register.h but the functions needs
-	 * to be defined in the user sketch.
-	 */
-	AS hm;
-	AES *aes = new NO_AES;
-
-	/*
-	* cmSwitch requires this functions in the user sketch:
-	* void cmSwitch::initSwitch(uint8_t channel);
-	* void cmSwitch::switchSwitch(uint8_t channel, uint8_t status);
-	*/
-	const uint8_t cmMaintenance_ChnlReg[] PROGMEM = { 0x02,0x05,0x08,0x0a,0x0b,0x0c,0x12, };
-	const uint8_t cmMaintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x10,0x00,0x00,0x00,0x69, };
-	const uint8_t cmMaintenance_ChnlLen = 7;
-
-	cmMaster *ptr_CM[4] = {
-		new cmMaintenance(0),
-		new cmDimmer(10),
-		new cmDimmer(2),
-		new cmDimmer(2),
-	};
+#ifndef _REGISTER_H
+#define _REGISTER_H
 
 
-	/*
-	 * @brief HMID, Serial number, HM-Default-Key, Key-Index
-	 */
-	const uint8_t HMSerialData[] PROGMEM = {
-		/* HMID */            0x33,0x11,0x23,
-		/* Serial number */   'H','B','d','i','m','m','e','r','0','1',		// HBswitch01 
-		/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
-		/* Default-Key */     HM_DEVICE_AES_KEY,
-	};
+/*
+*  @brief libraries needed to run AskSin library, everything is defined within the newasksin.h file
+*/
+#include <newasksin.h> 
+#include "hmkey.h"
 
 
-	/**
-	 * @brief Settings of HM device
-	 * firmwareVersion: The firmware version reported by the device
-	 *                  Sometimes this value is important for select the related device-XML-File
-	 *
-	 * modelID:         Important for identification of the device.
-	 *                  @See Device-XML-File /device/supported_types/type/parameter/const_value
-	 *
-	 * subType:         Identifier if device is a switch or a blind or a remote
-	 * DevInfo:         Sometimes HM-Config-Files are referring on byte 23 for the amount of channels.
-	 *                  Other bytes not known.
-	 *                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
-	 */
-	const uint8_t dev_static[] PROGMEM = {             // testID 
-		/* firmwareVersion 1 byte */  0x25,           // or GE 
-		/* modelID         2 byte */  0x00,0x67,
-		/* subTypeID       1 byte */  0x00,           // replace __ by a valid type id 
-		/* deviceInfo      3 byte */  0x41,0x01,0x00, // device info not found, replace by valid values 
-	};
+/*
+*  @brief definition of all classes which are necassary to run asksin
+*/
+AES *aes = new HAS_AES();
+COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
+CBN *cbn = new CBN(2, &pin_B0);
+LED *led = new LED(&pin_D6, &pin_D4);
+BAT *bat = new NO_BAT();
+//BAT *bat = new INT_BAT(3600000, 30);								// ~170 byte more than no_bat
+//BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
+POM *pom = new POM(POWER_MODE_NO_SLEEP);
 
 
-
-	/**
-	 * @brief Regular start function
-	 * This function is called by the main function every time when the device starts,
-	 * here we can setup everything which is needed for a proper device operation
-	 */
-	void everyTimeStart(void) {
-		dbg << F("\nevery time start\n");
-
-		// channel 0 section 
-		led.set(welcome);
-		btn.config(2);
-		pom.setMode(POWER_MODE_NO_SLEEP);
-		bat.set(30, 3600000);
-		// channel 1 section 
-	}
-
-	/**
-	 * @brief First time start function
-	 * This function is called by the main function on the first boot of a device.
-	 * First boot is indicated by a magic byte in the eeprom.
-	 * Here we can setup everything which is needed for a proper device operation, like cleaning
-	 * of eeprom variables, or setting a default link in the peer table for 2 channels
-	 */
-	void firstTimeStart(void) {
-		dbg << F("\n\nnew magic!\n\n");
+/*
+*  @brief cm_maintenance requires this declaration in the user sketch to make registers flexible
+*/
+const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
+const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x01,0x00,0x00,0x00,0x69, };
+const uint8_t cm_maintenance_ChnlLen = 6;
 
 
-	}
+/*
+*  @brief definition of the device functionallity per channel
+*/
+CM_MASTER *cmm[7] = {
+	new CM_MAINTENANCE(0),
+	new CM_DIMMER(10),
+	new CM_DIMMER(2),
+	new CM_DIMMER(2),
+};
+
+
+/*
+* @brief HMID, Serial number, HM-Default-Key, Key-Index
+*/
+const uint8_t HMSerialData[] PROGMEM = {
+	/* HMID */            0x33,0x11,0x23,
+	/* Serial number */   'H','B','d','i','m','m','e','r','0','1',		// HBswitch01 
+	/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
+	/* Default-Key */     HM_DEVICE_AES_KEY,
+};
+
+
+/*
+* @brief Settings of HM device
+* firmwareVersion: The firmware version reported by the device
+*                  Sometimes this value is important for select the related device-XML-File
+*
+* modelID:         Important for identification of the device.
+*                  @See Device-XML-File /device/supported_types/type/parameter/const_value
+*
+* subType:         Identifier if device is a switch or a blind or a remote
+* DevInfo:         Sometimes HM-Config-Files are referring on byte 23 for the amount of channels.
+*                  Other bytes not known.
+*                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
+*/
+const uint8_t dev_static[] PROGMEM = {             // testID 
+	/* firmwareVersion 1 byte */  0x25,           // or GE 
+	/* modelID         2 byte */  0x00,0x67,
+	/* subTypeID       1 byte */  0x00,           // replace __ by a valid type id 
+	/* deviceInfo      3 byte */  0x41,0x01,0x00, // device info not found, replace by valid values 
+};
 
 
 
+/*
+* @brief Regular start function
+* This function is called by the main function every time when the device starts,
+* here we can setup everything which is needed for a proper device operation
+*/
+void everyTimeStart(void) {
+	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
+
+}
+
+
+/*
+* @brief First time start function
+* This function is called by the main function on the first boot of a device.
+* First boot is indicated by a magic byte in the eeprom.
+* Here we can setup everything which is needed for a proper device operation, like cleaning
+* of eeprom variables, or setting a default link in the peer table for 2 channels
+*/
+void firstTimeStart(void) {
+	DBG(SER, F("\n\nnew magic!\n\n"));
+
+}
 
 
 #endif
 
-/**
+/*
  * @brief Channel structs (for developers)
  * Within the channel struct you will find the definition of the respective registers per channel and list.
  * These information is only needed if you want to develop your own channel module, for pre defined
@@ -236,7 +231,7 @@ struct s_cnl1_lst3 {
 	uint8_t LONG_ELSE_JT_RAMPOFF     : 4;  // 0xa9.4, s:4   d: ONDELAY  
 }; // 60 byte
 
- /**
+ /*
  * @brief Message description:
  *
  *        00        01 02    03 04 05  06 07 08  09  10  11   12     13
