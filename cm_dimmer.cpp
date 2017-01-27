@@ -36,14 +36,12 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max) : CM_MASTER(peer_max) {
 
 	static uint8_t lstCval[sizeof(cm_dimmer_ChnlReg)];										// create and allign the value arrays
 	lstC.val = lstCval;
-	//lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
 	static uint8_t lstPval[sizeof(cm_dimmer_PeerReg)];										// create and allign the value arrays
 	lstP.val = lstPval;
-	//lstP.val = new uint8_t[lstP.len];
 
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
 	l3 = (s_l3*)lstP.val;																	// reduced l3, description in cmSwitch.h at struct declaration
-	l3F = (s_lstPeer*)lstP.val;
+	//l3F = (s_lstPeer*)lstP.val;
 
 }
 
@@ -341,38 +339,9 @@ void CM_DIMMER::REMOTE(s_m40xxxx *buf) {
 	if ((buf->BLL.LONG) && (tr40.cnt == buf->COUNTER) && (!l3F->LONG_MULTIEXECUTE)) return;	// trigger was a repeated long, but we have no multi execute, so return
 	tr40.cnt = buf->COUNTER;																// remember message counter
 
-	// check against action type
-	if (l3->ACTION_TYPE == DM_ACTION::INACTIVE) {
-
-	} else if (l3->ACTION_TYPE == DM_ACTION::JUMP_TO_TARGET) {
-		// set next status depending on current status
-		if      (tr40.cur == DM_JT::ONDELAY)  tr40.nxt = l3->JT_ONDELAY;					// delay on
-		else if (tr40.cur == DM_JT::RAMPON)   tr40.nxt = l3->JT_RAMPON;						// ramp on
-		else if (tr40.cur == DM_JT::ON)       tr40.nxt = l3->JT_ON;							// on
-		else if (tr40.cur == DM_JT::OFFDELAY) tr40.nxt = l3->JT_OFFDELAY;					// delay off
-		else if (tr40.cur == DM_JT::RAMPOFF)  tr40.nxt = l3->JT_RAMPOFF;					// ramp off
-		else if (tr40.cur == DM_JT::OFF)      tr40.nxt = l3->JT_OFF;						// currently off
-
-	} else if (l3->ACTION_TYPE == DM_ACTION::TOGGLE_TO_COUNTER) {
-		cm_status.set_value = (buf->COUNTER % 2) ? 200 : 0;									// set the dimmer status depending on message counter
-
-	} else if (l3->ACTION_TYPE == DM_ACTION::TOGGLE_INV_TO_COUNTER) {
-		cm_status.set_value = (buf->COUNTER % 2) ? 0 : 200;									// set the dimmer status depending on message counter
-
-	} else if (l3->ACTION_TYPE == DM_ACTION::UPDIM) {
-
-	} else if (l3->ACTION_TYPE == DM_ACTION::DOWNDIM) {
-
-	} else if (l3->ACTION_TYPE == DM_ACTION::TOOGLEDIM) {
-
-	} else if (l3->ACTION_TYPE == DM_ACTION::TOGGLEDIM_TO_COUNTER) {
-
-	} else if (l3->ACTION_TYPE == DM_ACTION::TOGGLEDIM_INVERS_TO_COUNTER) {
-
-	}
-
-	cm_status.message_type = STA_INFO::SND_ACK_STATUS;										// send next time a ack info message
-	cm_status.message_delay.set(100);														// wait a short time to set status
+	/* forward the request to evaluate the action type; based on the true_or_not flag we use the jump table (lstP + 10) or the else jump table (lstP + 27) */
+	jt = (s_jt*)l3 + 10;
+	do_jump_table(&buf->COUNTER);
 
 	/* some debug */
 	DBG(DM, F("DM"), lstC.cnl, F(":trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
@@ -394,46 +363,91 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 	l3 = (buf->BLL.LONG) ? (s_l3*)lstP.val + 11 : (s_l3*)lstP.val;							// set short or long struct portion
 
 	/* set condition table in conjunction of the current jump table status */
-	uint8_t ctTbl;																			// to select the condition depending on current device status
+	uint8_t cond_tbl;
 
-	if      (tr40.cur == DM_JT::ONDELAY)  ctTbl = l3->CT_ONDELAY;							// condition table delay on
-	else if (tr40.cur == DM_JT::RAMPON)   ctTbl = l3->CT_RAMPON;							// condition table ramp on
-	else if (tr40.cur == DM_JT::ON)       ctTbl = l3->CT_ON;								// condition table on
-	else if (tr40.cur == DM_JT::OFFDELAY) ctTbl = l3->CT_OFFDELAY;							// condition table delay off
-	else if (tr40.cur == DM_JT::RAMPOFF)  ctTbl = l3->CT_RAMPOFF;							// condition table ramp off
-	else if (tr40.cur == DM_JT::OFF)      ctTbl = l3->CT_OFF;								// condition table off
+	if      (tr40.cur == DM_JT::ONDELAY)  cond_tbl = l3->CT_ONDELAY;						// delay on
+	else if (tr40.cur == DM_JT::RAMPON)   cond_tbl = l3->CT_RAMPON;							// ramp on
+	else if (tr40.cur == DM_JT::ON)       cond_tbl = l3->CT_ON;								// on
+	else if (tr40.cur == DM_JT::OFFDELAY) cond_tbl = l3->CT_OFFDELAY;						// delay off
+	else if (tr40.cur == DM_JT::RAMPOFF)  cond_tbl = l3->CT_RAMPOFF;						// ramp off
+	else if (tr40.cur == DM_JT::OFF)      cond_tbl = l3->CT_OFF;							// currently off
+
 
 	/* sort out the condition table */
-	uint8_t bll_cnt[2] = { *(uint8_t*)&buf->BLL, buf->COUNTER };							// as REMOTE message has no VALUE and a different byte order
-	uint8_t do_or_not = 0;																	// to avoid multiple function calls
+	uint8_t true_or_else = 0;																// to avoid multiple function calls
 
-	if     (ctTbl == DM_CT::X_GE_COND_VALUE_LO)
-		if (buf->VALUE >= l3->COND_VALUE_LO) do_or_not = 1;
+	if     (cond_tbl == DM_CT::X_GE_COND_VALUE_LO)								// based on the current state machine we check the condition
+		if (buf->VALUE >= l3->COND_VALUE_LO) true_or_else = 1;
 
-	else if (ctTbl == DM_CT::X_GE_COND_VALUE_HI)
-		if (buf->VALUE >= l3->COND_VALUE_HI) do_or_not = 1;
+	else if (cond_tbl == DM_CT::X_GE_COND_VALUE_HI)
+		if (buf->VALUE >= l3->COND_VALUE_HI) true_or_else = 1;
 
-	else if (ctTbl == DM_CT::X_LT_COND_VALUE_LO)
-		if (buf->VALUE <  l3->COND_VALUE_LO) do_or_not = 1;
+	else if (cond_tbl == DM_CT::X_LT_COND_VALUE_LO)
+		if (buf->VALUE <  l3->COND_VALUE_LO) true_or_else = 1;
 
-	else if (ctTbl == DM_CT::X_LT_COND_VALUE_HI)
-		if (buf->VALUE <  l3->COND_VALUE_HI) do_or_not = 1;
+	else if (cond_tbl == DM_CT::X_LT_COND_VALUE_HI)
+		if (buf->VALUE <  l3->COND_VALUE_HI) true_or_else = 1;
 
-	else if (ctTbl == DM_CT::COND_VALUE_LO_LE_X_LT_COND_VALUE_HI)
-		if ((l3->COND_VALUE_LO <= buf->VALUE) && (buf->VALUE <  l3->COND_VALUE_HI)) do_or_not = 1;
+	else if (cond_tbl == DM_CT::COND_VALUE_LO_LE_X_LT_COND_VALUE_HI)
+		if ((l3->COND_VALUE_LO <= buf->VALUE) && (buf->VALUE <  l3->COND_VALUE_HI)) true_or_else = 1;
 
-	else if (ctTbl == DM_CT::X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI)
-		if ((buf->VALUE < l3->COND_VALUE_LO) || (buf->VALUE >= l3->COND_VALUE_HI)) do_or_not = 1;
+	else if (cond_tbl == DM_CT::X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI)
+		if ((buf->VALUE < l3->COND_VALUE_LO) || (buf->VALUE >= l3->COND_VALUE_HI)) true_or_else = 1;
 
 	/* some debug */
 	DBG(DM, F("DM"), lstC.cnl, F(":trigger41, value:"), buf->VALUE, F(", cond_table:"), ctTbl, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
-	DBG(DM, F("CT_ONDELAY:"), _HEX(l3->CT_ONDELAY), F(", DM_CT_RAMPON:"), _HEX(l3->CT_RAMPON), F(", DM_CT_ON:"), _HEX(l3->CT_ON), F(", DM_CT_OFFDELAY:"), _HEX(l3->CT_OFFDELAY), F(", DM_CT_RAMPOFF:"), _HEX(l3->CT_RAMPOFF), F(", DM_CT_OFF:"), _HEX(l3->CT_OFF), '\n');
+	//DBG(DM, F("CT_ONDELAY:"), _HEX(l3->CT_ONDELAY), F(", DM_CT_RAMPON:"), _HEX(l3->CT_RAMPON), F(", DM_CT_ON:"), _HEX(l3->CT_ON), F(", DM_CT_OFFDELAY:"), _HEX(l3->CT_OFFDELAY), F(", DM_CT_RAMPOFF:"), _HEX(l3->CT_RAMPOFF), F(", DM_CT_OFF:"), _HEX(l3->CT_OFF), '\n');
 
-	/* forward the request if needed, if not we answer with an ACK */
-	if (do_or_not) REMOTE((s_m40xxxx*)(bll_cnt - 10));
-	//if (do_or_not) REMOTE((s_m40xxxx*)(((uint8_t*)bll_cnt) - 10));
-	else {
-		cm_status.message_type = STA_INFO::SND_ACK_STATUS;									// send next time a ack info message
-		cm_status.message_delay.set(100);													// wait a short time to set status
+	/* forward the request to evaluate the action type; based on the true_or_not flag we use the jump table (lstP + 10) or the else jump table (lstP + 27) */
+	jt = (s_jt*)l3 + (true_or_else) ? 10 : 27;
+	do_jump_table(&buf->COUNTER);
+
+	//uint8_t bll_cnt[2] = { *(uint8_t*)&buf->BLL, buf->COUNTER };							// as REMOTE message has no VALUE and a different byte order
+	//	if (true_or_not) do_jump_table(lstP.val + 10)
+		/* condition table is checked and there is something to do, forward the request to a function to check the action request */
+		//REMOTE((s_m40xxxx*)(bll_cnt - 10));
+
+		//if (do_or_not) REMOTE((s_m40xxxx*)(((uint8_t*)bll_cnt) - 10));
+}
+
+/* here we are work based on the action type through the jump table 
+* as there are two jump tables, we get the address of the right one as hand over parameter 
+* and allign it here in a dedicated struct 
+*/
+void CM_DIMMER::do_jump_table(uint8_t *counter) {
+	uint8_t toogle_cnt = *counter & 1;
+
+	if (jt->ACTION_TYPE == DM_ACTION::INACTIVE) {
+		// nothing to do
+
+	} else if (jt->ACTION_TYPE == DM_ACTION::JUMP_TO_TARGET) {
+		// set next status depending on current status
+		if      (tr40.cur == DM_JT::ONDELAY)  tr40.nxt = jt->JT_ONDELAY;					// delay on
+		else if (tr40.cur == DM_JT::RAMPON)   tr40.nxt = jt->JT_RAMPON;						// ramp on
+		else if (tr40.cur == DM_JT::ON)       tr40.nxt = jt->JT_ON;							// on
+		else if (tr40.cur == DM_JT::OFFDELAY) tr40.nxt = jt->JT_OFFDELAY;					// delay off
+		else if (tr40.cur == DM_JT::RAMPOFF)  tr40.nxt = jt->JT_RAMPOFF;					// ramp off
+		else if (tr40.cur == DM_JT::OFF)      tr40.nxt = jt->JT_OFF;						// currently off
+
+	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLE_TO_COUNTER) {
+		cm_status.set_value = (toogle_cnt) ? 200 : 0;										// set the dimmer status depending on message counter
+
+	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLE_INV_TO_COUNTER) {
+		cm_status.set_value = (toogle_cnt) ? 0 : 200;										// set the dimmer status depending on message counter
+
+	} else if (jt->ACTION_TYPE == DM_ACTION::UPDIM) {
+
+	} else if (jt->ACTION_TYPE == DM_ACTION::DOWNDIM) {
+
+	} else if (jt->ACTION_TYPE == DM_ACTION::TOOGLEDIM) {
+
+	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLEDIM_TO_COUNTER) {
+
+	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLEDIM_INVERS_TO_COUNTER) {
+
 	}
+
+	cm_status.message_type = STA_INFO::SND_ACK_STATUS;										// send next time a ack info message
+	cm_status.message_delay.set(100);														// wait a short time to set status
+
 }

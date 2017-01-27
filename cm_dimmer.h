@@ -152,6 +152,19 @@ private:  //--------------------------------------------------------------------
 		uint8_t LONG_ELSE_JT_RAMPOFF     : 4;  // 0xa9.4, s:4   d: ONDELAY               ----------------------------------------
 	} *l3F; // 60 byte
 
+	struct s_jt {
+		uint8_t ACTION_TYPE        : 4;  // 0x0a.0, s:4
+		uint8_t                    : 1;  // 0x0a.4, s:1
+		uint8_t MULTIEXECUTE       : 1;  // 0x8a.5, s:1 
+		uint8_t OFF_TIME_MODE      : 1;  // 0x0a.6, s:1
+		uint8_t ON_TIME_MODE       : 1;  // 0x0a.7, s:1
+		uint8_t JT_ON              : 4;  // 0x0b.0, s:4 
+		uint8_t JT_OFF             : 4;  // 0x0b.4, s:4
+		uint8_t JT_ONDELAY         : 4;  // 0x0c.0, s:4
+		uint8_t JT_OFFDELAY        : 4;  // 0x0c.4, s:4
+		uint8_t JT_RAMPON          : 4;  // 0x0d.0, s:4 
+		uint8_t JT_RAMPOFF         : 4;  // 0x0d.4, s:4
+	} *jt;
 
 	struct s_l3 {
 		uint8_t CT_RAMPON          : 4;  // 0x01.0, s:4   d: X GE COND_VALUE_LO    // 0x81.0, s:4   d: X GE COND_VALUE_LO
@@ -245,6 +258,10 @@ public:  //---------------------------------------------------------------------
 	virtual void SWITCH(s_m3Exxxx *buf);													// switch message from master to test a peer setup
 	virtual void REMOTE(s_m40xxxx *buf);													// remote peer message
 	virtual void SENSOR_EVENT(s_m41xxxx *buf);												// sensor peer message
+
+	void do_jump_table(uint8_t *counter);
+	void do_updim(void);
+	void do_downdim(void);
 
 };
 
