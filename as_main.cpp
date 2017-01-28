@@ -234,6 +234,7 @@ void AS::process_message(void) {
 	uint8_t *rcv_by10 = &rcv_msg.mBody.BY10;
 	uint8_t *rcv_by11 = &rcv_msg.mBody.BY11;
 	CM_MASTER *pCM;
+	//dbg << "by03:" << *rcv_by03 << ", by10:" << *rcv_by10 << ", by11:" << *rcv_by11 << '\n';
 
 	if (*rcv_by03 == BY03(MSG_TYPE::DEVICE_INFO)) {
 		/* not sure what to do with while received, probably nothing */
@@ -243,7 +244,7 @@ void AS::process_message(void) {
 		*  check the channel and forward for processing to the respective function */
 		if (rcv_msg.mBody.BY10 >= cnl_max) return;											// channel is out of range, return
 		//uint8_t by11 = rcv_msg.mBody.BY11;												// short hand to byte 11 in the received string
-		//pCM = &cmm[*rcv_by10];															// short hand to the respective channel module instance
+		pCM = cmm[*rcv_by10];																// short hand to the respective channel module instance
 
 		/* check if we need to challange the request */
 		switch (*rcv_by11) {
@@ -253,10 +254,13 @@ void AS::process_message(void) {
 			case BY11(MSG_TYPE::CONFIG_END):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX1):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX2):
-			if ((*cmm[*rcv_by10]->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {	// check if we need AES confirmation
-				send_AES_REQ();																// send a request
-				return;																		// nothing to do any more, wait and see
-			}
+				uint8_t *AES = pCM->lstC.ptr_to_val(0x08);
+				if (!AES) AES = new uint8_t;
+				//dbg << "Aes_ptr:" << (uint16_t)AES << ", val" << *AES << '\n';
+				if ((*AES) && (aes->active != MSG_AES::AES_REPLY_OK)) {						// check if we need AES confirmation
+					send_AES_REQ();															// send a request
+					return;																	// nothing to do any more, wait and see
+				}
 		}
 
 		/* challange done, now we can process the initial request */

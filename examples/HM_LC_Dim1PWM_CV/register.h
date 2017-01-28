@@ -13,9 +13,9 @@
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-AES *aes = new HAS_AES();
+AES *aes = new NO_AES();
 COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
-CBN *cbn = new CBN(2, &pin_B0);
+CBN *cbn = new CBN(1, &pin_B0);
 LED *led = new LED(&pin_D6, &pin_D4);
 BAT *bat = new NO_BAT();
 //BAT *bat = new INT_BAT(3600000, 30);								// ~170 byte more than no_bat
@@ -27,14 +27,14 @@ POM *pom = new POM(POWER_MODE_NO_SLEEP);
 *  @brief cm_maintenance requires this declaration in the user sketch to make registers flexible
 */
 const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
-const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x01,0x00,0x00,0x00,0x69, };
+const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0x69, };
 const uint8_t cm_maintenance_ChnlLen = 6;
 
 
 /*
 *  @brief definition of the device functionallity per channel
 */
-CM_MASTER *cmm[7] = {
+CM_MASTER *cmm[4] = {
 	new CM_MAINTENANCE(0),
 	new CM_DIMMER(10),
 	new CM_DIMMER(2),
@@ -46,7 +46,7 @@ CM_MASTER *cmm[7] = {
 * @brief HMID, Serial number, HM-Default-Key, Key-Index
 */
 const uint8_t HMSerialData[] PROGMEM = {
-	/* HMID */            0x33,0x11,0x23,
+	/* HMID */            0x33,0x11,0x24,
 	/* Serial number */   'H','B','d','i','m','m','e','r','0','1',		// HBswitch01 
 	/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
 	/* Default-Key */     HM_DEVICE_AES_KEY,

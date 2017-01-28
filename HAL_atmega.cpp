@@ -129,7 +129,9 @@ void get_eeprom(uint16_t addr, uint8_t len, void *ptr) {
 }
 
 void set_eeprom(uint16_t addr, uint8_t len, void *ptr) {
-	eeprom_write_block((const void*)ptr, (void*)addr, len);									// AVR GCC standard function
+	/* update is much faster, while writes only when needed; needs some byte more space
+	* but otherwise we run in timing issues */
+	eeprom_update_block((const void*)ptr, (void*)addr, len);								// AVR GCC standard function
 }
 
 void clear_eeprom(uint16_t addr, uint16_t len) {

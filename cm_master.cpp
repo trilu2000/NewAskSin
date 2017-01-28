@@ -19,8 +19,6 @@ CM_MASTER::CM_MASTER(const uint8_t peer_max) {
 
 	lstC.cnl = cnl_max;																		// set the channel to the lists
 	lstP.cnl = cnl_max++;
-
-	DBG(CM, F("CM["), lstC.cnl, F("].\n"));
 }
 
 
@@ -162,12 +160,12 @@ void CM_MASTER::CONFIG_START(s_m01xx05 *buf) {
 	cm->idx_peer = peerDB.get_idx(buf->PEER_ID);											// try to get the peer index
 
 	if ((cm->list) && (cm->idx_peer != 0xff)) {												// list and peer index found
-		cm->timer.set(2000);																// set timeout time, otherwise the channel will be open for write forever
+		cm->timer.set(5000);																// set timeout time, otherwise the channel will be open for write forever
 		cm->active = 1;																		// set active
-		hm->send_ACK();																			// send back that everything is ok
+		hm->send_ACK();																		// send back that everything is ok
 		// TODO: set message id flag to config in send module
 	} else {
-		hm->send_NACK();																		// something wrong
+		hm->send_NACK();																	// something wrong
 	}
 	DBG(CM, F("CM:CONFIG_START, cnl:"), buf->MSG_CNL, '/', cm->list->cnl, F(", lst:"), buf->PARAM_LIST, '/', cm->list->cnl, F(", peer:"), _HEX(buf->PEER_ID, 4), F(", idx:"), cm->idx_peer, '\n');
 }
@@ -211,7 +209,7 @@ void CM_MASTER::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 
 	if (cm->active)  {																		// check if config is active, channel fit is checked in AS
 		cm->list->write_array(buf->DATA, buf->MSG_LEN - 11, cm->idx_peer);					// write the array into the list
-		hm->send_ACK();																			// we are fine
+		hm->send_ACK();																		// we are fine
 		DBG(CM, F("CM:CONFIG_WRITE_INDEX2, cnl:"), buf->MSG_CNL, F(", lst:"), cm->list->lst, F(", idx:"), cm->idx_peer, '\n');
 	} else hm->send_NACK();
 }
@@ -413,7 +411,7 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		ee_start_addr += (cmm[i]->lstP.len * cmm[i]->peerDB.max);						// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
 
 																						// defaults loaded in the AS module init, on every time start
-		DBG(CM, F("CM:prep_defaults, cnl:"), pCM->lstC.cnl, F(", lst:"), pCM->lstC.lst, F(", len:"), pCM->lstC.len, F(", data:"), _HEX(pCM->lstC.val, pCM->lstC.len), '\n');
+		DBG(CM, F("CM:prep_defaults, cnl:"), cmm[i]->lstC.cnl, F(", lst:"), cmm[i]->lstC.lst, F(", len:"), cmm[i]->lstC.len, F(", data:"), _HEX(cmm[i]->lstC.val, cmm[i]->lstC.len), '\n');
 	}
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels

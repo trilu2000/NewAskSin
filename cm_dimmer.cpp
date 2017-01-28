@@ -436,8 +436,10 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 		cm_status.set_value = (toogle_cnt) ? 0 : 200;										// set the dimmer status depending on message counter
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::UPDIM) {
+		do_updim();
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::DOWNDIM) {
+		do_downdim();
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOOGLEDIM) {
 
@@ -449,5 +451,14 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 
 	cm_status.message_type = STA_INFO::SND_ACK_STATUS;										// send next time a ack info message
 	cm_status.message_delay.set(100);														// wait a short time to set status
+
+}
+
+void CM_DIMMER::do_updim(void) {
+	// Es wird um eine Helligkeitsstufe hochgedimmt. Die Schrittweite und der Maximalwert lassen sich in anderen Parametern einstellen. (…_DIM_STEP und …_DIM_MAX_LEVEL)
+
+}
+void CM_DIMMER::do_downdim(void) {
+	// Es wird um eine Helligkeitsstufe runtergedimmt.Die Schrittweite und der Minimalwert lassen sich in anderen Parametern einstellen. (…_DIM_STEP und …_DIM_MIN_LEVEL)
 
 }

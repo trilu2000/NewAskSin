@@ -80,13 +80,13 @@ CC1101::CC1101(const s_pin_def *ptr_pin_miso, const s_pin_def *ptr_pin_mosi, con
 void    CC1101::init(void) {	
 	/* init the hardware to get access to the RF modul,
 	*  some deselect and selects to init the TRX868modul */
-	enable_spi();																			// enable spi
 	set_pin_output(pin_csl);																// set chip select as output
 	set_pin_high(pin_csl);																	// while module is low active
 	set_pin_output(pin_mosi);																// set MOSI as output
 	set_pin_input(pin_miso);																// set MISO as input
 	set_pin_output(pin_sck);																// set SCK as output
 	set_pin_input(pin_gdo0);																// set GDO0 as input
+	enable_spi();																			// enable spi
 
 	spi_deselect();																		
 	_delay_us(5);
