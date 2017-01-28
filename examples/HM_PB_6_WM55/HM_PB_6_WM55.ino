@@ -44,12 +44,10 @@ void loop() {
 //	}
 }
 
-
 //- user functions --------------------------------------------------------------------------------------------------------
-void CM_REMOTE::initRemote(uint8_t channel) {
+void initRemote(uint8_t channel) {
 	// setting the essentials for the respective remote channel if necassary
 	DBG(RE, F("initRemote: "), channel, '\n');
-
 }
 
 
@@ -64,7 +62,3 @@ void CM_REMOTE::initRemote(uint8_t channel) {
 void pci_callback(uint8_t vec, uint8_t pin, uint8_t flag) {
 	dbg << F("v:") << vec << F(", p:") << pin << F(", f:") << flag << '\n';
 }
-
-
-
-
