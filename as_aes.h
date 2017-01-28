@@ -41,10 +41,10 @@ class AES {
 	aes128_ctx_t ctx; 											// the context where the round keys are stored
 
   public:
-	virtual void prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf) {}
-	virtual void prep_AES_REPLY(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *challenge, uint8_t *snd_buf) {}
-	virtual void check_AES_REPLY(uint8_t *hmkey, uint8_t *rcv_buf) {}
-	virtual uint8_t check_SEND_AES_TO_ACTOR(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *rcv_buf) {}
+	virtual void prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf);
+	virtual void prep_AES_REPLY(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *challenge, uint8_t *snd_buf);
+	virtual void check_AES_REPLY(uint8_t *hmkey, uint8_t *rcv_buf);
+	virtual uint8_t check_SEND_AES_TO_ACTOR(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *rcv_buf);
 };
 //extern AES *aes;
 

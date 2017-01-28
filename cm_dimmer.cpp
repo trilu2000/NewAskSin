@@ -453,6 +453,7 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 	cm_status.message_delay.set(100);														// wait a short time to set status
 
 }
+<<<<<<< HEAD
 
 void CM_DIMMER::do_updim(void) {
 	// Es wird um eine Helligkeitsstufe hochgedimmt. Die Schrittweite und der Maximalwert lassen sich in anderen Parametern einstellen. (…_DIM_STEP und …_DIM_MAX_LEVEL)
@@ -462,3 +463,5 @@ void CM_DIMMER::do_downdim(void) {
 	// Es wird um eine Helligkeitsstufe runtergedimmt.Die Schrittweite und der Minimalwert lassen sich in anderen Parametern einstellen. (…_DIM_STEP und …_DIM_MIN_LEVEL)
 
 }
+=======
+>>>>>>> origin/DevAES

@@ -76,23 +76,23 @@ void aes128_dec(void* buffer, aes128_ctx_t* ctx);
 
 // - encrypt
 void aes_shiftcol(void* data, uint8_t shift);
-static void aes_enc_round(aes_cipher_state_t* state, const aes_roundkey_t* k);
-static void aes_enc_lastround(aes_cipher_state_t* state, const aes_roundkey_t* k);
+void aes_enc_round(aes_cipher_state_t* state, const aes_roundkey_t* k);
+void aes_enc_lastround(aes_cipher_state_t* state, const aes_roundkey_t* k);
 void aes_encrypt_core(aes_cipher_state_t* state, const aes_genctx_t* ks, uint8_t rounds);
 void aes_encrypt_core(aes_cipher_state_t* state, const aes_genctx_t* ks, uint8_t rounds);
 
 // - decrypt 
 void aes_invshiftrow(void* data, uint8_t shift);
 void aes_invshiftcol(void* data, uint8_t shift);
-static void aes_dec_round(aes_cipher_state_t* state, const aes_roundkey_t* k);
-static void aes_dec_firstround(aes_cipher_state_t* state, const aes_roundkey_t* k);
+void aes_dec_round(aes_cipher_state_t* state, const aes_roundkey_t* k);
+void aes_dec_firstround(aes_cipher_state_t* state, const aes_roundkey_t* k);
 void aes_decrypt_core(aes_cipher_state_t* state, const aes_genctx_t* ks, uint8_t rounds);
 
 // - init
 void aes128_init(const void* key, aes128_ctx_t* ctx);
 void aes192_init(const void* key, aes192_ctx_t* ctx);
 void aes256_init(const void* key, aes256_ctx_t* ctx);
-static void aes_rotword(void* a);
+void aes_rotword(void* a);
 
 uint8_t gf256mul(uint8_t a, uint8_t b, uint8_t reducer);
 
