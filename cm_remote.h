@@ -37,8 +37,6 @@ private:  //--------------------------------------------------------------------
 		uint8_t EXPECT_AES       : 1;  // 0x01.7, s:1   d: false  
 	} *l4; // 1 byte
 
-	static void initRemote(uint8_t channel);												// functions in user sketch needed
-
 	waitTimer timer;																		// timer to detect long press and dbl_short
 
 	struct s_button_check {
@@ -61,7 +59,7 @@ private:  //--------------------------------------------------------------------
 		uint8_t counter          : 8;														// will be increased in buttonAction function
 	} button_info;																			// holds the details for the send event message
 
-	s_pin_def *key_pin = NULL;
+	const s_pin_def *key_pin = NULL;
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
@@ -80,5 +78,7 @@ public:  //---------------------------------------------------------------------
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */
 
 };
+
+extern void initRemote(uint8_t channel);												// functions in user sketch needed
 
 #endif

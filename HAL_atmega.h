@@ -110,9 +110,9 @@ void clear_eeprom(uint16_t addr, uint16_t len);												// and clear the eepr
 * timer 0 available for all different hardware.
 */
 // https://github.com/zkemble/millis/blob/master/millis/
-void init_millis_timer0(int16_t correct_ms = 0);											// initialize the respective timer
-void init_millis_timer1(int16_t correct_ms = 0);
-void init_millis_timer2(int16_t correct_ms = 0);
+void init_millis_timer0(int16_t correct_ms);												// initialize the respective timer
+void init_millis_timer1(int16_t correct_ms);
+void init_millis_timer2(int16_t correct_ms);
 uint32_t get_millis(void);																	// get the current time in millis
 void add_millis(uint32_t ms);																// add some time to the counter, mainly used while wake up from sleeping
 //- -----------------------------------------------------------------------------------------------------------------------

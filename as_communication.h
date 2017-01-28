@@ -23,12 +23,12 @@ public:  //---------------------------------------------------------------------
 	uint8_t pwr_down;														// module sleeping (power down)
 
 	virtual void    init() {}												// initialize the communication modul
-	virtual void    snd_data(uint8_t *buf, uint8_t burst) {}				// send data packet via RF
-	virtual void    rcv_data(uint8_t *buf) {}								// read data packet from RX FIFO
-	virtual uint8_t has_data() {};											// boolean value if data are received
+	virtual void    snd_data(uint8_t *buf, uint8_t burst);					// send data packet via RF
+	virtual void    rcv_data(uint8_t *buf);									// read data packet from RX FIFO
+	virtual uint8_t has_data();												// boolean value if data are received
 
-	virtual void    set_idle(void) {}										// put CC1101 into power-down state
-	virtual uint8_t detect_burst(void) {}									// detect burst signal, sleep while no signal, otherwise stay awake
+	virtual void    set_idle(void);											// put CC1101 into power-down state
+	virtual uint8_t detect_burst(void);										// detect burst signal, sleep while no signal, otherwise stay awake
 
 	inline void decode(uint8_t *buf);										// decodes the message
 	inline void encode(uint8_t *buf);										// encodes the message

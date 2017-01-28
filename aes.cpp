@@ -120,7 +120,7 @@ void aes_shiftcol(void* data, uint8_t shift) {
 	((uint8_t*)data)[8] = tmp[(shift + 2) & 3];
 	((uint8_t*)data)[12] = tmp[(shift + 3) & 3];
 }
-static void aes_enc_round(aes_cipher_state_t* state, const aes_roundkey_t* k) {
+void aes_enc_round(aes_cipher_state_t* state, const aes_roundkey_t* k) {
 	uint8_t tmp[16], t;
 	uint8_t i;
 	/* subBytes */
@@ -156,7 +156,7 @@ static void aes_enc_round(aes_cipher_state_t* state, const aes_roundkey_t* k) {
 		state->s[i] ^= k->ks[i];
 	}
 }
-static void aes_enc_lastround(aes_cipher_state_t* state, const aes_roundkey_t* k) {
+void aes_enc_lastround(aes_cipher_state_t* state, const aes_roundkey_t* k) {
 	uint8_t i;
 	/* subBytes */
 	for (i = 0; i<16; ++i) {
@@ -204,7 +204,7 @@ void aes_invshiftcol(void* data, uint8_t shift) {
 	((uint8_t*)data)[8] = tmp[(4 - shift + 2) & 3];
 	((uint8_t*)data)[12] = tmp[(4 - shift + 3) & 3];
 }
-static void aes_dec_round(aes_cipher_state_t* state, const aes_roundkey_t* k) {
+void aes_dec_round(aes_cipher_state_t* state, const aes_roundkey_t* k) {
 	uint8_t tmp[16];
 	uint8_t i;
 	uint8_t t, u, v, w;
@@ -234,7 +234,7 @@ static void aes_dec_round(aes_cipher_state_t* state, const aes_roundkey_t* k) {
 		state->s[i] = pgm_read_byte(aes_invsbox + state->s[i]);
 	}
 }
-static void aes_dec_firstround(aes_cipher_state_t* state, const aes_roundkey_t* k) {
+void aes_dec_firstround(aes_cipher_state_t* state, const aes_roundkey_t* k) {
 	uint8_t i;
 	/* keyAdd */
 	for (i = 0; i<16; ++i) {
@@ -271,7 +271,7 @@ void aes192_init(const void* key, aes192_ctx_t* ctx) {
 void aes256_init(const void* key, aes256_ctx_t* ctx) {
 	aes_init(key, 256, (aes_genctx_t*)ctx);
 }
-static void aes_rotword(void* a) {
+void aes_rotword(void* a) {
 	uint8_t t;
 	t = ((uint8_t*)a)[0];
 	((uint8_t*)a)[0] = ((uint8_t*)a)[1];
