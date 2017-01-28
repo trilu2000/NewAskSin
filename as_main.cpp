@@ -255,8 +255,7 @@ void AS::process_message(void) {
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX1):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX2):
 				uint8_t *AES = pCM->lstC.ptr_to_val(0x08);
-				if (!AES) AES = new uint8_t;
-				//dbg << "Aes_ptr:" << (uint16_t)AES << ", val" << *AES << '\n';
+				if (!AES) AES = new uint8_t[1];
 				if ((*AES) && (aes->active != MSG_AES::AES_REPLY_OK)) {						// check if we need AES confirmation
 					send_AES_REQ();															// send a request
 					return;																	// nothing to do any more, wait and see
@@ -381,14 +380,14 @@ void AS::process_message(void) {
 
 	} else if (rcv_msg.intend == MSG_INTENT::PEER) {
 	 /* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
-		//pCM = &cmm[rcv_msg.cnl];															// we remembered on the channel by checking validity of peer
+		pCM = cmm[rcv_msg.cnl];																// we remembered on the channel by checking validity of peer
 		/* check if we need to challange the request */
 		if ((*cmm[rcv_msg.cnl]->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
 		/* forward to the respective channel function */
-		cmm[rcv_msg.cnl]->lstP.load_list(cmm[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));		// load the respective list 3
+		pCM->lstP.load_list(cmm[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3
 		if      (*rcv_by03 == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
 		else if (*rcv_by03 == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
 		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);
