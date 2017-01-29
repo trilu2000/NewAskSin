@@ -94,9 +94,9 @@ extern void clear_eeprom(uint16_t addr, uint16_t len);
 * in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
 * you can also use the arduino standard timer for a specific hardware by interlinking the function call to getmillis()
 */
-extern void init_millis_timer0(int16_t correct_ms = 0);
-extern void init_millis_timer1(int16_t correct_ms = 0);
-extern void init_millis_timer2(int16_t correct_ms = 0);
+extern void init_millis_timer0(int16_t correct_ms);
+extern void init_millis_timer1(int16_t correct_ms);
+extern void init_millis_timer2(int16_t correct_ms);
 extern uint32_t get_millis(void);
 extern void add_millis(uint32_t ms);
 //- -----------------------------------------------------------------------------------------------------------------------

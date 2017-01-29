@@ -54,7 +54,7 @@ class CBN  {
 	const s_pin_def *key_pin;
 
 	CBN(uint8_t mode, const s_pin_def *ptr_pin);
-	CBN(uint8_t mode);
+	CBN(uint8_t mode = 0);
 
 	void init(void);														// initialize the config key
 	void poll(void);														// poll to process status of button

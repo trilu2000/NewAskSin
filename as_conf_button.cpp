@@ -16,7 +16,7 @@ CBN::CBN(uint8_t mode, const s_pin_def *ptr_pin) {
 	button_check.scenario = mode;
 }
 
-CBN::CBN(const uint8_t mode = 0) {
+CBN::CBN(const uint8_t mode) {
 	button_check.configured = 0;															// poll the pin make only sense if it was configured, store result here
 	button_check.scenario = mode;
 }
