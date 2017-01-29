@@ -53,7 +53,7 @@ public://-----------------------------------------------------------------------
 	* @brief Keep all information for sending an ACK_STATUS or INFO_ACTUATOR_STATUS at one place
 	*/
 
-	virtual void info_config_change(void);													// list1 on registered channel had changed
+	virtual void info_config_change(uint8_t channel);										// list1 on registered channel had changed
 	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 

@@ -54,11 +54,12 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max) : CM_MASTER(peer_max) {
 void CM_DIMMER::adjustStatus(void) {
 
 	if (cm_status.value == cm_status.set_value) return;										// nothing to do, return
-	if (!adj_timer.done()) return;															// timer not done, wait until then
+	//if (!adj_timer.done()) return;															// timer not done, wait until then
 
 	// calculate next step
-	if (cm_status.value < cm_status.set_value) cm_status.value++;							// do we have to increase
-	else cm_status.value--;																	// or decrease
+	//if (cm_status.value < cm_status.set_value) cm_status.value++;							// do we have to increase
+	//else cm_status.value--;																	// or decrease
+	cm_status.value = cm_status.set_value;
 
 	if (l1->CHARACTERISTIC) {																// check if we should use quadratic approach
 		uint16_t calc_value = cm_status.value * cm_status.value;							// recalculate the value
@@ -68,7 +69,7 @@ void CM_DIMMER::adjustStatus(void) {
 
 	} else switchDimmer(lstC.cnl, cm_status.value);											// calling the external function to make it happen
 
-	adj_timer.set(adj_delay);																// set timer for next action
+	//adj_timer.set(adj_delay);																// set timer for next action
 	DBG(DM, F("DM"), lstC.cnl, F(":adj val: "), cm_status.value, F(", set: "), cm_status.set_value, F(", quad: "), l1->CHARACTERISTIC, '\n';)
 }
 
@@ -322,42 +323,31 @@ void CM_DIMMER::SWITCH(s_m3Exxxx *buf) {
 * more interesting for the master...
 */
 void CM_DIMMER::REMOTE(s_m40xxxx *buf) {
-	/* check for inhibit flag */
-	if (cm_status.inhibit) {
-		hm->send_NACK();
-		return;
-	}
-
 	/* depending on the long flag, we cast the value array into a list3 struct.
 	* we do this, because the struct is seperated in two sections, values for a short key press and a section for long key press */
-	l3 = (buf->BLL.LONG) ? (s_l3*)lstP.val + 30 : (s_l3*)lstP.val;							// set short or long struct portion
+	l3 = (buf->BLL.LONG) ? (s_l3*)((uint8_t*)lstP.val + 30) : (s_l3*)lstP.val;				// set short or long struct portion
 
 	cm_status.delay.set(0);																	// also delay timer is not needed any more
 	tr11.active = 0;																		// stop any tr11 processing
 
 	// check for multi execute flag
-	if ((buf->BLL.LONG) && (tr40.cnt == buf->COUNTER) && (!l3F->LONG_MULTIEXECUTE)) return;	// trigger was a repeated long, but we have no multi execute, so return
+	if ((buf->BLL.LONG) && (tr40.cnt == buf->COUNTER) && (!l3->MULTIEXECUTE)) return;	// trigger was a repeated long, but we have no multi execute, so return
 	tr40.cnt = buf->COUNTER;																// remember message counter
 
-	/* forward the request to evaluate the action type; based on the true_or_not flag we use the jump table (lstP + 10) or the else jump table (lstP + 27) */
-	jt = (s_jt*)l3 + 10;
-	do_jump_table(&buf->COUNTER);
-
 	/* some debug */
-	DBG(DM, F("DM"), lstC.cnl, F(":trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
-	DBG(DM, F("JT_ONDELAY:"), _HEX(l3->JT_ONDELAY), F(", ONDELAY_T:"), _HEX(l3->ONDELAY_TIME), F(", DM_JT_RAMPON:"), _HEX(l3->JT_RAMPON), F(", RAMPON_T:"), _HEX(l3->RAMPON_TIME), F(", DM_JT_ON:"), _HEX(l3->JT_ON), F(", ON_T:"), _HEX(l3->ON_TIME), F(", DM_JT_OFFDELAY:"), _HEX(l3->JT_OFFDELAY), F(", OFFDELAY_T:"), _HEX(l3->OFFDELAY_TIME), F(", DM_JT_RAMPOFF:"), _HEX(l3->JT_RAMPOFF), F(", RAMPOFF_T:"), _HEX(l3->RAMPOFF_TIME), F(", DM_JT_OFF:"), _HEX(l3->JT_OFF), F(", OFF_T:"), _HEX(l3->OFF_TIME), '\n');
-	DBG(DM, F("lst3: "), _HEX(lstP.val, lstP.len), '\n');
+	//DBG(DM, F("DM"), lstC.cnl, F(":trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
+	//DBG(DM, F("JT_ONDELAY:"), _HEX(l3->JT_ONDELAY), F(", ONDELAY_T:"), _HEX(l3->ONDELAY_TIME), F(", DM_JT_RAMPON:"), _HEX(l3->JT_RAMPON), F(", RAMPON_T:"), _HEX(l3->RAMPON_TIME), F(", DM_JT_ON:"), _HEX(l3->JT_ON), F(", ON_T:"), _HEX(l3->ON_TIME), F(", DM_JT_OFFDELAY:"), _HEX(l3->JT_OFFDELAY), F(", OFFDELAY_T:"), _HEX(l3->OFFDELAY_TIME), F(", DM_JT_RAMPOFF:"), _HEX(l3->JT_RAMPOFF), F(", RAMPOFF_T:"), _HEX(l3->RAMPOFF_TIME), F(", DM_JT_OFF:"), _HEX(l3->JT_OFF), F(", OFF_T:"), _HEX(l3->OFF_TIME), '\n');
+	//DBG(DM, F("lst3: "), _HEX(lstP.val, lstP.len), '\n');
+	//DBG(DM, F("lst3: "), _HEX((uint8_t*)l3, lstP.len/2), '\n');
+
+	/* forward the request to evaluate the action type; based on the true_or_not flag we use the jump table (lstP + 10) or the else jump table (lstP + 27) */
+	jt = (s_jt*)((uint8_t*)l3 + 9);
+	do_jump_table(&buf->COUNTER);
 }
 /**
 * @brief Function is called on messages comming from sensors.
 */
 void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
-	/* check for inhibit flag */
-	if (cm_status.inhibit) {
-		hm->send_NACK();
-		return;
-	}
-
 	/* depending on the long flag, we cast the value array into a list3 struct.
 	* we do this, because the struct is seperated in two sections, values for a short key press and a section for long key press */
 	l3 = (buf->BLL.LONG) ? (s_l3*)lstP.val + 11 : (s_l3*)lstP.val;							// set short or long struct portion
@@ -399,8 +389,8 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 	//DBG(DM, F("CT_ONDELAY:"), _HEX(l3->CT_ONDELAY), F(", DM_CT_RAMPON:"), _HEX(l3->CT_RAMPON), F(", DM_CT_ON:"), _HEX(l3->CT_ON), F(", DM_CT_OFFDELAY:"), _HEX(l3->CT_OFFDELAY), F(", DM_CT_RAMPOFF:"), _HEX(l3->CT_RAMPOFF), F(", DM_CT_OFF:"), _HEX(l3->CT_OFF), '\n');
 
 	/* forward the request to evaluate the action type; based on the true_or_not flag we use the jump table (lstP + 10) or the else jump table (lstP + 27) */
-	//jt = (s_jt*)l3 + (true_or_else) ? 10 : 27;
-	//do_jump_table(&buf->COUNTER);
+	jt = (s_jt*)((uint8_t*)l3 + (true_or_else) ? 10 : 27);
+	do_jump_table(&buf->COUNTER);
 
 	//uint8_t bll_cnt[2] = { *(uint8_t*)&buf->BLL, buf->COUNTER };							// as REMOTE message has no VALUE and a different byte order
 	//	if (true_or_not) do_jump_table(lstP.val + 10)
@@ -416,6 +406,14 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 */
 void CM_DIMMER::do_jump_table(uint8_t *counter) {
 	uint8_t toogle_cnt = *counter & 1;
+
+	/* check for inhibit flag */
+	if (cm_status.inhibit) {
+		hm->send_NACK();
+		return;
+	}
+
+	dbg << "jt: " << _HEX((uint8_t*)jt, 4) << '\n';
 
 	if (jt->ACTION_TYPE == DM_ACTION::INACTIVE) {
 		// nothing to do
@@ -435,30 +433,41 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLE_INV_TO_COUNTER) {
 		cm_status.set_value = (toogle_cnt) ? 0 : 200;										// set the dimmer status depending on message counter
 
-	} else if (jt->ACTION_TYPE == DM_ACTION::UPDIM) {
-		do_updim();
+	} else if (jt->ACTION_TYPE == DM_ACTION::UPDIM) {	
+		/* increase brightness by one step */ 
+		do_updim();																			// call updim 
 
-	} else if (jt->ACTION_TYPE == DM_ACTION::DOWNDIM) {
-		do_downdim();
+	} else if (jt->ACTION_TYPE == DM_ACTION::DOWNDIM) {									
+		/* decrease brightness by one step */
+		do_downdim();																		// call down dim
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOOGLEDIM) {
+		/* increase or decrease, direction change after each use. ideal if a dimmer is driven by only one key */
+		static uint8_t direction;
+
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLEDIM_TO_COUNTER) {
+		/* increase or decrease brightness by one step, direction comes from the last bit of the counter */
+		(toogle_cnt) ? do_updim() : do_downdim();
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLEDIM_INVERS_TO_COUNTER) {
+		/* same as TOGGLEDIM_TO_COUNTER but invers */
+		(toogle_cnt) ? do_downdim() : do_updim();
 
 	}
 
 	cm_status.message_type = STA_INFO::SND_ACK_STATUS;										// send next time a ack info message
-	cm_status.message_delay.set(100);														// wait a short time to set status
+	cm_status.message_delay.set(5);															// wait a short time to set status
 
 }
 
 void CM_DIMMER::do_updim(void) {
-	// Es wird um eine Helligkeitsstufe hochgedimmt. Die Schrittweite und der Maximalwert lassen sich in anderen Parametern einstellen. (…_DIM_STEP und …_DIM_MAX_LEVEL)
-
+	/* increase brightness by DIM_STEP but not over DIM_MAX_LEVEL */
+	if (cm_status.value < l3->DIM_MAX_LEVEL - l3->DIM_STEP) cm_status.set_value = cm_status.value + l3->DIM_STEP;
+	else cm_status.set_value = l3->DIM_MAX_LEVEL;
 }
 void CM_DIMMER::do_downdim(void) {
-	// Es wird um eine Helligkeitsstufe runtergedimmt.Die Schrittweite und der Minimalwert lassen sich in anderen Parametern einstellen. (…_DIM_STEP und …_DIM_MIN_LEVEL)
-
+	/* decrease brightness by DIM_STEP  but not lower than DIM_MIN_LEVEL */
+	if (cm_status.value > l3->DIM_MIN_LEVEL + l3->DIM_STEP) cm_status.set_value = cm_status.value - l3->DIM_STEP;
+	else cm_status.set_value = l3->DIM_MIN_LEVEL;
 }

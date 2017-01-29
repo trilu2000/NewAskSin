@@ -28,8 +28,8 @@ CM_MASTER::CM_MASTER(const uint8_t peer_max) {
 * Herewith we can adapt changes given by the config change. Needs to be overwritten
 * by the respective channel module
 */
-void CM_MASTER::info_config_change(void) {
-	DBG(CM, F("CM:config_change\n") );
+void CM_MASTER::info_config_change(uint8_t channel) {
+	DBG(CM, F("CM:config_change "), channel, '\n' );
 }
 /**
 * we received an peer add event, which means, there was a peer added in this respective channel
@@ -181,11 +181,13 @@ void CM_MASTER::CONFIG_END(s_m01xx06 *buf) {
 	cm->timer.set(0);																		// clear the timer
 	cm->active = 0;																			// clear the flag
 
-	hm->send_ACK();																				// send back that everything is ok
+	hm->send_ACK();																			// send back that everything is ok
 
 	if (cm->list->lst < 2) {
 		lstC.load_list(cm->idx_peer);														// reload list0 or 1
-		info_config_change();																// inform the channel module on a change of list0 or 1
+		for (uint8_t i = 0; i < cnl_max; i++) {
+			info_config_change(lstC.cnl);													// inform the channel module on a change of list0 or 1
+		}
 	}
 	// TODO: remove message id flag to config in send module
 	DBG(CM, F("CM:CONFIG_END, cnl:"), buf->MSG_CNL, '\n');

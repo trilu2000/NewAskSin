@@ -40,7 +40,8 @@ CM_MAINTENANCE::CM_MAINTENANCE(const uint8_t peer_max) : CM_MASTER(peer_max ) {
 * @brief Here we are informed of every change in list0 and we can get the defaults
 *        like MasterID or resend time and counter if applicable
 */
-void CM_MAINTENANCE::info_config_change(void) {
+void CM_MAINTENANCE::info_config_change(uint8_t channel) {
+	if (channel != 0) return;
 	/* get the master id by finding the pointer in progmem cnlAddr and placing the pointer of MAID to it 
 	*  if register 0x0a didn't exist, we are getting a NULL pointer with a null value, writing into it 
 	* will reset the device, failure needs not to be solved, while a device where the pair address is not valid
