@@ -391,13 +391,6 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 	/* forward the request to evaluate the action type; based on the true_or_not flag we use the jump table (lstP + 10) or the else jump table (lstP + 27) */
 	jt = (s_jt*)((uint8_t*)l3 + (true_or_else) ? 10 : 27);
 	do_jump_table(&buf->COUNTER);
-
-	//uint8_t bll_cnt[2] = { *(uint8_t*)&buf->BLL, buf->COUNTER };							// as REMOTE message has no VALUE and a different byte order
-	//	if (true_or_not) do_jump_table(lstP.val + 10)
-		/* condition table is checked and there is something to do, forward the request to a function to check the action request */
-		//REMOTE((s_m40xxxx*)(bll_cnt - 10));
-
-		//if (do_or_not) REMOTE((s_m40xxxx*)(((uint8_t*)bll_cnt) - 10));
 }
 
 /* here we are work based on the action type through the jump table 
@@ -413,7 +406,7 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 		return;
 	}
 
-	dbg << "jt: " << _HEX((uint8_t*)jt, 4) << '\n';
+	//dbg << "jt: " << _HEX((uint8_t*)jt, 4) << '\n';
 
 	if (jt->ACTION_TYPE == DM_ACTION::INACTIVE) {
 		// nothing to do
@@ -443,8 +436,12 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOOGLEDIM) {
 		/* increase or decrease, direction change after each use. ideal if a dimmer is driven by only one key */
+		static uint8_t r_counter;
 		static uint8_t direction;
-
+		//dbg << "tgl, cnt: " << r_counter << ", dir: " << direction << '\n';
+		if (r_counter != *counter) direction ^= 1;
+		r_counter = *counter;
+		(direction) ? do_updim() : do_downdim();
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLEDIM_TO_COUNTER) {
 		/* increase or decrease brightness by one step, direction comes from the last bit of the counter */
@@ -465,9 +462,11 @@ void CM_DIMMER::do_updim(void) {
 	/* increase brightness by DIM_STEP but not over DIM_MAX_LEVEL */
 	if (cm_status.value < l3->DIM_MAX_LEVEL - l3->DIM_STEP) cm_status.set_value = cm_status.value + l3->DIM_STEP;
 	else cm_status.set_value = l3->DIM_MAX_LEVEL;
+	//dbg << "updim, val: " << cm_status.value << ", set: " << cm_status.set_value << '\n';
 }
 void CM_DIMMER::do_downdim(void) {
 	/* decrease brightness by DIM_STEP  but not lower than DIM_MIN_LEVEL */
 	if (cm_status.value > l3->DIM_MIN_LEVEL + l3->DIM_STEP) cm_status.set_value = cm_status.value - l3->DIM_STEP;
 	else cm_status.set_value = l3->DIM_MIN_LEVEL;
+	//dbg << "dwdim, val: " << cm_status.value << ", set: " << cm_status.set_value << '\n';
 }
