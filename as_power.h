@@ -49,7 +49,7 @@ public:		//---------------------------------------------------------------------
 
 	POM(uint8_t power_mode);
 
-	//void setMode(uint8_t mode);
+	void setMode(uint8_t mode);
 	void stayAwake(uint16_t time);
 
 	void poll(void);

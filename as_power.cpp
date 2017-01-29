@@ -22,17 +22,10 @@ POM::POM(uint8_t power_mode) {
 /**
  * @brief Set power mode
  */
-/*void POM::setMode(uint8_t mode) {
+void POM::setMode(uint8_t mode) {
 	pwrMode = mode;
-
-	#ifdef PW_DBG																			// only if pw debug is set
-	dbg << F("PowerMode: ") << pwrMode << '\n';											// ...and some information
-	#endif
-
-	//initWakeupPin();
 	setSleepMode();
-	stayAwake(2000);																		// startup means stay awake for next 2 seconds
-}*/
+}
 
 /**
  * @brief Stay awake for specific time
