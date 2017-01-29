@@ -50,9 +50,8 @@ void POM::poll(void) {
 	if ((snd_msg.active) || (list_msg.active) || (config_mode.active) || (pair_mode.active) || (cbn->button_check.armed)) return;
 	
 	#ifdef PW_DBG																			// only if pw debug is set
-	dbg << '.';																				// ...and some information
-	_delay_ms(1);
-	uint32_t fTme = getMillis();
+		dbg << '.';																			// ...and some information
+		// uint32_t fTme = getMillis();
 	#endif
 
 
@@ -63,7 +62,7 @@ void POM::poll(void) {
 			chkCCBurst = 1;																	// set the flag
 			
 			#ifdef PW_DBG																	// only if pw debug is set
-			dbg << '1';																		// ...and some information
+				dbg << '1';																	// ...and some information
 			#endif
 
 		} else if ((tmpCCBurst) && (chkCCBurst)) {											// burst detected for the second time
@@ -71,7 +70,7 @@ void POM::poll(void) {
 			stayAwake(500);																	// stay awake for some time to check if we receive a valid message
 
 			#ifdef PW_DBG																	// only if pw debug is set
-			dbg << '2';																		// ...and some information
+				dbg << '2';																	// ...and some information
 			#endif
 
 			return;																			// we don't want proceed further, jump out
@@ -80,7 +79,7 @@ void POM::poll(void) {
 			chkCCBurst = 0;																	// reset the flag
 
 			#ifdef PW_DBG																	// only if pw debug is set
-			dbg << '-';																		// ...and some information
+				dbg << '-';																	// ...and some information
 			#endif			
 		}
 	}
@@ -101,6 +100,10 @@ void POM::poll(void) {
 	// todo: move sei() to setSleep() before sleep_cpu();
 	sei();
 
+	#if defined(PW_DBG)||defined(SER_DBG)||defined(SN_DBG)||defined(RV_DBG)||defined(EE_DBG)||defined(LD_DBG)||defined(CC_DBG)||defined(AS_DBG)||defined(AES_DBG)||defined(BT_DBG)||defined(TH_DBG)
+		Serial.flush();																		// give UART some time to send last chars
+	#endif
+
 	setSleep();																				// call sleep function in HAL
 
 	/*************************
@@ -113,7 +116,7 @@ void POM::poll(void) {
 	stayAwake(6);																			// stay awake for a very short time to get things done
 	
 	#ifdef PW_DBG																			// only if pw debug is set
-	dbg << ':';// << (getMillis() -fTme) << '\n';												// ...and some information
+		dbg << ':';// << (getMillis() -fTme) << '\n';										// ...and some information
 	#endif
 		
 }
