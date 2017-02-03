@@ -263,6 +263,24 @@ public:  //---------------------------------------------------------------------
 	void do_updim(void);
 	void do_downdim(void);
 
+	uint8_t start_ondelay = 0;
+	void poll_ondelay(void);
+	
+	uint8_t start_rampon = 0;
+	inline void poll_rampon(void);
+
+	uint8_t start_on = 0;
+	inline void poll_on(void);
+
+	uint8_t start_offdelay = 0;
+	inline void poll_offdelay(void);
+
+	uint8_t start_rampoff = 0;
+	inline void poll_rampoff(void);
+
+	uint8_t start_off = 0;
+	inline void poll_off(void);
+
 };
 
 #endif

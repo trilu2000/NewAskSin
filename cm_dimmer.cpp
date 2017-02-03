@@ -54,12 +54,12 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max) : CM_MASTER(peer_max) {
 void CM_DIMMER::adjustStatus(void) {
 
 	if (cm_status.value == cm_status.set_value) return;										// nothing to do, return
-	//if (!adj_timer.done()) return;															// timer not done, wait until then
+	if (!adj_timer.done()) return;															// timer not done, wait until then
 
 	// calculate next step
-	//if (cm_status.value < cm_status.set_value) cm_status.value++;							// do we have to increase
-	//else cm_status.value--;																	// or decrease
-	cm_status.value = cm_status.set_value;
+	if (cm_status.value < cm_status.set_value) cm_status.value++;							// do we have to increase
+	else cm_status.value--;																	// or decrease
+	//cm_status.value = cm_status.set_value;
 
 	if (l1->CHARACTERISTIC) {																// check if we should use quadratic approach
 		uint16_t calc_value = cm_status.value * cm_status.value;							// recalculate the value
@@ -69,8 +69,8 @@ void CM_DIMMER::adjustStatus(void) {
 
 	} else switchDimmer(lstC.cnl, cm_status.value);											// calling the external function to make it happen
 
-	//adj_timer.set(adj_delay);																// set timer for next action
-	DBG(DM, F("DM"), lstC.cnl, F(":adj val: "), cm_status.value, F(", set: "), cm_status.set_value, F(", quad: "), l1->CHARACTERISTIC, '\n';)
+	adj_timer.set(adj_delay);																// set timer for next action
+	//DBG(DM, F("DM"), lstC.cnl, F(":adj val: "), cm_status.value, F(", set: "), cm_status.set_value, F(", quad: "), l1->CHARACTERISTIC, '\n';)
 }
 
 void CM_DIMMER::cm_init(void) {
@@ -93,6 +93,14 @@ void CM_DIMMER::cm_init(void) {
 void CM_DIMMER::cm_poll(void) {
 
 	process_send_status_poll(&cm_status, lstC.cnl);											// check if there is some status to send, function call in cmMaster.cpp
+
+	poll_ondelay();
+	poll_rampon();
+	poll_on();
+	poll_offdelay();
+	poll_rampoff();
+	poll_off();
+
 	adjustStatus();																			// check if something is to be set on the Relay channel
 
 	// check if something is to do on the switch
@@ -120,7 +128,7 @@ void CM_DIMMER::cm_poll(void) {
 
 
 	// - jump table section for trigger3E/40/41
-	if ( l3->ACTION_TYPE != DM_ACTION::JUMP_TO_TARGET ) return;								// only valid for jump table
+	/*if ( l3->ACTION_TYPE != DM_ACTION::JUMP_TO_TARGET ) return;								// only valid for jump table
 	if (tr40.cur == tr40.nxt) return;														// no status change, leave
 	tr40.cur = tr40.nxt;																	// seems next status is different to current, remember for next poll
 
@@ -172,7 +180,7 @@ void CM_DIMMER::cm_poll(void) {
 			cm_status.delay.set(byteTimeCvt(l3->OFF_TIME));									// activate the timer and set next status
 			tr40.nxt = l3->JT_OFF;															// get the next status from jump table
 		}
-	}
+	}*/
 }
 
 /*
@@ -428,11 +436,14 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::UPDIM) {	
 		/* increase brightness by one step */ 
-		do_updim();																			// call updim 
+		start_rampon = 1;
+		//do_updim();																			// call updim 
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::DOWNDIM) {									
 		/* decrease brightness by one step */
-		do_downdim();																		// call down dim
+		dbg << "do\n";
+		start_rampoff = 1;
+		//do_downdim();																		// call down dim
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOOGLEDIM) {
 		/* increase or decrease, direction change after each use. ideal if a dimmer is driven by only one key */
@@ -462,11 +473,156 @@ void CM_DIMMER::do_updim(void) {
 	/* increase brightness by DIM_STEP but not over DIM_MAX_LEVEL */
 	if (cm_status.value < l3->DIM_MAX_LEVEL - l3->DIM_STEP) cm_status.set_value = cm_status.value + l3->DIM_STEP;
 	else cm_status.set_value = l3->DIM_MAX_LEVEL;
+	adj_delay = 100 / l3->DIM_STEP;
 	//dbg << "updim, val: " << cm_status.value << ", set: " << cm_status.set_value << '\n';
 }
 void CM_DIMMER::do_downdim(void) {
 	/* decrease brightness by DIM_STEP  but not lower than DIM_MIN_LEVEL */
 	if (cm_status.value > l3->DIM_MIN_LEVEL + l3->DIM_STEP) cm_status.set_value = cm_status.value - l3->DIM_STEP;
 	else cm_status.set_value = l3->DIM_MIN_LEVEL;
+	adj_delay = 100 / l3->DIM_STEP;
 	//dbg << "dwdim, val: " << cm_status.value << ", set: " << cm_status.set_value << '\n';
+}
+
+
+
+void CM_DIMMER::poll_ondelay(void) {
+	/* if poll_ondelay is active it gets polled by the main poll function
+	* ondelay has 3 stati, 0 off, 1 set timer, 2 done */
+
+	if (!start_ondelay) return;
+	if (!adj_timer.done()) return;
+
+	if (start_ondelay == 1) {
+		if (l3->ONDELAY_TIME != NOT_USED) adj_timer.set(byteTimeCvt(l3->ONDELAY_TIME));		// set the respective delay
+		start_ondelay = 2;																	// next time will be entered after the delay
+		DBG(DM, F("DM"), lstC.cnl, F(":ondelay- time: "), byteTimeCvt(l3->ONDELAY_TIME), ' ', _TIME, '\n');
+
+	} else if (start_ondelay == 2) {
+		tr40.cur = DM_JT::ONDELAY;
+		start_ondelay = 0;
+		DBG(DM, F("DM"), lstC.cnl, F(":ondelay- done "), _TIME, '\n');
+
+	}
+}
+
+void CM_DIMMER::poll_rampon(void) {
+	/* if poll_rampon is active it gets polled by the main poll function
+	*  we differentiate between first poll, while set the ramp start step
+	* and normal ramp on poll to increase brightness over the given time by l3->RAMPON_TIME 
+	* do_rampon has 4 stati, 0 for off, 1 for initial, 2 for regular, 3 for done */
+
+	if (!start_rampon) return;
+	if (cm_status.value != cm_status.set_value) return;										// not ready with setting the value
+
+	if (start_rampon == 1) {
+		if (cm_status.value + l3->RAMP_START_STEP < l3->ON_LEVEL) cm_status.set_value = cm_status.value + l3->RAMP_START_STEP;
+		else cm_status.set_value = l3->ON_LEVEL;
+		adj_delay = 1;																		// set the start step quickly
+		start_rampon = 2;
+		DBG(DM, F("DM"), lstC.cnl, F(":rampon- cur: "), cm_status.value, F(", ramp_start_step: "), l3->RAMP_START_STEP, ' ', _TIME, '\n');
+
+	} else if (start_rampon == 2) {
+		uint8_t steps = (cm_status.value < l3->ON_LEVEL) ? l3->ON_LEVEL - cm_status.value : 1;
+		cm_status.set_value = l3->ON_LEVEL;
+		adj_delay = byteTimeCvt(l3->RAMPON_TIME) / steps;									// calculate the time between setting the steps
+		start_rampon = 3;																	// done here, set done as status
+		DBG(DM, F("DM"), lstC.cnl, F(":rampon- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", timer: "), byteTimeCvt(l3->RAMPON_TIME), F(", slice_timer: "), adj_delay, ' ', _TIME, '\n');
+
+	} else if (start_rampon == 3) {
+		tr40.cur = DM_JT::RAMPON;
+		start_rampon = 0;
+		DBG(DM, F("DM"), lstC.cnl, F(":rampon- done "), _TIME, '\n');
+
+	}
+}
+
+void CM_DIMMER::poll_on(void) {
+	/* if poll_on is active it gets polled by the main poll function
+	* poll_on has 3 stati, 0 off, 1 set timer, 2 done */
+	if (!start_on) return;
+	if (!adj_timer.done()) return;
+
+	if (start_on == 1) {
+		if (l3->ON_TIME != NOT_USED) adj_timer.set(byteTimeCvt(l3->ON_TIME));				// set the respective delay
+		start_on = 2;																		// next time will be entered after the delay
+		DBG(DM, F("DM"), lstC.cnl, F(":on- time: "), byteTimeCvt(l3->ON_TIME), ' ', _TIME, '\n');
+
+	} else if (start_on == 2) {
+		tr40.cur = DM_JT::ON;
+		start_on = 0;
+		DBG(DM, F("DM"), lstC.cnl, F(":on- done "), _TIME, '\n');
+
+	}
+}
+
+void CM_DIMMER::poll_offdelay(void) {
+	/* if poll_offdelay is active it gets polled by the main poll function
+	* poll_offdelay has 4 stati, 0 off, 1 set timer, 2 process wait, 3 done */
+	if (!start_offdelay) return;
+	if (!adj_timer.done()) return;
+
+	if (start_offdelay == 1) {
+		if (l3->OFFDELAY_TIME != NOT_USED) adj_timer.set(byteTimeCvt(l3->OFFDELAY_TIME));	// set the respective delay
+		start_offdelay = 2;																	// next time will be entered after the delay
+		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- time: "), byteTimeCvt(l3->OFFDELAY_TIME), ' ', _TIME, '\n');
+
+	} else if (start_offdelay == 3) {
+		tr40.cur = DM_JT::OFFDELAY;
+		start_offdelay = 0;
+		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- done "), _TIME, '\n');
+
+	}
+}
+
+void CM_DIMMER::poll_rampoff(void) {
+	/* if do_rampoff is active it gets polled by the main poll function
+	*  we differentiate between first poll, while set the ramp stop step
+	* and normal ramp off poll to decrease brightness over the given time by l3->RAMPOFF_TIME
+	* do_rampoff has 4 stati, 0 for off, 1 for initial, 2 for regular, 3 for done */
+
+	if (!start_rampoff) return;
+	if (cm_status.value != cm_status.set_value) return;										// not ready with setting the value
+
+	if (start_rampoff == 1) {
+		if (cm_status.value > l3->RAMP_START_STEP + l3->OFF_LEVEL) cm_status.set_value = cm_status.value - l3->RAMP_START_STEP;
+		else cm_status.set_value = l3->OFF_LEVEL;
+		adj_delay = 1;																		// set the start step quickly
+		start_rampoff = 2;
+		DBG(DM, F("DM"), lstC.cnl, F(":rampoff- cur: "), cm_status.value, F(", ramp_start_step: "), l3->RAMP_START_STEP, ' ', _TIME, '\n');
+
+	}
+	else if (start_rampoff == 2) {
+		uint8_t steps = (cm_status.value > l3->OFF_LEVEL) ? cm_status.value - l3->OFF_LEVEL  : 1;
+		cm_status.set_value = l3->OFF_LEVEL;
+		adj_delay = byteTimeCvt(l3->RAMPOFF_TIME) / steps;									// calculate the time between setting the steps
+		start_rampoff = 3;																	// done here, set done as status
+		DBG(DM, F("DM"), lstC.cnl, F(":rampoff- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", timer: "), byteTimeCvt(l3->RAMPOFF_TIME), F(", slice_timer: "), adj_delay, ' ', _TIME, '\n');
+
+	}
+	else if (start_rampoff == 3) {
+		tr40.cur = DM_JT::RAMPOFF;
+		start_rampoff = 0;
+		DBG(DM, F("DM"), lstC.cnl, F(":rampoff- done "), _TIME, '\n');
+
+	}
+}
+
+void CM_DIMMER::poll_off(void) {
+	/* if poll_on is active it gets polled by the main poll function
+	* poll_on has 3 stati, 0 off, 1 set timer, 2 done */
+	if (!start_off) return;
+	if (!adj_timer.done()) return;
+
+	if (start_off == 1) {
+		if (l3->OFF_TIME != NOT_USED) adj_timer.set(byteTimeCvt(l3->OFF_TIME));				// set the respective delay
+		start_off = 2;																		// next time will be entered after the delay
+		DBG(DM, F("DM"), lstC.cnl, F(":off- time: "), byteTimeCvt(l3->OFF_TIME), ' ', _TIME, '\n');
+
+	} else if (start_off == 2) {
+		tr40.cur = DM_JT::OFF;
+		start_off = 0;
+		DBG(DM, F("DM"), lstC.cnl, F(":off- done "), _TIME, '\n');
+
+	}
 }
