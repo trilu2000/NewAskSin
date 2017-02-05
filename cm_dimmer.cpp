@@ -51,16 +51,16 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max) : CM_MASTER(peer_max) {
 * ------------------------------------------------------------------------------------------------------------------------- */
 
 
-void CM_DIMMER::adjustStatus(void) {
-
+void CM_DIMMER::adjust_status(void) {
+	/* check if something is to do */
 	if (cm_status.value == cm_status.set_value) return;										// nothing to do, return
 	if (!adj_timer.done()) return;															// timer not done, wait until then
 
-	// calculate next step
+	/* calculate the next step, based on the set_value */
 	if (cm_status.value < cm_status.set_value) cm_status.value++;							// do we have to increase
 	else cm_status.value--;																	// or decrease
-	//cm_status.value = cm_status.set_value;
 
+	/* check if we have a quadratic approach to follow */
 	if (l1->CHARACTERISTIC) {																// check if we should use quadratic approach
 		uint16_t calc_value = cm_status.value * cm_status.value;							// recalculate the value
 		calc_value /= 200;
@@ -93,7 +93,9 @@ void CM_DIMMER::cm_init(void) {
 void CM_DIMMER::cm_poll(void) {
 
 	process_send_status_poll(&cm_status, lstC.cnl);											// check if there is some status to send, function call in cmMaster.cpp
+	adjust_status();																		// check if something is to be set on the Relay channel
 
+	poll_jumptable();
 	poll_ondelay();
 	poll_rampon();
 	poll_on();
@@ -101,7 +103,6 @@ void CM_DIMMER::cm_poll(void) {
 	poll_rampoff();
 	poll_off();
 
-	adjustStatus();																			// check if something is to be set on the Relay channel
 
 	// check if something is to do on the switch
 	if (!cm_status.delay.done() ) return;													// timer not done, wait until then
@@ -127,60 +128,7 @@ void CM_DIMMER::cm_poll(void) {
 	}
 
 
-	// - jump table section for trigger3E/40/41
-	/*if ( l3->ACTION_TYPE != DM_ACTION::JUMP_TO_TARGET ) return;								// only valid for jump table
-	if (tr40.cur == tr40.nxt) return;														// no status change, leave
-	tr40.cur = tr40.nxt;																	// seems next status is different to current, remember for next poll
 
-	// check the different status changes
-	if (tr40.nxt == DM_JT::ONDELAY) {
-		DBG(DM, F("DM"), lstC.cnl, F(":ONDELAY\n"));
-		if (l3->ONDELAY_TIME != NOT_USED) {													// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->ONDELAY_TIME));								// activate the timer and set next status
-			tr40.nxt = l3->JT_ONDELAY;														// get next status from jump table
-		}
-
-	} else if (tr40.nxt == DM_JT::RAMPON) {
-		DBG(DM, F("DM"), lstC.cnl, F(":RAMPON\n"));
-		cm_status.set_value = l3->ON_LEVEL;
-		adj_delay = 5;
-		if (l3->RAMPON_TIME  != NOT_USED) {													// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->RAMPON_TIME));								// activate the timer and set next status
-			tr40.nxt = l3->JT_RAMPON;														// get next status from jump table
-		}
-
-	} else if (tr40.nxt == DM_JT::ON ) {
-		DBG(DM, F("DM"), lstC.cnl, F(":ON\n") );
-		if (l3->ON_TIME != NOT_USED) {														// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->ON_TIME));									// set the timer while not for ever
-			tr40.nxt = l3->JT_ON;															// set next status
-		}
-		 
-
-	} else if (tr40.nxt == DM_JT::OFFDELAY ) {
-		DBG(DM, F("DM"), lstC.cnl, F(":OFFDELAY\n") );
-		if (l3->OFFDELAY_TIME != NOT_USED) {												// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->OFFDELAY_TIME));							// activate the timer and set next status
-			tr40.nxt = l3->JT_OFFDELAY;														// get jump table for next status
-		}
-
-	} else if (tr40.nxt == DM_JT::RAMPOFF) {
-		DBG(DM, F("DM"), lstC.cnl, F(":RAMPOFF\n"));
-		cm_status.set_value = l3->OFF_LEVEL;
-		adj_delay = 5;
-		if (l3->RAMPOFF_TIME != NOT_USED) {													// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->RAMPOFF_TIME));								// activate the timer and set next status
-			tr40.nxt = l3->JT_RAMPOFF;														// get jump table for next status
-		}
-
-	} else if (tr40.nxt == DM_JT::OFF ) {
-		DBG(DM, F("DM"), lstC.cnl, F(":OFF\n") );
-		cm_status.set_value = 0;															// switch off relay
-		if (l3->OFF_TIME != NOT_USED) {														// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->OFF_TIME));									// activate the timer and set next status
-			tr40.nxt = l3->JT_OFF;															// get the next status from jump table
-		}
-	}*/
 }
 
 /*
@@ -411,10 +359,11 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 	/* check for inhibit flag */
 	if (cm_status.inhibit) {
 		hm->send_NACK();
+		DBG(DM, F("DM"), lstC.cnl, F(":inhibit is set\n"));
 		return;
 	}
-
 	//dbg << "jt: " << _HEX((uint8_t*)jt, 4) << '\n';
+	DBG(DM, F("DM"), lstC.cnl, F(":action_type: "), jt->ACTION_TYPE, '\n');
 
 	if (jt->ACTION_TYPE == DM_ACTION::INACTIVE) {
 		// nothing to do
@@ -436,14 +385,11 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::UPDIM) {	
 		/* increase brightness by one step */ 
-		start_rampon = 1;
-		//do_updim();																			// call updim 
+		do_updim();																			// call updim 
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::DOWNDIM) {									
 		/* decrease brightness by one step */
-		dbg << "do\n";
-		start_rampoff = 1;
-		//do_downdim();																		// call down dim
+		do_downdim();																		// call down dim
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOOGLEDIM) {
 		/* increase or decrease, direction change after each use. ideal if a dimmer is driven by only one key */
@@ -466,7 +412,6 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 
 	cm_status.message_type = STA_INFO::SND_ACK_STATUS;										// send next time a ack info message
 	cm_status.message_delay.set(5);															// wait a short time to set status
-
 }
 
 void CM_DIMMER::do_updim(void) {
@@ -485,53 +430,114 @@ void CM_DIMMER::do_downdim(void) {
 }
 
 
+void CM_DIMMER::poll_jumptable(void) {
+
+	// - jump table section for trigger3E/40/41
+	if (jt->ACTION_TYPE != DM_ACTION::JUMP_TO_TARGET) return;								// only valid for jump table
+	if (tr40.cur == tr40.nxt) return;														// no status change, leave
+	tr40.cur = tr40.nxt;																	// seems next status is different to current, remember for next poll
+
+																							// check the different status changes
+	if (tr40.nxt == DM_JT::ONDELAY) {														// check to enter the ondelay state
+		DBG(DM, F("DM"), lstC.cnl, F(":ondelay\n"));
+		tr40.ondelay = 1;																	// start the ondelay function by polling
+
+	} else if (tr40.nxt == DM_JT::RAMPON) {
+		DBG(DM, F("DM"), lstC.cnl, F(":rampon\n"));
+		tr40.rampon = 1;
+
+	} else if (tr40.nxt == DM_JT::ON) {
+		DBG(DM, F("DM"), lstC.cnl, F(":on\n"));
+		tr40.on = 1;
+
+	} else if (tr40.nxt == DM_JT::OFFDELAY) {
+		DBG(DM, F("DM"), lstC.cnl, F(":offdelay\n"));
+		tr40.offdelay = 1;
+
+	} else if (tr40.nxt == DM_JT::RAMPOFF) {
+		DBG(DM, F("DM"), lstC.cnl, F(":rampoff\n"));
+		tr40.rampoff = 1;
+
+	} else if (tr40.nxt == DM_JT::OFF) {
+		DBG(DM, F("DM"), lstC.cnl, F(":off\n"));
+		tr40.off = 1;
+	}
+}
 
 void CM_DIMMER::poll_ondelay(void) {
 	/* if poll_ondelay is active it gets polled by the main poll function
-	* ondelay has 3 stati, 0 off, 1 set timer, 2 done */
+	* ondelay has 4 stati, 0 off, 1 check mode, 2 set timer, 3 done */
 
-	if (!start_ondelay) return;
-	if (!adj_timer.done()) return;
+	if (!tr40.ondelay) return;
+	if (!cm_status.delay.done()) return;
 
-	if (start_ondelay == 1) {
-		if (l3->ONDELAY_TIME != NOT_USED) adj_timer.set(byteTimeCvt(l3->ONDELAY_TIME));		// set the respective delay
-		start_ondelay = 2;																	// next time will be entered after the delay
+	if (tr40.ondelay == 1) {
+		// <option id = "SET_TO_OFF" default = "true" / > value 0
+		// <option id = "NO_CHANGE" / >                   value 1
+		if (l3->ONDELAY_MODE == 0) {														// check if we have to set to off 
+			cm_status.set_value = l3->OFF_LEVEL;											// set off level
+			adj_delay = 1;																	// dim it down
+		}
+		tr40.ondelay = 2;																	// next poll we will enter the next else if
+		DBG(DM, F("DM"), lstC.cnl, F(":ondelay- mode: "), (l3->ONDELAY_MODE)? F("no_change") : F("set_to_off") , ' ', _TIME, '\n');
+
+	} else if (tr40.ondelay == 2) {
+		cm_status.delay.set(byteTimeCvt(l3->ONDELAY_TIME));									// set the respective delay
+		tr40.ondelay = 3;																	// next time will be entered after the delay
 		DBG(DM, F("DM"), lstC.cnl, F(":ondelay- time: "), byteTimeCvt(l3->ONDELAY_TIME), ' ', _TIME, '\n');
 
-	} else if (start_ondelay == 2) {
-		tr40.cur = DM_JT::ONDELAY;
-		start_ondelay = 0;
+	} else if (tr40.ondelay == 3) {
+		tr40.ondelay = 0;																	// ondelay is processed
+		tr40.cur = DM_JT::ONDELAY;															// set the state machine accordingly
+		tr40.nxt = jt->JT_ONDELAY;															// set next state while we should not stay forever here
 		DBG(DM, F("DM"), lstC.cnl, F(":ondelay- done "), _TIME, '\n');
 
 	}
 }
 
 void CM_DIMMER::poll_rampon(void) {
-	/* if poll_rampon is active it gets polled by the main poll function
-	*  we differentiate between first poll, while set the ramp start step
+	/* if poll_rampon is active it gets polled by the main poll function, we differentiate between first poll, while set the ramp start step
 	* and normal ramp on poll to increase brightness over the given time by l3->RAMPON_TIME 
-	* do_rampon has 4 stati, 0 for off, 1 for initial, 2 for regular, 3 for done */
+	* do_rampon has 5 stati, 0 for off, 1 for set the start step, 2 for set the value, 3 for regular, 4 for done */
 
-	if (!start_rampon) return;
-	if (cm_status.value != cm_status.set_value) return;										// not ready with setting the value
+	if (!tr40.rampon) return;																// check if active
+	if (!adj_timer.done()) return;															// not ready with setting the value
 
-	if (start_rampon == 1) {
+	/* mode 3 means we decrease brightness over time by checking the remaining time and setting the adj_timer direct */
+	if (tr40.rampon == 3) {
+		uint8_t delta = cm_status.set_value - cm_status.value;
+		adj_timer.set(cm_status.delay.remain() / delta);
+		DBG(DM, F("DM"), lstC.cnl, F(":rampon- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", remain: "), cm_status.delay.remain(), ' ', _TIME, '\n');
+	}
+
+	if (!cm_status.delay.done()) return;													// leave while wait timer is active
+
+	if (tr40.rampon == 1) {
 		if (cm_status.value + l3->RAMP_START_STEP < l3->ON_LEVEL) cm_status.set_value = cm_status.value + l3->RAMP_START_STEP;
 		else cm_status.set_value = l3->ON_LEVEL;
+		cm_status.delay.set(200);															// give 200ms time to set the startup step
 		adj_delay = 1;																		// set the start step quickly
-		start_rampon = 2;
-		DBG(DM, F("DM"), lstC.cnl, F(":rampon- cur: "), cm_status.value, F(", ramp_start_step: "), l3->RAMP_START_STEP, ' ', _TIME, '\n');
+		tr40.rampon = 2;																	// we will follow up in mode 2
+		DBG(DM, F("DM"), lstC.cnl, F(":rampon- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", ramp_start_step: "), l3->RAMP_START_STEP, ' ', _TIME, '\n');
 
-	} else if (start_rampon == 2) {
-		uint8_t steps = (cm_status.value < l3->ON_LEVEL) ? l3->ON_LEVEL - cm_status.value : 1;
-		cm_status.set_value = l3->ON_LEVEL;
-		adj_delay = byteTimeCvt(l3->RAMPON_TIME) / steps;									// calculate the time between setting the steps
-		start_rampon = 3;																	// done here, set done as status
-		DBG(DM, F("DM"), lstC.cnl, F(":rampon- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", timer: "), byteTimeCvt(l3->RAMPON_TIME), F(", slice_timer: "), adj_delay, ' ', _TIME, '\n');
+	} else if (tr40.rampon == 2) {
+		if (l3->ON_LEVEL == 201) cm_status.set_value = last_on_value;						// which value to be set, last or register?
+		else cm_status.set_value = l3->ON_LEVEL;
+		cm_status.delay.set(byteTimeCvt(l3->RAMPON_TIME));									// set the state machine timer
+		adj_delay = 0;																		// adj_delay not needed while processed in mode 3 above
+		tr40.rampon = 3;																	// we will follow up in mode 3
+		DBG(DM, F("DM"), lstC.cnl, F(":rampon- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", on_level: "), l3->ON_LEVEL, F(", timer: "), byteTimeCvt(l3->RAMPON_TIME), ' ', _TIME, '\n');
 
-	} else if (start_rampon == 3) {
-		tr40.cur = DM_JT::RAMPON;
-		start_rampon = 0;
+	} else if (tr40.rampon == 3) {
+		/* mode 3 was processed above, we are here while the rampon time was done */
+		adj_timer.set(0);																	// in case of unwanted value
+		tr40.rampon = 4;																	// done here, set done as status
+		DBG(DM, F("DM"), lstC.cnl, F(":rampon- processed "), ' ', _TIME, '\n');
+
+	} else if (tr40.rampon == 4) {
+		tr40.rampon = 0;																	// rampon is done
+		tr40.cur = DM_JT::RAMPON;															// set the state machine accordingly
+		tr40.nxt = jt->JT_RAMPON;															// set next state while we should not stay forever here
 		DBG(DM, F("DM"), lstC.cnl, F(":rampon- done "), _TIME, '\n');
 
 	}
@@ -540,17 +546,19 @@ void CM_DIMMER::poll_rampon(void) {
 void CM_DIMMER::poll_on(void) {
 	/* if poll_on is active it gets polled by the main poll function
 	* poll_on has 3 stati, 0 off, 1 set timer, 2 done */
-	if (!start_on) return;
-	if (!adj_timer.done()) return;
+	if (!tr40.on) return;
+	if (!cm_status.delay.done()) return;
 
-	if (start_on == 1) {
-		if (l3->ON_TIME != NOT_USED) adj_timer.set(byteTimeCvt(l3->ON_TIME));				// set the respective delay
-		start_on = 2;																		// next time will be entered after the delay
+	if (tr40.on == 1) {
+		if (l3->ON_TIME != NOT_USED) cm_status.delay.set(byteTimeCvt(l3->ON_TIME));			// set the respective delay
+		tr40.on = 2;																		// next time will be entered after the delay
+		last_on_value = tr40.cur;															// remember the last on value
 		DBG(DM, F("DM"), lstC.cnl, F(":on- time: "), byteTimeCvt(l3->ON_TIME), ' ', _TIME, '\n');
 
-	} else if (start_on == 2) {
-		tr40.cur = DM_JT::ON;
-		start_on = 0;
+	} else if (tr40.on == 2) {
+		tr40.on = 0;																		// done here
+		tr40.cur = DM_JT::ON;																// set state of the state machine
+		if (l3->ON_TIME < 255) tr40.nxt = jt->JT_ON;										// stay forever is the timer indicates it with 255, otherwise set the next state
 		DBG(DM, F("DM"), lstC.cnl, F(":on- done "), _TIME, '\n');
 
 	}
@@ -559,17 +567,51 @@ void CM_DIMMER::poll_on(void) {
 void CM_DIMMER::poll_offdelay(void) {
 	/* if poll_offdelay is active it gets polled by the main poll function
 	* poll_offdelay has 4 stati, 0 off, 1 set timer, 2 process wait, 3 done */
-	if (!start_offdelay) return;
-	if (!adj_timer.done()) return;
+	static uint8_t old_new_flag;															// flag to remember the initial value while blink on low level
 
-	if (start_offdelay == 1) {
-		if (l3->OFFDELAY_TIME != NOT_USED) adj_timer.set(byteTimeCvt(l3->OFFDELAY_TIME));	// set the respective delay
-		start_offdelay = 2;																	// next time will be entered after the delay
-		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- time: "), byteTimeCvt(l3->OFFDELAY_TIME), ' ', _TIME, '\n');
+	if (!tr40.offdelay) return;																// leave if offdelay is not active 
+	if (!blink_offdelay.done()) return;														// leave while blink timer is not done
 
-	} else if (start_offdelay == 3) {
-		tr40.cur = DM_JT::OFFDELAY;
-		start_offdelay = 0;
+	if (tr40.offdelay == 2) {																// 2 is a special mode, let the dimmer signalize with blinking the led that it is in offdelay mode
+		/* check if light is on and set the next blink_offedelay accordingly */
+
+		if (old_new_flag) {		// high value
+			// <conversion type="float_integer_scale" factor="10" offset="-0.1"/>
+			blink_offdelay.set((l3->OFFDELAY_OLDTIME + 1) * 50);							// set the time based on the conversation type
+			cm_status.set_value = old_new_flag;												// restore the initial brightness
+			old_new_flag = 0;																// on next poll we enter the low brightness state
+
+		} else {				// low value
+			blink_offdelay.set((l3->OFFDELAY_NEWTIME + 1) * 50);							// set the time based on the conversation type
+			old_new_flag = cm_status.value;													// remember the initial brightness
+			if (cm_status.value - l3->OFFDELAY_STEP > l3->ON_MIN_LEVEL) cm_status.set_value = cm_status.value - l3->OFFDELAY_STEP;// check if we are above the minimum level
+			else if (!cm_status.value) cm_status.set_value = cm_status.value;				// seems to be off anyhow, leave it
+			else cm_status.set_value = l3->ON_MIN_LEVEL;									// set the brightness level
+
+		}
+		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", new_old: "), old_new_flag, F(", off_step: "), l3->OFFDELAY_STEP, F(", new_time: "), l3->OFFDELAY_NEWTIME, F(", old_time: "), l3->OFFDELAY_OLDTIME, ' ', _TIME, '\n');
+	}
+
+	if (!cm_status.delay.done()) return;													// leave while wait timer is active
+	if (old_new_flag) cm_status.set_value = old_new_flag;									// restore the initial brightness, if blink was ended with a low phase
+
+	if (tr40.offdelay == 1) {
+		/* there is a special option which let the led blink while in offdelay state, so check the flag and set further procedure accordingly */
+		cm_status.delay.set(byteTimeCvt(l3->OFFDELAY_TIME));								// set the respective delay
+		if (l3->OFFDELAY_BLINK) tr40.offdelay = 2;											// 2 is a special mode, let the led blink while in offdelay
+		else tr40.offdelay = 3;																// to be entered after the delay is done
+		old_new_flag = 0;																	// start offdelay blink from start
+		adj_delay = 0;																		// set the adjustment timer to zero
+		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- time: "), byteTimeCvt(l3->OFFDELAY_TIME), F(", blink: "), l3->OFFDELAY_BLINK, ' ', _TIME, '\n');
+
+	} else if (tr40.offdelay == 2) {
+		tr40.offdelay = 3;																	// on next poll goto close the action
+		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- blink end "), _TIME, '\n');
+
+	} else if (tr40.offdelay == 3) {
+		tr40.offdelay = 0;																	// set the flag inactive
+		tr40.cur = DM_JT::OFFDELAY;															// remember where we are in the state machine
+		tr40.nxt = jt->JT_RAMPOFF;															// set the next state
 		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- done "), _TIME, '\n');
 
 	}
@@ -581,28 +623,38 @@ void CM_DIMMER::poll_rampoff(void) {
 	* and normal ramp off poll to decrease brightness over the given time by l3->RAMPOFF_TIME
 	* do_rampoff has 4 stati, 0 for off, 1 for initial, 2 for regular, 3 for done */
 
-	if (!start_rampoff) return;
-	if (cm_status.value != cm_status.set_value) return;										// not ready with setting the value
+	if (!tr40.rampoff) return;
+	if (!adj_timer.done()) return;															// not ready with setting the value
 
-	if (start_rampoff == 1) {
+	/* mode 2 means we decrease brightness over time */
+	if (tr40.rampoff == 2) {
+		uint8_t delta = cm_status.value - cm_status.set_value;
+		adj_delay = cm_status.delay.remain() / delta;
+		DBG(DM, F("DM"), lstC.cnl, F(":rampoff- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", remain: "), cm_status.delay.remain(), F(", adj_delay: "), adj_delay, ' ', _TIME, '\n');
+
+	}
+
+
+	if (!cm_status.delay.done()) return;													// leave while wait timer is active
+
+	if (tr40.rampoff == 1) {
+		/* first we check what we can set as value for adjust_status */
 		if (cm_status.value > l3->RAMP_START_STEP + l3->OFF_LEVEL) cm_status.set_value = cm_status.value - l3->RAMP_START_STEP;
 		else cm_status.set_value = l3->OFF_LEVEL;
-		adj_delay = 1;																		// set the start step quickly
-		start_rampoff = 2;
+		if ((l3->RAMPOFF_TIME) != NOT_USED) cm_status.delay.set(byteTimeCvt(l3->RAMPOFF_TIME));// set the state machine timer
+		adj_timer.set(0);																	// set the start step quickly
+		tr40.rampoff = 2;																	// we will follow up in mode 2
 		DBG(DM, F("DM"), lstC.cnl, F(":rampoff- cur: "), cm_status.value, F(", ramp_start_step: "), l3->RAMP_START_STEP, ' ', _TIME, '\n');
 
-	}
-	else if (start_rampoff == 2) {
-		uint8_t steps = (cm_status.value > l3->OFF_LEVEL) ? cm_status.value - l3->OFF_LEVEL  : 1;
-		cm_status.set_value = l3->OFF_LEVEL;
-		adj_delay = byteTimeCvt(l3->RAMPOFF_TIME) / steps;									// calculate the time between setting the steps
-		start_rampoff = 3;																	// done here, set done as status
+	} else if (tr40.rampoff == 2) {
+		/* mode 2 was processed above, we are here while the rampoff time was done */
+		tr40.rampoff = 3;																	// done here, set done as status
 		DBG(DM, F("DM"), lstC.cnl, F(":rampoff- cur: "), cm_status.value, F(", set: "), cm_status.set_value, F(", timer: "), byteTimeCvt(l3->RAMPOFF_TIME), F(", slice_timer: "), adj_delay, ' ', _TIME, '\n');
 
-	}
-	else if (start_rampoff == 3) {
-		tr40.cur = DM_JT::RAMPOFF;
-		start_rampoff = 0;
+	} else if (tr40.rampoff == 3) {
+		tr40.rampoff = 0;																	// rampoff is done now
+		tr40.cur = DM_JT::RAMPOFF;															// set the state machine accordingly
+		if ((l3->RAMPOFF_TIME) != NOT_USED) tr40.nxt = jt->JT_RAMPOFF;						// set next state while we should not stay forever here
 		DBG(DM, F("DM"), lstC.cnl, F(":rampoff- done "), _TIME, '\n');
 
 	}
@@ -611,17 +663,17 @@ void CM_DIMMER::poll_rampoff(void) {
 void CM_DIMMER::poll_off(void) {
 	/* if poll_on is active it gets polled by the main poll function
 	* poll_on has 3 stati, 0 off, 1 set timer, 2 done */
-	if (!start_off) return;
-	if (!adj_timer.done()) return;
+	if (!tr40.off) return;
+	if (!cm_status.delay.done()) return;
 
-	if (start_off == 1) {
-		if (l3->OFF_TIME != NOT_USED) adj_timer.set(byteTimeCvt(l3->OFF_TIME));				// set the respective delay
-		start_off = 2;																		// next time will be entered after the delay
+	if (tr40.off == 1) {
+		if (l3->OFF_TIME != NOT_USED) cm_status.delay.set(byteTimeCvt(l3->OFF_TIME));		// set the respective delay
+		tr40.off = 2;																		// next time will be entered after the delay
 		DBG(DM, F("DM"), lstC.cnl, F(":off- time: "), byteTimeCvt(l3->OFF_TIME), ' ', _TIME, '\n');
 
-	} else if (start_off == 2) {
+	} else if (tr40.off == 2) {
 		tr40.cur = DM_JT::OFF;
-		start_off = 0;
+		tr40.off = 0;
 		DBG(DM, F("DM"), lstC.cnl, F(":off- done "), _TIME, '\n');
 
 	}

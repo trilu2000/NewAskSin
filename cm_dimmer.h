@@ -237,11 +237,17 @@ public:  //---------------------------------------------------------------------
 		uint8_t   cnt;																		// counter store for type 40/41 messages to detect a repeated long
 		uint8_t   cur;																		// current state and next state
 		uint8_t	  nxt;
+		uint8_t   ondelay;
+		uint8_t   rampon;
+		uint8_t   on;
+		uint8_t   offdelay;
+		uint8_t   rampoff;
+		uint8_t   off;
 	} tr40;
 
 	s_cm_status cm_status;																	// defined in cm_master.h, holds current status and set_satatus
 
-	inline void adjustStatus(void);															// setting of relay status
+	inline void adjust_status(void);														// set the dimmer value, interface to user sketch
 
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
@@ -263,22 +269,21 @@ public:  //---------------------------------------------------------------------
 	void do_updim(void);
 	void do_downdim(void);
 
-	uint8_t start_ondelay = 0;
+
+	void poll_jumptable(void);
+
+	uint8_t last_on_value;
 	void poll_ondelay(void);
 	
-	uint8_t start_rampon = 0;
 	inline void poll_rampon(void);
 
-	uint8_t start_on = 0;
 	inline void poll_on(void);
 
-	uint8_t start_offdelay = 0;
+	waitTimer blink_offdelay;
 	inline void poll_offdelay(void);
 
-	uint8_t start_rampoff = 0;
 	inline void poll_rampoff(void);
 
-	uint8_t start_off = 0;
 	inline void poll_off(void);
 
 };

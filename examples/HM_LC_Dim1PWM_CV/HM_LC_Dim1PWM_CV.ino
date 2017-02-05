@@ -26,6 +26,7 @@ void setup() {
 	DBG(SER, F(LIB_VERSION_STRING));
 
 	sei();																					// enable interrupts
+
 }
 
 void loop() {
