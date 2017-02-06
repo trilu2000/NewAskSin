@@ -611,7 +611,7 @@ void CM_DIMMER::poll_offdelay(void) {
 	} else if (tr40.offdelay == 3) {
 		tr40.offdelay = 0;																	// set the flag inactive
 		tr40.cur = DM_JT::OFFDELAY;															// remember where we are in the state machine
-		tr40.nxt = jt->JT_RAMPOFF;															// set the next state
+		tr40.nxt = jt->JT_OFFDELAY;															// set the next state
 		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- done "), _TIME, '\n');
 
 	}
