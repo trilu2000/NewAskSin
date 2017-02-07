@@ -18,12 +18,12 @@ void setup() {
 	//DDRB = DDRC = DDRD = 0x00;															// everything as input
 	//PORTB = PORTC = PORTD = 0x00;															// pullup's off
 
+	DBG_START(SER, F("HM_PB_6_WM55\n"));
+	DBG(SER, F(LIB_VERSION_STRING));
+
 	// - AskSin related ---------------------------------------
 	init_millis_timer0();																	// init timer0
 	hm->init();																				// init the asksin framework
-
-	DBG_START(SER, F("HM_PB_6_WM55\n"));
-	DBG(SER, F(LIB_VERSION_STRING));
 
 	sei();																					// enable interrupts
 

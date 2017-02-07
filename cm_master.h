@@ -58,7 +58,7 @@ public://-----------------------------------------------------------------------
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
 	void init(void);																		// init function, called after AS initialisation
-	virtual void cm_init(void) {}															// init function for channel modules to overwrite
+	virtual void cm_init(void);																// init function for channel modules to overwrite
 
 	
 	/* virtual declaration for cmRemote channel module. make pin configuration and button event accessible */
@@ -66,7 +66,7 @@ public://-----------------------------------------------------------------------
 	virtual void button_action(uint8_t event) {}
 
 	void poll(void);																		// poll function, driven by HM loop
-	virtual void cm_poll(void) {}															// poll function for channel modules to overwrite
+	virtual void cm_poll(void);																// poll function for channel modules to overwrite
 
 	virtual void set_toggle(void);															// toggle the module initiated by config button
 

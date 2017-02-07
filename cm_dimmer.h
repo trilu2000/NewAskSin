@@ -245,9 +245,8 @@ public:  //---------------------------------------------------------------------
 		uint8_t   off;
 	} tr40;
 
-	s_cm_status cm_status;																	// defined in cm_master.h, holds current status and set_satatus
+	s_cm_status cm_sta;																		// defined in type_defs, holds current status and set_satatus
 
-	inline void adjust_status(void);														// set the dimmer value, interface to user sketch
 
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
@@ -265,25 +264,20 @@ public:  //---------------------------------------------------------------------
 	virtual void REMOTE(s_m40xxxx *buf);													// remote peer message
 	virtual void SENSOR_EVENT(s_m41xxxx *buf);												// sensor peer message
 
+
 	void do_jump_table(uint8_t *counter);
 	void do_updim(void);
 	void do_downdim(void);
 
-
-	void poll_jumptable(void);
-
 	uint8_t last_on_value;
-	void poll_ondelay(void);
-	
+
+	inline void adjust_status(void);														// set the dimmer value, interface to user sketch
+	inline void poll_jumptable(void);
+	inline void poll_ondelay(void);
 	inline void poll_rampon(void);
-
 	inline void poll_on(void);
-
-	waitTimer blink_offdelay;
 	inline void poll_offdelay(void);
-
 	inline void poll_rampoff(void);
-
 	inline void poll_off(void);
 
 };

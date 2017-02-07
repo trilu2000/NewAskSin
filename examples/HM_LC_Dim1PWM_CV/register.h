@@ -13,7 +13,7 @@
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-AES *aes = new NO_AES();
+AES *aes = new HAS_AES();
 COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
 CBN *cbn = new CBN(1, &pin_B0);
 LED *led = new LED(&pin_D6, &pin_D4);

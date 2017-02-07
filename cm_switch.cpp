@@ -48,13 +48,13 @@ cm_switch::cm_switch(const uint8_t peer_max) : CM_MASTER(peer_max) {
 	tr40.cur = SW_JT::OFF;																	// default off
 	tr40.nxt = SW_JT::OFF;																	// default off
 
-	cm_status.value = 0;																	// output to 0
-	cm_status.set_value = 0;
+	cm_sta.value = 0;																		// output to 0
+	cm_sta.set_value = 0;
 
 	initSwitch(lstC.cnl);																	// call external init function to set the output pins
 
-	cm_status.message_delay.set((rand() % 2000) + 1000);									// wait some time to settle the device
-	cm_status.message_type = STA_INFO::SND_ACTUATOR_STATUS;									// send the initial status info
+	cm_sta.msg_delay.set((rand() % 2000) + 1000);											// wait some time to settle the device
+	cm_sta.msg_type = STA_INFO::SND_ACTUATOR_STATUS;										// send the initial status info
 
 	//DBG(SW, F("cmSwitch, cnl: "), lstC.cnl, '\n');
 }
@@ -67,40 +67,40 @@ cm_switch::cm_switch(const uint8_t peer_max) : CM_MASTER(peer_max) {
 
 void cm_switch::adjustStatus(void) {
 
-	if (cm_status.value == cm_status.set_value) return;										// nothing to do, return
+	if (cm_sta.value == cm_sta.set_value) return;											// nothing to do, return
 	//dbg << "m" << modStat << " s" << setStat << '\n';
 
-	switchSwitch(lstC.cnl, cm_status.set_value);											// calling the external function to make it happen
-	cm_status.value = cm_status.set_value;													// remember that it was done
+	switchSwitch(lstC.cnl, cm_sta.set_value);												// calling the external function to make it happen
+	cm_sta.value = cm_sta.set_value;														// remember that it was done
 
 }
 
 void cm_switch::cm_poll(void) {
 
-	process_send_status_poll(&cm_status, lstC.cnl);														// check if there is some status to send, function call in cmMaster.cpp
+	process_send_status_poll(&cm_sta, lstC.cnl);											// check if there is some status to send, function call in cmMaster.cpp
 	adjustStatus();																			// check if something is to be set on the Relay channel
 
 	// check if something is to do on the switch
-	if (!cm_status.delay.done() ) return;													// timer not done, wait until then
+	if (!cm_sta.fsm_delay.done() ) return;													// timer not done, wait until then
 
 	// - trigger11, check if rampTime or onTimer is set
 	if (tr11.active) {
 		if (tr11.ramp_time) {																// ramp timer was set, now we have to set the value
-			cm_status.set_value = tr11.value;												// set the value we had stored
+			cm_sta.set_value = tr11.value;													// set the value we had stored
 			tr11.active = 0;																// reset tr11, if dura time is set, we activate again
 			tr11.ramp_time = 0;																// not necessary to do it again
 		} 
 		
 		if (tr11.dura_time) {																// coming from trigger 11, we should set the duration period
-			cm_status.delay.set(intTimeCvt(tr11.dura_time));								// set the duration time
+			cm_sta.fsm_delay.set(intTimeCvt(tr11.dura_time));								// set the duration time
 			tr11.active = 1;																// we have set the timer so remember that it was from tr11
 			tr11.dura_time = 0;																// but indicate, it was done
 
 		} else {																			// check if something is to do from trigger11
-			cm_status.set_value = tr11.value ^ 200;											// invert the status
+			cm_sta.set_value = tr11.value ^ 200;											// invert the status
 			tr11.active = 0;																// trigger11 ready
 		}
-		tr40.cur = (cm_status.set_value) ? SW_JT::ON : SW_JT::OFF;							// set tr40 status, otherwise a remote will not work
+		tr40.cur = (cm_sta.set_value) ? SW_JT::ON : SW_JT::OFF;								// set tr40 status, otherwise a remote will not work
 	}
 
 
@@ -113,15 +113,15 @@ void cm_switch::cm_poll(void) {
 	if        (tr40.nxt == SW_JT::ONDELAY ) {
 		DBG(SW, F("dlyOn\n") );
 		if (l3->ONDELAY_TIME != NOT_USED) {													// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->ONDELAY_TIME));								// activate the timer and set next status
+			cm_sta.fsm_delay.set(byteTimeCvt(l3->ONDELAY_TIME));							// activate the timer and set next status
 			tr40.nxt = l3->JT_ONDELAY;														// get next status from jump table
 		}
 
 	} else if (tr40.nxt == SW_JT::ON ) {
 		DBG(SW, F("on\n") );
-		cm_status.set_value = 200;															// switch relay on
+		cm_sta.set_value = 200;																// switch relay on
 		if (l3->ON_TIME != NOT_USED) {														// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->ON_TIME));									// set the timer while not for ever
+			cm_sta.fsm_delay.set(byteTimeCvt(l3->ON_TIME));									// set the timer while not for ever
 			tr40.nxt = l3->JT_ON;															// set next status
 		}
 		 
@@ -129,15 +129,15 @@ void cm_switch::cm_poll(void) {
 	} else if (tr40.nxt == SW_JT::OFFDELAY ) {
 		DBG(SW, F("dlyOff\n") );
 		if (l3->OFFDELAY_TIME != NOT_USED) {												// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->OFFDELAY_TIME));							// activate the timer and set next status
+			cm_sta.fsm_delay.set(byteTimeCvt(l3->OFFDELAY_TIME));							// activate the timer and set next status
 			tr40.nxt = l3->JT_OFFDELAY;														// get jump table for next status
 		}
 
 	} else if (tr40.nxt == SW_JT::OFF ) {
 		DBG(SW, F("off\n") );
-		cm_status.set_value = 0;															// switch off relay
+		cm_sta.set_value = 0;																// switch off relay
 		if (l3->OFF_TIME != NOT_USED) {														// if time is 255, we stay forever in the current status
-			cm_status.delay.set(byteTimeCvt(l3->OFF_TIME));									// activate the timer and set next status
+			cm_sta.fsm_delay.set(byteTimeCvt(l3->OFF_TIME));								// activate the timer and set next status
 			tr40.nxt = l3->JT_OFF;															// get the next status from jump table
 		}
 	}
@@ -150,14 +150,14 @@ void cm_switch::set_toggle(void) {
 	DBG(SW, F("set_toggle\n") );
 
 	/* check for inhibit flag */
-	if (cm_status.inhibit) return;															// nothing to do while inhibit is set
+	if (cm_sta.inhibit) return;																// nothing to do while inhibit is set
 
-	if (cm_status.value)  cm_status.set_value = 0;											// if its on, we switch off
-	else cm_status.set_value = 200;
+	if (cm_sta.value)  cm_sta.set_value = 0;												// if its on, we switch off
+	else cm_sta.set_value = 200;
 
 	//tr40.cur = (send_stat.modStat) ? JT::ON : JT::OFF;
-	cm_status.message_type = STA_INFO::SND_ACTUATOR_STATUS;									// send next time a info status message
-	cm_status.message_delay.set(50);
+	cm_sta.msg_type = STA_INFO::SND_ACTUATOR_STATUS;										// send next time a info status message
+	cm_sta.msg_delay.set(50);
 }
 
 
@@ -206,8 +206,8 @@ void cm_switch::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 * @brief Received message handling forwarded by AS::processMessage
 */
 void cm_switch::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
-	cm_status.message_type = STA_INFO::SND_ACTUATOR_STATUS;									// send next time a info status message
-	cm_status.message_delay.set(50);														// wait a short time to set status
+	cm_sta.msg_type = STA_INFO::SND_ACTUATOR_STATUS;										// send next time a info status message
+	cm_sta.msg_delay.set(50);																// wait a short time to set status
 
 	DBG(SW, F("SW:CONFIG_STATUS_REQUEST\n"));
 }
@@ -228,13 +228,13 @@ void cm_switch::INSTRUCTION_SET(s_m1102xx *buf) {
 	tr11.dura_time = (buf->MSG_LEN >= 16) ? buf->DURA_TIME : 0;								// get the dura time if message len indicates that it is included
 
 	if (tr11.ramp_time) tr11.active = 1;													// indicate we are coming from trigger11
-	else cm_status.set_value = tr11.value;													// otherwise set the value directly
-	cm_status.delay.set(intTimeCvt(tr11.ramp_time));										// set the timer accordingly, could be 0 or a time
+	else cm_sta.set_value = tr11.value;														// otherwise set the value directly
+	cm_sta.fsm_delay.set(intTimeCvt(tr11.ramp_time));										// set the timer accordingly, could be 0 or a time
 
 	if (tr11.dura_time) tr11.active = 1;													// set tr11 flag active to be processed in the poll function
 
-	cm_status.message_type = STA_INFO::SND_ACK_STATUS;										// ACK should be send
-	cm_status.message_delay.set(100);														// give some time
+	cm_sta.msg_type = STA_INFO::SND_ACK_STATUS;												// ACK should be send
+	cm_sta.msg_delay.set(100);																// give some time
 
 	DBG(SW, F("INSTRUCTION_SET, setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), '\n');
 }
@@ -243,14 +243,14 @@ void cm_switch::INSTRUCTION_SET(s_m1102xx *buf) {
 * Answer to a sensor or remote message is an NACK
 */
 void cm_switch::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
-	cm_status.inhibit = 0;
+	cm_sta.inhibit = 0;
 	hm->send_ACK();
 }
 /*
 * @brief INSTRUCTION_INHIBIT_ON, see INSTRUCTION_INHIBIT_OFF
 **/
 void cm_switch::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
-	cm_status.inhibit = 1;
+	cm_sta.inhibit = 1;
 	hm->send_ACK();
 }
 /*
@@ -275,7 +275,7 @@ void cm_switch::SWITCH(s_m3Exxxx *buf) {
 */
 void cm_switch::REMOTE(s_m40xxxx *buf) {
 	/* check for inhibit flag */
-	if (cm_status.inhibit) {
+	if (cm_sta.inhibit) {
 		hm->send_NACK();
 		return;
 	}
@@ -285,7 +285,7 @@ void cm_switch::REMOTE(s_m40xxxx *buf) {
 	l3 = (buf->BLL.LONG) ? (s_l3*)lstP.val + 11 : (s_l3*)lstP.val;							// set short or long struct portion
 	//dbg << "remote string: " << _HEX((uint8_t*)buf, 12) << '\n';
 
-	cm_status.delay.set(0);																	// also delay timer is not needed any more
+	cm_sta.fsm_delay.set(0);																// also delay timer is not needed any more
 	tr11.active = 0;																		// stop any tr11 processing
 
 	// check for multi execute flag
@@ -303,14 +303,14 @@ void cm_switch::REMOTE(s_m40xxxx *buf) {
 		else if (tr40.cur == SW_JT::OFF)      tr40.nxt = l3->JT_OFF;						// currently off
 
 	} else if (l3->ACTION_TYPE == SW_ACTION::TOGGLE_TO_COUNTER) {
-		cm_status.set_value = (buf->COUNTER % 2) ? 200 : 0;									// set the relay status depending on message counter
+		cm_sta.set_value = (buf->COUNTER % 2) ? 200 : 0;									// set the relay status depending on message counter
 
 	} else if (l3->ACTION_TYPE == SW_ACTION::TOGGLE_INV_TO_COUNTER) {
-		cm_status.set_value = (buf->COUNTER % 2) ? 0 : 200;									// set the relay status depending on message counter
+		cm_sta.set_value = (buf->COUNTER % 2) ? 0 : 200;									// set the relay status depending on message counter
 	}
 
-	cm_status.message_type = STA_INFO::SND_ACK_STATUS;										// send next time a ack info message
-	cm_status.message_delay.set(100);														// wait a short time to set status
+	cm_sta.msg_type = STA_INFO::SND_ACK_STATUS;												// send next time a ack info message
+	cm_sta.msg_delay.set(100);																// wait a short time to set status
 
 	/* some debug */
 	DBG(SW, F("trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
@@ -322,7 +322,7 @@ void cm_switch::REMOTE(s_m40xxxx *buf) {
 */
 void cm_switch::SENSOR_EVENT(s_m41xxxx *buf) {
 	/* check for inhibit flag */
-	if (cm_status.inhibit) {
+	if (cm_sta.inhibit) {
 		hm->send_NACK();
 		return;
 	}
@@ -334,10 +334,10 @@ void cm_switch::SENSOR_EVENT(s_m41xxxx *buf) {
 	/* set condition table in conjunction of the current jump table status */
 	uint8_t ctTbl;																			// to select the condition depending on current device status
 
-	if      (tr40.cur == SW_JT::ONDELAY)  ctTbl = l3->CT_ONDELAY;								// condition table delay on
-	else if (tr40.cur == SW_JT::ON)       ctTbl = l3->CT_ON;									// condition table on
-	else if (tr40.cur == SW_JT::OFFDELAY) ctTbl = l3->CT_OFFDELAY;								// condition table delay off
-	else if (tr40.cur == SW_JT::OFF)      ctTbl = l3->CT_OFF;									// condition table off
+	if      (tr40.cur == SW_JT::ONDELAY)  ctTbl = l3->CT_ONDELAY;							// condition table delay on
+	else if (tr40.cur == SW_JT::ON)       ctTbl = l3->CT_ON;								// condition table on
+	else if (tr40.cur == SW_JT::OFFDELAY) ctTbl = l3->CT_OFFDELAY;							// condition table delay off
+	else if (tr40.cur == SW_JT::OFF)      ctTbl = l3->CT_OFF;								// condition table off
 
 	/* sort out the condition table */
 	uint8_t bll_cnt[2] = { *(uint8_t*)&buf->BLL, buf->COUNTER };							// as REMOTE message has no VALUE and a different byte order
@@ -369,7 +369,7 @@ void cm_switch::SENSOR_EVENT(s_m41xxxx *buf) {
 	if (do_or_not) REMOTE((s_m40xxxx*)(bll_cnt - 10));
 	//if (do_or_not) REMOTE((s_m40xxxx*)(((uint8_t*)bll_cnt) - 10));
 	else {
-		cm_status.message_type = STA_INFO::SND_ACK_STATUS;									// send next time a ack info message
-		cm_status.message_delay.set(100);													// wait a short time to set status
+		cm_sta.msg_type = STA_INFO::SND_ACK_STATUS;											// send next time a ack info message
+		cm_sta.msg_delay.set(100);															// wait a short time to set status
 	}
 }
