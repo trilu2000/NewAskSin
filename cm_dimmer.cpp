@@ -11,7 +11,7 @@
 waitTimer adj_timer;																		// timer for dim-up/down
 uint32_t adj_delay;																			// calculate and store the adjustment time
 
-
+static s_sum_cnl sum_cnl[4];
 
 /**------------------------------------------------------------------------------------------------------------------------
 *- mandatory functions for every new module to communicate within HM protocol stack -
@@ -20,30 +20,24 @@ uint32_t adj_delay;																			// calculate and store the adjustment time
 * @brief Constructor for channel module switch
 *        pointer to channel table are forwarded to the master class. 
 *        Constructor of master class is processed first.
-*        Setup of class specific things is done here
+*        Setup of class specific things is done here - creating the list struct
 */
-CM_DIMMER::CM_DIMMER(const uint8_t peer_max) : CM_MASTER(peer_max) {
+CM_DIMMER::CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel, uint8_t virtual_group) : CM_MASTER(peer_max) {
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
-	lstC.reg = cm_dimmer_ChnlReg;
-	lstC.def = cm_dimmer_ChnlDef;
-	lstC.len = sizeof(cm_dimmer_ChnlReg);
+	lstC.reg = cm_dimmer_ChnlReg;															// pointer to the list1 register definition
+	lstC.def = cm_dimmer_ChnlDef;															// pointer to the list1 defaults definition
+	lstC.len = sizeof(cm_dimmer_ChnlReg);													// evaluating and storing the length of list1
+	lstC.val = new uint8_t[lstC.len];														// allocate the same space in memory as working area
 
-	lstP.lst = 3;																			// setup the peer list with all dependencies
-	lstP.reg = cm_dimmer_PeerReg;
+	lstP.lst = 3;																			// setup the peer list (list3) with all dependencies
+	lstP.reg = cm_dimmer_PeerReg;															// same as list1
 	lstP.def = cm_dimmer_PeerDef;
 	lstP.len = sizeof(cm_dimmer_PeerReg);
+	lstP.val = new uint8_t[lstP.len];														// creates an empty array new uint8_t[lstP.len]();
 
-	static uint8_t lstCval[sizeof(cm_dimmer_ChnlReg)];										// create and allign the value arrays
-	lstC.val = lstCval;
-	static uint8_t lstPval[sizeof(cm_dimmer_PeerReg)];										// create and allign the value arrays
-	lstP.val = lstPval;
-
-	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
-	l3 = (s_l3*)lstP.val;																	// reduced l3, description in cmSwitch.h at struct declaration
-	jt = (s_jt*)((uint8_t*)l3 + 9);
-	//l3F = (s_lstPeer*)lstP.val;
-
+	vrt_grp = virtual_group;																// remember the virtual group this instance belong too
+	vrt_cnl = virtual_channel;																// remember the virtual channel in group this instance belong too
 }
 
 
@@ -51,67 +45,57 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max) : CM_MASTER(peer_max) {
 *- user defined functions -
 * ------------------------------------------------------------------------------------------------------------------------- */
 
-
-
-
 void CM_DIMMER::cm_init(void) {
+	/* assign list (list1/3) structs to the list arrays */
+	l1 = (s_l1*)lstC.val;																	// allign arrays with list structures
+	l3 = (s_l3*)lstP.val;																	// reduced l3, description in cm_Dimmer.h at struct declaration
+	jt = (s_jt*)((uint8_t*)l3 + 9);															// assign the jump table pointer to list3 array 
 
-	l3->ACTION_TYPE = DM_ACTION::INACTIVE;													// and secure that no action will happened in polling function
-	//jt = (s_jt*)lstP.val + 9;
+	/* clear the variables to avoid unexpected activity */
+	jt->ACTION_TYPE = DM_ACTION::INACTIVE;													// and secure that no action will happened in polling function
 	tr11.active = 0;																		// empty trigger 11 store
-	tr40.cur = DM_JT::OFF;																	// default off
-	tr40.nxt = DM_JT::OFF;																	// default off
+	tr40 = {};																				// empty the trigger 40 struct
 
-	cm_sta.value = 0;																		// output to 0
-	cm_sta.set_value = 0;
+	/* assign list1 variables and initialize the hardware */
 	// todo - check which registers are set by configuring the internal key
-	//(l1->POWERUP_ACTION)? cm_sta.set_value = 200 : cm_sta.set_value = 0;					// check the power up flag
-	initDimmer(lstC.cnl);																	// call external init function to set the output pins
+	sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;								// store the logic combination of the virtual channel in the struct
 
+	if (l1->POWERUP_ACTION) {																// check the power up flag
+		cm_sta.set_value = 200;
+		tr40.cur = tr40.nxt = DM_JT::ON;
+	} else {
+		cm_sta.set_value = 0;
+		tr40.cur = tr40.nxt = DM_JT::OFF;
+	}
+	init_dimmer(vrt_grp, vrt_cnl, lstC.cnl);												// call external init function to set the output pins
+
+	/* initiate the status message of the channel */
 	cm_sta.msg_delay.set((rand() % (l1->STATUSINFO_RANDOM * 1000)) + (l1->STATUSINFO_MINDELAY * 1000));	// wait some time to settle the device
 	cm_sta.msg_type = STA_INFO::SND_ACTUATOR_STATUS;										// send the initial status info
 	
-	DBG(DM, F("DM"), lstC.cnl, F(":init- min_delay: "), l1->STATUSINFO_MINDELAY, F(", rand_delay: "), l1->STATUSINFO_RANDOM, F(", remain: "), cm_sta.msg_delay.remain(), '\n');
+	DBG(DM, F("DM"), lstC.cnl, F(":init- vrt_grp: "), vrt_grp, F(", vrt_cnl: "), vrt_cnl, F(", min_delay: "), l1->STATUSINFO_MINDELAY, F(", rand_delay: "), l1->STATUSINFO_RANDOM, F(", remain: "), cm_sta.msg_delay.remain(), '\n');
+	//DBG(DM, F("l1: "), _HEX((uint8_t*)l1, lstC.len), '\n');
+	//DBG(DM, F("l3: "), _HEX((uint8_t*)l3, lstP.len/2), '\n');
+	//DBG(DM, F("jt: "), _HEX((uint8_t*)jt, 4), '\n');
 }
 
 void CM_DIMMER::cm_poll(void) {
 
+	/* some regular poll functions for status send and set external function */
 	process_send_status_poll(&cm_sta, lstC.cnl);											// check if there is some status to send, function call in cmMaster.cpp
-	adjust_status();																		// check if something is to be set on the Relay channel
+	adjust_status();																		// check if something is to be set / forwarded to the switchDimmer function in the main sketch
 
-	poll_jumptable();
-	poll_ondelay();
-	poll_rampon();
-	poll_on();
-	poll_offdelay();
-	poll_rampoff();
-	poll_off();
+	/* tr40 state machine poll, needs a filled l3 and jt */
+	poll_jumptable();																		// jump table, driven by jt and tr40.cur/tr40.nxt
+	poll_ondelay();																			// on delay state machine
+	poll_rampon();																			// ramp on state machine
+	poll_on();																				// on state machine
+	poll_offdelay();																		// off delay state machine
+	poll_rampoff();																			// ramp off state machine
+	poll_off();																				// off state machine
 
-
-	// check if something is to do on the switch
-	//if (!cm_sta.fsm_delay.done() ) return;												// timer not done, wait until then
-
-	// - trigger11, check if rampTime or onTimer is set
-	if (tr11.active) {
-		if (tr11.ramp_time) {																// ramp timer was set, now we have to set the value
-			cm_sta.set_value = tr11.value;													// set the value we had stored
-			tr11.active = 0;																// reset tr11, if dura time is set, we activate again
-			tr11.ramp_time = 0;																// not necessary to do it again
-		} 
-		
-		if (tr11.dura_time) {																// coming from trigger 11, we should set the duration period
-			cm_sta.fsm_delay.set(intTimeCvt(tr11.dura_time));								// set the duration time
-			tr11.active = 1;																// we have set the timer so remember that it was from tr11
-			tr11.dura_time = 0;																// but indicate, it was done
-
-		} else {																			// check if something is to do from trigger11
-			cm_sta.set_value = tr11.value ^ 200;											// invert the status
-			tr11.active = 0;																// trigger11 ready
-		}
-		tr40.cur = (cm_sta.set_value) ? DM_JT::ON : DM_JT::OFF;								// set tr40 status, otherwise a remote will not work
-	}
-
-
+	/* tr11 poll */
+	poll_tr11();
 
 }
 
@@ -209,9 +193,11 @@ void CM_DIMMER::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
 * 16 byte - value, ramp_time, dura_time
 */ 
 void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
-	l3->ACTION_TYPE = DM_ACTION::INACTIVE;													// action type to off otherwise the polling function will overwrite
+	/* stop all ongoing actions */
+	jt->ACTION_TYPE = DM_ACTION::INACTIVE;													// action type to off otherwise the polling function will overwrite
+	tr40.nxt = tr40.cur;																	// stay in the current position
 
-	/* fill the struct depending on the message length */
+	/* fill the trigger 11 struct depending on the message length and set the active flag accordingly */
 	tr11.value = buf->VALUE;
 	tr11.ramp_time = (buf->MSG_LEN >= 14) ? buf->RAMP_TIME : 0;								// get the ramp time if message len indicates that it is included
 	tr11.dura_time = (buf->MSG_LEN >= 16) ? buf->DURA_TIME : 0;								// get the dura time if message len indicates that it is included
@@ -222,8 +208,8 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 
 	if (tr11.dura_time) tr11.active = 1;													// set tr11 flag active to be processed in the poll function
 
-	cm_sta.msg_type = STA_INFO::SND_ACK_STATUS;											// ACK should be send
-	cm_sta.msg_delay.set(100);															// give some time
+	cm_sta.msg_type = STA_INFO::SND_ACK_STATUS;												// ACK should be send
+	cm_sta.msg_delay.set(5);																// give some time
 
 	DBG(DM, F("DM"), lstC.cnl, F(":INSTRUCTION_SET, setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), '\n');
 }
@@ -332,29 +318,67 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 
 
 void CM_DIMMER::adjust_status(void) {
+
 	/* check if something is to do */
 	if (cm_sta.value == cm_sta.set_value) return;											// nothing to do, return
 
 	/* calculate the next step, based on the set_value */
-	cm_sta.value = cm_sta.set_value;
-	if (cm_sta.value > 200) cm_sta.value = 200;
+	if (cm_sta.set_value > 200) cm_sta.set_value = 200;										// value cannot be higher than 200
+	uint16_t calc_value = cm_sta.value = cm_sta.set_value;									// set value and value is the same now, while we are forwarding it to the main function
 
 	/* check if we have a quadratic approach to follow */
 	if (l1->CHARACTERISTIC) {																// check if we should use quadratic approach
-		uint16_t calc_value = cm_sta.value * cm_sta.value;									// recalculate the value
+		calc_value *= cm_sta.value;															// recalculate the value
 		calc_value /= 200;
-		if ((cm_sta.value) && (!calc_value)) calc_value = 1;								// till 15 it is below 1
-		switchDimmer(lstC.cnl, calc_value);													// calling the external function to make it happen
+		if ((cm_sta.value) && (!calc_value)) calc_value = 1;								// till 15 it is below 1, set to 1
+	} 
+	sum_cnl[vrt_grp].value[vrt_cnl] = calc_value;											// store the status value of the channel in the virtual channel struct
 
-	} else switchDimmer(lstC.cnl, cm_sta.value);											// calling the external function to make it happen
+	/* summerize up in the mixer value by taking care of LOGIC_COMBINATION and call afterwards the external function */
+	//<option id = "LOGIC_INACTIVE", "LOGIC_OR" default = "true", "LOGIC_AND", "LOGIC_XOR", "LOGIC_NOR", "LOGIC_NAND", "LOGIC_ORINVERS"
+	//             "LOGIC_ANDINVERS", "LOGIC_PLUS", "LOGIC_MINUS", "LOGIC_MUL", "LOGIC_PLUSINVERS", "LOGIC_MINUSINVERS", "LOGIC_MULINVERS"
+	//             "LOGIC_INVERSPLUS", "LOGIC_INVERSMINUS", "LOGIC_INVERSMUL"
+	// phyLevel = (((0% o Ch1) o Ch2) o Ch3) 
+	for (uint8_t i = 0; i < 3; i++) {
+		dbg << "x:" << sum_cnl[vrt_grp].logic[vrt_cnl] << '\n';
+		//calc_value = 0 
+	}
+	switch_dimmer(vrt_grp, vrt_cnl, lstC.cnl, calc_value);									// calling the external function to make it happen
 
 	//DBG(DM, F("DM"), lstC.cnl, F(":adj val: "), cm_status.value, F(", set: "), cm_status.set_value, F(", quad: "), l1->CHARACTERISTIC, '\n';)
 }
 
+/* trigger 11 poll function, similar to trigger 40 state machine,
+* but all required information stored in tr11 struct 
+*/
+void CM_DIMMER::poll_tr11(void) {
+	if (!tr11.active) return;																// nothing to do, leave
 
-/* here we are work based on the action type through the jump table 
-* as there are two jump tables, we get the address of the right one as hand over parameter 
-* and allign it here in a dedicated struct 
+	if (!cm_sta.fsm_delay.done()) return;													// timer not done, wait until then
+
+	// - trigger11, check if rampTime or onTimer is set
+	if (tr11.active) {
+		if (tr11.ramp_time) {																// ramp timer was set, now we have to set the value
+			cm_sta.set_value = tr11.value;													// set the value we had stored
+			tr11.active = 0;																// reset tr11, if dura time is set, we activate again
+			tr11.ramp_time = 0;																// not necessary to do it again
+		}
+
+		if (tr11.dura_time) {																// coming from trigger 11, we should set the duration period
+			cm_sta.fsm_delay.set(intTimeCvt(tr11.dura_time));								// set the duration time
+			tr11.active = 1;																// we have set the timer so remember that it was from tr11
+			tr11.dura_time = 0;																// but indicate, it was done
+
+		} else {																			// check if something is to do from trigger11
+			cm_sta.set_value = tr11.value ^ 200;											// invert the status
+			tr11.active = 0;																// trigger11 ready
+		}
+		tr40.cur = (cm_sta.set_value) ? DM_JT::ON : DM_JT::OFF;								// set tr40 status, otherwise a remote will not work
+	}
+}
+
+/* trigger 3E, 40, 41 action type related functions
+* the trigger is calling the do_jump_table function, which sets the the necassary parameters or calls up/downdim
 */
 void CM_DIMMER::do_jump_table(uint8_t *counter) {
 	uint8_t toogle_cnt = *counter & 1;
@@ -367,6 +391,10 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 	}
 	DBG(DM, F("DM"), lstC.cnl, F(":action_type: "), jt->ACTION_TYPE, '\n');
 
+	/* stop any action started by trigger 11 */
+	tr11.active = 0;
+
+	/* look after the requested action and progress accordingly */
 	if (jt->ACTION_TYPE == DM_ACTION::INACTIVE) {
 		// nothing to do
 
@@ -378,7 +406,9 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 		else if (tr40.cur == DM_JT::OFFDELAY) tr40.nxt = jt->JT_OFFDELAY;					// delay off
 		else if (tr40.cur == DM_JT::RAMPOFF)  tr40.nxt = jt->JT_RAMPOFF;					// ramp off
 		else if (tr40.cur == DM_JT::OFF)      tr40.nxt = jt->JT_OFF;						// currently off
-		
+
+		DBG(DM, F("DM"), lstC.cnl, F(":action_type: "), jt->ACTION_TYPE, F(", cur: "), tr40.cur, F(", nxt: "), tr40.nxt, '\n');
+
 		/* if flag is set, means prio of the action is low - so do not overrule current status if state machine is in on-mode */
 		if (l3->ON_LEVEL_PRIO) {
 			if ((tr40.cur == DM_JT::ONDELAY) || (tr40.cur == DM_JT::RAMPON) || (tr40.cur == DM_JT::ON)) tr40.nxt = tr40.cur;
@@ -417,30 +447,39 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 
 	}
 
+	/* prepare an answer message to be sent */
 	cm_sta.msg_type = STA_INFO::SND_ACK_STATUS;												// send next time a ack info message
 	cm_sta.msg_delay.set(5);																// wait a short time to set status
 }
-
 void CM_DIMMER::do_updim(void) {
 	/* increase brightness by DIM_STEP but not over DIM_MAX_LEVEL */
 	if (cm_sta.value < l3->DIM_MAX_LEVEL - l3->DIM_STEP) cm_sta.set_value = cm_sta.value + l3->DIM_STEP;
 	else cm_sta.set_value = l3->DIM_MAX_LEVEL;
-	if (cm_sta.set_value < l3->ON_MIN_LEVEL) cm_sta.set_value = l3->ON_MIN_LEVEL;
-	DBG(DM, F("DM"), lstC.cnl, F(":updim val: "), cm_sta.value, F(", set: "), cm_sta.set_value, cm_sta.value, F(", step: "), l3->DIM_STEP, '\n');
-}
+	if (cm_sta.set_value < l3->ON_MIN_LEVEL) cm_sta.set_value = l3->ON_MIN_LEVEL;			// take care of the on_min_level flag
 
+	tr40.cur = tr40.nxt = DM_JT::ON;
+	DBG(DM, F("DM"), lstC.cnl, F(":updim val: "), cm_sta.value, F(", set: "), cm_sta.set_value, F(", step: "), l3->DIM_STEP, '\n');
+}
 void CM_DIMMER::do_downdim(void) {
 	/* decrease brightness by DIM_STEP  but not lower than DIM_MIN_LEVEL */
 	if (cm_sta.value > l3->DIM_MIN_LEVEL + l3->DIM_STEP) cm_sta.set_value = cm_sta.value - l3->DIM_STEP;
 	else cm_sta.set_value = l3->DIM_MIN_LEVEL;
+
+	/* set the state machine accordingly */
+	if (cm_sta.value) tr40.cur = tr40.nxt = DM_JT::ON;										// set the state machine accordingly
+	else tr40.cur = tr40.nxt = DM_JT::OFF;
+
 	DBG(DM, F("DM"), lstC.cnl, F(":downdim val: "), cm_sta.value, F(", set: "), cm_sta.set_value, cm_sta.value, F(", step: "), l3->DIM_STEP, '\n');
 }
 
-
+/* trigger 3E, 40, 41 state machine functions 
+* mainly all hm devices are designed as a state machine. state is defined within the jump table and this 
+* functions are working through the different states based on the list3 register values
+*/
 void CM_DIMMER::poll_jumptable(void) {
 
 	// - jump table section for trigger3E/40/41
-	//if (jt->ACTION_TYPE != DM_ACTION::JUMP_TO_TARGET) return;								// only valid for jump table
+	if (jt->ACTION_TYPE != DM_ACTION::JUMP_TO_TARGET) return;								// only valid for jump table
 	if (tr40.cur == tr40.nxt) return;														// no status change, leave
 	tr40.cur = tr40.nxt;																	// seems next status is different to current, remember for next poll
 	DBG(DM, F("DM"), lstC.cnl, F(":jumptable- cur: "), tr40.cur, F(", nxt: "), tr40.nxt, '\n');
@@ -452,7 +491,6 @@ void CM_DIMMER::poll_jumptable(void) {
 	else if (tr40.nxt == DM_JT::RAMPOFF) tr40.rampoff = 1;
 	else if (tr40.nxt == DM_JT::OFF) tr40.off = 1;
 }
-
 void CM_DIMMER::poll_ondelay(void) {
 	/* if poll_ondelay is active it gets polled by the main poll function
 	* ondelay has 3 stati, 0 off, 1 set mode and timer, 2 done */
@@ -477,7 +515,6 @@ void CM_DIMMER::poll_ondelay(void) {
 
 	}
 }
-
 void CM_DIMMER::poll_rampon(void) {
 	/* if poll_rampon is active it gets polled by the main poll function, we differentiate between first poll, while set the ramp start step
 	* and normal ramp on poll to increase brightness over the given time by l3->RAMPON_TIME 
@@ -519,7 +556,6 @@ void CM_DIMMER::poll_rampon(void) {
 
 	}
 }
-
 void CM_DIMMER::poll_on(void) {
 	/* if poll_on is active it gets polled by the main poll function
 	* poll_on has 3 stati, 0 off, 1 set timer, 2 done */
@@ -539,7 +575,6 @@ void CM_DIMMER::poll_on(void) {
 
 	}
 }
-
 void CM_DIMMER::poll_offdelay(void) {
 	/* if poll_offdelay is active it gets polled by the main poll function
 	* poll_offdelay has 4 stati, 0 off, 1 set timer, 2 process wait, 3 done */
@@ -560,8 +595,10 @@ void CM_DIMMER::poll_offdelay(void) {
 		} else {				// low value
 			cm_sta.set_delay.set((l3->OFFDELAY_NEWTIME + 1) * 50);							// set the time based on the conversation type
 			old_new_flag = cm_sta.value;													// remember the initial brightness
-			if (cm_sta.value - l3->OFFDELAY_STEP > l3->ON_MIN_LEVEL) cm_sta.set_value = cm_sta.value - l3->OFFDELAY_STEP;// check if we are above the minimum level
-			else cm_sta.set_value = l3->ON_MIN_LEVEL;										// set the brightness level
+			//if (cm_sta.value - l3->OFFDELAY_STEP > l3->ON_MIN_LEVEL) cm_sta.set_value = cm_sta.value - l3->OFFDELAY_STEP;// check if we are above the minimum level
+			//else cm_sta.set_value = l3->ON_MIN_LEVEL;										// set the brightness level
+			if (cm_sta.value - l3->OFFDELAY_STEP > 0) cm_sta.set_value = cm_sta.value - l3->OFFDELAY_STEP;// check if we are above the minimum level
+			else cm_sta.set_value = 0;														// set the brightness level
 
 		}
 		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- cur: "), cm_sta.value, F(", set: "), cm_sta.set_value, F(", new_old: "), old_new_flag, F(", off_step: "), l3->OFFDELAY_STEP, F(", new_time: "), l3->OFFDELAY_NEWTIME, F(", old_time: "), l3->OFFDELAY_OLDTIME, ' ', _TIME, '\n');
@@ -591,7 +628,6 @@ void CM_DIMMER::poll_offdelay(void) {
 
 	}
 }
-
 void CM_DIMMER::poll_rampoff(void) {
 	/* if do_rampoff is active it gets polled by the main poll function
 	*  we differentiate between first poll, while set the ramp stop step
@@ -637,7 +673,6 @@ void CM_DIMMER::poll_rampoff(void) {
 
 	}
 }
-
 void CM_DIMMER::poll_off(void) {
 	/* if poll_on is active it gets polled by the main poll function
 	* poll_on has 3 stati, 0 off, 1 set timer, 2 done */

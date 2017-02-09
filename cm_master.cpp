@@ -372,7 +372,7 @@ void process_send_status_poll(s_cm_status *cm, uint8_t cnl) {
 	if (!cm->msg_type) return;																// nothing to do
 	if (!cm->msg_delay.done()) return;														// not the right time
 
-																							/* prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80 */
+	/* prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80 */
 	cm->flag = 0;
 	if (cm->value <  cm->set_value) cm->f.UP = 1;
 	else if (cm->value >  cm->set_value) cm->f.DOWN = 1;
@@ -393,8 +393,7 @@ void process_send_status_poll(s_cm_status *cm, uint8_t cnl) {
 		cm->msg_type = STA_INFO::SND_ACTUATOR_STATUS_AGAIN;									// send next time a info status message
 		cm->msg_delay.set(cm->fsm_delay.remain() + 100);									// check again when timer is finish
 
-	}
-	else cm->msg_type = STA_INFO::NOTHING;													// no need for next time
+	} else cm->msg_type = STA_INFO::NOTHING;												// no need for next time
 
 }
 

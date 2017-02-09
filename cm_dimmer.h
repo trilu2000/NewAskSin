@@ -11,28 +11,37 @@
 
 #include "cm_master.h"
 
+/* the pwm dimmer provides a summary value, based on the virtual channels and the combining logic */
+struct s_sum_cnl {
+	uint8_t value[3];
+	uint8_t logic[3];
+};
+extern s_sum_cnl sum_cnl[];
 
+
+/* list 1/3 definition for dimmer channel module */
 const uint8_t cm_dimmer_ChnlReg[] PROGMEM = { 0x08,0x30,0x32,0x34,0x35,0x56,0x57,0x58,0x59, };
 const uint8_t cm_dimmer_ChnlDef[] PROGMEM = { 0x00,0x06,0x50,0x4b,0x50,0x00,0x24,0x01,0x01, };
 
 const uint8_t cm_dimmer_PeerReg[] PROGMEM = { 0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1a,0x26,0x27,0x28,0x29,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9a,0xa6,0xa7,0xa8,0xa9, };
 const uint8_t cm_dimmer_PeerDef[] PROGMEM = { 0x00,0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x01,0x11,0x11,0x11,0x20,0x00,0x14,0xc8,0x0a,0x05,0x05,0x00,0xc8,0x0a,0x0a,0x04,0x04,0x00,0x11,0x11,0x11,0x00,0x00,0x00,0x32,0x64,0x00,0xff,0x00,0xff,0x00,0x11,0x11,0x11,0x20,0x00,0x14,0xc8,0x0a,0x05,0x05,0x00,0xc8,0x0a,0x0a,0x04,0x04,0x00,0x11,0x11,0x11, };
 
-
-#define NOT_USED 255
-namespace DM_ACTION {
+/* dimmer channel module specific enums */
+namespace DM_ACTION {																	// list3 ACTION_TYPE
 	enum E : uint8_t { INACTIVE, JUMP_TO_TARGET, TOGGLE_TO_COUNTER, TOGGLE_INV_TO_COUNTER, UPDIM, DOWNDIM, TOOGLEDIM, TOGGLEDIM_TO_COUNTER, TOGGLEDIM_INVERS_TO_COUNTER, };
 };
-namespace DM_JT {
+namespace DM_JT {																		// list3 JUMP TABLE
 	enum E : uint8_t { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, RAMPON = 0x02, ON = 0x03, OFFDELAY = 0x04, RAMPOFF = 0x05, OFF = 0x06 };
 };
-namespace DM_CT {
+namespace DM_CT {																		// list3 Condition evaluation
 	enum E : uint8_t { X_GE_COND_VALUE_LO, X_GE_COND_VALUE_HI, X_LT_COND_VALUE_LO, X_LT_COND_VALUE_HI, COND_VALUE_LO_LE_X_LT_COND_VALUE_HI, X_LT_COND_VALUE_LO_OR_X_GE_COND_VALUE_HI };
 };
 
 
 class CM_DIMMER : public CM_MASTER {
 private:  //---------------------------------------------------------------------------------------------------------------
+	uint8_t vrt_grp;																	// identification of the belonging virtual group, as the dimmer can have virtual channels
+	uint8_t vrt_cnl;																	// identification of channel within the virtual group
 
 	struct s_l1 {
 		uint8_t AES_ACTIVE               : 1;  // 0x08.0, s:1   d: false  
@@ -219,13 +228,14 @@ private:  //--------------------------------------------------------------------
 		uint8_t ELSE_JT_RAMPOFF    : 4;  // 0x29.4, s:4   d: ONDELAY               // 0xa9.4, s:4   d: ONDELAY
 	} *l3; // 30 byte
 
-	static void initDimmer(uint8_t channel);												// functions in user sketch needed
-	static void switchDimmer(uint8_t channel, uint8_t status);
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	CM_DIMMER(const uint8_t peer_max);														// constructor
+	/* external declaration for functions to be in the user sketch */
+	static void init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel);// gets called while initializing the dimmer channel module
+	static void switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint8_t status);	// gets called if a certain status needs to be set
 
+	/* definition of 2 structs to drive state machines based on type of message */
 	struct s_tr11 {
 		uint8_t  active;																	// trigger 11 active
 		uint8_t  value;																		// trigger 11 set value
@@ -234,19 +244,22 @@ public:  //---------------------------------------------------------------------
 	} tr11;
 
 	struct s_tr40 {
-		uint8_t   cnt;																		// counter store for type 40/41 messages to detect a repeated long
-		uint8_t   cur;																		// current state and next state
-		uint8_t	  nxt;
-		uint8_t   ondelay;
-		uint8_t   rampon;
-		uint8_t   on;
-		uint8_t   offdelay;
-		uint8_t   rampoff;
-		uint8_t   off;
-	} tr40;
+		uint8_t  cnt;																		// counter store for type 40/41 messages to detect a repeated long
+		uint8_t  cur      :4;																// indicates the current state machine position
+		uint8_t  nxt      :4;																// indicates the next position of the state machine
+		uint8_t  ondelay  :4;																// ondelay indicator
+		uint8_t  rampon   :4;																// ramp on indicator
+		uint8_t  on       :4;																// on indicator
+		uint8_t  offdelay :4;																// off delay indicator
+		uint8_t  rampoff  :4;																// ramp off indicator
+		uint8_t  off      :4;																// off indicator
+	} tr40;																					// struct to drive the steate machine
+
+
+	/* function definition for dimmer module */
+	CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel = 0, uint8_t virtual_group = 0);// constructor
 
 	s_cm_status cm_sta;																		// defined in type_defs, holds current status and set_satatus
-
 
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
@@ -272,7 +285,10 @@ public:  //---------------------------------------------------------------------
 	uint8_t last_on_value;
 
 	inline void adjust_status(void);														// set the dimmer value, interface to user sketch
-	inline void poll_jumptable(void);
+
+	inline void poll_tr11(void);															// poll on trigger 11 messages
+
+	inline void poll_jumptable(void);														// poll for trigger 3E, 40 and 41 messages
 	inline void poll_ondelay(void);
 	inline void poll_rampon(void);
 	inline void poll_on(void);

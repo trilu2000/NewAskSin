@@ -35,10 +35,10 @@
 //#define CB_DBG					// Config button class (AS_conf_button.cpp)
 //#define LD_DBG					// Status led class (AS_status_led.cpp)
 
-#define CM_DBG					// Channel Master module (cmMaster.cpp)
+//#define CM_DBG					// Channel Master module (cmMaster.cpp)
 //#define MN_DBG					// Maintenance channel module (cmMaintenance.cpp)
 //#define SW_DBG				// Switsch channel module (cmSwitch.cpp)
-#define DM_DBG					// Dimmer channel module (cmDimmer.cpp)
+//#define DM_DBG					// Dimmer channel module (cmDimmer.cpp)
 //#define RE_DBG					// Remote channel module (cmRemote.cpp)
 
 

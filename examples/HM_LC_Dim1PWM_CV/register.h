@@ -36,9 +36,9 @@ const uint8_t cm_maintenance_ChnlLen = 6;
 */
 CM_MASTER *cmm[4] = {
 	new CM_MAINTENANCE(0),
-	new CM_DIMMER(10),
-	new CM_DIMMER(2),
-	new CM_DIMMER(2),
+	new CM_DIMMER(10,0,0),
+	new CM_DIMMER(2,1,0),
+	new CM_DIMMER(2,2,0),
 };
 
 

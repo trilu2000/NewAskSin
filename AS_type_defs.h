@@ -47,6 +47,7 @@ typedef struct ts_dev_operate {
 typedef struct ts_cm_status {
 	uint8_t   value;																		// module status byte, needed for list3 modules to answer status requests
 	uint8_t   set_value;																	// status to set on the Relay channel
+	uint8_t   sum_value;																	// summary value for virtual channels
 	union {
 		struct {
 			uint8_t NA : 3;
