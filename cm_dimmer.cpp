@@ -324,27 +324,89 @@ void CM_DIMMER::adjust_status(void) {
 
 	/* calculate the next step, based on the set_value */
 	if (cm_sta.set_value > 200) cm_sta.set_value = 200;										// value cannot be higher than 200
-	uint16_t calc_value = cm_sta.value = cm_sta.set_value;									// set value and value is the same now, while we are forwarding it to the main function
-
-	/* check if we have a quadratic approach to follow */
-	if (l1->CHARACTERISTIC) {																// check if we should use quadratic approach
-		calc_value *= cm_sta.value;															// recalculate the value
-		calc_value /= 200;
-		if ((cm_sta.value) && (!calc_value)) calc_value = 1;								// till 15 it is below 1, set to 1
-	} 
-	sum_cnl[vrt_grp].value[vrt_cnl] = calc_value;											// store the status value of the channel in the virtual channel struct
+	cm_sta.value = cm_sta.set_value;														// no need to enter the function again, value and set_value now similar
 
 	/* summerize up in the mixer value by taking care of LOGIC_COMBINATION and call afterwards the external function */
 	//<option id = "LOGIC_INACTIVE", "LOGIC_OR" default = "true", "LOGIC_AND", "LOGIC_XOR", "LOGIC_NOR", "LOGIC_NAND", "LOGIC_ORINVERS"
 	//             "LOGIC_ANDINVERS", "LOGIC_PLUS", "LOGIC_MINUS", "LOGIC_MUL", "LOGIC_PLUSINVERS", "LOGIC_MINUSINVERS", "LOGIC_MULINVERS"
 	//             "LOGIC_INVERSPLUS", "LOGIC_INVERSMINUS", "LOGIC_INVERSMUL"
 	// phyLevel = (((0% o Ch1) o Ch2) o Ch3) 
+	int32_t calc_value = 0;																	// define a temp variable to calculate the summary channel
+	sum_cnl[vrt_grp].value[vrt_cnl] = cm_sta.value;											// store the status value of the channel in the virtual channel struct
 	for (uint8_t i = 0; i < 3; i++) {
-		dbg << "x:" << sum_cnl[vrt_grp].logic[vrt_cnl] << '\n';
-		//calc_value = 0 
-	}
-	switch_dimmer(vrt_grp, vrt_cnl, lstC.cnl, calc_value);									// calling the external function to make it happen
+		if (sum_cnl[vrt_grp].logic[vrt_cnl] == 0) {				/* LOGIC_INACTIVE */
+			continue;																		// inaktiv: Der Kanal wird bei der Verkn¸pfung ignoriert
 
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 1) {		/* LOGIC_OR */
+			calc_value |= sum_cnl[vrt_grp].value[vrt_cnl];									// OR: Das Verkn¸pfungsergebnis ist der hˆhere von beiden Pegeln.
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 2) {		/* LOGIC_AND */
+			calc_value &= sum_cnl[vrt_grp].value[vrt_cnl];									// AND: Das Verkn¸pfungsergebnis ist der niedrigere von beiden Pegeln.
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 3) {		/* LOGIC_XOR */
+			calc_value ^= sum_cnl[vrt_grp].value[vrt_cnl];									// XOR: Ist nur einer der Pegel grˆﬂer als 0 %, ist dieser Pegel auch das Verkn¸pfungsergebnis. In den anderen F‰llen ist das Verkn¸pfungsergebnis 0 %.
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 4) {		/* LOGIC_NOR */
+			calc_value = ~(calc_value | sum_cnl[vrt_grp].value[vrt_cnl]);					// NOR: Es wird die Verkn¸pfung OR ausgef¸hrt und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 5) {		/* LOGIC_NAND */
+			calc_value = ~(calc_value & sum_cnl[vrt_grp].value[vrt_cnl]);					// NAND: Es wird die Verkn¸pfung AND ausgef¸hrt und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 6) {		/* LOGIC_ORINVERS */
+			calc_value |= ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// OR_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung OR ausgef¸hrt.
+		
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 7) {		/* LOGIC_ANDINVERS */
+			calc_value &= ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// AND_INVERS: Der zu verkn¸pfende Kanal(rechts vom Ñoì) wird zuerst invertiert(100 % -Pegel) und anschlieﬂend die Verkn¸pfung AND ausgef¸hrt.
+		
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 8) {		/* LOGIC_PLUS */
+			calc_value += sum_cnl[vrt_grp].value[vrt_cnl];									// PLUS: Die beiden Pegel werden addiert (max. 100 %).
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 9) {		/* LOGIC_MINUS */
+			calc_value -= sum_cnl[vrt_grp].value[vrt_cnl];									// MINUS: Die beiden Pegel werden subtrahiert (min. 0 %).
+		
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 10) {		/* LOGIC_MUL */
+			calc_value *= sum_cnl[vrt_grp].value[vrt_cnl];									// MULTI: Die beiden Pegel werden multipliziert.
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 11) {		/* LOGIC_PLUSINVERS */
+			calc_value += ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// PLUS_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung PLUS ausgef¸hrt.
+		
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 12) {		/* LOGIC_MINUSINVERS */
+			calc_value -= ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// MINUS_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung MINUS ausgef¸hrt.
+		
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 13) {		/* LOGIC_MULINVERS */
+			calc_value *= ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// MULTI_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung MULTI ausgef¸hrt.
+		
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 14) {		/* LOGIC_INVERSPLUS */
+			calc_value += sum_cnl[vrt_grp].value[vrt_cnl];									// INVERS_PLUS: Die beiden Pegel werden addiert (max. 100 %) und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
+			if (calc_value > 200) calc_value = 200;
+			calc_value = (uint8_t)~calc_value;
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 15) {		/* LOGIC_INVERSMINUS */
+			calc_value -= sum_cnl[vrt_grp].value[vrt_cnl];									// INVERS_MINUS: Die beiden Pegel werden subtrahiert (min. 0 %) und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
+			if (calc_value < 0) calc_value = 0;
+			calc_value = (uint8_t)~calc_value;
+
+		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 16) {		/* LOGIC_INVERSMUL */
+			calc_value *= sum_cnl[vrt_grp].value[vrt_cnl];									// INVERS_MULTI: Die beiden Pegel werden multipliziert und das Ergebnis anschlieﬂend invertiert(100 % -Pegel).
+			if (calc_value > 200) calc_value = 200;
+			calc_value = (uint8_t)~calc_value;
+
+		}
+
+		if (calc_value > 200) calc_value = 200;												// after calculation we need to ensure that max not too big
+		if (calc_value < 0) calc_value = 0;													// or if below it should be 0
+
+		dbg << "v: " << sum_cnl[vrt_grp].value[vrt_cnl] << ", l: " << sum_cnl[vrt_grp].logic[vrt_cnl] << ", c: " << calc_value << '\n';
+	}
+
+	/* check if we have a quadratic approach to follow and call the main sketch to set the value on the HW */
+	//uint16_t calc_value = sum_cnl[vrt_grp].value[vrt_cnl];								// copy value in a bigger variable to calculate the quadratic value
+	if (l1->CHARACTERISTIC) {																// check if we should use quadratic approach
+		calc_value *= calc_value;															// recalculate the value
+		calc_value /= 200;
+		if ((cm_sta.value) && (!calc_value)) calc_value = 1;								// till 15 it is below 1, set to 1
+	} 
+	switch_dimmer(vrt_grp, vrt_cnl, lstC.cnl, calc_value);									// calling the external function to make it happen
 	//DBG(DM, F("DM"), lstC.cnl, F(":adj val: "), cm_status.value, F(", set: "), cm_status.set_value, F(", quad: "), l1->CHARACTERISTIC, '\n';)
 }
 
