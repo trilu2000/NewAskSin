@@ -396,7 +396,7 @@ void CM_DIMMER::adjust_status(void) {
 		if (calc_value > 200) calc_value = 200;												// after calculation we need to ensure that max not too big
 		if (calc_value < 0) calc_value = 0;													// or if below it should be 0
 
-		dbg << "v: " << sum_cnl[vrt_grp].value[vrt_cnl] << ", l: " << sum_cnl[vrt_grp].logic[vrt_cnl] << ", c: " << calc_value << '\n';
+		//dbg << "v: " << sum_cnl[vrt_grp].value[vrt_cnl] << ", l: " << sum_cnl[vrt_grp].logic[vrt_cnl] << ", c: " << calc_value << '\n';
 	}
 
 	/* check if we have a quadratic approach to follow and call the main sketch to set the value on the HW */
@@ -716,7 +716,6 @@ void CM_DIMMER::poll_rampoff(void) {
 		/* first we check what we can set as value for adjust_status */
 		if (cm_sta.value > l3->RAMP_START_STEP + l3->OFF_LEVEL) cm_sta.set_value = cm_sta.value - l3->RAMP_START_STEP;
 		else cm_sta.set_value = l3->OFF_LEVEL;
-		if (l3->RAMPOFF_TIME != NOT_USED) cm_sta.fsm_delay.set(byteTimeCvt(l3->RAMPOFF_TIME));// set the state machine timer
 		tr40.rampoff = 2;																	// we will follow up in mode 2
 		DBG(DM, F("DM"), lstC.cnl, F(":rampoff- cur: "), cm_sta.value, F(", ramp_start_step: "), l3->RAMP_START_STEP, ' ', _TIME, '\n');
 
