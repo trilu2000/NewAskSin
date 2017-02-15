@@ -253,6 +253,7 @@ public:  //---------------------------------------------------------------------
 	virtual void cm_init(void);																// init function, called after AS initialisation
 	virtual void cm_poll(void);																// poll function, driven by HM loop
 	virtual void set_toggle(void);															// toggle the module initiated by config button
+	virtual void info_config_change(uint8_t channel);										// list1 on registered channel had changed
 
 	/* receive functions to handle requests forwarded by AS:processMessage
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */

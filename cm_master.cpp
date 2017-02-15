@@ -190,9 +190,7 @@ void CM_MASTER::CONFIG_END(s_m01xx06 *buf) {
 
 	if (cm->list->lst < 2) {
 		lstC.load_list(cm->idx_peer);														// reload list0 or 1
-		for (uint8_t i = 0; i < cnl_max; i++) {
-			cmm[i]->info_config_change(lstC.cnl);											// inform the channel module on a change of list0 or 1
-		}
+		inform_config_change(lstC.cnl);														// inform the channel module on a change of list0 or 1
 	}
 	// TODO: remove message id flag to config in send module
 	DBG(CM, F("CM:CONFIG_END, cnl:"), buf->MSG_CNL, '\n');
@@ -464,6 +462,12 @@ uint16_t crc16(uint16_t crc, uint8_t a) {
 		else crc = (crc >> 1);
 	}
 	return crc;
+}
+
+void inform_config_change(uint8_t channel) {
+	for (uint8_t i = 0; i < cnl_max; i++) {
+		cmm[i]->info_config_change(channel);												// inform the channel module on a change of list0 or 1
+	}
 }
 //-------------------------------------------------------------------------------------------------------------------------
 

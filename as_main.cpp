@@ -61,9 +61,8 @@ void AS::init(void) {
 
 	/* load list 0 and 1 defaults and inform the channel modules */
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
-		//cm_master *pCM = cmm[i];															// short hand to respective channel master	
 		cmm[i]->lstC.load_list();															// read the defaults in respective list0/1
-		cmm[i]->info_config_change(i);														// inform the channel modules
+		inform_config_change(i);															// inform the channel modules
 		cmm[i]->init();																		// initialize the channel modules
 	}
 

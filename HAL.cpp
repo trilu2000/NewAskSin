@@ -21,16 +21,11 @@
 //- randum number functions -----------------------------------------------------------------------------------------------
 void get_random(uint8_t *buf) {
 	/* not random, but most likely, as real random takes 200 byte more */
+	static uint32_t random;
 
-	uint32_t time = get_millis();															// get current time 
-	memcpy(buf, (uint8_t*)&time, 4);														// copy the time into the array
-	memcpy(buf + 2, (uint8_t*)&time, 4);
-	for (uint8_t i = 0; i < 6; i++) {														// do some xors and byte shift
-		if (i) buf[i] ^= buf[i - 1];
-		else buf[0] ^= 0x35;
-		if (buf[i] & 1) buf[i] = (buf[i] >> 1) ^ 0xA0;
-		else buf[i] = (buf[i] >> 1);
-	}
+	random ^= get_millis();
+	random = (15342 * random + 45194);
+	memcpy(buf, (uint8_t*)&random, 4);
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 

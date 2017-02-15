@@ -156,6 +156,7 @@ uint16_t cm_calc_crc(void);																	// calculate the crc for lists in th
 uint16_t crc16_P(uint16_t crc, uint8_t len, const uint8_t *buf);							// calculates the crc for a PROGMEM byte array
 uint16_t crc16(uint16_t crc, uint8_t a);													// calculates the crc for a given byte
 
+void inform_config_change(uint8_t channel);													// inform all channel modules that a list0/1 had changed
 //- -----------------------------------------------------------------------------------------------------------------------
 
 

@@ -73,6 +73,7 @@ typedef struct ts_cm_status {
 	waitTimer aj_delay;																		// optional timer to pause between set values
 
 	// to schedule next message by type and the delay to wait for
+	uint32_t  status_delay;																	// delay for sending a status message
 	uint8_t	  msg_type;																		// indicator for sendStatus function
 	waitTimer msg_delay;																	// message timer for sending status
 

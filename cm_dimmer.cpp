@@ -55,9 +55,6 @@ void CM_DIMMER::cm_init(void) {
 	tr11.active = 0;																		// empty trigger 11 store
 
 	/* assign list1 variables and initialize the hardware */
-	// todo - check which registers are set by configuring the internal key
-	sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;								// store the logic combination of the virtual channel in the struct
-
 	if (l1->POWERUP_ACTION) {																// check the power up flag
 		cms.set_value = 200;
 		cms.sm_stat = cms.sm_set = DM_JT::ON;
@@ -68,7 +65,7 @@ void CM_DIMMER::cm_init(void) {
 	init_dimmer(vrt_grp, vrt_cnl, lstC.cnl);												// call external init function to set the output pins
 
 	/* initiate the status message of the channel */
-	cms.msg_delay.set((rand() % (l1->STATUSINFO_RANDOM * 1000)) + (l1->STATUSINFO_MINDELAY * 1000));	// wait some time to settle the device
+	cms.msg_delay.set(cms.status_delay);													// wait some time to settle the device
 	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS;											// send the initial status info
 	
 	DBG(DM, F("DM"), lstC.cnl, F(":init- vrt_grp: "), vrt_grp, F(", vrt_cnl: "), vrt_cnl, F(", min_delay: "), l1->STATUSINFO_MINDELAY, F(", rand_delay: "), l1->STATUSINFO_RANDOM, F(", remain: "), cms.msg_delay.remain(), '\n');
@@ -114,6 +111,20 @@ void CM_DIMMER::set_toggle(void) {
 	cms.msg_delay.set(5);
 }
 
+void CM_DIMMER::info_config_change(uint8_t channel) {
+	if (lstC.cnl != channel) return;
+
+	/* assign list1 variables and initialize the hardware */
+	// todo - check which registers are set by configuring the internal key
+	sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;								// store the logic combination of the virtual channel in the struct
+
+	/* random can be 0 to 7 seconds */
+	get_random((uint8_t*)&cms.status_delay);
+	cms.status_delay %= l1->STATUSINFO_RANDOM * 1000;
+	//cms.status_delay = rand() % (l1->STATUSINFO_RANDOM * 1000);
+	cms.status_delay += l1->STATUSINFO_MINDELAY * 1000;
+	DBG(DM, F("DM"), lstC.cnl, F(":info_config_change cnl: "), channel, F(", delay: "), cms.status_delay, '\n');
+}
 
 /**
 * This function will be called by the eeprom module as a request to update the
