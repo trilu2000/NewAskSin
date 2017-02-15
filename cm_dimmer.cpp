@@ -8,8 +8,8 @@
 
 #include "newasksin.h"
 
-waitTimer adj_timer;																		// timer for dim-up/down
-uint32_t adj_delay;																			// calculate and store the adjustment time
+//waitTimer adj_timer;																		// timer for dim-up/down
+//uint32_t adj_delay;																			// calculate and store the adjustment time
 
 static s_sum_cnl sum_cnl[4];
 
@@ -40,9 +40,8 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel, uint8_t vi
 	vrt_cnl = virtual_channel;																// remember the virtual channel in group this instance belong too
 }
 
-
 /**------------------------------------------------------------------------------------------------------------------------
-*- user defined functions -
+*- overlay functions -
 * ------------------------------------------------------------------------------------------------------------------------- */
 
 void CM_DIMMER::cm_init(void) {
@@ -198,15 +197,10 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 	tr40.nxt = tr40.cur;																	// stay in the current position
 
 	/* fill the trigger 11 struct depending on the message length and set the active flag accordingly */
-	tr11.value = buf->VALUE;
+	tr11.value = buf->VALUE;																// value to be set
 	tr11.ramp_time = (buf->MSG_LEN >= 14) ? buf->RAMP_TIME : 0;								// get the ramp time if message len indicates that it is included
 	tr11.dura_time = (buf->MSG_LEN >= 16) ? buf->DURA_TIME : 0;								// get the dura time if message len indicates that it is included
-
-	if (tr11.ramp_time) tr11.active = 1;													// indicate we are coming from trigger11
-	else cm_sta.set_value = tr11.value;														// otherwise set the value directly
-	cm_sta.fsm_delay.set(intTimeCvt(tr11.ramp_time));										// set the timer accordingly, could be 0 or a time
-
-	if (tr11.dura_time) tr11.active = 1;													// set tr11 flag active to be processed in the poll function
+	tr11.active = 1;																		// something needs to be set
 
 	cm_sta.msg_type = STA_INFO::SND_ACK_STATUS;												// ACK should be send
 	cm_sta.msg_delay.set(5);																// give some time
@@ -317,6 +311,10 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 }
 
 
+/**------------------------------------------------------------------------------------------------------------------------
+*- user defined functions -
+* ------------------------------------------------------------------------------------------------------------------------- */
+
 void CM_DIMMER::adjust_status(void) {
 
 	/* check if something is to do */
@@ -414,28 +412,35 @@ void CM_DIMMER::adjust_status(void) {
 * but all required information stored in tr11 struct 
 */
 void CM_DIMMER::poll_tr11(void) {
-	if (!tr11.active) return;																// nothing to do, leave
+	uint8_t last_value;
+	/* poll tr11 gets polled by the main poll function and takes care of the instruction set message 
+	* tr11.active has x stati, 1 for setting up action and start on/off delay, 2 for set value and start dura delay, 3 dura is done-leave */
 
+	if (!tr11.active) return;																// nothing to do, leave
 	if (!cm_sta.fsm_delay.done()) return;													// timer not done, wait until then
 
-	// - trigger11, check if rampTime or onTimer is set
-	if (tr11.active) {
-		if (tr11.ramp_time) {																// ramp timer was set, now we have to set the value
-			cm_sta.set_value = tr11.value;													// set the value we had stored
-			tr11.active = 0;																// reset tr11, if dura time is set, we activate again
-			tr11.ramp_time = 0;																// not necessary to do it again
-		}
 
-		if (tr11.dura_time) {																// coming from trigger 11, we should set the duration period
-			cm_sta.fsm_delay.set(intTimeCvt(tr11.dura_time));								// set the duration time
-			tr11.active = 1;																// we have set the timer so remember that it was from tr11
-			tr11.dura_time = 0;																// but indicate, it was done
+	if (tr11.active == 1) {																	// set next action based on ramp and dura content
+		cm_sta.fsm_delay.set(intTimeCvt(tr11.ramp_time));									// set the ramp timer accordingly, could be 0 or a time
+		tr11.active = 2;
+		tr40.cur = tr40.nxt = (cm_sta.value < tr11.value) ? DM_JT::ONDELAY : DM_JT::OFFDELAY;
+		DBG(DM, F("DM"), lstC.cnl, F(":tr11_ramp- cur: "), cm_sta.value, F(", set: "), tr11.value, F(", ramp_time: "), intTimeCvt(tr11.ramp_time), ' ', _TIME, '\n');
 
-		} else {																			// check if something is to do from trigger11
-			cm_sta.set_value = tr11.value ^ 200;											// invert the status
-			tr11.active = 0;																// trigger11 ready
+	} else if (tr11.active == 2) {
+		if (tr11.dura_time) {
+			last_value = cm_sta.value;														// remember the current value
+			cm_sta.fsm_delay.set(intTimeCvt(tr11.dura_time));								// set the duration timer accordingly, could be 0 or a time
 		}
-		tr40.cur = (cm_sta.set_value) ? DM_JT::ON : DM_JT::OFF;								// set tr40 status, otherwise a remote will not work
+		cm_sta.set_value = tr11.value;														// set the tr11 value
+		tr40.cur = tr40.nxt = (tr11.value > 0) ? DM_JT::ON : DM_JT::OFF;					// set the state machine accordingly
+		tr11.active = 3;
+		DBG(DM, F("DM"), lstC.cnl, F(":tr11_dura- cur: "), cm_sta.value, F(", set: "), tr11.value, F(", dura_time: "), intTimeCvt(tr11.dura_time), ' ', _TIME, '\n');
+
+	} else if (tr11.active == 3) {
+		if (tr11.dura_time) cm_sta.set_value = last_value;									// restore the initial value while dura time was set and passed
+		tr11.active = 0;
+		DBG(DM, F("DM"), lstC.cnl, F(":tr11_done "), _TIME, '\n');
+
 	}
 }
 
@@ -471,10 +476,29 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 
 		DBG(DM, F("DM"), lstC.cnl, F(":action_type: "), jt->ACTION_TYPE, F(", cur: "), tr40.cur, F(", nxt: "), tr40.nxt, '\n');
 
-		/* if flag is set, means prio of the action is low - so do not overrule current status if state machine is in on-mode */
-		if (l3->ON_LEVEL_PRIO) {
-			if ((tr40.cur == DM_JT::ONDELAY) || (tr40.cur == DM_JT::RAMPON) || (tr40.cur == DM_JT::ON)) tr40.nxt = tr40.cur;
+		/* take care of OFF_TIME_MODE and ON_TIME_MODE, absolut = 0, minimal = 1. 
+		* check the status of the state machine and overwrite the delay timer if necassary */
+		if (tr40.off == 2) {																// working through the delay in off state
+			uint32_t t_time = (l3->OFF_TIME != 255) ? byteTimeCvt(l3->OFF_TIME) : 0;		// write the time in a variable
+			if ((!jt->OFF_TIME_MODE) || (cm_sta.fsm_delay.remain() < t_time)) {				// if time is absolut or current delay is smaller than delay to set
+				cm_sta.fsm_delay.set(t_time);												// set the new delay
+				DBG(DM, F("DM"), lstC.cnl, F(":correct off-time\n"));
+			}
+
+		} else if (tr40.on == 2) {															// working through the delay in on state
+			uint32_t t_time = (l3->ON_TIME != 255) ? byteTimeCvt(l3->ON_TIME) : 0;			// write the time in a variable
+			if ((!jt->ON_TIME_MODE) || (cm_sta.fsm_delay.remain() < t_time)) {				// if time is absolut or current delay is smaller than delay to set
+				cm_sta.fsm_delay.set(t_time);												// set the new delay
+				DBG(DM, F("DM"), lstC.cnl, F(":correct on-time\n"));
+			}
 		}
+
+		/* if we are in on mode but the ON_LEVEL_PRIO is set to normal, we need to adjust the brightness */
+		if ((tr40.cur == DM_JT::ON) && (!l3->ON_LEVEL_PRIO)) {
+			cm_sta.set_value = l3->ON_LEVEL;												// set a new brightness value
+			DBG(DM, F("DM"), lstC.cnl, F(":overwrite on_level_prio\n"));
+		}
+
 
 	} else if (jt->ACTION_TYPE == DM_ACTION::TOGGLE_TO_COUNTER) {
 		cm_sta.set_value = (toogle_cnt) ? 200 : 0;											// set the dimmer status depending on message counter
@@ -675,7 +699,6 @@ void CM_DIMMER::poll_offdelay(void) {
 		if (l3->OFFDELAY_BLINK) tr40.offdelay = 2;											// 2 is a special mode, let the led blink while in offdelay
 		else tr40.offdelay = 3;																// to be entered after the delay is done
 		old_new_flag = 0;																	// start offdelay blink from start
-		adj_delay = 0;																		// set the adjustment timer to zero
 		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- time: "), byteTimeCvt(l3->OFFDELAY_TIME), F(", blink: "), l3->OFFDELAY_BLINK, ' ', _TIME, '\n');
 
 	} else if (tr40.offdelay == 2) {

@@ -47,7 +47,7 @@ namespace MSG_REASON {
 * PEER_BIDI   - 11, device initiated message to all known peers of a channel, message counter from send function, ack required
 */
 namespace MSG_ACTIVE {
-	enum E : uint8_t { NONE = 0, INTERN = 2, DEBUG = 4, ANSWER = 6, ANSWER_BIDI = 7, PAIR = 9, PEER = 10, PEER_BIDI = 11, };
+	enum E : uint8_t { NONE = 0, INTERN = 2, DEBUG = 4, ANSWER = 6, ANSWER_BIDI = 7, PAIR = 9, PEER = 10, PEER_BIDI = 11, BROADCAST = 12};
 };
 
 /*

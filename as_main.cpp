@@ -468,12 +468,18 @@ void AS::snd_poll(void) {
 
 		} else if ((sm->active & 0xFE) == MSG_ACTIVE::ANSWER) {								// ANSWER_BIDI
 		/* it is an answer to the received message */
-			memcpy(sm->mBody.RCV_ID, rcv_msg.mBody.SND_ID, 3);							// use the address from the received message
+			memcpy(sm->mBody.RCV_ID, rcv_msg.mBody.SND_ID, 3);								// use the address from the received message
 			sm->mBody.MSG_CNT = rcv_msg.mBody.MSG_CNT;										// use the message counter from the received message
 
 		} else if (sm->active         == MSG_ACTIVE::PAIR) {
 		/* pair means - msg_cnt from snd_msg struct, rcv_id is master_id, bidi not needed */
-			memcpy(sm->mBody.RCV_ID, dev_operate.MAID, 3);								// use the address from the received message
+			memcpy(sm->mBody.RCV_ID, dev_operate.MAID, 3);									// use the address from the received message
+			sm->mBody.MSG_CNT = sm->MSG_CNT;												// use own message counter
+			sm->MSG_CNT++;																	// increase counter for next try
+
+		} else if (sm->active == MSG_ACTIVE::BROADCAST) {
+			/* broadcast means - msg_cnt from snd_msg struct, rcv_id is 00 00 00, bidi not needed */
+			memset(sm->mBody.RCV_ID, 0, 3);													// clear the receive address
 			sm->mBody.MSG_CNT = sm->MSG_CNT;												// use own message counter
 			sm->MSG_CNT++;																	// increase counter for next try
 
