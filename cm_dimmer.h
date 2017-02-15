@@ -243,24 +243,10 @@ public:  //---------------------------------------------------------------------
 		uint16_t dura_time;																
 	} tr11;
 
-	struct s_tr40 {
-		//uint8_t  fsm;																		// state machine active flag
-		uint8_t  cnt;																		// counter store for type 40/41 messages to detect a repeated long
-		uint8_t  cur      : 4;																// indicates the current state machine position
-		uint8_t  nxt      : 4;																// indicates the next position of the state machine
-		uint8_t  ondelay  : 4;																// ondelay indicator
-		uint8_t  rampon   : 4;																// ramp on indicator
-		uint8_t  on       : 4;																// on indicator
-		uint8_t  offdelay : 4;																// off delay indicator
-		uint8_t  rampoff  : 4;																// ramp off indicator
-		uint8_t  off      : 4;																// off indicator
-	} tr40;																					// struct to drive the steate machine
-
-
 	/* function definition for dimmer module */
 	CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel = 0, uint8_t virtual_group = 0);// constructor
 
-	s_cm_status cm_sta;																		// defined in type_defs, holds current status and set_satatus
+	s_cm_status cms;																		// defined in type_defs, holds current status and set_satatus
 
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
@@ -284,15 +270,14 @@ public:  //---------------------------------------------------------------------
 	void do_downdim(void);																	// downdim without state machine
 
 	uint8_t last_on_value;																	// holds the last on vlaue, filled by poll_on
-	inline void adjust_status(void);														// set the dimmer value, interface to user sketch
-	inline void poll_tr11(void);															// poll on trigger 11 messages, own state machine
-	inline void poll_jumptable(void);														// poll for trigger 3E, 40 and 41 messages
-	inline void poll_ondelay(void);
-	inline void poll_rampon(void);
-	inline void poll_on(void);
-	inline void poll_offdelay(void);
-	inline void poll_rampoff(void);
-	inline void poll_off(void);
+	void adjust_status(void);																// set the dimmer value, interface to user sketch
+	void poll_tr11(void);																	// poll on trigger 11 messages, own state machine
+	void poll_ondelay(void);
+	void poll_rampon(void);
+	void poll_on(void);
+	void poll_offdelay(void);
+	void poll_rampoff(void);
+	void poll_off(void);
 
 };
 

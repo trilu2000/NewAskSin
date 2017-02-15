@@ -121,7 +121,7 @@ public:  //---------------------------------------------------------------------
 		uint8_t	  nxt;
 	} tr40;
 
-	s_cm_status cm_sta;																		// defined in type_defs, holds current status and set_satatus
+	s_cm_status cms;																		// defined in type_defs, holds current status and set_satatus
 
 	inline void adjustStatus(void);															// setting of relay status
 

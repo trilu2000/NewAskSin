@@ -45,9 +45,12 @@ typedef struct ts_dev_operate {
 * struct and the channel information.
 */
 typedef struct ts_cm_status {
+	// everything value related
 	uint8_t   value;																		// module status byte, needed for list3 modules to answer status requests
 	uint8_t   set_value;																	// status to set on the Relay channel
 	uint8_t   sum_value;																	// summary value for virtual channels
+
+	// message flag
 	union {
 		struct {
 			uint8_t NA : 3;
@@ -59,13 +62,26 @@ typedef struct ts_cm_status {
 		} f;
 		uint8_t   flag;																		// module down up low battery byte
 	};
+
+	// support for channel module
+	uint8_t   sm_active;																	// state machine active flag
+	uint8_t   sm_stat : 4;																	// indicates the current state machine position
+	uint8_t   sm_set  : 4;																	// indicates the next position of the state machine
 	uint8_t   inhibit = 0;																	// store for inhibit message
-	waitTimer fsm_delay;																	// finite state machine delay timer
-	waitTimer set_delay;																	// optional timer to pause between set values
+	uint8_t   msg_cnt;																		// counter store for type 40/41 messages to detect a repeated long
+	waitTimer sm_delay;																		// state machine delay timer
+	waitTimer aj_delay;																		// optional timer to pause between set values
 
 	// to schedule next message by type and the delay to wait for
 	uint8_t	  msg_type;																		// indicator for sendStatus function
 	waitTimer msg_delay;																	// message timer for sending status
+
+	void process_next(uint8_t jumptable_flag, uint8_t timer_flag = 0) {
+		sm_stat = sm_set;																	// set the state machine status
+		if (timer_flag < 255) sm_set = jumptable_flag;										// set next state, otherwise we stay here forever 
+		if (sm_stat != sm_set) sm_active = 1;												// process the next state, while a different state is required
+		else sm_active = 0;																	// or stay here
+	}
 } s_cm_status;
 
 /*
