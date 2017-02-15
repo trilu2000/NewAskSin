@@ -237,28 +237,28 @@ uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_m
 }
 
 uint16_t get_adc_value(uint8_t reg_admux) {
-	// save power reduction register
-	
+	uint16_t adcValue = 0;
+	/* enable and set adc */
 	/* enable and set adc */
 	power_adc_enable();																		// start adc 
 
 	ADMUX = reg_admux;																		// set adc
 	ADCSRA = (1 << ADEN) | (1 << ADPS2) | (1 << ADPS1);										// enable ADC and set ADC pre scaler
+	_delay_ms(2);
 
 	/* measure the adc */
-	_delay_ms(2);																			// wait for Vref to settle
+	for (uint8_t i = 0; i < BAT_NUM_MESS_ADC; i++) {										// take samples in a round
+		ADCSRA |= (1 << ADSC);																// start conversion
+		while (ADCSRA & (1 << ADSC))														// wait for conversion complete
+			;
+		adcValue += ADCW;
+	}
 
-	ADCSRA |= _BV(ADSC);																	// start conversion
-	while (bit_is_set(ADCSRA, ADSC));														// measuring
+	ADCSRA &= ~(1 << ADEN);																	// ADC disable
+	adcValue = adcValue / BAT_NUM_MESS_ADC;													// divide adcValue by amount of measurements
 
-	//uint8_t low = ADCL;																	// must read ADCL first - it then locks ADCH  
-	//uint8_t high = ADCH;																	// unlocks both
-	//uint16_t result = (high << 8) | low;
-	uint16_t result = ADCW;																	// read register once, alternative above 
-
-	/* restore power reduction register and stop adc measurement */
 	power_adc_disable();																	// stop adc
-	return result;
+	return adcValue;
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 

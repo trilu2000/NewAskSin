@@ -646,6 +646,8 @@ void AS::process_peer_message_poll(void) {
 		return;																				// and return, otherwise some infos are overwritten
 	}
 
+	sm->mBody.MSG_CNT = sm->MSG_CNT;														// set the message counter
+
 	/* set the peer address */
 	memcpy(sm->mBody.RCV_ID, pm->peerDB->get_peer(pm->slot_cnt), 3);
 	sm->temp_max_retr = 1;
