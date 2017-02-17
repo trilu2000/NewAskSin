@@ -45,11 +45,14 @@ void CM_DIMMER::init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint
 	power_timer2_enable();																	// enable the timer2 in power management
 
 	set_pin_output(&pin_D3);																// init the relay pins
-	//setPinLow(PORTD,3);
+	TCCR2A = _BV(COM2A1) | _BV(COM2B1) | _BV(WGM21) | _BV(WGM20);							// COM2A1 and COM2B1, set the compare output mode to clear OC2A and OC2B on compare match; WGM21 and WGM20, fast PWM (mode 3 in datasheet).
+	TCCR2B = _BV(WGM22) | _BV(CS22);														// fast PWM mode 7 —  WGM22, reset counter on OCR2A value instead of the default 255; CS20, set the prescaler divisor to 1
+	OCR2A = 64;																				// OCR2A holds the top value of our counter, so it acts as a divisor to the clock. when our counter reaches this, it resets.
+	OCR2B = 0;
 
-	TCCR2B |= (1 << CS21);																	// configure the PWM for the respective output pin
-	OCR2B = 0x00;
-	TCCR2A |= 1 << COM2B1;
+	//TCCR2B |= (1 << CS21);																	// configure the PWM for the respective output pin
+	//OCR2B = 0x00;
+	//TCCR2A |= 1 << COM2B1;
 }
 
 void CM_DIMMER::switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint8_t status) {
