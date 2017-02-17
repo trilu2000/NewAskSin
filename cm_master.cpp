@@ -371,28 +371,29 @@ void process_send_status_poll(s_cm_status *cm, uint8_t cnl) {
 	if (!cm->msg_delay.done()) return;														// not the right time
 
 	/* prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80 */
-	cm->flag = 0;
-	if (cm->value <  cm->set_value) cm->f.UP = 1;
-	else if (cm->value >  cm->set_value) cm->f.DOWN = 1;
-
-	if (!cm->sm_delay.done())               cm->f.DELAY = 1;
-	//if (bat->getStatus())                cm->f.LOWBAT = 1;;
+	cm->sf.UP = (cm->sm_set == 0x02) ? 1 : 0;												// RAMPON
+	if (cm->sm_set == 0x02) dbg << "up\n";
+	cm->sf.DOWN = (cm->sm_set == 0x05) ? 1 : 0;												// RAMPOFF
+	if (cm->sm_set == 0x02) dbg << "down\n";
+	cm->sf.DELAY = (!cm->sm_delay.done()) ? 1 : 0;											// timer is running
+	if (!cm->sm_delay.done()) dbg << "delay\n";
 
 	/* check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status */
 	if (cm->msg_type == STA_INFO::SND_ACK_STATUS)
-		hm->send_ACK_STATUS(cnl, cm->value, cm->flag);
+		hm->send_ACK_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
+
 	else if (cm->msg_type == STA_INFO::SND_ACTUATOR_STATUS)
-		hm->send_INFO_ACTUATOR_STATUS(cnl, cm->value, cm->flag);
+		hm->send_INFO_ACTUATOR_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
+
 	else if (cm->msg_type == STA_INFO::SND_ACTUATOR_STATUS_AGAIN)
-		hm->send_INFO_ACTUATOR_STATUS(cnl, cm->value, cm->flag);
+		hm->send_INFO_ACTUATOR_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
 
 	/* check if it is a stable status, otherwise schedule next check */
-	if (cm->f.DELAY) {																		// status is currently changing
+	if (cm->sf.DELAY) {																		// status is currently changing
 		cm->msg_type = STA_INFO::SND_ACTUATOR_STATUS_AGAIN;									// send next time a info status message
-		cm->msg_delay.set(cm->sm_delay.remain() + 100);									// check again when timer is finish
+		cm->msg_delay.set(cm->status_delay);												// check again when message timer has finished
 
 	} else cm->msg_type = STA_INFO::NOTHING;												// no need for next time
-
 }
 
 

@@ -83,6 +83,7 @@ namespace LIST_ANSWER {
 * 0x02 00 ff 0a * - ACK
 * 0x02 00 ff 0e * - ACK_AES
 * 0x02 01 ff 0e * - ACK_STATUS
+* 0x02 01 ff 0f * - ACK_STATUS_SUM
 * 0x02 02 ff 0a * - ACK2
 * 0x02 04 ff 11 * - AES_REQ
 * 0x02 80 ff 0a * - NACK
@@ -102,6 +103,7 @@ namespace LIST_ANSWER {
 * 0x10 03 ff ff * - INFO_PARAM_RESPONSE_SEQ, no fixed length
 * 0x10 04 ff ff * - INFO_PARAMETER_CHANGE, no fixed length
 * 0x10 06 ff 0e * - INFO_ACTUATOR_STATUS
+* 0x10 06 ff 0f * - INFO_ACTUATOR_STATUS_SUM
 * 0x10 0A ff 0d * - INFO_TEMP
 * -------------------------------------------
 * 0x11 ff ff ff * INSTRUCTION_MSG = 0x11
@@ -229,6 +231,11 @@ namespace MSG_TYPE {
 		* m> 0E  16  80   02   63 19 64  33 11 22  01     01  00  00   80   */
 		ACK_STATUS = 0x0201ff0e,
 
+		/* 0x02 01 ff 0f * - ACK_STATUS_SUM
+		*    LEN CNT FLAG BY03 SND       RCV       BY10   CNL VAL DUL  RSSI SUM
+		* m> 0F  16  80   02   63 19 64  33 11 22  01     01  00  00   80   00 */
+		ACK_STATUS_SUM = 0x0201ff0f,
+
 		/* 0x02 02 ff 0a * - ACK2
 		*    LEN CNT FLAG BY03 SND       RCV       BY10  
 		* m> 0A  16  80   02   63 19 64  33 11 22  02       */
@@ -308,7 +315,12 @@ namespace MSG_TYPE {
 		*    LEN CNT FLAG BY03 SND       RCV       By10  CNL  STATUS  UNKNOWN  RSSI
 		* l> 0E  42  A0   10   23 70 D8  63 19 64  06    01   00      00       80  */
 		INFO_ACTUATOR_STATUS = 0x1006ff0e,
-		
+
+		/* 0x10 06 ff 0f * - INFO_ACTUATOR_STATUS_SUM
+		*    LEN CNT FLAG BY03 SND       RCV       By10  CNL  STATUS  UNKNOWN  RSSI
+		* l> 0E  42  A0   10   23 70 D8  63 19 64  06    01   00      00       80  */
+		INFO_ACTUATOR_STATUS_SUM = 0x1006ff0f,
+
 		/* 0x10 0A ff 0d * - INFO_TEMP
 		*    LEN CNT FLAG BY03 SND       RCV       By10  SET/ACT  ERR/VALVE/MODE
 		* l> 0D  42  A0   10   23 70 D8  63 19 64  0A    01 00    00             */

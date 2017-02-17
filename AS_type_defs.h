@@ -48,19 +48,32 @@ typedef struct ts_cm_status {
 	// everything value related
 	uint8_t   value;																		// module status byte, needed for list3 modules to answer status requests
 	uint8_t   set_value;																	// status to set on the Relay channel
-	uint8_t   sum_value;																	// summary value for virtual channels
+	uint8_t   *sum_value = NULL;															// summary value for virtual channels
 
 	// message flag
 	union {
 		struct {
-			uint8_t NA : 3;
-			uint8_t UP : 1;
-			uint8_t DOWN : 1;
-			uint8_t ERROR : 1;
-			uint8_t DELAY : 1;
-			uint8_t LOWBAT : 1;
-		} f;
-		uint8_t   flag;																		// module down up low battery byte
+			uint8_t                : 1;
+			uint8_t ERROR_POWER	   : 1;		//"12.1" size = "0.1" param = "ERROR_POWER" / >
+			uint8_t ERROR_SABOTAGE : 1;		//"12.2" size = "0.1" param = "ERROR_SABOTAGE" / >
+			uint8_t ERROR_BATTERY  : 1;		//"12.3" size = "0.1" param = "ERROR_BATTERY" / >
+			uint8_t                : 4;	
+		} sn;								// sensor
+		struct {
+			uint8_t                : 1;
+			uint8_t ERROR_OVERLOAD : 1;		//"12.1" size = "0.1" param = "ERROR_OVERLOAD" / >
+			uint8_t ERROR_OVERHEAT : 1;		//"12.2" size = "0.1" param = "ERROR_OVERHEAT" / >
+			uint8_t ERROR_REDUCED  : 1;		//"12.3" size = "0.1" param = "ERROR_REDUCED" / >
+			uint8_t                : 4;		//"12.4" size = "0.3" param = "STATE_FLAGS" / >     UP, DOWN, DELAY(could be battery)
+		} dm;								// dimmer
+		struct {
+			uint8_t                : 4;
+			uint8_t UP             : 1;		//"12.4" size = "0.3" param = "STATE_FLAGS" / >     UP, DOWN, DELAY(could be battery)
+			uint8_t DOWN           : 1;
+			uint8_t DELAY          : 1;
+			uint8_t LOWBAT         : 1;
+		} sf;
+		uint8_t flag = 0;																	// module down up low battery byte
 	};
 
 	// support for channel module

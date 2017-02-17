@@ -744,17 +744,34 @@ void AS::send_ACK(void) {
 * @param stat
 * @param actn
 */
-void AS::send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t actn) {
+void AS::send_ACK_STATUS(uint8_t *chnl, uint8_t *stat, uint8_t *flag, uint8_t *sum) {
+	//<frame id = "ACK_STATUS" direction = "from_device" event = "true" type = "0x02" subtype = "1" subtype_index = "9" channel_field = "10">
+	//	<parameter type = "integer" index = "11.0" size = "1.0" param = "LEVEL" / >
+	//	<parameter type = "integer" index = "12.1" size = "0.3" param = "ERROR" / >
+	//	<parameter type = "integer" index = "12.1" size = "0.1" param = "ERROR_OVERLOAD" / >
+	//	<parameter type = "integer" index = "12.2" size = "0.1" param = "ERROR_OVERHEAT" / >
+	//	<parameter type = "integer" index = "12.3" size = "0.1" param = "ERROR_REDUCED" / >
+	//	<parameter type = "integer" index = "12.4" size = "0.3" param = "STATE_FLAGS" / >     UP, DOWN, DELAY (could be battery)
+	//	<parameter type = "integer" index = "12.4" size = "0.2" param = "DIRECTION_FLAGS" / > UP, DOWN
+	//                                       12.7                                             Battery
+	//	<parameter type = "integer" index = "14.0" size = "1.0" param = "LEVEL_REAL" / >
+	//< / frame>
+	// byte 13 is RSSI
+	// 0F 8D 80 02   1E 7A AD    63 19 64   01 01 14 00 3A 14
+
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ACK only while required
-	s_m0201xx *msg = &snd_msg.m0201xx;														// short hand to ACK Status struct while easier to fill
-	msg->MSG_CNL = chnl;
-	msg->MSG_STATUS = stat;
-	*(uint8_t*)&msg->MSG_FLAG = actn;
-	msg->MSG_FLAG.LOWBAT = bat->get_status();
-	msg->MSG_RSSI = com->rssi;
+	snd_msg.buf[11] = *chnl;																// add the channel
+	snd_msg.buf[12] = *stat;																// and the status/value
+	snd_msg.buf[13] = *flag;																// flags are prepared in the status poll function
+	if (bat->get_status()) snd_msg.buf[13] |= 0x80;											// highest bit is battery flag
+	else snd_msg.buf[13] &= 0x7F;
+	snd_msg.buf[14] = com->rssi;															// add rssi information
+	snd_msg.buf[15] = *sum;																	// we can add it to the buffer in any case, while length byte is set below
 
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
-	snd_msg.type = MSG_TYPE::ACK_STATUS;													// length and flags are set within the snd_msg struct
+	if (sum) snd_msg.type = MSG_TYPE::ACK_STATUS_SUM;										// length and flags are set within the snd_msg struct
+	else snd_msg.type = MSG_TYPE::ACK_STATUS;
+	// todo: AES ACK
 }
 void AS::send_ACK2(void) {
 }
@@ -898,17 +915,32 @@ void AS::send_INFO_PARAMETER_CHANGE() {
 * @param state
 * @param flag: TODO: to be specified
 */
-void AS::send_INFO_ACTUATOR_STATUS(uint8_t cnl, uint8_t stat, uint8_t flag) {
-	s_m1006xx *msg = &snd_msg.m1006xx;														// struct is easier to fill
-	s_mBody *rcvBody = &rcv_msg.mBody;														// short hand to received string
+void AS::send_INFO_ACTUATOR_STATUS(uint8_t *chnl, uint8_t *stat, uint8_t *flag, uint8_t *sum) {
+	//<frame id = "INFO_LEVEL" direction = "from_device" allowed_receivers = "BROADCAST,CENTRAL,OTHER" event = "true" type = "0x10" subtype = "6" subtype_index = "9" channel_field = "10">
+	//	<parameter type = "integer" index = "11.0" size = "1.0" param = "LEVEL" / >
+	//	<parameter type = "integer" index = "12.1" size = "0.3" param = "ERROR" / >
+	//	<parameter type = "integer" index = "12.1" size = "0.1" param = "ERROR_OVERLOAD" / >
+	//	<parameter type = "integer" index = "12.2" size = "0.1" param = "ERROR_OVERHEAT" / >
+	//	<parameter type = "integer" index = "12.3" size = "0.1" param = "ERROR_REDUCED" / >
+	//	<parameter type = "integer" index = "12.4" size = "0.3" param = "STATE_FLAGS" / >
+	//	<parameter type = "integer" index = "12.4" size = "0.2" param = "DIRECTION_FLAGS" / >
+	//	<parameter type = "integer" index = "14.0" size = "1.0" param = "LEVEL_REAL" / >
+	//< / frame>
+		// byte 13 is RSSI                          CNL STAT FLAG RSSI SUM
+	// 0F  00 A0 10   33 11 24   63 19 64  06   01  00   00   64   00
 
-	msg->MSG_CNL = cnl;																		// copy in the channel
-	msg->MSG_STAT = stat;																	// the status of the channel
-	msg->UNKNOWN = flag;																	// needs investigation
-	msg->MSG_RSSI = com->rssi;																// received rssi value
+	snd_msg.buf[11] = *chnl;																// add the channel
+	snd_msg.buf[12] = *stat;																// and the status/value
+	snd_msg.buf[13] = *flag;																// flags are prepared in the status poll function
+	if (bat->get_status()) snd_msg.buf[13] |= 0x80;											// highest bit is battery flag
+	else snd_msg.buf[13] &= 0x7F;
+	snd_msg.buf[14] = com->rssi;															// add rssi information
+	snd_msg.buf[15] = *sum;																	// we can add it to the buffer in any case, while length byte is set below
 
 	snd_msg.active = MSG_ACTIVE::PAIR;														// for address, counter and to make it active
-	snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;											// length and flags are set within the snd_msg struct
+	if (sum) snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS_SUM;								// length and flags are set within the snd_msg struct
+	else snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;
+	// todo: check AES
 }
 
 void AS::send_INFO_TEMP() {

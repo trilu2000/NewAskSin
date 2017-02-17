@@ -16,7 +16,8 @@ struct s_sum_cnl {
 	uint8_t value[3];																	// holds the value of the specific channel
 	uint8_t logic[3];																	// holds the logic flag of the specific channel
 };
-extern s_sum_cnl sum_cnl[];																// only once needed, therefore it si defined in cm_dimmer.cpp
+static s_sum_cnl dm_sum_cnl[3];															// only once needed, therefore it is defined as static
+static uint8_t dm_sum_cnl_value;														// we need one byte to keep track of the sum value
 
 
 /* list 1/3 definition for dimmer channel module */

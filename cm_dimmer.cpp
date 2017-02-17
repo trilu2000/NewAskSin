@@ -8,10 +8,6 @@
 
 #include "newasksin.h"
 
-//waitTimer adj_timer;																		// timer for dim-up/down
-//uint32_t adj_delay;																			// calculate and store the adjustment time
-
-static s_sum_cnl sum_cnl[4];
 
 /**------------------------------------------------------------------------------------------------------------------------
 *- mandatory functions for every new module to communicate within HM protocol stack -
@@ -36,8 +32,10 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel, uint8_t vi
 	lstP.len = sizeof(cm_dimmer_PeerReg);
 	lstP.val = new uint8_t[lstP.len];														// creates an empty array new uint8_t[lstP.len]();
 
+	/* as the dimmer has virtual channels, we need to take care in the setup */
 	vrt_grp = virtual_group;																// remember the virtual group this instance belong too
 	vrt_cnl = virtual_channel;																// remember the virtual channel in group this instance belong too
+	cms.sum_value = &dm_sum_cnl_value;														// set the sum value to the pointer in the state machine struct
 }
 
 /**------------------------------------------------------------------------------------------------------------------------
@@ -115,14 +113,13 @@ void CM_DIMMER::info_config_change(uint8_t channel) {
 	if (lstC.cnl != channel) return;
 
 	/* assign list1 variables and initialize the hardware */
-	// todo - check which registers are set by configuring the internal key
-	sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;								// store the logic combination of the virtual channel in the struct
+	dm_sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;								// store the logic combination of the virtual channel in the struct
 
-	/* random can be 0 to 7 seconds */
+	/* set the status message timer, random can be 0 to 7 seconds */
 	get_random((uint8_t*)&cms.status_delay);
 	cms.status_delay %= l1->STATUSINFO_RANDOM * 1000;
-	//cms.status_delay = rand() % (l1->STATUSINFO_RANDOM * 1000);
 	cms.status_delay += l1->STATUSINFO_MINDELAY * 1000;
+
 	DBG(DM, F("DM"), lstC.cnl, F(":info_config_change cnl: "), channel, F(", delay: "), cms.status_delay, '\n');
 }
 
@@ -340,62 +337,64 @@ void CM_DIMMER::adjust_status(void) {
 	//             "LOGIC_INVERSPLUS", "LOGIC_INVERSMINUS", "LOGIC_INVERSMUL"
 	// phyLevel = (((0% o Ch1) o Ch2) o Ch3) 
 	int32_t calc_value = 0;																	// define a temp variable to calculate the summary channel
-	sum_cnl[vrt_grp].value[vrt_cnl] = cms.value;											// store the status value of the channel in the virtual channel struct
+	dm_sum_cnl[vrt_grp].value[vrt_cnl] = cms.value;
+
 	for (uint8_t i = 0; i < 3; i++) {
-		if (sum_cnl[vrt_grp].logic[vrt_cnl] == 0) {				/* LOGIC_INACTIVE */
+
+		if        (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 0) {		/* LOGIC_INACTIVE */
 			continue;																		// inaktiv: Der Kanal wird bei der Verkn¸pfung ignoriert
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 1) {		/* LOGIC_OR */
-			calc_value |= sum_cnl[vrt_grp].value[vrt_cnl];									// OR: Das Verkn¸pfungsergebnis ist der hˆhere von beiden Pegeln.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 1) {		/* LOGIC_OR */
+			calc_value |= dm_sum_cnl[vrt_grp].value[vrt_cnl];								// OR: Das Verkn¸pfungsergebnis ist der hˆhere von beiden Pegeln.
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 2) {		/* LOGIC_AND */
-			calc_value &= sum_cnl[vrt_grp].value[vrt_cnl];									// AND: Das Verkn¸pfungsergebnis ist der niedrigere von beiden Pegeln.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 2) {		/* LOGIC_AND */
+			calc_value &= dm_sum_cnl[vrt_grp].value[vrt_cnl];								// AND: Das Verkn¸pfungsergebnis ist der niedrigere von beiden Pegeln.
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 3) {		/* LOGIC_XOR */
-			calc_value ^= sum_cnl[vrt_grp].value[vrt_cnl];									// XOR: Ist nur einer der Pegel grˆﬂer als 0 %, ist dieser Pegel auch das Verkn¸pfungsergebnis. In den anderen F‰llen ist das Verkn¸pfungsergebnis 0 %.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 3) {		/* LOGIC_XOR */
+			calc_value ^= dm_sum_cnl[vrt_grp].value[vrt_cnl];								// XOR: Ist nur einer der Pegel grˆﬂer als 0 %, ist dieser Pegel auch das Verkn¸pfungsergebnis. In den anderen F‰llen ist das Verkn¸pfungsergebnis 0 %.
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 4) {		/* LOGIC_NOR */
-			calc_value = ~(calc_value | sum_cnl[vrt_grp].value[vrt_cnl]);					// NOR: Es wird die Verkn¸pfung OR ausgef¸hrt und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 4) {		/* LOGIC_NOR */
+			calc_value = ~(calc_value | dm_sum_cnl[vrt_grp].value[vrt_cnl]);				// NOR: Es wird die Verkn¸pfung OR ausgef¸hrt und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 5) {		/* LOGIC_NAND */
-			calc_value = ~(calc_value & sum_cnl[vrt_grp].value[vrt_cnl]);					// NAND: Es wird die Verkn¸pfung AND ausgef¸hrt und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 5) {		/* LOGIC_NAND */
+			calc_value = ~(calc_value & dm_sum_cnl[vrt_grp].value[vrt_cnl]);				// NAND: Es wird die Verkn¸pfung AND ausgef¸hrt und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 6) {		/* LOGIC_ORINVERS */
-			calc_value |= ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// OR_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung OR ausgef¸hrt.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 6) {		/* LOGIC_ORINVERS */
+			calc_value |= ~(dm_sum_cnl[vrt_grp].value[vrt_cnl]);							// OR_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung OR ausgef¸hrt.
 		
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 7) {		/* LOGIC_ANDINVERS */
-			calc_value &= ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// AND_INVERS: Der zu verkn¸pfende Kanal(rechts vom Ñoì) wird zuerst invertiert(100 % -Pegel) und anschlieﬂend die Verkn¸pfung AND ausgef¸hrt.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 7) {		/* LOGIC_ANDINVERS */
+			calc_value &= ~(dm_sum_cnl[vrt_grp].value[vrt_cnl]);							// AND_INVERS: Der zu verkn¸pfende Kanal(rechts vom Ñoì) wird zuerst invertiert(100 % -Pegel) und anschlieﬂend die Verkn¸pfung AND ausgef¸hrt.
 		
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 8) {		/* LOGIC_PLUS */
-			calc_value += sum_cnl[vrt_grp].value[vrt_cnl];									// PLUS: Die beiden Pegel werden addiert (max. 100 %).
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 8) {		/* LOGIC_PLUS */
+			calc_value += dm_sum_cnl[vrt_grp].value[vrt_cnl];								// PLUS: Die beiden Pegel werden addiert (max. 100 %).
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 9) {		/* LOGIC_MINUS */
-			calc_value -= sum_cnl[vrt_grp].value[vrt_cnl];									// MINUS: Die beiden Pegel werden subtrahiert (min. 0 %).
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 9) {		/* LOGIC_MINUS */
+			calc_value -= dm_sum_cnl[vrt_grp].value[vrt_cnl];								// MINUS: Die beiden Pegel werden subtrahiert (min. 0 %).
 		
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 10) {		/* LOGIC_MUL */
-			calc_value *= sum_cnl[vrt_grp].value[vrt_cnl];									// MULTI: Die beiden Pegel werden multipliziert.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 10) {		/* LOGIC_MUL */
+			calc_value *= dm_sum_cnl[vrt_grp].value[vrt_cnl];								// MULTI: Die beiden Pegel werden multipliziert.
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 11) {		/* LOGIC_PLUSINVERS */
-			calc_value += ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// PLUS_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung PLUS ausgef¸hrt.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 11) {		/* LOGIC_PLUSINVERS */
+			calc_value += ~(dm_sum_cnl[vrt_grp].value[vrt_cnl]);							// PLUS_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung PLUS ausgef¸hrt.
 		
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 12) {		/* LOGIC_MINUSINVERS */
-			calc_value -= ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// MINUS_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung MINUS ausgef¸hrt.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 12) {		/* LOGIC_MINUSINVERS */
+			calc_value -= ~(dm_sum_cnl[vrt_grp].value[vrt_cnl]);							// MINUS_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung MINUS ausgef¸hrt.
 		
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 13) {		/* LOGIC_MULINVERS */
-			calc_value *= ~(sum_cnl[vrt_grp].value[vrt_cnl]);								// MULTI_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung MULTI ausgef¸hrt.
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 13) {		/* LOGIC_MULINVERS */
+			calc_value *= ~(dm_sum_cnl[vrt_grp].value[vrt_cnl]);							// MULTI_INVERS: Der zu verkn¸pfende Kanal (rechts vom Ñoì) wird zuerst invertiert (100 % - Pegel) und anschlieﬂend die Verkn¸pfung MULTI ausgef¸hrt.
 		
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 14) {		/* LOGIC_INVERSPLUS */
-			calc_value += sum_cnl[vrt_grp].value[vrt_cnl];									// INVERS_PLUS: Die beiden Pegel werden addiert (max. 100 %) und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 14) {		/* LOGIC_INVERSPLUS */
+			calc_value += dm_sum_cnl[vrt_grp].value[vrt_cnl];								// INVERS_PLUS: Die beiden Pegel werden addiert (max. 100 %) und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
 			if (calc_value > 200) calc_value = 200;
 			calc_value = (uint8_t)~calc_value;
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 15) {		/* LOGIC_INVERSMINUS */
-			calc_value -= sum_cnl[vrt_grp].value[vrt_cnl];									// INVERS_MINUS: Die beiden Pegel werden subtrahiert (min. 0 %) und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 15) {		/* LOGIC_INVERSMINUS */
+			calc_value -= dm_sum_cnl[vrt_grp].value[vrt_cnl];								// INVERS_MINUS: Die beiden Pegel werden subtrahiert (min. 0 %) und das Ergebnis anschlieﬂend invertiert (100 % - Pegel).
 			if (calc_value < 0) calc_value = 0;
 			calc_value = (uint8_t)~calc_value;
 
-		} else if (sum_cnl[vrt_grp].logic[vrt_cnl] == 16) {		/* LOGIC_INVERSMUL */
-			calc_value *= sum_cnl[vrt_grp].value[vrt_cnl];									// INVERS_MULTI: Die beiden Pegel werden multipliziert und das Ergebnis anschlieﬂend invertiert(100 % -Pegel).
+		} else if (dm_sum_cnl[vrt_grp].logic[vrt_cnl] == 16) {		/* LOGIC_INVERSMUL */
+			calc_value *= dm_sum_cnl[vrt_grp].value[vrt_cnl];								// INVERS_MULTI: Die beiden Pegel werden multipliziert und das Ergebnis anschlieﬂend invertiert(100 % -Pegel).
 			if (calc_value > 200) calc_value = 200;
 			calc_value = (uint8_t)~calc_value;
 
@@ -403,8 +402,8 @@ void CM_DIMMER::adjust_status(void) {
 
 		if (calc_value > 200) calc_value = 200;												// after calculation we need to ensure that max not too big
 		if (calc_value < 0) calc_value = 0;													// or if below it should be 0
-
-		//dbg << "v: " << sum_cnl[vrt_grp].value[vrt_cnl] << ", l: " << sum_cnl[vrt_grp].logic[vrt_cnl] << ", c: " << calc_value << '\n';
+		dm_sum_cnl_value = calc_value;														// make it globally available
+		//dbg << "v: " << dm_sum_cnl[vrt_grp].value[vrt_cnl] << ", l: " << dm_sum_cnl[vrt_grp].logic[vrt_cnl] << ", c: " << calc_value << '\n';
 	}
 
 	/* check if we have a quadratic approach to follow and call the main sketch to set the value on the HW */
@@ -508,7 +507,7 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 		} 
 
 		/* if we are in on mode but the ON_LEVEL_PRIO is set to normal, we need to adjust the brightness */
-		if ((cms.sm_stat == DM_JT::ON) && (!l3->ON_LEVEL_PRIO)) {
+		if ((cms.sm_stat == DM_JT::ON) && (cms.sm_set == DM_JT::ON) && (!l3->ON_LEVEL_PRIO)) {
 			cms.set_value = l3->ON_LEVEL;													// set a new brightness value
 			DBG(DM, F("DM"), lstC.cnl, F(":overwrite on_level_prio\n"));
 		}
@@ -677,17 +676,14 @@ void CM_DIMMER::poll_offdelay(void) {
 		} else {				// low value
 			cms.aj_delay.set((l3->OFFDELAY_NEWTIME + 1) * 50);								// set the time based on the conversation type
 			old_new_flag = cms.value;														// remember the initial brightness
-			//if (cm_sta.value - l3->OFFDELAY_STEP > l3->ON_MIN_LEVEL) cm_sta.set_value = cm_sta.value - l3->OFFDELAY_STEP;// check if we are above the minimum level
-			//else cm_sta.set_value = l3->ON_MIN_LEVEL;										// set the brightness level
-			if (cms.value - l3->OFFDELAY_STEP > 0) cms.set_value = cms.value - l3->OFFDELAY_STEP;// check if we are above the minimum level
-			else cms.set_value = 0;															// set the brightness level
+			if (cms.value > (cms.value - l3->OFFDELAY_STEP)) cms.set_value = cms.value - l3->OFFDELAY_STEP;// check if we are above the minimum level
+			else cms.set_value = l3->ON_MIN_LEVEL;											// set the brightness level
 
 		}
-		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- cur: "), cms.value, F(", set: "), cms.set_value, F(", new_old: "), old_new_flag, F(", off_step: "), l3->OFFDELAY_STEP, F(", new_time: "), l3->OFFDELAY_NEWTIME, F(", old_time: "), l3->OFFDELAY_OLDTIME, ' ', _TIME, '\n');
+		//DBG(DM, F("DM"), lstC.cnl, F(":offdelay- cur: "), cms.value, F(", set: "), cms.set_value, F(", new_old: "), old_new_flag, F(", off_step: "), l3->OFFDELAY_STEP, F(", new_time: "), l3->OFFDELAY_NEWTIME, F(", old_time: "), l3->OFFDELAY_OLDTIME, ' ', _TIME, '\n');
 	}
 
 	if (!cms.sm_delay.done()) return;														// leave while wait timer is active
-	if (old_new_flag) cms.set_value = old_new_flag;											// restore the initial brightness, if blink was ended with a low phase
 
 	if (cms.sm_active == 1) {
 		/* there is a special option which let the led blink while in offdelay state, so check the flag and set further procedure accordingly */
@@ -698,6 +694,7 @@ void CM_DIMMER::poll_offdelay(void) {
 		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- time: "), byteTimeCvt(l3->OFFDELAY_TIME), F(", blink: "), l3->OFFDELAY_BLINK, ' ', _TIME, '\n');
 
 	} else if (cms.sm_active == 2) {
+		if (old_new_flag) cms.set_value = old_new_flag;										// restore the initial brightness, if blink was ended with a low phase
 		cms.sm_active = 3;																	// on next poll goto close the action
 		DBG(DM, F("DM"), lstC.cnl, F(":offdelay- blink end "), _TIME, '\n');
 
