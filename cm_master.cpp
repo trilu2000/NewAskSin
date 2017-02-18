@@ -76,7 +76,7 @@ void CM_MASTER::set_toggle(void) {
 * request is forwarded by the AS:processMessage function
 */
 void CM_MASTER::CONFIG_PEER_ADD(s_m01xx01 *buf) {
-	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
+	uint8_t temp_peer[4];																	// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
 
 	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
@@ -108,7 +108,7 @@ void CM_MASTER::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 * request is forwarded by the AS:processMessage function
 */
 void CM_MASTER::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
-	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
+	uint8_t temp_peer[4];																	// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
 
 	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
