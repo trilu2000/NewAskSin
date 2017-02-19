@@ -31,7 +31,7 @@
 //#define AS_DBG					// AskSin class debug (AS.cpp)
 //#define CC_DBG					// Communication class (AS_communication.cpp)
 #define SN_DBG					// Send function (AS.cpp)
-//#define RV_DBG					// Receive function (AS.cpp)
+#define RV_DBG					// Receive function (AS.cpp)
 //#define CB_DBG					// Config button class (AS_conf_button.cpp)
 //#define LD_DBG					// Status led class (AS_status_led.cpp)
 
