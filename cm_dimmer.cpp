@@ -203,7 +203,9 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 	jt->ACTION_TYPE = DM_ACTION::INACTIVE;													// action type to off otherwise the polling function will overwrite
 	cms.sm_set = cms.sm_stat;																// stay in the current position
 
-	/* fill the trigger 11 struct depending on the message length and set the active flag accordingly */
+	/* fill the trigger 11 struct depending on the message length and set the active flag accordingly 
+	* m> 0E 18 A0 11 45 FB FA 33 11 24 02 01 6A 00 A0 (79357) */
+
 	tr11.value = buf->VALUE;																// value to be set
 	tr11.ramp_time = (buf->MSG_LEN >= 14) ? buf->RAMP_TIME : 0;								// get the ramp time if message len indicates that it is included
 	tr11.dura_time = (buf->MSG_LEN >= 16) ? buf->DURA_TIME : 0;								// get the dura time if message len indicates that it is included
