@@ -101,9 +101,9 @@ void firstTimeStart(void) {
 	*  first we need an array with the peer address and in a second step it is written into the respective channel.
 	*  set_peer needs two parameters, the index which reflects the slot where the peer is written to and second the peer 
 	*  address as array. please note: no defaults a written into the respective peer list, this has to be done manually */
-	uint8_t temp[] = { 0x01,0x02,0x01,0x01, };												// declare and fill array
-	cmm[1]->peerDB.set_peer(0, temp);														// write it to index 0
-	temp[2] = 0x02;																			// adjust array content
+//	uint8_t temp[] = { 0x01,0x02,0x01,0x01, };												// declare and fill array
+//	cmm[1]->peerDB.set_peer(0, temp);														// write it to index 0
+//	temp[2] = 0x02;																			// adjust array content
 	//cmm[1]->peerDB.set_peer(1, temp);														// write to index 1
 	//temp[2] = 0x03;
 	//cmm[1]->peerDB.set_peer(2, temp);
