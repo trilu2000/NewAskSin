@@ -504,6 +504,7 @@ void AS::snd_poll(void) {
 		if (!sm->temp_max_retr)
 			sm->temp_max_retr = (sm->mBody.FLAG.BIDI) ? sm->max_retr : 1;					// send once while not requesting an ACK
 
+		sm->mBody.FLAG.CFG = 1;
 	}
 
 

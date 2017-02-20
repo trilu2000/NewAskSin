@@ -172,7 +172,7 @@ void CM_MASTER::CONFIG_START(s_m01xx05 *buf) {
 	} else {
 		hm->send_NACK();																	// something wrong
 	}
-	DBG(CM, F("CM:CONFIG_START, cnl:"), buf->MSG_CNL, '/', cm->list->cnl, F(", lst:"), buf->PARAM_LIST, '/', cm->list->cnl, F(", peer:"), _HEX(buf->PEER_ID, 4), F(", idx:"), cm->idx_peer, '\n');
+	DBG(CM, F("CM:CONFIG_START, cnl:"), buf->MSG_CNL, '/', cm->list->cnl, F(", lst:"), buf->PARAM_LIST, '/', cm->list->lst, F(", peer:"), _HEX(buf->PEER_ID, 4), F(", idx:"), cm->idx_peer, '\n');
 }
 /*
 * @brief Config end indicates that changes are written to the respective list and no access is needed any more
@@ -372,28 +372,60 @@ void process_send_status_poll(s_cm_status *cm, uint8_t cnl) {
 
 	/* prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80 */
 	cm->sf.UP = (cm->sm_set == 0x02) ? 1 : 0;												// RAMPON
-	if (cm->sm_set == 0x02) dbg << "up\n";
+	//if (cm->sm_set == 0x02) dbg << "up\n";
 	cm->sf.DOWN = (cm->sm_set == 0x05) ? 1 : 0;												// RAMPOFF
-	if (cm->sm_set == 0x02) dbg << "down\n";
+	//if (cm->sm_set == 0x02) dbg << "down\n";
 	cm->sf.DELAY = (!cm->sm_delay.done()) ? 1 : 0;											// timer is running
-	if (!cm->sm_delay.done()) dbg << "delay\n";
+	//if (!cm->sm_delay.done()) dbg << "delay\n";
+
+	/* compose the message, beside flags and type the ack_status and aktuator_status are identical */
+	snd_msg.buf[11] = cnl;																	// add the channel
+	snd_msg.buf[12] = cm->value;															// and the status/value
+	snd_msg.buf[13] = cm->flag;																// flags are prepared in the status poll function
+	if (bat->get_status()) snd_msg.buf[13] |= 0x80;											// highest bit is battery flag
+	else snd_msg.buf[13] &= 0x7F;
+	snd_msg.buf[14] = com->rssi;															// add rssi information
+	snd_msg.buf[15] = *cm->sum_value;														// we can add it to the buffer in any case, while length byte is set below
+
 
 	/* check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status */
-	if (cm->msg_type == STA_INFO::SND_ACK_STATUS)
-		hm->send_ACK_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
+	if (cm->msg_type == STA_INFO::SND_ACK_STATUS_PAIR) {
+		snd_msg.active = MSG_ACTIVE::ANSWER;												// ack is always an answer, set address, counter and to make it active
+		//hm->send_ACK_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
 
-	else if (cm->msg_type == STA_INFO::SND_ACTUATOR_STATUS)
-		hm->send_INFO_ACTUATOR_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
+	} else if (cm->msg_type == STA_INFO::SND_ACK_STATUS_PEER) {
+		snd_msg.active = MSG_ACTIVE::ANSWER;												// ack is always an answer, set address, counter and to make it active
+		//hm->send_ACK_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
 
-	else if (cm->msg_type == STA_INFO::SND_ACTUATOR_STATUS_AGAIN)
-		hm->send_INFO_ACTUATOR_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
+		cm->msg_type = STA_INFO::SND_ACTUATOR_STATUS;										// message to peer was initiated, we need to send the status also to the master
+		cm->msg_delay.set(cm->status_delay);												// with some delay
+
+	} else if (cm->msg_type == STA_INFO::SND_ACTUATOR_STATUS_ANSWER) {
+		snd_msg.active = MSG_ACTIVE::ANSWER_BIDI;											// answer to a status request
+		//hm->send_INFO_ACTUATOR_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
+
+	} else if (cm->msg_type == STA_INFO::SND_ACTUATOR_STATUS) {
+		snd_msg.active = MSG_ACTIVE::PAIR;													// initial status send to pair
+		//hm->send_INFO_ACTUATOR_STATUS(&cnl, &cm->value, &cm->flag, cm->sum_value);
+
+	}
+
+	if ((cm->msg_type == STA_INFO::SND_ACK_STATUS_PAIR) || (cm->msg_type == STA_INFO::SND_ACK_STATUS_PEER)) {
+		if (cm->sum_value) snd_msg.type = MSG_TYPE::ACK_STATUS_SUM;							// length and flags are set within the snd_msg struct
+		else snd_msg.type = MSG_TYPE::ACK_STATUS;
+		if (!rcv_msg.mBody.FLAG.BIDI) snd_msg.active = MSG_ACTIVE::NONE;
+
+	} else 	if ((cm->msg_type == STA_INFO::SND_ACTUATOR_STATUS_ANSWER) || (cm->msg_type == STA_INFO::SND_ACTUATOR_STATUS)) {
+		if (cm->sum_value) snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS_SUM;				// length and flags are set within the snd_msg struct
+		else snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;
+
+	}
+
 
 	/* check if it is a stable status, otherwise schedule next check */
-	if (cm->sf.DELAY) {																		// status is currently changing
-		cm->msg_type = STA_INFO::SND_ACTUATOR_STATUS_AGAIN;									// send next time a info status message
-		cm->msg_delay.set(cm->status_delay);												// check again when message timer has finished
-
-	} else cm->msg_type = STA_INFO::NOTHING;												// no need for next time
+	cm->msg_type = STA_INFO::SND_ACTUATOR_STATUS;
+	if (cm->sf.DELAY) cm->msg_delay.set(cm->sm_delay.remain() + 100);						// status is currently changing, check again when message timer has finished
+	else cm->msg_type = STA_INFO::NOTHING;													// no need for next time
 }
 
 
@@ -415,8 +447,9 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		cmm[i]->lstP.ee_addr = ee_start_addr;											// write the eeprom address in the peer list
 		ee_start_addr += (cmm[i]->lstP.len * cmm[i]->peerDB.max);						// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
 
-																						// defaults loaded in the AS module init, on every time start
+		// defaults loaded in the AS module init, on every time start
 		DBG(CM, F("CM:prep_defaults, cnl:"), cmm[i]->lstC.cnl, F(", lst:"), cmm[i]->lstC.lst, F(", len:"), cmm[i]->lstC.len, F(", data:"), _HEX(cmm[i]->lstC.val, cmm[i]->lstC.len), '\n');
+		//DBG(CM, F("CM:prep_defaults, list_ptr: "), (uint16_t)cmm[i]->list[0], F(", "), (uint16_t)cmm[i]->list[1], F(", "), (uint16_t)cmm[i]->list[2], F(", "), (uint16_t)cmm[i]->list[3], F(", "), (uint16_t)cmm[i]->list[4], F(", "), (uint16_t)cmm[i]->list[5], F(", "), '\n');
 	}
 
 	for (uint8_t i = 0; i < cnl_max; i++) {												// step through all channels

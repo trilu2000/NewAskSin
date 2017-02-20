@@ -176,9 +176,17 @@ void serialEvent(void) {
 #endif
 }
 
+int freeRam() {
+	extern int __heap_start, *__brkval;
+	int v;
+	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
+}
+
 void dumpEEprom(void) {
 #ifdef DMP_DBG
 	uint16_t pAddr;
+	dbg << F("freeram: ") << freeRam() << '\n';
+	_delay_ms(500);
 
 	dbg << F("\nEEPROM content\n\n");
 	uint8_t *e = new uint8_t[32];
@@ -223,7 +231,6 @@ void dumpEEprom(void) {
 	delete e;
 #endif
 }
-
 
 
 

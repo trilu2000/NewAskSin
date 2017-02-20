@@ -26,9 +26,9 @@ POM *pom = new POM(POWER_MODE_NO_SLEEP);
 /*
 *  @brief cm_maintenance requires this declaration in the user sketch to make registers flexible
 */
-const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
-const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0x69, };
-const uint8_t cm_maintenance_ChnlLen = 6;
+const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x15,0x18,0x1E,0x71, };
+const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0xFF,0x00,0x01,0x84, };
+const uint8_t cm_maintenance_ChnlLen = 9;
 
 
 /*

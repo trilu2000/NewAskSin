@@ -233,8 +233,8 @@ void cm_switch::INSTRUCTION_SET(s_m1102xx *buf) {
 
 	if (tr11.dura_time) tr11.active = 1;													// set tr11 flag active to be processed in the poll function
 
-	cms.msg_type = STA_INFO::SND_ACK_STATUS;												// ACK should be send
-	cms.msg_delay.set(100);																// give some time
+	cms.msg_type = STA_INFO::SND_ACK_STATUS_PAIR;											// ACK should be send
+	cms.msg_delay.set(5);																	// give some time
 
 	DBG(SW, F("INSTRUCTION_SET, setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), '\n');
 }
@@ -309,8 +309,8 @@ void cm_switch::REMOTE(s_m40xxxx *buf) {
 		cms.set_value = (buf->COUNTER % 2) ? 0 : 200;										// set the relay status depending on message counter
 	}
 
-	cms.msg_type = STA_INFO::SND_ACK_STATUS;												// send next time a ack info message
-	cms.msg_delay.set(100);																	// wait a short time to set status
+	cms.msg_type = STA_INFO::SND_ACK_STATUS_PEER;											// send next time a ack info message
+	cms.msg_delay.set(5);																	// wait a short time to set status
 
 	/* some debug */
 	DBG(SW, F("trigger40, msgLng:"), buf->BLL.LONG, F(", msgCnt:"), buf->COUNTER, F(", ACTION_TYPE:"), l3->ACTION_TYPE, F(", curStat:"), tr40.cur, F(", nxtStat:"), tr40.nxt, '\n');
@@ -369,7 +369,7 @@ void cm_switch::SENSOR_EVENT(s_m41xxxx *buf) {
 	if (do_or_not) REMOTE((s_m40xxxx*)(bll_cnt - 10));
 	//if (do_or_not) REMOTE((s_m40xxxx*)(((uint8_t*)bll_cnt) - 10));
 	else {
-		cms.msg_type = STA_INFO::SND_ACK_STATUS;											// send next time a ack info message
-		cms.msg_delay.set(100);															// wait a short time to set status
+		cms.msg_type = STA_INFO::SND_ACK_STATUS_PEER;									// send next time a ack info message
+		cms.msg_delay.set(5);															// wait a short time to set status
 	}
 }

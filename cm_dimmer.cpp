@@ -24,13 +24,15 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel, uint8_t vi
 	lstC.reg = cm_dimmer_ChnlReg;															// pointer to the list1 register definition
 	lstC.def = cm_dimmer_ChnlDef;															// pointer to the list1 defaults definition
 	lstC.len = sizeof(cm_dimmer_ChnlReg);													// evaluating and storing the length of list1
-	lstC.val = new uint8_t[lstC.len];														// allocate the same space in memory as working area
+	static uint8_t t_lstC[sizeof(cm_dimmer_ChnlReg)];										// allocate the same space in memory as working area
+	lstC.val = t_lstC;																		// pointer to ram array
 
 	lstP.lst = 3;																			// setup the peer list (list3) with all dependencies
 	lstP.reg = cm_dimmer_PeerReg;															// same as list1
 	lstP.def = cm_dimmer_PeerDef;
 	lstP.len = sizeof(cm_dimmer_PeerReg);
-	lstP.val = new uint8_t[lstP.len];														// creates an empty array new uint8_t[lstP.len]();
+	static uint8_t t_lstP[sizeof(cm_dimmer_PeerReg)];
+	lstP.val = t_lstP;
 
 	/* as the dimmer has virtual channels, we need to take care in the setup */
 	vrt_grp = virtual_group;																// remember the virtual group this instance belong too
@@ -60,7 +62,7 @@ void CM_DIMMER::cm_init(void) {
 		cms.set_value = 0;
 		cms.sm_stat = cms.sm_set = DM_JT::OFF;
 	}
-	init_dimmer(vrt_grp, vrt_cnl, lstC.cnl);												// call external init function to set the output pins
+	init_dimmer(&vrt_grp, &vrt_cnl, &lstC.cnl);												// call external init function to set the output pins
 
 	/* initiate the status message of the channel */
 	cms.msg_delay.set(cms.status_delay);													// wait some time to settle the device
@@ -185,7 +187,7 @@ void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 * @brief Received message handling forwarded by AS::processMessage
 */
 void CM_DIMMER::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
-	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS;											// send next time a info status message
+	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS_ANSWER;									// send next time a info status message
 	cms.msg_delay.set(5);																	// wait a short time to set status
 
 	DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_STATUS_REQUEST\n"));
@@ -211,7 +213,7 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 	tr11.dura_time = (buf->MSG_LEN >= 16) ? buf->DURA_TIME : 0;								// get the dura time if message len indicates that it is included
 	tr11.active = 1;																		// something needs to be set
 
-	cms.msg_type = STA_INFO::SND_ACK_STATUS;												// ACK should be send
+	cms.msg_type = STA_INFO::SND_ACK_STATUS_PAIR;											// ACK should be send
 	cms.msg_delay.set(5);																	// give some time
 
 	DBG(DM, F("DM"), lstC.cnl, F(":INSTRUCTION_SET, setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), '\n');
@@ -415,7 +417,7 @@ void CM_DIMMER::adjust_status(void) {
 		calc_value /= 200;
 		if ((cms.value) && (!calc_value)) calc_value = 1;									// till 15 it is below 1, set to 1
 	} 
-	switch_dimmer(vrt_grp, vrt_cnl, lstC.cnl, calc_value);									// calling the external function to make it happen
+	switch_dimmer(&vrt_grp, &vrt_cnl, &lstC.cnl, (uint8_t*)&calc_value);						// calling the external function to make it happen
 	//DBG(DM, F("DM"), lstC.cnl, F(":adj val: "), cm_status.value, F(", set: "), cm_status.set_value, F(", quad: "), l1->CHARACTERISTIC, '\n';)
 }
 
@@ -548,8 +550,8 @@ void CM_DIMMER::do_jump_table(uint8_t *counter) {
 	}
 
 	/* prepare an answer message to be sent */
-	cms.msg_type = STA_INFO::SND_ACK_STATUS;												// send next time a ack info message
-	cms.msg_delay.set(5);																// wait a short time to set status
+	cms.msg_type = STA_INFO::SND_ACK_STATUS_PEER;											// send next time a ack info message
+	cms.msg_delay.set(5);																	// wait a short time to set status
 }
 void CM_DIMMER::do_updim(void) {
 	/* increase brightness by DIM_STEP but not over DIM_MAX_LEVEL */

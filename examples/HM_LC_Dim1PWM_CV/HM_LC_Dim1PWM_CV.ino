@@ -38,9 +38,9 @@ void loop() {
 
 
 //- user functions --------------------------------------------------------------------------------------------------------
-void CM_DIMMER::init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel) {
+void CM_DIMMER::init_dimmer(uint8_t *virtual_group, uint8_t *virtual_channel, uint8_t *channel) {
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
-	DBG(SER, F("initDim- vrt_grp: "), virtual_group, F(", vrt_cnl: "), virtual_channel, F(", cnl: "), channel, '\n');
+	DBG(SER, F("initDim- vrt_grp: "), *virtual_group, F(", vrt_cnl: "), *virtual_channel, F(", cnl: "), *channel, '\n');
 	
 	set_pin_output(&pin_D3);																// init the dimmer pin
 	power_timer2_enable();																	// enable the timer2 in power management
@@ -50,11 +50,11 @@ void CM_DIMMER::init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint
 	OCR2B = 0;
 }
 
-void CM_DIMMER::switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint8_t status) {
+void CM_DIMMER::switch_dimmer(uint8_t *virtual_group, uint8_t *virtual_channel, uint8_t *channel, uint8_t *status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
-	//DBG(SER, F("switchDim: "), cnl_group, channel, ", ", status, '\n' );
+	DBG(SER, F("switchDim: "), *virtual_group, *channel, ", ", *status, '\n' );
 
-	uint16_t x = status * 255;
+	uint16_t x = *status * 255;
 	x /= 200;																				// status = 0 to 200, but PWM needs 255 as maximum
 	OCR2B = x;																				// set the PWM value to the pin
 

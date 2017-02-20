@@ -16,7 +16,7 @@
 
 
 namespace STA_INFO {
-	enum E : uint8_t { NOTHING, SND_ACK_STATUS, SND_ACTUATOR_STATUS, SND_ACTUATOR_STATUS_AGAIN };
+	enum E : uint8_t { NOTHING, SND_ACK_STATUS_PAIR, SND_ACK_STATUS_PEER, SND_ACTUATOR_STATUS, SND_ACTUATOR_STATUS_ANSWER, };
 };
 
 const uint8_t list_max = 5;																	// max 5 lists per channel, list 0 to list 4
