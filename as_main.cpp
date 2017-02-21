@@ -254,8 +254,7 @@ void AS::process_message(void) {
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX1):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX2):
 				uint8_t *AES = pCM->lstC.ptr_to_val(0x08);
-				if (!AES) AES = new uint8_t[1];
-				if ((*AES) && (aes->active != MSG_AES::AES_REPLY_OK)) {						// check if we need AES confirmation
+				if (AES && (*AES) && (aes->active != MSG_AES::AES_REPLY_OK)) {				// check if we need AES confirmation
 					send_AES_REQ();															// send a request
 					return;																	// nothing to do any more, wait and see
 				}

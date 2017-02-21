@@ -181,7 +181,7 @@ void dumpEEprom(void) {
 	uint16_t pAddr;
 
 	dbg << F("\nEEPROM content\n\n");
-	uint8_t *e = new uint8_t[32];
+	uint8_t e[32];
 	get_eeprom(0, 32, e);
 	dbg << F("Magic:") << _HEX(e, 2) << F("(") << *(uint16_t*)e << F("), HMID:") << _HEX(e + 2, 3) << F(", SERIAL:") << _HEX(e + 5, 10) << F("\nKEY_IDX:") << _HEX(e + 15, 1) << F(", KEY:") << _HEX(e + 16, 16) << F("\n\n");
 
@@ -220,7 +220,6 @@ void dumpEEprom(void) {
 			dbg << '\n';
 		}
 	}
-	delete e;
 #endif
 }
 
