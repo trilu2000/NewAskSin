@@ -19,11 +19,11 @@
 /*************************************************************************************************************************/
 
 //- randum number functions -----------------------------------------------------------------------------------------------
-void get_random(uint8_t *buf) {
+void get_random(uint8_t *buf, uint32_t x) {
 	/* not random, but most likely, as real random takes 200 byte more */
 	static uint32_t random;
 
-	random ^= get_millis();
+	random ^= x;
 	random = (15342 * random + 45194);
 	memcpy(buf, (uint8_t*)&random, 4);
 }

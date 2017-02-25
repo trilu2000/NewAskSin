@@ -89,6 +89,7 @@ typedef struct ts_cm_status {
 	uint32_t  status_delay;																	// delay for sending a status message
 	uint8_t	  msg_type;																		// indicator for sendStatus function
 	waitTimer msg_delay;																	// message timer for sending status
+	uint8_t   msg_retr;																		// how often to send a status or ack message
 
 	void process_next(uint8_t jumptable_flag, uint8_t timer_flag = 0) {
 		sm_stat = sm_set;																	// set the state machine status
