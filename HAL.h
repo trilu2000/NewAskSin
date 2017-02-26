@@ -169,7 +169,7 @@ inline Print &operator <<(Print &obj, _eTIME arg) { obj.print('('); obj.print(ge
 /*-- randum number functions ----------------------------------------------------------------------------------------------
 * Random number is needed for AES encryption, here we are generating a fake random number by xoring the timer.
 */
-void get_random(uint8_t *buf);
+void get_random(uint8_t *buf, uint32_t x = get_millis());
 //- -----------------------------------------------------------------------------------------------------------------------
 
 

@@ -88,7 +88,7 @@ public:  //---------------------------------------------------------------------
 
 	void check_send_ACK_NACK(uint8_t ackOk);												// ACK or NACK on base of ackok
 	void send_ACK(void);																	// all different types of ACK are a response
-	void send_ACK_STATUS(uint8_t *chnl, uint8_t *stat, uint8_t *flag, uint8_t *sum = NULL);	// to previous received messages 
+	void send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t flag, uint8_t sum = 0xff);		// to previous received messages 
 	void send_ACK2(void);																	// RCV_ID will be taken in every case from the 
 	void send_AES_REQ(void);// s_m0204xx *buf);												// previous received string
 	void send_NACK(void);
@@ -105,7 +105,7 @@ public:  //---------------------------------------------------------------------
 	void send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id);
 	void send_INFO_PARAM_RESPONSE_SEQ(uint8_t cnl, uint8_t lst, uint8_t *peer_id);
 	void send_INFO_PARAMETER_CHANGE();
-	void send_INFO_ACTUATOR_STATUS(uint8_t *chnl, uint8_t *stat, uint8_t *flag, uint8_t *sum = NULL);
+	void send_INFO_ACTUATOR_STATUS(uint8_t chnl, uint8_t stat, uint8_t flag, uint8_t sum = 0xff);
 	void send_INFO_TEMP();
 
 	/*void send_INSTRUCTION_INHIBIT_OFF();													// not needed in client communication to send

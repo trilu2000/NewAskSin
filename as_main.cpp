@@ -253,8 +253,10 @@ void AS::process_message(void) {
 			case BY11(MSG_TYPE::CONFIG_END):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX1):
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX2):
+
 				uint8_t *AES = pCM->lstC.ptr_to_val(0x08);
-				if (AES && (*AES) && (aes->active != MSG_AES::AES_REPLY_OK)) {				// check if we need AES confirmation
+				//if (!AES) AES = new uint8_t[1];
+				if ((AES) && (*AES) && (aes->active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
 					send_AES_REQ();															// send a request
 					return;																	// nothing to do any more, wait and see
 				}
@@ -302,6 +304,7 @@ void AS::process_message(void) {
 	} else if (*rcv_by03 == BY03(MSG_TYPE::SEND_AES)) {
 		/* pair starts an key exchange, first message shows our key starting with byte 12 and the keyindex in byte 11 (-2) 
 		*  second message holds the new key starting with byte 12 and the new keyindex in byte 11 (again -2) */
+		pCM = cmm[0];
 
 		/* challange the message */
 		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
@@ -327,7 +330,7 @@ void AS::process_message(void) {
 		//uint8_t by10 = rcv_msg.mBody.BY10;												// short hand to byte 10 in the received string
 		uint8_t mlen = rcv_msg.mBody.MSG_LEN;												// short hand to the message length
 
-		if (mlen == 0x0a) pCM = cmm[0];													// some messages are channel independent, identification by length
+		if (mlen == 0x0a) pCM = cmm[0];														// some messages are channel independent, identification by length
 		else pCM = cmm[*rcv_by11];															// short hand to respective channel module instance
 
 		/* check if we need to challange the request */
@@ -366,14 +369,14 @@ void AS::process_message(void) {
 		rcv_msg.cnl = is_peer_valid(rcv_msg.peer);											// search for the peer channel
 		if (!rcv_msg.cnl) return;															// peer not found in any channel, return
 
-		//pCM = &cmm[rcv_msg.cnl];															// short hand to the respective channel module
+		pCM = cmm[rcv_msg.cnl];																// short hand to the respective channel module
 		/* check if we need to challange the request */
-		if ((*cmm[rcv_msg.cnl]->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) { // check if we need AES confirmation
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
-		cmm[rcv_msg.cnl]->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3 with the respective index 
-		cmm[rcv_msg.cnl]->SWITCH(&rcv_msg.m3Exxxx);
+		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
+		pCM->SWITCH(&rcv_msg.m3Exxxx);
 
 
 	} else if (rcv_msg.intend == MSG_INTENT::PEER) {
@@ -500,9 +503,10 @@ void AS::snd_poll(void) {
 		sm->temp_MSG_CNT = sm->mBody.MSG_CNT;												// copy the message count to identify the ACK
 		if (isEmpty(sm->mBody.RCV_ID, 3)) sm->mBody.FLAG.BIDI = 0;							// broadcast, no ack required
 
-		if (!sm->temp_max_retr)
-			sm->temp_max_retr = (sm->mBody.FLAG.BIDI) ? sm->max_retr : 1;					// send once while not requesting an ACK
+		if (!sm->temp_max_retr) sm->temp_max_retr = sm->max_retr;							// fill the retries with the default value
+		if (!sm->mBody.FLAG.BIDI) sm->temp_max_retr = 1;									// send once while not requesting an ACK
 
+		//sm->mBody.FLAG.CFG = 1;
 	}
 
 
@@ -719,11 +723,10 @@ void AS::check_send_ACK_NACK(uint8_t ackOk) {
 void AS::send_ACK(void) {
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ack only if required
 
-	if (aes->active == MSG_AES::AES_REPLY_OK) {											// if last message was a valid aes reply we have to answer with an ack_auth
+	if (aes->active == MSG_AES::AES_REPLY_OK) {												// if last message was a valid aes reply we have to answer with an ack_auth
 		snd_msg.type = MSG_TYPE::ACK_AUTH;													// length and flags are set within the snd_msg struct
-		memcpy(snd_msg.buf + 11, aes->ACK_payload, 4);									// 4 byte auth payload
-	}
-	else {
+		memcpy(snd_msg.buf + 11, aes->ACK_payload, 4);										// 4 byte auth payload
+	} else {
 		snd_msg.type = MSG_TYPE::ACK;														// length and flags are set within the snd_msg struct
 	}
 	aes->active = MSG_AES::NONE;														// no need to remember on the last message
@@ -743,7 +746,7 @@ void AS::send_ACK(void) {
 * @param stat
 * @param actn
 */
-void AS::send_ACK_STATUS(uint8_t *chnl, uint8_t *stat, uint8_t *flag, uint8_t *sum) {
+void AS::send_ACK_STATUS(uint8_t chnl, uint8_t stat, uint8_t flag, uint8_t sum) {
 	//<frame id = "ACK_STATUS" direction = "from_device" event = "true" type = "0x02" subtype = "1" subtype_index = "9" channel_field = "10">
 	//	<parameter type = "integer" index = "11.0" size = "1.0" param = "LEVEL" / >
 	//	<parameter type = "integer" index = "12.1" size = "0.3" param = "ERROR" / >
@@ -759,17 +762,17 @@ void AS::send_ACK_STATUS(uint8_t *chnl, uint8_t *stat, uint8_t *flag, uint8_t *s
 	// 0F 8D 80 02   1E 7A AD    63 19 64   01 01 14 00 3A 14
 
 	if (!rcv_msg.mBody.FLAG.BIDI) return;													// send ACK only while required
-	snd_msg.buf[11] = *chnl;																// add the channel
-	snd_msg.buf[12] = *stat;																// and the status/value
-	snd_msg.buf[13] = *flag;																// flags are prepared in the status poll function
+	snd_msg.buf[11] = chnl;																	// add the channel
+	snd_msg.buf[12] = stat;																	// and the status/value
+	snd_msg.buf[13] = flag;																	// flags are prepared in the status poll function
 	if (bat->get_status()) snd_msg.buf[13] |= 0x80;											// highest bit is battery flag
 	else snd_msg.buf[13] &= 0x7F;
 	snd_msg.buf[14] = com->rssi;															// add rssi information
-	snd_msg.buf[15] = *sum;																	// we can add it to the buffer in any case, while length byte is set below
+	snd_msg.buf[15] = sum;																	// we can add it to the buffer in any case, while length byte is set below
 
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
-	if (sum) snd_msg.type = MSG_TYPE::ACK_STATUS_SUM;										// length and flags are set within the snd_msg struct
-	else snd_msg.type = MSG_TYPE::ACK_STATUS;
+	if (sum == 0xff) snd_msg.type = MSG_TYPE::ACK_STATUS;									// length and flags are set within the snd_msg struct
+	else snd_msg.type = MSG_TYPE::ACK_STATUS_SUM;
 	// todo: AES ACK
 }
 void AS::send_ACK2(void) {
@@ -848,14 +851,15 @@ void AS::send_INFO_SERIAL() {
 * l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
 */
 void AS::send_INFO_PEER_LIST(uint8_t cnl) {
-	s_list_msg   *lm = &list_msg;														// short hand to the struct with all information for slice wise send
+	// in cm_master module 
+	/*s_list_msg   *lm = &list_msg;														// short hand to the struct with all information for slice wise send
 	s_peer_table *peerDB = &cmm[cnl]->peerDB;												// short hand to the respective peer table of the channel
 
 	lm->active = LIST_ANSWER::PEER_LIST;													// we want to get the peer list
 	lm->peer = peerDB;																		// pointer to the respective peerDB struct
 	lm->max_slc = peerDB->get_nr_slices();													// get an idea of the total needed slices
 	lm->timer.set(15);																		// some time between last message
-	DBG(AS, F("AS:send_INFO_PEER_LIST, cnl:"), cnl, F(", slices:"), lm->max_slc, '\n');
+	DBG(AS, F("AS:send_INFO_PEER_LIST, cnl:"), cnl, F(", slices:"), lm->max_slc, '\n');*/
 }
 
 /**
@@ -868,7 +872,8 @@ void AS::send_INFO_PEER_LIST(uint8_t cnl) {
 * l> 0E  35  A0   10   23 70 D8  63 19 64  01    00 00 00 00
 */
 void AS::send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_id) {
-	s_list_msg   *lm = &list_msg;														// short hand to the struct with all information for slice wise send
+	// in cm_master module 
+	/*s_list_msg   *lm = &list_msg;														// short hand to the struct with all information for slice wise send
 	s_peer_table *peerDB = &cmm[cnl]->peerDB;												// short hand to the respective peer table of the channel
 	s_list_table *list = cmm[cnl]->list[lst];												// short hand to the respective list table
 
@@ -881,7 +886,7 @@ void AS::send_INFO_PARAM_RESPONSE_PAIRS(uint8_t cnl, uint8_t lst, uint8_t *peer_
 	lm->list = list;																		// pointer to the respective list struct
 	lm->max_slc = list->get_nr_slices_pairs();												// get an idea of the total needed slices, plus one for closing 00 00 message
 	lm->timer.set(15);																		// some time between last message
-	DBG(AS, F("AS:send_INFO_PARAM_RESPONSE_PAIRS, cnl:"), cnl, F(", lst:"), lst, F(", peer:"), _HEX(peer_id, 4), F(", idx:"), lm->peer_idx, F(", slices:"), lm->max_slc, '\n');
+	DBG(AS, F("AS:send_INFO_PARAM_RESPONSE_PAIRS, cnl:"), cnl, F(", lst:"), lst, F(", peer:"), _HEX(peer_id, 4), F(", idx:"), lm->peer_idx, F(", slices:"), lm->max_slc, '\n');*/
 }
 
 /**
@@ -914,7 +919,7 @@ void AS::send_INFO_PARAMETER_CHANGE() {
 * @param state
 * @param flag: TODO: to be specified
 */
-void AS::send_INFO_ACTUATOR_STATUS(uint8_t *chnl, uint8_t *stat, uint8_t *flag, uint8_t *sum) {
+void AS::send_INFO_ACTUATOR_STATUS(uint8_t chnl, uint8_t stat, uint8_t flag, uint8_t sum) {
 	//<frame id = "INFO_LEVEL" direction = "from_device" allowed_receivers = "BROADCAST,CENTRAL,OTHER" event = "true" type = "0x10" subtype = "6" subtype_index = "9" channel_field = "10">
 	//	<parameter type = "integer" index = "11.0" size = "1.0" param = "LEVEL" / >
 	//	<parameter type = "integer" index = "12.1" size = "0.3" param = "ERROR" / >
@@ -928,17 +933,17 @@ void AS::send_INFO_ACTUATOR_STATUS(uint8_t *chnl, uint8_t *stat, uint8_t *flag, 
 		// byte 13 is RSSI                          CNL STAT FLAG RSSI SUM
 	// 0F  00 A0 10   33 11 24   63 19 64  06   01  00   00   64   00
 
-	snd_msg.buf[11] = *chnl;																// add the channel
-	snd_msg.buf[12] = *stat;																// and the status/value
-	snd_msg.buf[13] = *flag;																// flags are prepared in the status poll function
+	snd_msg.buf[11] = chnl;																	// add the channel
+	snd_msg.buf[12] = stat;																	// and the status/value
+	snd_msg.buf[13] = flag;																	// flags are prepared in the status poll function
 	if (bat->get_status()) snd_msg.buf[13] |= 0x80;											// highest bit is battery flag
 	else snd_msg.buf[13] &= 0x7F;
 	snd_msg.buf[14] = com->rssi;															// add rssi information
-	snd_msg.buf[15] = *sum;																	// we can add it to the buffer in any case, while length byte is set below
+	snd_msg.buf[15] = sum;																	// we can add it to the buffer in any case, while length byte is set below
 
 	snd_msg.active = MSG_ACTIVE::PAIR;														// for address, counter and to make it active
-	if (sum) snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS_SUM;								// length and flags are set within the snd_msg struct
-	else snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;
+	if (sum == 0xff) snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS;							// length and flags are set within the snd_msg struct
+	else snd_msg.type = MSG_TYPE::INFO_ACTUATOR_STATUS_SUM;
 	// todo: check AES
 }
 

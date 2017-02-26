@@ -267,7 +267,7 @@ public:  //---------------------------------------------------------------------
 	virtual void SENSOR_EVENT(s_m41xxxx *buf);												// sensor peer message
 
 
-	void do_jump_table(uint8_t *counter);													// target for msg 3E/40/41
+	void do_jump_table(uint8_t counter, uint8_t bidi);										// target for msg 3E/40/41
 	void do_updim(void);																	// simple updim without state machine
 	void do_downdim(void);																	// downdim without state machine
 
@@ -282,5 +282,11 @@ public:  //---------------------------------------------------------------------
 	void poll_off(void);
 
 };
+
+/* state machine helper class 
+* http://playground.arduino.cc/Code/FiniteStateMachine
+*/
+
+
 
 #endif

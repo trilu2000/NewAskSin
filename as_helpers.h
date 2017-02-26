@@ -12,7 +12,7 @@
 
 //- asksin related helpers ------------------------------------------------------------------------------------------------
 uint32_t byteTimeCvt(uint8_t tTime);														// asksin, converts a byte time value to a 32bit milliseconds value
-uint32_t intTimeCvt(uint16_t iTime);														// asksin, converts an int time value to a 32bit milliseconds value
+uint32_t intTimeCvt(uint16_t  iTime);														// asksin, converts an int time value to a 32bit milliseconds value
 
 void hm_decode(uint8_t *buf);																// decodes the message
 void hm_encode(uint8_t *buf);																// encodes the message

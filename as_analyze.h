@@ -176,9 +176,17 @@ void serialEvent(void) {
 #endif
 }
 
+int freeRam() {
+	extern int __heap_start, *__brkval;
+	int v;
+	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
+}
+
 void dumpEEprom(void) {
 #ifdef DMP_DBG
 	uint16_t pAddr;
+	dbg << F("freeram: ") << freeRam() << '\n';
+	_delay_ms(500);
 
 	dbg << F("\nEEPROM content\n\n");
 	uint8_t e[32];
@@ -192,7 +200,7 @@ void dumpEEprom(void) {
 			s_peer_table *peer = &cmm[i]->peerDB;											// short hand to peer db
 			if (!list) continue;															// skip if pointer is empty
 
-			uint8_t *x = new uint8_t[list->len];											// size an array as data buffer
+			uint8_t x[list->len];															// size an array as data buffer
 			dbg << F("cnl:") << _HEX(list->cnl) << F(", lst:") << _HEX(list->lst) << F(", sLen:") << _HEX(list->len) << F(", pAddr:") << list->ee_addr << '\n';
 
 			memcpy_P(x, list->reg, list->len);
@@ -216,13 +224,11 @@ void dumpEEprom(void) {
 				dbg << F("eeprom:    ") << _HEX(x, list->len) << '\n';
 
 			}
-			delete x;
 			dbg << '\n';
 		}
 	}
 #endif
 }
-
 
 
 

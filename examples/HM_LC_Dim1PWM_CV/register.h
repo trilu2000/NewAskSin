@@ -26,9 +26,9 @@ POM *pom = new POM(POWER_MODE_NO_SLEEP);
 /*
 *  @brief cm_maintenance requires this declaration in the user sketch to make registers flexible
 */
-const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
-const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0x69, };
-const uint8_t cm_maintenance_ChnlLen = 6;
+const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x15,0x18,0x1E,0x71, };
+const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0xFF,0x00,0x01,0x84, };
+const uint8_t cm_maintenance_ChnlLen = 9;
 
 
 /*
@@ -83,6 +83,13 @@ const uint8_t dev_static[] PROGMEM = {             // testID
 void everyTimeStart(void) {
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
 
+	/* write the internal key address into the channel */
+	uint8_t t_peer[4];																		// create a peer buffer
+	memcpy_P(t_peer, HMSerialData, 3);														// peer must be our hmid
+	for (uint8_t i = 1; i < cnl_max; i++) {													// step through the channels, starting by channel 1
+		t_peer[3] = i;																		// write the respective channel in the peer address
+		cmm[i]->peerDB.set_peer(0, t_peer);													// make peer available, otherwise error in the config tool
+	}
 }
 
 
