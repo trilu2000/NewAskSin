@@ -119,7 +119,7 @@ void CM_DIMMER::info_config_change(uint8_t channel) {
 
 	/* assign list1 variables and initialize the hardware */
 	dm_sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;								// store the logic combination of the virtual channel in the struct
-	cms.msg_retr = l1->TRANSMIT_TRY_MAX;
+	cms.msg_retr = l1->TRANSMIT_TRY_MAX;													// set the max retrie counter flag
 
 	/* set the status message timer, random can be 0 to 7 seconds */
 	get_random((uint8_t*)&cms.status_delay, (uint32_t*)dev_ident.HMID);

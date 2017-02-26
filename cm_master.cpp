@@ -76,7 +76,7 @@ void CM_MASTER::set_toggle(void) {
 * request is forwarded by the AS:processMessage function
 */
 void CM_MASTER::CONFIG_PEER_ADD(s_m01xx01 *buf) {
-	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
+	uint8_t temp_peer[4];																	// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
 
 	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
@@ -108,7 +108,7 @@ void CM_MASTER::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 * request is forwarded by the AS:processMessage function
 */
 void CM_MASTER::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
-	uint8_t *temp_peer = new uint8_t[4];													// temp byte array to load peer addresses
+	uint8_t temp_peer[4];																	// temp byte array to load peer addresses
 	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
 
 	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
@@ -135,8 +135,13 @@ void CM_MASTER::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 */
 void CM_MASTER::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
 	DBG(CM, F("CM:CONFIG_PEER_LIST_REQ\n"));
-	//send_ACK();
-	hm->send_INFO_PEER_LIST(buf->MSG_CNL);
+	s_list_msg   *lm = &list_msg;															// short hand to the struct with all information for slice wise send
+
+	lm->active = LIST_ANSWER::PEER_LIST;													// we want to get the peer list
+	lm->peer = &peerDB;																		// pointer to the respective peerDB struct
+	lm->max_slc = peerDB.get_nr_slices();													// get an idea of the total needed slices
+	lm->timer.set(15);																		// some time between last message
+	DBG(CM, F("DM"), lstC.cnl, F(":CONFIG_PEER_LIST_REQ-\t\tnr slices: "), lm->max_slc, '\n');
 }
 /*
 * @brief Requests a listing of all values in a list from a specific channel
@@ -146,9 +151,29 @@ void CM_MASTER::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
 * request is forwarded by the AS:processMessage function
 */
 void CM_MASTER::CONFIG_PARAM_REQ(s_m01xx04 *buf) {
-	DBG(CM, F("CM:CONFIG_PARAM_REQ\n"));
-	//send_ACK();
-	hm->send_INFO_PARAM_RESPONSE_PAIRS(buf->MSG_CNL, buf->PARAM_LIST, buf->PEER_ID);
+	//m> 10 1E A0 01 45 FB FA 33 11 24 01 04 33 11 24 01 03 (103556)
+	DBG(CM, F("DM"), lstC.cnl, F(":CONFIG_PARAM_REQ-\t\taddr: "), _HEX(buf->PEER_ID,4), F(", list: "), buf->PARAM_LIST);
+	s_list_msg   *lm = &list_msg;															// short hand to the struct with all information for slice wise send
+	s_list_table *ls = list[buf->PARAM_LIST];												// short hand to the respective list table
+
+	if (!ls) {																				// specific list is not available, return without anything
+		DBG(CM, F(", list unavailable\n"));
+		return;	
+	}
+
+	uint8_t idx = peerDB.get_idx(buf->PEER_ID);												// get the requested peer index, PEER_ID is only 3 byte, but the following byte gives the channel
+	if (idx == 0xff) {																		// nothing to do while index not found
+		DBG(CM, F(", address unavailable\n"));
+		hm->send_NACK_TARGET_INVALID();
+		return;
+	}
+
+	lm->active = LIST_ANSWER::PARAM_RESPONSE_PAIRS;											// we want to get the param list as pairs
+	lm->peer_idx = idx;																		// remember on the peer index
+	lm->list = ls;																			// pointer to the respective list struct
+	lm->max_slc = ls->get_nr_slices_pairs();												// get an idea of the total needed slices, plus one for closing 00 00 message
+	lm->timer.set(15);																		// some time between last message
+	DBG(CM, F(", slice send started\n"));
 }
 /*
 * @brief HM protocol indicates changes to any list by a config start request
@@ -387,7 +412,7 @@ void process_send_status_poll(s_cm_status *cm, uint8_t cnl) {
 	snd_msg.buf[15] = *cm->sum_value;														// we can add it to the buffer in any case, while length byte is set below
 	snd_msg.temp_max_retr = cm->msg_retr;													// how often to resend a message
 
-	/* check which type has to be send - if it is an ACK and modDUL != 0, then set timer for sending a actuator status */
+	/* check which type has to be send, set message type in a first step and then more in detail the receiver */
 	if ((cm->msg_type == STA_INFO::SND_ACK_STATUS_PAIR) || (cm->msg_type == STA_INFO::SND_ACK_STATUS_PEER)) {
 		if (cm->sum_value) snd_msg.type = MSG_TYPE::ACK_STATUS_SUM;							// length and flags are set within the snd_msg struct
 		else snd_msg.type = MSG_TYPE::ACK_STATUS;

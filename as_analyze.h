@@ -189,7 +189,7 @@ void dumpEEprom(void) {
 	_delay_ms(500);
 
 	dbg << F("\nEEPROM content\n\n");
-	uint8_t *e = new uint8_t[32];
+	uint8_t e[32];
 	get_eeprom(0, 32, e);
 	dbg << F("Magic:") << _HEX(e, 2) << F("(") << *(uint16_t*)e << F("), HMID:") << _HEX(e + 2, 3) << F(", SERIAL:") << _HEX(e + 5, 10) << F("\nKEY_IDX:") << _HEX(e + 15, 1) << F(", KEY:") << _HEX(e + 16, 16) << F("\n\n");
 
@@ -200,7 +200,7 @@ void dumpEEprom(void) {
 			s_peer_table *peer = &cmm[i]->peerDB;											// short hand to peer db
 			if (!list) continue;															// skip if pointer is empty
 
-			uint8_t *x = new uint8_t[list->len];											// size an array as data buffer
+			uint8_t x[list->len];															// size an array as data buffer
 			dbg << F("cnl:") << _HEX(list->cnl) << F(", lst:") << _HEX(list->lst) << F(", sLen:") << _HEX(list->len) << F(", pAddr:") << list->ee_addr << '\n';
 
 			memcpy_P(x, list->reg, list->len);
@@ -224,11 +224,9 @@ void dumpEEprom(void) {
 				dbg << F("eeprom:    ") << _HEX(x, list->len) << '\n';
 
 			}
-			delete x;
 			dbg << '\n';
 		}
 	}
-	delete e;
 #endif
 }
 

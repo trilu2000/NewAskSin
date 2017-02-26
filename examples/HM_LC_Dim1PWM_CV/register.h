@@ -83,6 +83,13 @@ const uint8_t dev_static[] PROGMEM = {             // testID
 void everyTimeStart(void) {
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
 
+	/* write the internal key address into the channel */
+	uint8_t t_peer[4];																		// create a peer buffer
+	memcpy_P(t_peer, HMSerialData, 3);														// peer must be our hmid
+	for (uint8_t i = 1; i < cnl_max; i++) {													// step through the channels, starting by channel 1
+		t_peer[3] = i;																		// write the respective channel in the peer address
+		cmm[i]->peerDB.set_peer(0, t_peer);													// make peer available, otherwise error in the config tool
+	}
 }
 
 
