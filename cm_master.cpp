@@ -41,6 +41,8 @@ void CM_MASTER::info_peer_add(s_m01xx01 *buf) {
 }
 
 void CM_MASTER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
+	lstP.load_default();																	// copy the defaults from progmem into the peer list, index doesn't matter
+	lstP.save_list(idx);																	// and save the list, index is important while more choices in the peer table
 	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEX(idx), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n' );
 }
 
@@ -90,10 +92,7 @@ void CM_MASTER::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 
 		if (idx != 0xff) {																	// free slot available
 			peerDB.set_peer(idx, temp_peer);												// write the peer into the database
-
-			lstP.load_default();															// copy the defaults from progmem into the peer list, index doesn't matter
 			request_peer_defaults(idx, buf);												// ask the channel module to load the defaults
-			lstP.save_list(idx);															// and save the list, index is important while more choices in the peer table
 			ret_byte++;																		// increase success
 		}
 	}

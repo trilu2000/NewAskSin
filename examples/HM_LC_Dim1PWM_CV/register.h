@@ -89,6 +89,7 @@ void everyTimeStart(void) {
 	for (uint8_t i = 1; i < cnl_max; i++) {													// step through the channels, starting by channel 1
 		t_peer[3] = i;																		// write the respective channel in the peer address
 		cmm[i]->peerDB.set_peer(0, t_peer);													// make peer available, otherwise error in the config tool
+		//cmm[i]->lstP.write_array(NULL,0,0);													// load the default list, nothing to change
 		cmm[i]->lstP.load_default();
 		cmm[i]->lstP.save_list(0);
 	}
