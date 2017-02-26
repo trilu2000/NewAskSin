@@ -11,6 +11,7 @@
 #include "waittimer.h"
 #include "AS_enum_defs.h"
 #include "AS_message_defs.h"
+#include "as_helpers.h"
 
 #ifndef _AS_TYPEDEFS_H
 #define _AS_TYPEDEFS_H
@@ -175,6 +176,15 @@ typedef struct ts_list_table {
 		save_list(idx);
 	}
 
+	/* Writes values by a given register/value array into the local value array.
+	*/
+	void update_list(const uint8_t *buf, uint8_t len, uint8_t idx = 0) {
+		for (uint8_t i = 0; i < len; i += 2) {
+			uint8_t *ptr = ptr_to_val( buf[i] );
+			if (ptr) *ptr = buf[i + 1];
+		}
+	}
+
 	/* Calculates the amount of needed slices to send all peers depending on the given 
 	*  msg length in peers per message
 	*/
@@ -242,7 +252,11 @@ typedef struct ts_peer_table {
 	}
 
 	uint8_t get_free_slot() {									// returns the idx of an empty peer, or 0xff if not found. don't use the peer array of the struct, it will be overwritten!
-		for (uint8_t i = 0; i < max; i++) if (!*(uint32_t*)get_peer(i)) return i;
+		for (uint8_t i = 0; i < max; i++) {
+			uint8_t *x = get_peer(i);
+			//dbg << F("x: ") << _HEX(x, 4) << '\n';
+			if (isEmpty(x, 4)) return i;
+		}
 		return 0xff;
 	}
 

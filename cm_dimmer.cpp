@@ -158,29 +158,21 @@ void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	if (( buf->PEER_CNL[0] ) && ( buf->PEER_CNL[1] )) {		// dual peer add
 
 		if (idx % 2) {										// odd (1,3,5..) means OFF
-			lstP.val[10] = lstP.val[40] = 0x44;
-			lstP.val[11] = lstP.val[41] = 0x54;
-			lstP.val[12] = lstP.val[42] = 0x64;
-
-			lstP.val[36] = 0x0a;
-			lstP.val[39] = 0xa5;
+			uint8_t lst[] = { 0x0A,0x01, 0x0B,0x12, 0x0C,0x22, 0x0D,0x23, 0x8A,0x24, 0x8B,0x12, 0x8C,0x22, 0x8D,0x23, };
+			lstP.update_list(lst, 16, idx);
 			
 		} else {											// even (2,4,6..) means ON
-			lstP.val[10] = lstP.val[40] = 0x12;
-			lstP.val[11] = lstP.val[41] = 0x22;
-			lstP.val[12] = lstP.val[42] = 0x23;
-
-			lstP.val[36] = 0xff;
-			lstP.val[39] = 0x24;
+			uint8_t lst[] = { 0x0A,0x01, 0x0B,0x44, 0x0C,0x54, 0x0D,0x64, 0x87,0x0A, 0x8A,0xA5, 0x8B,0x44, 0x8C,0x54, 0x8D,0x64, };
+			lstP.update_list(lst, 18, idx);
 		}
 
 	} else  {												// toggle peer channel
-		lstP.val[10] = lstP.val[40] = 0x14;
-		lstP.val[11] = lstP.val[41] = 0x52;
-		lstP.val[12] = lstP.val[42] = 0x63;
+		//lstP.val[10] = lstP.val[40] = 0x14;
+		//lstP.val[11] = lstP.val[41] = 0x52;
+		//lstP.val[12] = lstP.val[42] = 0x63;
 
-		lstP.val[36] = 0xff;
-		lstP.val[39] = 0x26;
+		//lstP.val[36] = 0xff;
+		//lstP.val[39] = 0x26;
 	}
 
 	DBG(DM, F("DM"), lstC.cnl, F(":request_peer_defaults CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", idx:"), _HEX(idx), '\n' );

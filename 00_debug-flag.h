@@ -27,7 +27,7 @@
 */
 
 #define SER_DBG					// Main sketch debug function and messages
-#define DMP_DBG					// EEprom dump function, only in combination with SER_DBG
+//#define DMP_DBG					// EEprom dump function, only in combination with SER_DBG
 //#define AS_DBG					// AskSin class debug (AS.cpp)
 //#define CC_DBG					// Communication class (AS_communication.cpp)
 #define SN_DBG					// Send function (AS.cpp)
@@ -35,7 +35,7 @@
 //#define CB_DBG					// Config button class (AS_conf_button.cpp)
 //#define LD_DBG					// Status led class (AS_status_led.cpp)
 
-#define CM_DBG					// Channel Master module (cmMaster.cpp)
+//#define CM_DBG					// Channel Master module (cmMaster.cpp)
 //#define MN_DBG					// Maintenance channel module (cmMaintenance.cpp)
 //#define SW_DBG				// Switsch channel module (cmSwitch.cpp)
 //#define DM_DBG					// Dimmer channel module (cmDimmer.cpp)
