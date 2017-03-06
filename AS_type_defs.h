@@ -100,6 +100,7 @@ typedef struct ts_cm_status {
 	}
 } s_cm_status;
 
+
 /*
 * @brief Every channel has two lists, the first list holds the configuration which is required to drive the channel,
 *        the second list is related to peer messages and holds all information which are required to drive the functionality
@@ -213,6 +214,7 @@ typedef struct ts_list_table {
 	}
 
 } s_list_table;
+
 
 /*
 * @brief Peer Device Table Entry

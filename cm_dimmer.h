@@ -44,6 +44,9 @@ private:  //--------------------------------------------------------------------
 	uint8_t vrt_grp;																	// identification of the belonging virtual group, as the dimmer can have virtual channels
 	uint8_t vrt_cnl;																	// identification of channel within the virtual group
 
+	uint8_t cm_dimmer_ChnlVal[sizeof(cm_dimmer_ChnlReg)];								// the register value store in memory
+	uint8_t cm_dimmer_PeerVal[sizeof(cm_dimmer_PeerReg)];
+
 	struct s_l1 {
 		uint8_t AES_ACTIVE               : 1;  // 0x08.0, s:1   d: false  
 		uint8_t                          : 7;  // 0x08.1, s:7   d:   

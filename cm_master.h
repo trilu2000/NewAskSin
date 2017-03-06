@@ -54,7 +54,6 @@ public://-----------------------------------------------------------------------
 	*/
 
 	virtual void info_config_change(uint8_t channel);										// list1 on registered channel had changed
-	virtual void info_peer_add(s_m01xx01 *buf);												// peer was added to the specific channel, 1st 3 bytes shows peer address, 4th and 5th the peer channel
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
 	void init(void);																		// init function, called after AS initialisation
@@ -68,7 +67,7 @@ public://-----------------------------------------------------------------------
 	void poll(void);																		// poll function, driven by HM loop
 	virtual void cm_poll(void);																// poll function for channel modules to overwrite
 
-	virtual void set_toggle(void);															// toggle the module initiated by config button
+	//virtual void set_toggle(void);															// toggle the module initiated by config button
 
 	/* receive functions to handle requests forwarded by AS:processMessage 
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */
@@ -81,7 +80,7 @@ public://-----------------------------------------------------------------------
 
 	//void DEVICE_INFO(s_m00xxxx *buf);														// in client comms not needed as receive function
 
-	void CONFIG_PEER_ADD(s_m01xx01 *buf);													// mainly all needed to set or get information
+	//void CONFIG_PEER_ADD(s_m01xx01 *buf);													// mainly all needed to set or get information
 	void CONFIG_PEER_REMOVE(s_m01xx02 *buf);												// for the defined device. all requests are
 	void CONFIG_PEER_LIST_REQ(s_m01xx03 *buf);												// handled within the cmMaster class
 	void CONFIG_PARAM_REQ(s_m01xx04 *buf);

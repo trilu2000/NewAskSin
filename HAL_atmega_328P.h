@@ -47,7 +47,7 @@ const s_pin_def pin_C3 = { PORTC3, &DDRC, &PORTC, &PINC, 11, PCINT11, &PCICR, &P
 const s_pin_def pin_C4 = { PORTC4, &DDRC, &PORTC, &PINC, 12, PCINT12, &PCICR, &PCMSK1, PCIE1, 1 };
 const s_pin_def pin_C5 = { PORTC5, &DDRC, &PORTC, &PINC, 13, PCINT13, &PCICR, &PCMSK1, PCIE1, 1 };
 const s_pin_def pin_C6 = { PORTC6, &DDRC, &PORTC, &PINC, 14, PCINT14, &PCICR, &PCMSK1, PCIE1, 1 };
-const s_pin_def pin_C7=  {      7, &DDRC, &PORTC, &PINC, 15,       7, &PCICR, &PCMSK1, PCIE1, 1 }; 
+const s_pin_def pin_C7 = {      7, &DDRC, &PORTC, &PINC, 15,       7, &PCICR, &PCMSK1, PCIE1, 1 };
 
 const s_pin_def pin_D0 = { PORTD0, &DDRD, &PORTD, &PIND, 16, PCINT16, &PCICR, &PCMSK2, PCIE2, 2 };
 const s_pin_def pin_D1 = { PORTD1, &DDRD, &PORTD, &PIND, 17, PCINT17, &PCICR, &PCMSK2, PCIE2, 2 };

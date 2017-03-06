@@ -13,14 +13,24 @@
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-AES *aes = new NO_AES();
-COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
-CBN *cbn = new CBN(1, &pin_B0);
-LED *led = new LED(&pin_D6, &pin_D4);
-BAT *bat = new NO_BAT();
-//BAT *bat = new INT_BAT(3600000, 30);								// ~170 byte more than no_bat
-//BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
-POM *pom = new POM(POWER_MODE_NO_SLEEP);
+//HAS_AES as_aes;													// 2826 byte flash, 277 byte sram
+//NO_AES as_aes;													//   60 byte flash,  69 byte sram
+//AES *aes = &as_aes;	
+
+AES *aes = new NO_AES();											//   60 byte flash,  69 byte sram
+//AES *aes = new HAS_AES();											// 2826 byte flash, 277 byte sram
+
+COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2); //  546 byte flash, 124 byte sram
+
+CBN *cbn = new CBN(1, &pin_B0);										//   80 byte flash,  25 byte sram
+
+LED *led = new LED(&pin_D6, &pin_D4);								//  150 byte flash,  51 byte sram
+
+BAT *bat = new NO_BAT();											//   34 byte flash,  22 byte sram
+//BAT *bat = new INT_BAT(3600000, 30);								//  176 byte flash,  22 byte sram
+//BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	//  386 byte flash,  56 byte sram
+
+POM *pom = new POM(POWER_MODE_NO_SLEEP);							//   68 byte flash,  19 byte sram
 
 
 /*
@@ -28,19 +38,20 @@ POM *pom = new POM(POWER_MODE_NO_SLEEP);
 */
 const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x15,0x18,0x1E,0x71, };
 const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x00,0x00,0x00,0x00,0xFF,0x00,0x01,0x84, };
-const uint8_t cm_maintenance_ChnlLen = 9;
+uint8_t cm_maintenance_ChnlVal[sizeof(cm_maintenance_ChnlReg)];
+const uint8_t cm_maintenance_ChnlLen = sizeof(cm_maintenance_ChnlReg);
+
 
 
 /*
 *  @brief definition of the device functionallity per channel
 */
 CM_MASTER *cmm[4] = {
-	new CM_MAINTENANCE(0),
-	new CM_DIMMER(10,0,0),
+	new CM_MAINTENANCE(0),											//   24 byte flash, 124 byte sram
+	new CM_DIMMER(10,0,0),											// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
 	new CM_DIMMER(2,1,0),
 	new CM_DIMMER(2,2,0),
 };
-
 
 /*
 * @brief HMID, Serial number, HM-Default-Key, Key-Index
@@ -84,15 +95,15 @@ void everyTimeStart(void) {
 	DBG(SER, F("HMID: "), _HEX(dev_ident.HMID, 3), F(", MAID: "), _HEX(dev_operate.MAID, 3), F(", CNL: "), cnl_max, F("\n\n"));	// some debug
 
 	/* write the internal key address into the channel */
-	uint8_t t_peer[4];																		// create a peer buffer
-	memcpy_P(t_peer, HMSerialData, 3);														// peer must be our hmid
-	for (uint8_t i = 1; i < cnl_max; i++) {													// step through the channels, starting by channel 1
-		t_peer[3] = i;																		// write the respective channel in the peer address
-		cmm[i]->peerDB.set_peer(0, t_peer);													// make peer available, otherwise error in the config tool
-		//cmm[i]->lstP.write_array(NULL,0,0);													// load the default list, nothing to change
-		cmm[i]->lstP.load_default();
-		cmm[i]->lstP.save_list(0);
-	}
+//	uint8_t t_peer[4];																		// create a peer buffer
+//	memcpy_P(t_peer, HMSerialData, 3);														// peer must be our hmid
+//	for (uint8_t i = 1; i < cnl_max; i++) {													// step through the channels, starting by channel 1
+//		t_peer[3] = i;																		// write the respective channel in the peer address
+//		cmm[i]->peerDB.set_peer(0, t_peer);													// make peer available, otherwise error in the config tool
+//		//cmm[i]->lstP.write_array(NULL,0,0);													// load the default list, nothing to change
+//		cmm[i]->lstP.load_default();
+//		cmm[i]->lstP.save_list(0);
+//	}
 }
 
 

@@ -318,3 +318,10 @@ ISR(WDT_vect) {
 	add_millis(wdtSleep_TIME);																// nothing to do, only for waking up
 }
 //- -----------------------------------------------------------------------------------------------------------------------
+
+
+uint16_t freeRam() {
+	extern int __heap_start, *__brkval;
+	int v;
+	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
+}

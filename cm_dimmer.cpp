@@ -23,16 +23,16 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel, uint8_t vi
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_dimmer_ChnlReg;															// pointer to the list1 register definition
 	lstC.def = cm_dimmer_ChnlDef;															// pointer to the list1 defaults definition
+	lstC.val = cm_dimmer_ChnlVal;															// pointer to ram array
 	lstC.len = sizeof(cm_dimmer_ChnlReg);													// evaluating and storing the length of list1
-	static uint8_t t_lstC[sizeof(cm_dimmer_ChnlReg)];										// allocate the same space in memory as working area
-	lstC.val = t_lstC;																		// pointer to ram array
+	//static uint8_t t_lstC[sizeof(cm_dimmer_ChnlReg)];										// allocate the same space in memory as working area
 
 	lstP.lst = 3;																			// setup the peer list (list3) with all dependencies
 	lstP.reg = cm_dimmer_PeerReg;															// same as list1
 	lstP.def = cm_dimmer_PeerDef;
+	lstP.val = cm_dimmer_PeerVal;
 	lstP.len = sizeof(cm_dimmer_PeerReg);
-	static uint8_t t_lstP[sizeof(cm_dimmer_PeerReg)];
-	lstP.val = t_lstP;
+	//static uint8_t t_lstP[sizeof(cm_dimmer_PeerReg)];
 
 	/* as the dimmer has virtual channels, we need to take care in the setup */
 	vrt_grp = virtual_group;																// remember the virtual group this instance belong too
@@ -221,14 +221,14 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 */
 void CM_DIMMER::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 	cms.inhibit = 0;
-	hm->send_ACK();
+	hm.send_ACK();
 }
 /*
 * @brief INSTRUCTION_INHIBIT_ON, see INSTRUCTION_INHIBIT_OFF
 **/
 void CM_DIMMER::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 	cms.inhibit = 1;
-	hm->send_ACK();
+	hm.send_ACK();
 }
 /*
 * @brief Function is called on messages comming from master, simulating a remote or push button.
@@ -476,7 +476,7 @@ void CM_DIMMER::do_jump_table(uint8_t counter, uint8_t bidi) {
 
 	/* check for inhibit flag */
 	if (cms.inhibit) {
-		hm->send_NACK();
+		hm.send_NACK();
 		DBG(DM, F("inhibit is set, exit\n"));
 		return;
 	}

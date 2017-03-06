@@ -263,7 +263,7 @@ void AS::process_message(void) {
 		}
 
 		/* challange done, now we can process the initial request */
-		if      (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(&rcv_msg.m01xx01);
+		if      (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       CONFIG_PEER_ADD(&rcv_msg.m01xx01); //pCM->CONFIG_PEER_ADD(&rcv_msg.m01xx01);
 		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(&rcv_msg.m01xx02);
 		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ(&rcv_msg.m01xx03);
 		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(&rcv_msg.m01xx04);
@@ -354,7 +354,7 @@ void AS::process_message(void) {
 		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LED))                pCM->INSTRUCTION_LED(&rcv_msg.m1180xx);
 		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))            pCM->INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
 		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LEVEL))              pCM->INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))          pCM->INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))          pCM->INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
 		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))           pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
 
 
@@ -1005,6 +1005,39 @@ void AS::send_WEATHER_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *pt
 
 
 /* - device related functions without any relation to a specific channel */
+
+/*
+* @brief Adds one or two peers to a channel
+* CONFIG_PEER_ADD message is send by the HM master to combine two client devices
+* request is forwarded by the AS:processMessage function
+*/
+void AS::CONFIG_PEER_ADD(s_m01xx01 *buf) {
+
+	CM_MASTER *pCM = cmm[buf->MSG_CNL];														// short hand to the respective channel
+	uint8_t temp_peer[4];																	// temp byte array to load peer addresses
+	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
+
+	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
+		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry
+
+		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
+		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
+
+		uint8_t idx = pCM->peerDB.get_idx(temp_peer);										// search if we have already the peer in the database
+		if (idx == 0xff) idx = pCM->peerDB.get_free_slot();									// not in the in the database, search a free slot
+
+		if (idx != 0xff) {																	// free slot available
+			pCM->peerDB.set_peer(idx, temp_peer);											// write the peer into the database
+			pCM->request_peer_defaults(idx, buf);											// ask the channel module to load the defaults
+			ret_byte++;																		// increase success
+		}
+	}
+
+	DBG(CM, F("CM:CONFIG_PEER_ADD, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
+	check_send_ACK_NACK(ret_byte);
+}
+
+
 void AS::INSTRUCTION_RESET(s_m1104xx *buf) {
 	DBG(AS, F("CM:INSTRUCTION_RESET\n"));
 	send_ACK();																				// prepare an ACK message

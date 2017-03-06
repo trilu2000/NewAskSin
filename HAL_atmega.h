@@ -154,4 +154,6 @@ void setSleepMode();																		// set the sleep mode, documentation to fo
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
+uint16_t freeRam(void);
+
 #endif 

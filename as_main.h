@@ -74,7 +74,7 @@ public:  //---------------------------------------------------------------------
 
 	void send_DEVICE_INFO(MSG_REASON::E reason);
 
-	/*void send_CONFIG_PEER_ADD(s_m01xx01 *buf);											// in client communication not needed to send
+	//void send_CONFIG_PEER_ADD(s_m01xx01 *buf);											// in client communication not needed to send
 	//void send_CONFIG_PEER_REMOVE(s_m01xx02 *buf);											// this type of messages are raised from master only
 	//void send_CONFIG_PEER_LIST_REQ(s_m01xx03 *buf);
 	//void send_CONFIG_PARAM_REQ(s_m01xx04 *buf);
@@ -84,7 +84,7 @@ public:  //---------------------------------------------------------------------
 	//void send_CONFIG_WRITE_INDEX2(s_m01xx08 *buf);
 	//void send_CONFIG_SERIAL_REQ(s_m01xx09 *buf);
 	//void send_CONFIG_PAIR_SERIAL(s_m01xx0a *buf);
-	//void send_CONFIG_STATUS_REQUEST(s_m01xx0e *buf);	*/	
+	//void send_CONFIG_STATUS_REQUEST(s_m01xx0e *buf);
 
 	void check_send_ACK_NACK(uint8_t ackOk);												// ACK or NACK on base of ackok
 	void send_ACK(void);																	// all different types of ACK are a response
@@ -141,7 +141,19 @@ public:  //---------------------------------------------------------------------
 
 
 
-	/* - device related functions without any relation to a specific channel */
+	/* - device related functions without the need to be forwarded to a specific channel module */
+	inline void CONFIG_PEER_ADD(s_m01xx01 *buf);	
+	//void CONFIG_PEER_REMOVE(s_m01xx02 *buf);
+	//void CONFIG_PEER_LIST_REQ(s_m01xx03 *buf);
+	//void CONFIG_PARAM_REQ(s_m01xx04 *buf);
+	//void CONFIG_START(s_m01xx05 *buf);
+	//void CONFIG_END(s_m01xx06 *buf);
+	//void CONFIG_WRITE_INDEX1(s_m01xx07 *buf);
+	//void CONFIG_WRITE_INDEX2(s_m01xx08 *buf);
+	//void CONFIG_SERIAL_REQ(s_m01xx09 *buf);
+	//void CONFIG_PAIR_SERIAL(s_m01xx0a *buf);
+	//void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);
+
 	inline void INSTRUCTION_RESET(s_m1104xx *buf);
 	inline void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
 	inline void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);

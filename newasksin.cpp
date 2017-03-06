@@ -25,7 +25,7 @@ s_snd_msg snd_msg;																			// same for send strings
 s_peer_msg peer_msg;																		// peer message array as buffer between send function and send processing
 s_list_msg list_msg;																		// holds information to answer config list requests for peer or param lists
 
-AS *hm = new AS();																			// the newasksin main class
+AS hm;																						// the newasksin main class
 uint8_t cnl_max = 0;																		// increased by every instance which is initialized
 //const uint8_t list_max = 5;																// max 5 lists per channel, list 0 to list 4
 
