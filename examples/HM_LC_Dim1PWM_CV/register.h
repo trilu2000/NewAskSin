@@ -13,23 +13,14 @@
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-//HAS_AES as_aes;													// 2826 byte flash, 277 byte sram
-//NO_AES as_aes;													//   60 byte flash,  69 byte sram
-//AES *aes = &as_aes;	
-
 AES *aes = new NO_AES();											//   60 byte flash,  69 byte sram
 //AES *aes = new HAS_AES();											// 2826 byte flash, 277 byte sram
-
-COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2); //  546 byte flash, 124 byte sram
-
-CBN *cbn = new CBN(1, &pin_B0);										//   80 byte flash,  25 byte sram
-
-LED *led = new LED(&pin_D6, &pin_D4);								//  150 byte flash,  51 byte sram
-
+COM *com = new CC1101(pinB4, pinB3, pinB5, pinB2, pinD2);				//  546 byte flash, 124 byte sram
+CBN *cbn = new CBN(1, pinB0);										//   80 byte flash,  25 byte sram
+LED *led = new LED(pinD6, pinD4);										//  150 byte flash,  51 byte sram
 BAT *bat = new NO_BAT();											//   34 byte flash,  22 byte sram
 //BAT *bat = new INT_BAT(3600000, 30);								//  176 byte flash,  22 byte sram
-//BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	//  386 byte flash,  56 byte sram
-
+//BAT *bat = new EXT_BAT(3600000, 30, pinD7, pinC6, 10, 45);		//  386 byte flash,  56 byte sram
 POM *pom = new POM(POWER_MODE_NO_SLEEP);							//   68 byte flash,  19 byte sram
 
 
@@ -42,7 +33,6 @@ uint8_t cm_maintenance_ChnlVal[sizeof(cm_maintenance_ChnlReg)];
 const uint8_t cm_maintenance_ChnlLen = sizeof(cm_maintenance_ChnlReg);
 
 
-
 /*
 *  @brief definition of the device functionallity per channel
 */
@@ -52,6 +42,7 @@ CM_MASTER *cmm[4] = {
 	new CM_DIMMER(2,1,0),
 	new CM_DIMMER(2,2,0),
 };
+
 
 /*
 * @brief HMID, Serial number, HM-Default-Key, Key-Index
@@ -83,7 +74,6 @@ const uint8_t dev_static[] PROGMEM = {             // testID
 	/* subTypeID       1 byte */  0x00,           // replace __ by a valid type id 
 	/* deviceInfo      3 byte */  0x41,0x01,0x00, // device info not found, replace by valid values 
 };
-
 
 
 /*

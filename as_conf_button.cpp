@@ -10,8 +10,8 @@
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
-CBN::CBN(uint8_t mode, const s_pin_def *ptr_pin) {
-	key_pin = ptr_pin;
+CBN::CBN(uint8_t mode, uint8_t pin_def) {
+	def_key = pin_def;
 	button_check.configured = 1;															// poll the pin make only sense if it was configured, store result here
 	button_check.scenario = mode;
 }
@@ -22,9 +22,9 @@ CBN::CBN(const uint8_t mode) {
 }
 
 void CBN::init(void) {
-	register_PCINT(key_pin);																// prepare hardware and register interrupt
+	register_PCINT(def_key);																// prepare hardware and register interrupt
 
-	status = check_PCINT(key_pin, 0);														// get the latest information
+	status = check_PCINT(def_key, 0);														// get the latest information
 
 }
 void CBN::poll(void) {
@@ -36,7 +36,7 @@ void CBN::poll(void) {
 	if (!button_check.configured) return;													// pin info not set, nothing to do
 
 	// 0 for button is pressed, 1 for released, 2 for falling and 3 for rising edge
-	status = check_PCINT(key_pin, 1);														// check if an interrupt had happened
+	status = check_PCINT(def_key, 1);														// check if an interrupt had happened
 
 	/* button was just pressed, start for every option */
 	if (status == 2) {

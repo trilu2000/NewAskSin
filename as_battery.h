@@ -49,11 +49,11 @@ protected:  //------------------------------------------------------------------
 
 class EXT_BAT : public BAT {
 public:  //----------------------------------------------------------------------------------------------------------------
-	EXT_BAT(uint32_t check_interval, uint8_t tenth_volt, const s_pin_def *ptr_pin_enable, const s_pin_def *ptr_pin_measure, uint8_t z1, uint8_t z2);
+	EXT_BAT(uint32_t check_interval, uint8_t tenth_volt, uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2);
 
 protected:  //-------------------------------------------------------------------------------------------------------------
-	const s_pin_def *ptr_enable;
-	const s_pin_def *ptr_measure;
+	uint8_t def_enable;
+	uint8_t def_measure;
 	uint8_t res1, res2;
 
 	void do_measure(void);

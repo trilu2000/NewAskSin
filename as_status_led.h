@@ -85,8 +85,8 @@ const struct s_blink_pattern ptr_pat[] PROGMEM = {
 class LED {
 public:		//---------------------------------------------------------------------------------------------------------
 
-	const s_pin_def *pin_red;												// pointer to pin definition
-	const s_pin_def *pin_grn;
+	uint8_t def_red;														// store the led pins
+	uint8_t def_grn;
 
 	waitTimer timer;														// blink timer functionality
 
@@ -98,7 +98,7 @@ public:		//---------------------------------------------------------------------
 	};
 	s_op_pat op_pat[2];														// array of two, 0 for current, 1 to restore previous
 
-	LED(const s_pin_def *ptr_pin_red, const s_pin_def *ptr_pin_grn);		// class constructor
+	LED(uint8_t pin_def_red, uint8_t pin_def_grn);							// class constructor
 	void init(void);														// init function to make hardware ready
 
 	void set(LED_STAT::E stat);												// function to set the blink pattern

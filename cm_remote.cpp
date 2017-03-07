@@ -28,8 +28,9 @@
 * In such a case you can call the buttonAction() directly from user sketch.
 * @param   port/pin information    PIN_C2
 */
-CM_REMOTE::CM_REMOTE(const uint8_t peer_max, const s_pin_def *ptr_key_pin) : CM_MASTER(peer_max) {
-	key_pin = ptr_key_pin;
+CM_REMOTE::CM_REMOTE(const uint8_t peer_max, uint8_t pin_key) : CM_MASTER(peer_max) {
+	def_key = pin_key;
+	button_check.configured = 1;															// poll the pin make only sense if it was configured, store result here
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_remote_ChnlReg;
@@ -53,6 +54,7 @@ CM_REMOTE::CM_REMOTE(const uint8_t peer_max, const s_pin_def *ptr_key_pin) : CM_
 }
 
 CM_REMOTE::CM_REMOTE(const uint8_t peer_max) : CM_MASTER(peer_max) {
+	button_check.configured = 0;															// poll the pin make only sense if it was configured, store result here
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_remote_ChnlReg;
@@ -76,10 +78,9 @@ CM_REMOTE::CM_REMOTE(const uint8_t peer_max) : CM_MASTER(peer_max) {
 }
 
 void CM_REMOTE::cm_init() {
-	if (key_pin) {
-		register_PCINT(key_pin);
-		button_ref.status = check_PCINT(key_pin, 0);										// get the latest information
-		button_check.configured = 1;														// poll the pin make only sense if it was configured, store result here
+	if (button_check.configured) {
+		register_PCINT(def_key);
+		button_ref.status = check_PCINT(def_key, 0);										// get the latest information
 		DBG(RE, F("RE:init_pin, cnl: "), lstC.cnl, F(", pin: "), key_pin->PINBIT, F(", port: "), key_pin->VEC, F(", LONG_PRESS_TIME: "), byteTimeCvt(l1->LONG_PRESS_TIME), F(", DBL_PRESS_TIME: "), byteTimeCvt(l1->DBL_PRESS_TIME), F(", AES_ACTIVE: "), l1->AES_ACTIVE, '\n');
 	}
 
@@ -95,7 +96,7 @@ void CM_REMOTE::cm_poll(void) {
 	#define repeatedLong 250
 
 	if (!button_check.configured) return;													// if port is not configured, poll makes no sense
-	button_ref.status = check_PCINT(key_pin, 1);											// check if an interrupt had happened
+	button_ref.status = check_PCINT(def_key, 1);											// check if an interrupt had happened
 
 	/* button was just pressed, start for every option */
 	if (button_ref.status == 2) {

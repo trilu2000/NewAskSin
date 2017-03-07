@@ -96,23 +96,6 @@ void CM_DIMMER::cm_poll(void) {
 
 }
 
-/*
-* @brief setToggle will be addressed by config button in mode 2 by a short key press here we can toggle the status of the actor
-*/
-void CM_DIMMER::set_toggle(void) {
-	DBG(DM, F("DM"), lstC.cnl, F(":set_toggle\n") );
-
-	/* check for inhibit flag */
-	if (cms.inhibit) return;																// nothing to do while inhibit is set
-
-	if (cms.value)  cms.set_value = 0;														// if its on, we switch off
-	else cms.set_value = 200;
-
-	//tr40.cur = (send_stat.modStat) ? DM_JT::ON : DM_JT::OFF;
-	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS;											// send next time a info status message
-	cms.msg_delay.set(5);
-}
-
 void CM_DIMMER::info_config_change(uint8_t channel) {
 	if (lstC.cnl != channel) return;
 	DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_CHANGE\n"));
@@ -131,7 +114,7 @@ void CM_DIMMER::info_config_change(uint8_t channel) {
 /**
 * This function will be called by the eeprom module as a request to update the
 * list3 structure by the default values per peer channel for the user module.
-* Overall defaults are already set to the list3/4 by the eeprom class, here it 
+* Overall defaults are already set to the list3/4 by the eeprom class, here it
 * is only about peer channel specific deviations.
 * As we get this request for each peer channel we don't need the peer index.
 * Setting defaults could be done in different ways but this should be the easiest...
@@ -142,8 +125,8 @@ void CM_DIMMER::info_config_change(uint8_t channel) {
 
 * 2,4,6    00 00 00 32 64 00 FF 00 FF 01 12 22 23 20 00 14 C8 0A 05 05 00 C8 0A 0A 04 04 00 14 52 63 00 00 00 32 64 00 FF 00 FF 24 12 22 23 20 00 14 C8 0A 05 05 00 C8 0A 0A 04 04 20 14 52 63
 * 1,3,5    00 00 00 32 64 00 FF 00 FF 01 44 54 64 20 00 14 C8 0A 05 05 00 C8 0A 0A 04 04 00 14 52 63 00 00 00 32 64 00 0A 00 FF A5 44 54 64 20 00 14 C8 0A 05 05 00 C8 0A 0A 04 04 20 14 52 63
-* 0,1,2    00 00 00 32 64 00 ff 00 ff 01 14 52 63 20 00 14 C8 0A 05 05 00 C8 0A 0A 04 04 00 14 52 63 00 00 00 32 64 00 FF 00 FF 26 14 52 63 20 00 14 C8 0A 05 05 00 C8 0A 0A 04 04 20 14 52 63,   
-*                                        xx xx xx                                                                      xx       xx xx xx xx                                 
+* 0,1,2    00 00 00 32 64 00 ff 00 ff 01 14 52 63 20 00 14 C8 0A 05 05 00 C8 0A 0A 04 04 00 14 52 63 00 00 00 32 64 00 FF 00 FF 26 14 52 63 20 00 14 C8 0A 05 05 00 C8 0A 0A 04 04 20 14 52 63,
+*                                        xx xx xx                                                                      xx       xx xx xx xx
 * on/off        0B 14 0C 52 0D 63               87 FF 8A 26 8B 14 8C 52 8D 63
 *  on           0B 12 0C 22 0D 23               87 FF 8A 24 8B 12 8C 22 8D 23
 *  off          0B 44 0C 54 0D 64               87 0A 8A A5 8B 44 8C 54 8D 64
@@ -155,7 +138,7 @@ void CM_DIMMER::info_config_change(uint8_t channel) {
 void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	// if both peer channels are given, peer channel 01 default is the off dataset, peer channel 02 default is the on dataset
 	// if only one peer channel is given, then the default dataset is toogle
-	if (( buf->PEER_CNL[0] ) && ( buf->PEER_CNL[1] )) {		// dual peer add
+	if ((buf->PEER_CNL[0]) && (buf->PEER_CNL[1])) {		// dual peer add
 
 		if (idx % 2) {										// odd (1,3,5..) means OFF
 			uint8_t lst[] = { 0x0A,0x01, 0x0B,0x12, 0x0C,0x22, 0x0D,0x23, 0x8A,0x24, 0x8B,0x12, 0x8C,0x22, 0x8D,0x23, };
@@ -166,7 +149,7 @@ void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 			lstP.write_array(lst, 18, idx);
 		}
 
-	} else  {												// toggle peer channel
+	} else {												// toggle peer channel
 		//lstP.val[10] = lstP.val[40] = 0x14;
 		//lstP.val[11] = lstP.val[41] = 0x52;
 		//lstP.val[12] = lstP.val[42] = 0x63;
@@ -175,8 +158,57 @@ void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 		//lstP.val[39] = 0x26;
 	}
 
-	DBG(DM, F("DM"), lstC.cnl, F(":request_peer_defaults CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", idx:"), _HEX(idx), '\n' );
+	DBG(DM, F("DM"), lstC.cnl, F(":request_peer_defaults CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", idx:"), _HEX(idx), '\n');
 }
+
+void CM_DIMMER::instruction_msg(MSG_TYPE::E type, uint8_t *buf) {
+	if      (type == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))  INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
+	else if (type == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))   INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
+	else if (type == BY10(MSG_TYPE::INSTRUCTION_SET))          INSTRUCTION_SET(&rcv_msg.m1102xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE))  INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LED))          INSTRUCTION_LED(&rcv_msg.m1180xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))      INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LEVEL))        INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))    INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))     INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
+
+}
+
+void CM_DIMMER::peer_action_msg(MSG_TYPE::E type, uint8_t *buf) {
+	if      (type == BY03(MSG_TYPE::SWITCH))            SWITCH(&rcv_msg.m3Exxxx);
+	//else if (type == BY03(MSG_TYPE::TIMESTAMP))         TIMESTAMP(&rcv_msg.m3Fxxxx);
+	else if (type == BY03(MSG_TYPE::REMOTE))            REMOTE(&rcv_msg.m40xxxx);
+	else if (type == BY03(MSG_TYPE::SENSOR_EVENT))      SENSOR_EVENT(&rcv_msg.m41xxxx);
+	//else if (type == BY03(MSG_TYPE::SWITCH_LEVEL))      SWITCH_LEVEL(&rcv_msg.m42xxxx);
+	//else if (type == BY03(MSG_TYPE::SENSOR_DATA))       SENSOR_DATA(&rcv_msg.m53xxxx);
+	//else if (type == BY03(MSG_TYPE::GAS_EVENT))         GAS_EVENT(&rcv_msg.m54xxxx);
+	//else if (type == BY03(MSG_TYPE::CLIMATE_EVENT))     CLIMATE_EVENT(&rcv_msg.m58xxxx);
+	//else if (type == BY03(MSG_TYPE::SET_TEAM_TEMP))     SET_TEAM_TEMP(&rcv_msg.m59xxxx);
+	//else if (type == BY03(MSG_TYPE::THERMAL_CONTROL))   THERMAL_CONTROL(&rcv_msg.m5axxxx);
+	//else if (type == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
+	//else if (type == BY03(MSG_TYPE::POWER_EVENT))       POWER_EVENT(&rcv_msg.m5fxxxx);
+	//else if (type == BY03(MSG_TYPE::WEATHER_EVENT))     WEATHER_EVENT(&rcv_msg.m70xxxx);
+}
+
+/*
+* @brief setToggle will be addressed by config button in mode 2 by a short key press here we can toggle the status of the actor
+*/
+/*void CM_DIMMER::set_toggle(void) {
+	DBG(DM, F("DM"), lstC.cnl, F(":set_toggle\n") );
+
+	/* check for inhibit flag */
+/*	if (cms.inhibit) return;																// nothing to do while inhibit is set
+
+	if (cms.value)  cms.set_value = 0;														// if its on, we switch off
+	else cms.set_value = 200;
+
+	//tr40.cur = (send_stat.modStat) ? DM_JT::ON : DM_JT::OFF;
+	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS;											// send next time a info status message
+	cms.msg_delay.set(5);
+}*/
+
+
+
 
 /*
 * @brief Received message handling forwarded by AS::processMessage

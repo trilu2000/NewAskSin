@@ -22,23 +22,29 @@ CM_MASTER::CM_MASTER(const uint8_t peer_max) {
 }
 
 
+void CM_MASTER::init(void) {
+	cm_init();																				// init the virtual poll function
+}
+void CM_MASTER::poll(void) {
+	cm_poll();																				// poll the virtual poll function 
+}
+
 
 /**
 * @brief Virtual function is called while we received a new list0 or list1
 * Herewith we can adapt changes given by the config change. Needs to be overwritten
 * by the respective channel module
 */
+
+void CM_MASTER::cm_init(void) {
+}
+
+void CM_MASTER::cm_poll(void) {
+}
+
 void CM_MASTER::info_config_change(uint8_t channel) {
 	DBG(CM, F("CM:config_change "), channel, '\n' );
 }
-/**
-* we received an peer add event, which means, there was a peer added in this respective channel
-* 1st 3 bytes shows the peer address, 4th and 5th byte gives the peer channel
-* no need for sending an answer here, for information only
-*/
-//void CM_MASTER::info_peer_add(s_m01xx01 *buf) {
-//	DBG(CM, F("CM:info_peer_add, peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n');
-//}
 
 void CM_MASTER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	lstP.load_default();																	// copy the defaults from progmem into the peer list, index doesn't matter
@@ -46,19 +52,14 @@ void CM_MASTER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEX(idx), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n' );
 }
 
+void CM_MASTER::instruction_msg(MSG_TYPE::E type, uint8_t *buf) {										// consolidation of ~10 virtual function definitions
 
-void CM_MASTER::init(void) {
-	cm_init();																				// init the virtual poll function
-}
-
-void CM_MASTER::cm_init(void) {
 }
 
-void CM_MASTER::poll(void) {
-	cm_poll();																				// poll the virtual poll function 
+void CM_MASTER::peer_action_msg(MSG_TYPE::E type, uint8_t *buf) {										// consolidation of ~10 virtual function definitions
+
 }
-void CM_MASTER::cm_poll(void) {
-}
+
 
 /*
 * @brief This function is called at the moment by the config button class, it is to toogle the output
@@ -299,7 +300,7 @@ void CM_MASTER::ACK_NACK_UNKNOWN(s_m02xxxx *buf) {
 }
 
 
-void CM_MASTER::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
+/*void CM_MASTER::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 	DBG(CM, F("CM:INSTRUCTION_INHIBIT_OFF\n"));
 }
 void CM_MASTER::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
@@ -335,7 +336,7 @@ void CM_MASTER::INSTRUCTION_SET_TEMP(s_m1186xx *buf) {
 //void CM_MASTER::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
 //}
 //void CM_MASTER::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
-//}
+//}*/
 
 
 void CM_MASTER::HAVE_DATA(s_m12xxxx *buf) {
@@ -343,7 +344,7 @@ void CM_MASTER::HAVE_DATA(s_m12xxxx *buf) {
 }
 
 
-void CM_MASTER::SWITCH(s_m3Exxxx *buf) {
+/*void CM_MASTER::SWITCH(s_m3Exxxx *buf) {
 	DBG(CM, F("CM:SWITCH\n"));
 }
 void CM_MASTER::TIMESTAMP(s_m3fxxxx *buf) {
@@ -381,7 +382,7 @@ void CM_MASTER::POWER_EVENT(s_m5fxxxx *buf) {
 }
 void CM_MASTER::WEATHER_EVENT(s_m70xxxx *buf) {
 	DBG(CM, F("CM:WEATHER_EVENT\n"));
-}
+}*/
 
 
 /*

@@ -51,17 +51,17 @@ INT_BAT::INT_BAT(uint32_t check_interval, uint8_t tenth_volt) {
 
 
 //public:  //--------------------------------------------------------------------------------------------------------------
-EXT_BAT::EXT_BAT(uint32_t check_interval, uint8_t tenth_volt, const s_pin_def *ptr_pin_enable, const s_pin_def *ptr_pin_measure, uint8_t z1, uint8_t z2) {
+EXT_BAT::EXT_BAT(uint32_t check_interval, uint8_t tenth_volt, uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2) {
 	interval = check_interval;
 	default_value = tenth_volt;
 
-	ptr_enable = ptr_pin_enable;
-	ptr_measure = ptr_pin_measure;
+	def_enable = pin_enable;
+	def_measure = pin_measure;
 	res1 = z1;
 	res2 = z2;
 }
 
 //protected:  //-----------------------------------------------------------------------------------------------------------
 void EXT_BAT::do_measure() {
-	measure_value = get_external_voltage(ptr_enable, ptr_measure, res1, res2);
+	measure_value = get_external_voltage(def_enable, def_measure, res1, res2);
 }

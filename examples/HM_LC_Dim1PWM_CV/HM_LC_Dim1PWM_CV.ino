@@ -26,6 +26,7 @@ void setup() {
 	hm.init();																				// init the asksin framework
 
 	sei();																					// enable interrupts
+
 }
 
 void loop() {
@@ -41,8 +42,9 @@ void loop() {
 void CM_DIMMER::init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel) {
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
 	//DBG(SER, F("initDim- vrt_grp: "), *virtual_group, F(", vrt_cnl: "), *virtual_channel, F(", cnl: "), *channel, '\n');
-	
-	set_pin_output(&pin_D3);																// init the dimmer pin
+
+	set_pin_output(pinD3);																	// init the dimmer pin
+
 	power_timer2_enable();																	// enable the timer2 in power management
 
 	TCCR2A = _BV(COM2B1) | _BV(WGM20);

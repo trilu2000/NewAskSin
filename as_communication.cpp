@@ -70,22 +70,22 @@ void     COM::encode(uint8_t *buf) {
 * ccSendByte() - forwarder to the SPI send and receive function
 *
 */
-CC1101::CC1101(const s_pin_def *ptr_pin_miso, const s_pin_def *ptr_pin_mosi, const s_pin_def *ptr_pin_sck, const s_pin_def *ptr_pin_csl, const s_pin_def *ptr_pin_gdo0)  {
-	pin_miso = ptr_pin_miso;
-	pin_mosi = ptr_pin_mosi;
-	pin_sck = ptr_pin_sck;
-	pin_csl = ptr_pin_csl;
-	pin_gdo0 = ptr_pin_gdo0;
+CC1101::CC1101(uint8_t pin_miso, uint8_t pin_mosi, uint8_t pin_sck, uint8_t pin_csl, uint8_t pin_gdo0) {
+	def_miso = pin_miso;
+	def_mosi = pin_mosi;
+	def_sck  = pin_sck;
+	def_csl  = pin_csl;
+	def_gdo0 = pin_gdo0;
 }
 void    CC1101::init(void) {	
 	/* init the hardware to get access to the RF modul,
 	*  some deselect and selects to init the TRX868modul */
-	set_pin_output(pin_csl);																// set chip select as output
-	set_pin_high(pin_csl);																	// while module is low active
-	set_pin_output(pin_mosi);																// set MOSI as output
-	set_pin_input(pin_miso);																// set MISO as input
-	set_pin_output(pin_sck);																// set SCK as output
-	set_pin_input(pin_gdo0);																// set GDO0 as input
+	set_pin_output(def_csl);																// set chip select as output
+	set_pin_high(def_csl);																	// while module is low active
+	set_pin_output(def_mosi);																// set MOSI as output
+	set_pin_input(def_miso);																// set MISO as input
+	set_pin_output(def_sck);																// set SCK as output
+	set_pin_input(def_gdo0);																// set GDO0 as input
 	enable_spi();																			// enable spi
 
 	spi_deselect();																		
@@ -313,7 +313,7 @@ void    CC1101::rcv_data(uint8_t *buf) {														// read data packet from R
 */
 uint8_t CC1101::has_data(void) {
 	static uint8_t prev;
-	uint8_t curr = get_pin_status(pin_gdo0);												// get the current pin status
+	uint8_t curr = get_pin_status(def_gdo0);												// get the current pin status
 	if (prev == curr) return 0;																// if nothing changed since last request then return a 0
 
 	prev = curr;																			// if we are here, a change was detected, so remember for next time
@@ -455,11 +455,11 @@ void    CC1101::writeReg(uint8_t regAddr, uint8_t val) {								// write single 
 * while we have to wait after a select till the modul is ready for communication
 */
 void CC1101::spi_select(void) {
-	set_pin_low(pin_csl);
-	while (get_pin_status(pin_miso));
+	set_pin_low(def_csl);
+	while (get_pin_status(def_miso));
 }
 void CC1101::spi_deselect(void) {
-	set_pin_high(pin_csl);
+	set_pin_high(def_csl);
 }
 
 

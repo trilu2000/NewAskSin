@@ -59,11 +59,11 @@ private:  //--------------------------------------------------------------------
 		uint8_t counter          : 8;														// will be increased in buttonAction function
 	} button_info;																			// holds the details for the send event message
 
-	const s_pin_def *key_pin = NULL;
+	uint8_t def_key;
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
-	CM_REMOTE(const uint8_t peer_max, const s_pin_def *ptr_key_pin);						// constructor
+	CM_REMOTE(const uint8_t peer_max, uint8_t pin_key);										// constructor
 	CM_REMOTE(const uint8_t peer_max);														// constructor, without pin
 	virtual void cm_init();																	// overwrite the init function in cmMaster
 

@@ -252,23 +252,27 @@ public:  //---------------------------------------------------------------------
 
 	s_cm_status cms;																		// defined in type_defs, holds current status and set_satatus
 
-	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
-
 	virtual void cm_init(void);																// init function, called after AS initialisation
 	virtual void cm_poll(void);																// poll function, driven by HM loop
-	virtual void set_toggle(void);															// toggle the module initiated by config button
+
 	virtual void info_config_change(uint8_t channel);										// list1 on registered channel had changed
+	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
+
+	virtual void instruction_msg(MSG_TYPE::E type, uint8_t *buf);							// consolidation of ~10 virtual function definitions
+	virtual void peer_action_msg(MSG_TYPE::E type, uint8_t *buf);							// consolidation of ~10 virtual function definitions
+	
+	//virtual void set_toggle(void);														// toggle the module initiated by config button
+
 
 	/* receive functions to handle requests forwarded by AS:processMessage
 	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */
-	virtual void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);										// master is asking for channel status
-	virtual void INSTRUCTION_SET(s_m1102xx *buf);											// master wants to set channel status
-	virtual void INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf);									// deny access to switch, set_toogle and Remote 
-	virtual void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);									// grant access to switch
-	virtual void SWITCH(s_m3Exxxx *buf);													// switch message from master to test a peer setup
-	virtual void REMOTE(s_m40xxxx *buf);													// remote peer message
-	virtual void SENSOR_EVENT(s_m41xxxx *buf);												// sensor peer message
-
+	void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);												// master is asking for channel status
+	void INSTRUCTION_SET(s_m1102xx *buf);													// master wants to set channel status
+	void INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf);											// deny access to switch, set_toogle and Remote 
+	void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);											// grant access to switch
+	void SWITCH(s_m3Exxxx *buf);															// switch message from master to test a peer setup
+	void REMOTE(s_m40xxxx *buf);															// remote peer message
+	void SENSOR_EVENT(s_m41xxxx *buf);														// sensor peer message
 
 	void do_jump_table(uint8_t counter, uint8_t bidi);										// target for msg 3E/40/41
 	void do_updim(void);																	// simple updim without state machine

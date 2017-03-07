@@ -10,8 +10,15 @@
 * - -----------------------------------------------------------------------------------------------------------------------
 */
 
-#ifndef _HAL__ATMEGA_H
-#define _HAL__ATMEGA_H
+#ifndef _HAL_ATMEGA_H
+#define _HAL_ATMEGA_H
+
+#if defined(ARDUINO) && ARDUINO >= 100
+	#include "Arduino.h"
+#else
+	#include "WProgram.h"
+#endif
+
 
 #include <avr/sleep.h>
 #include <avr/power.h>
@@ -23,22 +30,7 @@
 #include <stdint.h>
 
 
-/*-- struct for pin definition in HAL_<cpu>.h template 
-* has to be defined before including the HAL_<cpu>.h template.
-* needed for pin and interrupt functions 
-*/
-struct s_pin_def {
-	uint8_t PINBIT;
-	volatile uint8_t *DDREG;
-	volatile uint8_t *PORTREG;
-	volatile uint8_t *PINREG;
-	uint8_t PCINR;
-	uint8_t PCIBYTE;
-	volatile uint8_t *PCICREG;
-	volatile uint8_t *PCIMASK;
-	uint8_t PCIEREG;
-	uint8_t VEC;
-};
+
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -65,12 +57,12 @@ struct s_pin_def {
 * information is done by forwarding a pointer to the specific function and within the function all hardware related 
 * setup and switching is done.
 */
-void set_pin_output(const s_pin_def *ptr_pin);												// set a specific pin as output
-void set_pin_input(const s_pin_def *ptr_pin);												// set the pin as input
-void set_pin_high(const s_pin_def *ptr_pin);												// set high level on specific pin
-void set_pin_low(const s_pin_def *ptr_pin);													// set a low level on a specific pin
-void set_pin_toogle(const s_pin_def *ptr_pin);												// toogle the pin level
-uint8_t get_pin_status(const s_pin_def *ptr_pin);											// detect a pin input if it is high or low
+void set_pin_output(uint8_t pin_def);														// set a specific pin as output
+void set_pin_input(uint8_t pin_def);														// set the pin as input
+
+void set_pin_high(uint8_t pin_def);															// set high level on specific pin
+void set_pin_low(uint8_t pin_def);															// set a low level on a specific pin
+uint8_t get_pin_status(uint8_t pin_def);													// detect a pin input if it is high or low
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -79,8 +71,9 @@ uint8_t get_pin_status(const s_pin_def *ptr_pin);											// detect a pin inpu
 * is done by forwarding a pointer to the struct. pin definition is done in HAL_<cpu>.h, functions are declared in HAL_<vendor>.h
 */
 #define DEBOUNCE  5																			// debounce time for periodic check if an interrupt was raised
-void register_PCINT(const s_pin_def *ptr_pin);												// function to register a pin interrupt
-uint8_t check_PCINT(const s_pin_def *ptr_pin, uint8_t debounce);							// period check if a pin interrupt had happend
+
+void register_PCINT(uint8_t def_pin);														// function to register a pin interrupt
+uint8_t check_PCINT(uint8_t pin_def, uint8_t debounce);										// period check if a pin interrupt had happend
 // pointer for callback defined in HAL_<vendor>.cpp											// defined in HAL_<vendor>.cpp, a call back function can be registered, debounce will not work while need a periodic check
 inline void maintain_PCINT(uint8_t vec);													// internal function to handle pin change interrupts 
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -130,7 +123,7 @@ void add_millis(uint32_t ms);																// add some time to the counter, ma
 * http://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
 */
 uint8_t get_internal_voltage(void);															// internal measurement
-uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2); // external measurement
+uint8_t get_external_voltage(uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2); // external measurement
 inline uint16_t get_adc_value(uint8_t reg_admux);
 //- -----------------------------------------------------------------------------------------------------------------------
 

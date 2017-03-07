@@ -48,12 +48,11 @@
 * ATMEL hardware, the pin structs are defined in HAL_atmega_<model> while different for each cpu type. here we reference
 * only on the functions defined in HAL_<type>_<model>.
 */
-extern void set_pin_output(const s_pin_def *ptr_pin);
-extern void set_pin_input(const s_pin_def *ptr_pin);
-extern void set_pin_high(const s_pin_def *ptr_pin);
-extern void set_pin_low(const s_pin_def *ptr_pin);
-extern void set_pin_toogle(const s_pin_def *ptr_pin);
-extern uint8_t get_pin_status(const s_pin_def *ptr_pin);
+extern void set_pin_output(uint8_t pin_def);
+extern void set_pin_input(uint8_t pin_def);
+extern void set_pin_high(uint8_t pin_def);
+extern void set_pin_low(uint8_t pin_def);
+extern uint8_t get_pin_status(uint8_t pin_def);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -62,8 +61,8 @@ extern uint8_t get_pin_status(const s_pin_def *ptr_pin);
 * defined in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
 * you can also use the arduino standard timer for a specific hardware by interlinking the function call to getmillis()
 */
-extern void register_PCINT(const s_pin_def *ptr_pin);
-extern uint8_t check_PCINT(const s_pin_def *ptr_pin);
+extern void register_PCINT(uint8_t pin_def);
+extern uint8_t check_PCINT(uint8_t pin_def);
 extern void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag);
 extern void maintain_PCINT(uint8_t vec);
 //- -----------------------------------------------------------------------------------------------------------------------
@@ -108,8 +107,8 @@ extern void add_millis(uint32_t ms);
 * code definition in HAL_<vendor>.h
 */
 extern uint8_t get_internal_voltage(void);
-extern void init_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure);
-extern uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2);
+extern void init_external_voltage(uint8_t pin_enable, uint8_t pin_measure);
+extern uint8_t get_external_voltage(const uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 

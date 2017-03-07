@@ -1,28 +1,52 @@
 #include "HAL_atmega.h"
 
+
 //-- pin functions --------------------------------------------------------------------------------------------------------
-void set_pin_output(const s_pin_def *ptr_pin) {
-	*ptr_pin->DDREG |= _BV(ptr_pin->PINBIT);
+void set_pin_output(uint8_t pin_def) {
+	uint8_t bit = digitalPinToBitMask(pin_def);
+	uint8_t port = digitalPinToPort(pin_def);
+	volatile uint8_t *reg;
+
+	reg = portModeRegister(port);
+	*reg |= bit;
+//	pinMode(pin_def, OUTPUT);
+}
+void set_pin_input(uint8_t pin_def) {
+	uint8_t bit = digitalPinToBitMask(pin_def);
+	uint8_t port = digitalPinToPort(pin_def);
+	volatile uint8_t *reg;
+
+	reg = portModeRegister(port);
+	*reg &= ~bit;
+//	pinMode(pin_def, INPUT);
 }
 
-void set_pin_input(const s_pin_def *ptr_pin) {
-	*ptr_pin->DDREG &= ~_BV(ptr_pin->PINBIT);
-}
 
-void set_pin_high(const s_pin_def *ptr_pin) {
-	*ptr_pin->PORTREG |= _BV(ptr_pin->PINBIT);
-}
+void set_pin_high(uint8_t pin_def) {
+	uint8_t bit = digitalPinToBitMask(pin_def);
+	uint8_t port = digitalPinToPort(pin_def);
 
-void set_pin_low(const s_pin_def *ptr_pin) {
-	*ptr_pin->PORTREG &= ~_BV(ptr_pin->PINBIT);
+	volatile uint8_t *out;
+	out = portOutputRegister(port);
+	*out |= bit;
+//	digitalWrite(pin_def,HIGH);
 }
+void set_pin_low(uint8_t pin_def) {
+	uint8_t bit = digitalPinToBitMask(pin_def);
+	uint8_t port = digitalPinToPort(pin_def);
 
-void set_pin_toogle(const s_pin_def *ptr_pin) {
-	*ptr_pin->PORTREG ^= _BV(ptr_pin->PINBIT);
+	volatile uint8_t *out;
+	out = portOutputRegister(port);
+	*out &= ~bit;
+//	digitalWrite(pin_def, LOW);
 }
+uint8_t get_pin_status(uint8_t pin_def) {
+	uint8_t bit = digitalPinToBitMask(pin_def);
+	uint8_t port = digitalPinToPort(pin_def);
 
-uint8_t get_pin_status(const s_pin_def *ptr_pin) {
-	return *ptr_pin->PINREG & _BV(ptr_pin->PINBIT);
+	if (*portInputRegister(port) & bit) return HIGH;
+	return LOW;
+//	return digitalRead(pin_def);
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
@@ -37,34 +61,44 @@ struct  s_pcint_vector {
 	uint32_t time;
 };
 
-volatile s_pcint_vector pcint_vector[PCINT_PCIE_SIZE];
+volatile s_pcint_vector pcint_vector[3];
 
-void register_PCINT(const s_pin_def *ptr_pin) {
-	set_pin_input(ptr_pin);																	// set the pin as input
-	set_pin_high(ptr_pin);																	// key is connected against ground, set it high to detect changes
+void register_PCINT(uint8_t def_pin) {
+	set_pin_input(def_pin);																	// set the pin as input
+	set_pin_high(def_pin);																	// key is connected against ground, set it high to detect changes
 
-	pcint_vector[ptr_pin->VEC].PINREG = ptr_pin->PINREG;									// set the vector struct
-	pcint_vector[ptr_pin->VEC].curr |= get_pin_status(ptr_pin);
-	pcint_vector[ptr_pin->VEC].prev = pcint_vector[ptr_pin->VEC].curr;
-	pcint_vector[ptr_pin->VEC].mask |= _BV(ptr_pin->PINBIT);
+	// need to get vectore 0 - 2, depends on cpu
+	uint8_t vec = digitalPinToPCICRbit(def_pin);											// needed for interrupt handling and to sort out the port
+	uint8_t port = digitalPinToPort(def_pin);													// need the pin port to get further information as port register
+	if (port == NOT_A_PIN) return;															// return while port was not found
 
-	*ptr_pin->PCICREG |= _BV(ptr_pin->PCIEREG);												// pci functions
-	*ptr_pin->PCIMASK |= _BV(ptr_pin->PCIBYTE);												// make the pci active
+	pcint_vector[vec].PINREG = portInputRegister(port);										// remember the input register
+	pcint_vector[vec].curr |= get_pin_status(def_pin);										// remember current status of the port bit
+	pcint_vector[vec].prev = pcint_vector[vec].curr;										// and set it as previous while we check for changes
+
+	pcint_vector[vec].mask |= digitalPinToBitMask(def_pin);									// set the pin bit in the bitmask
+
+	*digitalPinToPCICR(def_pin) |= _BV(digitalPinToPCICRbit(def_pin));						// pci functions
+	*digitalPinToPCMSK(def_pin) |= _BV(digitalPinToPCMSKbit(def_pin));						// make the pci active
 }
 
-uint8_t check_PCINT(const s_pin_def *ptr_pin, uint8_t debounce) {
-	
-	uint8_t status = pcint_vector[ptr_pin->VEC].curr & _BV(ptr_pin->PINBIT) ? 1 : 0;		// evaluate the pin status
-	uint8_t prev = pcint_vector[ptr_pin->VEC].prev & _BV(ptr_pin->PINBIT) ? 1 : 0;			// evaluate the previous pin status
+uint8_t check_PCINT(uint8_t def_pin, uint8_t debounce) {
+	// need to get vectore 0 - 2, depends on cpu
+	uint8_t vec = digitalPinToPCICRbit(def_pin);											// needed for interrupt handling and to sort out the port
+	uint8_t bit = digitalPinToBitMask(def_pin);
+
+	uint8_t status = pcint_vector[vec].curr & bit ? 1 : 0;									// evaluate the pin status
+	uint8_t prev = pcint_vector[vec].prev & bit ? 1 : 0;									// evaluate the previous pin status
 
 	if (status == prev) return status;														// check if something had changed since last time
-	if (debounce && ((get_millis() - pcint_vector[ptr_pin->VEC].time) < DEBOUNCE)) return status;	// seems there is a change, check if debounce is necassary and done
+	if (debounce && ((get_millis() - pcint_vector[vec].time) < DEBOUNCE)) return status;	// seems there is a change, check if debounce is necassary and done
 
-	pcint_vector[ptr_pin->VEC].prev ^= _BV(ptr_pin->PINBIT);								// if we are here, there was a change and debounce check was passed, remember for next time
+	pcint_vector[vec].prev ^= bit;															// if we are here, there was a change and debounce check was passed, remember for next time
 
 	if (status) return 3;																	// pin is 1, old was 0
 	else return 2;																			// pin is 0, old was 1
 }
+
 
 void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag) = NULL;								// call back function pointer
 
@@ -78,25 +112,25 @@ void maintain_PCINT(uint8_t vec) {
 	}
 }
 
-#if PCINT_PCIE_SIZE > 0
+#ifdef PCIE0
 ISR(PCINT0_vect) {
 	maintain_PCINT(0);
 }
 #endif
 
-#if PCINT_PCIE_SIZE > 1
+#ifdef PCIE1
 ISR(PCINT1_vect) {
 	maintain_PCINT(1);
 }
 #endif
 
-#if PCINT_PCIE_SIZE > 2
+#ifdef PCIE2
 ISR(PCINT2_vect) {
 	maintain_PCINT(2);
 }
 #endif
 
-#if PCINT_PCIE_SIZE > 3
+#ifdef PCIE3
 ISR(PCINT3_vect) {
 	maintain_PCINT(3);
 }
@@ -148,7 +182,7 @@ void clear_eeprom(uint16_t addr, uint16_t len) {
 static volatile uint32_t milliseconds;
 static volatile uint8_t timer = 255;
 
-#ifdef hasTimer0
+#ifdef TIMSK0
 void init_millis_timer0(int16_t correct_ms) {
 	timer = 0;
 	power_timer0_enable();
@@ -160,7 +194,7 @@ void init_millis_timer0(int16_t correct_ms) {
 }
 #endif
 
-#ifdef hasTimer1
+#ifdef TIMSK1
 void init_millis_timer1(int16_t correct_ms) {
 	timer = 1;
 	power_timer1_enable();
@@ -172,7 +206,7 @@ void init_millis_timer1(int16_t correct_ms) {
 }
 #endif
 
-#ifdef hasTimer2
+#ifdef TIMSK2
 void init_millis_timer2(int16_t correct_ms) {
 	timer = 2;
 	power_timer2_enable();
@@ -217,21 +251,20 @@ uint8_t get_internal_voltage(void) {
 	return (uint8_t)result;																	// Vcc in millivolts
 }
 
-uint8_t get_external_voltage(const s_pin_def *ptr_enable, const s_pin_def *ptr_measure, uint8_t z1, uint8_t z2) {
+uint8_t get_external_voltage(uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2) {
 	/* set the pins to enable measurement */
-	set_pin_output(ptr_enable);																// set the enable pin as output
-	set_pin_low(ptr_enable);																// and to gnd, while measurement goes from VCC over the resistor network to GND
-	set_pin_input(ptr_measure);																// set the ADC pin as input
-	//set_pin_high(ptr_measure);
+	set_pin_output(pin_enable);																// set the enable pin as output
+	set_pin_low(pin_enable);																// and to gnd, while measurement goes from VCC over the resistor network to GND
+	set_pin_input(pin_measure);																// set the ADC pin as input
 
 	/* call the adc get function to get the adc value, do some mathematics on the result */
-	uint32_t result = get_adc_value(admux_external | ptr_measure->PINBIT);					// get the adc value on base of the predefined adc register setup
+	uint32_t result = get_adc_value(admux_external | digitalPinToBitMask(pin_measure));		// get the adc value on base of the predefined adc register setup
 	result = ((result * ref_v_external) / 102) / z1;										// calculate vcc between gnd and measurement pin 
 	result = result * (z1 + z2) / 100;														// interpolate result to vcc 
 
 	/* finally, we set both pins as input again to waste no energy over the resistor network to VCC */
-	set_pin_input(ptr_enable);	
-	set_pin_input(ptr_measure);	
+	set_pin_input(pin_enable);	
+	set_pin_input(pin_measure);	
 
 	return result;																			// Vcc in millivolts
 }

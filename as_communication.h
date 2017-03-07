@@ -215,7 +215,7 @@ private:  //--------------------------------------------------------------------
 
 
 public:  //----------------------------------------------------------------------------------------------------------------
-	CC1101(const s_pin_def *ptr_pin_miso, const s_pin_def *ptr_pin_mosi, const s_pin_def *ptr_pin_sck, const s_pin_def *ptr_pin_csl, const s_pin_def *ptr_pin_gdo0);
+	CC1101(uint8_t pin_miso, uint8_t pin_mosi, uint8_t pin_sck, uint8_t pin_csl, uint8_t pin_gdo0);
 
 private:  //---------------------------------------------------------------------------------------------------------------
 	void    init(void);														// init the hw  and module
@@ -228,11 +228,11 @@ private:  //--------------------------------------------------------------------
 	uint8_t detect_burst(void);												// detect burst signal, sleep while no signal, otherwise stay awake
 
 private:  //---------------------------------------------------------------------------------------------------------------
-	const s_pin_def *pin_miso;												// pointer to pin definition
-	const s_pin_def *pin_mosi;
-	const s_pin_def *pin_sck;
-	const s_pin_def *pin_csl;
-	const s_pin_def *pin_gdo0;
+	uint8_t def_miso;														// pointer to pin definition
+	uint8_t def_mosi;
+	uint8_t def_sck;
+	uint8_t def_csl;
+	uint8_t def_gdo0;
 
 	uint8_t pwr_down;														// module sleeping (power down)
 

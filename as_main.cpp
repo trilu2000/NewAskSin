@@ -347,15 +347,16 @@ void AS::process_message(void) {
 		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER2))  INSTRUCTION_ENTER_BOOTLOADER2(&rcv_msg.m11caxx);
 
 		/* everything below is channel related */
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))        pCM->INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))         pCM->INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SET))                pCM->INSTRUCTION_SET(&rcv_msg.m1102xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE))        pCM->INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LED))                pCM->INSTRUCTION_LED(&rcv_msg.m1180xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))            pCM->INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LEVEL))              pCM->INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
+		else pCM->instruction_msg(*rcv_by10, rcv_msg.buf);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))        pCM->INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))         pCM->INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SET))                pCM->INSTRUCTION_SET(&rcv_msg.m1102xx);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE))        pCM->INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LED))                pCM->INSTRUCTION_LED(&rcv_msg.m1180xx);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))            pCM->INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LEVEL))              pCM->INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
 		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))          pCM->INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))           pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
+		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))           pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
 
 
 	} else if (*rcv_by03 == BY03(MSG_TYPE::HAVE_DATA)) {
@@ -376,7 +377,8 @@ void AS::process_message(void) {
 			return;																			// nothing to do any more, wait and see
 		}
 		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
-		pCM->SWITCH(&rcv_msg.m3Exxxx);
+//		pCM->SWITCH(&rcv_msg.m3Exxxx);
+		pCM->peer_action_msg(MSG_TYPE::SWITCH, rcv_msg.buf);
 
 
 	} else if (rcv_msg.intend == MSG_INTENT::PEER) {
@@ -388,19 +390,20 @@ void AS::process_message(void) {
 			return;																			// nothing to do any more, wait and see
 		}
 		/* forward to the respective channel function */
-		pCM->lstP.load_list(cmm[rcv_msg.cnl]->peerDB.get_idx(rcv_msg.peer));				// load the respective list 3
-		if      (*rcv_by03 == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH_LEVEL))      pCM->SWITCH_LEVEL(&rcv_msg.m42xxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_DATA))       pCM->SENSOR_DATA(&rcv_msg.m53xxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::GAS_EVENT))         pCM->GAS_EVENT(&rcv_msg.m54xxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::CLIMATE_EVENT))     pCM->CLIMATE_EVENT(&rcv_msg.m58xxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::SET_TEAM_TEMP))     pCM->SET_TEAM_TEMP(&rcv_msg.m59xxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::THERMAL_CONTROL))   pCM->THERMAL_CONTROL(&rcv_msg.m5axxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) pCM->POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT))       pCM->POWER_EVENT(&rcv_msg.m5fxxxx);
-		else if (*rcv_by03 == BY03(MSG_TYPE::WEATHER_EVENT))     pCM->WEATHER_EVENT(&rcv_msg.m70xxxx);
+		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3
+//		if      (*rcv_by03 == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH_LEVEL))      pCM->SWITCH_LEVEL(&rcv_msg.m42xxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_DATA))       pCM->SENSOR_DATA(&rcv_msg.m53xxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::GAS_EVENT))         pCM->GAS_EVENT(&rcv_msg.m54xxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::CLIMATE_EVENT))     pCM->CLIMATE_EVENT(&rcv_msg.m58xxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::SET_TEAM_TEMP))     pCM->SET_TEAM_TEMP(&rcv_msg.m59xxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::THERMAL_CONTROL))   pCM->THERMAL_CONTROL(&rcv_msg.m5axxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) pCM->POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT))       pCM->POWER_EVENT(&rcv_msg.m5fxxxx);
+//		else if (*rcv_by03 == BY03(MSG_TYPE::WEATHER_EVENT))     pCM->WEATHER_EVENT(&rcv_msg.m70xxxx);
+		pCM->peer_action_msg(*rcv_by03, rcv_msg.buf);
 
 
 	} else {

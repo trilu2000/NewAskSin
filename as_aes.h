@@ -37,7 +37,6 @@ public:
 	uint8_t  new_hmkey_index[1];								// new hmkey index
 	uint8_t  prev_buf[MaxDataLen];								// store to save the previous received string
 
-public:
 	AES(void);
 	virtual void prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf);
 	virtual void prep_AES_REPLY(uint8_t *hmkey, uint8_t *hmkey_index, uint8_t *challenge, uint8_t *snd_buf);

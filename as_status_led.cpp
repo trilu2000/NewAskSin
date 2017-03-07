@@ -10,18 +10,16 @@
 #include "waittimer.h"
 
 
-
-																								
-LED::LED(const s_pin_def *ptr_pin_red, const s_pin_def *ptr_pin_grn) {
-	pin_red = ptr_pin_red;
-	pin_grn = ptr_pin_grn;
+LED::LED(uint8_t pin_def_red, uint8_t pin_def_grn) {
+	def_red = pin_def_red;
+	def_grn = pin_def_grn;
 	op_pat[0].stat = LED_STAT::NONE;														// we need a clean start
 	op_pat[1].stat = LED_STAT::NONE;
 }
-
+																								
 void LED::init() {
-	set_pin_output(pin_red);
-	set_pin_output(pin_grn);
+	set_pin_output(def_red);
+	set_pin_output(def_grn);
 }
 
 /**
@@ -48,8 +46,8 @@ void LED::set(LED_STAT::E stat) {
 	op_pat[0].slot_cnt = 0;
 	op_pat[0].repeat_cnt = 1;
 
-	set_pin_low(pin_red);
-	set_pin_low(pin_grn);
+	set_pin_low(def_red);
+	set_pin_low(def_grn);
 	timer.set(5);																			// 50 ms all leds off before new sequence starts
 	//dbg << "set  op0{ " << op_pat[0].stat << ", " << op_pat[0].slot_cnt << ", " << op_pat[0].repeat_cnt << ", sline{ " << op_pat[0].sline.prio << ", " << op_pat[0].sline.repeat << ", " << op_pat[0].sline.led_red << ", " << op_pat[0].sline.led_grn << ", *pat, },};\n";
 }
@@ -57,9 +55,8 @@ void LED::set(LED_STAT::E stat) {
 void LED::stop(void) {
 	op_pat[0].stat = LED_STAT::NONE;
 	timer.set(0);																
-	set_pin_low(pin_red);
-	set_pin_low(pin_grn);
-
+	set_pin_low(def_red);
+	set_pin_low(def_grn);
 }
 
 /**
@@ -95,15 +92,12 @@ void LED::poll(void) {
 
 	/* on even we switch off the respective led, odd means on */
 	if (op_pat[0].slot_cnt % 2) {															// identify odd
-		if (op_pat[0].sline.led_red) set_pin_high(pin_red);													// and set led accordingly
-		if (op_pat[0].sline.led_grn) set_pin_high(pin_grn);	
-		//ledGrn(op_pat[0].sline.led_grn);
+		if (op_pat[0].sline.led_red) set_pin_high(def_red);									// and set led accordingly
+		if (op_pat[0].sline.led_grn) set_pin_high(def_grn);	
 
 	} else {
-		set_pin_low(pin_red);
-		set_pin_low(pin_grn);
-		//ledRed(0);																			// or off
-		//ledGrn(0);
+		set_pin_low(def_red);
+		set_pin_low(def_grn);
 
 	}
 	//dbg << "poll op0{ " << op_pat[0].stat << ", " << op_pat[0].slot_cnt << ", " << op_pat[0].repeat_cnt << ", sline{ " << op_pat[0].sline.prio << ", " << op_pat[0].sline.repeat << ", " << op_pat[0].sline.led_red << ", " << op_pat[0].sline.led_grn << ", *pat, },};\n";
