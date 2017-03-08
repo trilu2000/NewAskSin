@@ -66,6 +66,13 @@ void CM_DIMMER::cm_init(void) {
 	}
 	init_dimmer(vrt_grp, vrt_cnl, lstC.cnl);												// call external init function to set the output pins
 
+	/* write the default peer in idx 0, otherwise we get a failure in the config software */
+	memcpy(peerDB.dont_use_peer, dev_ident.HMID, 3);										// copy the HMID into a temp buffer
+	peerDB.dont_use_peer[3] = lstC.cnl;														// and add the channel info
+	peerDB.set_peer(0, peerDB.dont_use_peer);												// make peer available, otherwise error in the config tool
+	lstP.load_default();																	// and rewrite the list3 content
+	lstP.save_list(0);
+
 	/* initiate the status message of the channel */
 	cms.msg_delay.set(cms.status_delay);													// wait some time to settle the device
 	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS;											// send the initial status info
@@ -136,9 +143,12 @@ void CM_DIMMER::info_config_change(uint8_t channel) {
 * automatically.
 */
 void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
-	// if both peer channels are given, peer channel 01 default is the off dataset, peer channel 02 default is the on dataset
-	// if only one peer channel is given, then the default dataset is toogle
-	if ((buf->PEER_CNL[0]) && (buf->PEER_CNL[1])) {		// dual peer add
+	/* if both peer channels are given, peer channel 01 default is the off dataset, peer channel 02 default is the on dataset
+	* if only one peer channel is given, then the default dataset is toogle */
+
+	lstP.load_default();																	// copy the defaults from progmem into the peer list, index doesn't matter
+
+	if ((buf->PEER_CNL[0]) && (buf->PEER_CNL[1])) {			// dual peer add
 
 		if (idx % 2) {										// odd (1,3,5..) means OFF
 			uint8_t lst[] = { 0x0A,0x01, 0x0B,0x12, 0x0C,0x22, 0x0D,0x23, 0x8A,0x24, 0x8B,0x12, 0x8C,0x22, 0x8D,0x23, };
@@ -158,57 +168,47 @@ void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 		//lstP.val[39] = 0x26;
 	}
 
+	lstP.save_list(idx);																	// and save the list, index is important while more choices in the peer table
 	DBG(DM, F("DM"), lstC.cnl, F(":request_peer_defaults CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", idx:"), _HEX(idx), '\n');
 }
 
 void CM_DIMMER::instruction_msg(MSG_TYPE::E type, uint8_t *buf) {
-	if      (type == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))  INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
-	else if (type == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))   INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
-	else if (type == BY10(MSG_TYPE::INSTRUCTION_SET))          INSTRUCTION_SET(&rcv_msg.m1102xx);
-	//else if (type == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE))  INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
-	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LED))          INSTRUCTION_LED(&rcv_msg.m1180xx);
-	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))      INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
-	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LEVEL))        INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
-	//else if (type == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))    INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
-	//else if (type == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))     INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
+	if      (type == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))   INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
+	else if (type == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))    INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
+	else if (type == BY10(MSG_TYPE::INSTRUCTION_SET))           INSTRUCTION_SET(&rcv_msg.m1102xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE)) INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LED))         INSTRUCTION_LED(&rcv_msg.m1180xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))     INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_LEVEL))       INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))   INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
+	//else if (type == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))    INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
 
 }
 
 void CM_DIMMER::peer_action_msg(MSG_TYPE::E type, uint8_t *buf) {
-	if      (type == BY03(MSG_TYPE::SWITCH))            SWITCH(&rcv_msg.m3Exxxx);
-	//else if (type == BY03(MSG_TYPE::TIMESTAMP))         TIMESTAMP(&rcv_msg.m3Fxxxx);
-	else if (type == BY03(MSG_TYPE::REMOTE))            REMOTE(&rcv_msg.m40xxxx);
-	else if (type == BY03(MSG_TYPE::SENSOR_EVENT))      SENSOR_EVENT(&rcv_msg.m41xxxx);
-	//else if (type == BY03(MSG_TYPE::SWITCH_LEVEL))      SWITCH_LEVEL(&rcv_msg.m42xxxx);
-	//else if (type == BY03(MSG_TYPE::SENSOR_DATA))       SENSOR_DATA(&rcv_msg.m53xxxx);
-	//else if (type == BY03(MSG_TYPE::GAS_EVENT))         GAS_EVENT(&rcv_msg.m54xxxx);
-	//else if (type == BY03(MSG_TYPE::CLIMATE_EVENT))     CLIMATE_EVENT(&rcv_msg.m58xxxx);
-	//else if (type == BY03(MSG_TYPE::SET_TEAM_TEMP))     SET_TEAM_TEMP(&rcv_msg.m59xxxx);
-	//else if (type == BY03(MSG_TYPE::THERMAL_CONTROL))   THERMAL_CONTROL(&rcv_msg.m5axxxx);
-	//else if (type == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
-	//else if (type == BY03(MSG_TYPE::POWER_EVENT))       POWER_EVENT(&rcv_msg.m5fxxxx);
-	//else if (type == BY03(MSG_TYPE::WEATHER_EVENT))     WEATHER_EVENT(&rcv_msg.m70xxxx);
+
+	lstP.load_list(peerDB.get_idx(rcv_msg.peer));											// load the respective list 3
+
+	if      (type == BY03(MSG_TYPE::SWITCH))                    SWITCH(&rcv_msg.m3Exxxx);
+	//else if (type == BY03(MSG_TYPE::TIMESTAMP))               TIMESTAMP(&rcv_msg.m3Fxxxx);
+	else if (type == BY03(MSG_TYPE::REMOTE))                    REMOTE(&rcv_msg.m40xxxx);
+	else if (type == BY03(MSG_TYPE::SENSOR_EVENT))              SENSOR_EVENT(&rcv_msg.m41xxxx);
+	//else if (type == BY03(MSG_TYPE::SWITCH_LEVEL))            SWITCH_LEVEL(&rcv_msg.m42xxxx);
+	//else if (type == BY03(MSG_TYPE::SENSOR_DATA))             SENSOR_DATA(&rcv_msg.m53xxxx);
+	//else if (type == BY03(MSG_TYPE::GAS_EVENT))               GAS_EVENT(&rcv_msg.m54xxxx);
+	//else if (type == BY03(MSG_TYPE::CLIMATE_EVENT))           CLIMATE_EVENT(&rcv_msg.m58xxxx);
+	//else if (type == BY03(MSG_TYPE::SET_TEAM_TEMP))           SET_TEAM_TEMP(&rcv_msg.m59xxxx);
+	//else if (type == BY03(MSG_TYPE::THERMAL_CONTROL))         THERMAL_CONTROL(&rcv_msg.m5axxxx);
+	//else if (type == BY03(MSG_TYPE::POWER_EVENT_CYCLE))       POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
+	//else if (type == BY03(MSG_TYPE::POWER_EVENT))             POWER_EVENT(&rcv_msg.m5fxxxx);
+	//else if (type == BY03(MSG_TYPE::WEATHER_EVENT))           WEATHER_EVENT(&rcv_msg.m70xxxx);
 }
 
-/*
-* @brief setToggle will be addressed by config button in mode 2 by a short key press here we can toggle the status of the actor
-*/
-/*void CM_DIMMER::set_toggle(void) {
-	DBG(DM, F("DM"), lstC.cnl, F(":set_toggle\n") );
-
-	/* check for inhibit flag */
-/*	if (cms.inhibit) return;																// nothing to do while inhibit is set
-
-	if (cms.value)  cms.set_value = 0;														// if its on, we switch off
-	else cms.set_value = 200;
-
-	//tr40.cur = (send_stat.modStat) ? DM_JT::ON : DM_JT::OFF;
-	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS;											// send next time a info status message
-	cms.msg_delay.set(5);
-}*/
 
 
-
+/**------------------------------------------------------------------------------------------------------------------------
+*- messages handled by the user channel module -
+* ------------------------------------------------------------------------------------------------------------------------- */
 
 /*
 * @brief Received message handling forwarded by AS::processMessage
@@ -360,6 +360,7 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 	jt = (s_jt*)((uint8_t*)l3 + (true_or_else) ? 9 : 26);
 	do_jump_table(buf->COUNTER, buf->FLAG.BIDI);
 }
+
 
 
 /**------------------------------------------------------------------------------------------------------------------------

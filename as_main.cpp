@@ -14,9 +14,11 @@
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
-/**
- * @brief Initialize the AskSin Module
- */
+/*
+* @brief Initialize the AS module
+*
+* init() has to be called from the main setup() routine.
+*/
 void AS::init(void) {
 
 	/* - init eeprom function if a i2c eeprom is used and 
@@ -77,9 +79,13 @@ void AS::init(void) {
 
 }
 
-/**
- * @brief Cyclic poll all related functions
- */
+/*
+* @brief Poll routine for regular operation
+*
+* poll() needs to be called regularily from the main loop(). It takes care of
+* all major tasks like sending and receiving messages, device configuration
+* and message delegation.
+*/
 void AS::poll(void) {
 
 	/* copy the decoded data into the receiver module if something was received
@@ -136,6 +142,14 @@ void AS::poll(void) {
 	pom->poll();																			// poll the power management
 }
 
+
+
+
+/* - receive functions ------------------------------------------------------------------------------------------------
+* @brief Received messages are stored and prepared in the rcv_msg struct. AS:poll is calling while rcv_msg.active
+* is set to 1. All receive functions are handled within the AS class - some forwarded to the channel module class.
+* The intent is to overload them there by the respective user channel module and work with the information accordingly.
+*/
 
 /* ------------------------------------------------------------------------------------------------------------------------
 * - receive functions -----------------------------------------------------------------------------------------------------
@@ -222,31 +236,32 @@ void AS::get_intend() {
 	}
 }
 
-/**
+/*
 * @brief Receive handler: Process received messages
 * Process message is called while rcv_msg.hasdata is set to TRUE. It takes all information from the rcv_msg struct.
 * Sort out by several if's which message we received and delegates the reuqest for answer to the according class/function.
 * 
 */
 void AS::process_message(void) {
-	uint8_t *rcv_by03 = &rcv_msg.mBody.MSG_TYP;
-	uint8_t *rcv_by10 = &rcv_msg.mBody.BY10;
-	uint8_t *rcv_by11 = &rcv_msg.mBody.BY11;
-	CM_MASTER *pCM;
-	//dbg << "by03:" << *rcv_by03 << ", by10:" << *rcv_by10 << ", by11:" << *rcv_by11 << '\n';
 
-	if (*rcv_by03 == BY03(MSG_TYPE::DEVICE_INFO)) {
+	uint8_t rcv_by03 = rcv_msg.mBody.MSG_TYP;												// define some shorthands
+	uint8_t rcv_by10 = rcv_msg.mBody.BY10;
+	uint8_t rcv_by11 = rcv_msg.mBody.BY11;
+	CM_MASTER *pCM;
+
+	if         (rcv_by03 == BY03(MSG_TYPE::DEVICE_INFO)) {
 		/* not sure what to do with while received, probably nothing */
 
-	} else if (*rcv_by03 == BY03(MSG_TYPE::CONFIG_REQ)) {
+
+	} else if (rcv_by03 == BY03(MSG_TYPE::CONFIG_REQ)) {
 		/* config request messages are used to configure a devive by writing registers and peers -
 		*  check the channel and forward for processing to the respective function */
+
 		if (rcv_msg.mBody.BY10 >= cnl_max) return;											// channel is out of range, return
-		//uint8_t by11 = rcv_msg.mBody.BY11;												// short hand to byte 11 in the received string
-		pCM = cmm[*rcv_by10];																// short hand to the respective channel module instance
+		pCM = cmm[rcv_by10];																// short hand to the respective channel module instance
 
 		/* check if we need to challange the request */
-		switch (*rcv_by11) {
+		switch (rcv_by11) {
 			case BY11(MSG_TYPE::CONFIG_PEER_ADD):
 			case BY11(MSG_TYPE::CONFIG_PEER_REMOVE):
 			case BY11(MSG_TYPE::CONFIG_START):
@@ -255,7 +270,6 @@ void AS::process_message(void) {
 			case BY11(MSG_TYPE::CONFIG_WRITE_INDEX2):
 
 				uint8_t *AES = pCM->lstC.ptr_to_val(0x08);
-				//if (!AES) AES = new uint8_t[1];
 				if ((AES) && (*AES) && (aes->active != MSG_AES::AES_REPLY_OK)) {			// check if we need AES confirmation
 					send_AES_REQ();															// send a request
 					return;																	// nothing to do any more, wait and see
@@ -263,35 +277,39 @@ void AS::process_message(void) {
 		}
 
 		/* challange done, now we can process the initial request */
-		if      (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       CONFIG_PEER_ADD(&rcv_msg.m01xx01); //pCM->CONFIG_PEER_ADD(&rcv_msg.m01xx01);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(&rcv_msg.m01xx02);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ(&rcv_msg.m01xx03);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(&rcv_msg.m01xx04);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(&rcv_msg.m01xx05);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(&rcv_msg.m01xx06);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(&rcv_msg.m01xx09);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(&rcv_msg.m01xx0a);
-		else if (*rcv_by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST(&rcv_msg.m01xx0e);
+		if      (rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_ADD))       pCM->CONFIG_PEER_ADD(&rcv_msg.m01xx01); 
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_REMOVE))    pCM->CONFIG_PEER_REMOVE(&rcv_msg.m01xx02);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_PEER_LIST_REQ))  pCM->CONFIG_PEER_LIST_REQ(&rcv_msg.m01xx03);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_PARAM_REQ))      pCM->CONFIG_PARAM_REQ(&rcv_msg.m01xx04);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_START))          pCM->CONFIG_START(&rcv_msg.m01xx05);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_END))            pCM->CONFIG_END(&rcv_msg.m01xx06);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX1))   pCM->CONFIG_WRITE_INDEX1(&rcv_msg.m01xx07);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_WRITE_INDEX2))   pCM->CONFIG_WRITE_INDEX2(&rcv_msg.m01xx08);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_SERIAL_REQ))     pCM->CONFIG_SERIAL_REQ(&rcv_msg.m01xx09);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_PAIR_SERIAL))    pCM->CONFIG_PAIR_SERIAL(&rcv_msg.m01xx0a);
+		else if (rcv_by11 == BY11(MSG_TYPE::CONFIG_STATUS_REQUEST)) pCM->CONFIG_STATUS_REQUEST(&rcv_msg.m01xx0e);
 
 
-	} else if (*rcv_by03 == BY03(MSG_TYPE::ACK_MSG)) {
-		if (*rcv_by10 == BY10(MSG_TYPE::AES_REQ)) {
-		/* AES request is a speciality in this section, pair or peer is sending this request to challenge the last command we had send,
-		*  we have to use the 6 byte payload and generate a SEND_AES type message (* 0x02 04 ff 11 * - AES_REQ) */
+	} else if (rcv_by03 == BY03(MSG_TYPE::ACK_MSG)) {
+
+		if (rcv_by10 == BY10(MSG_TYPE::AES_REQ)) {
+			/* AES request is a speciality in this section, pair or peer is sending this request to challenge the last command we had send,
+			*  we have to use the 6 byte payload and generate a SEND_AES type message (* 0x02 04 ff 11 * - AES_REQ) */
 			//dbg << "AES_REQ, ind: " << _HEX(rcv_msg.buf[17]) << ", data: " << _HEX(rcv_msg.buf+11, 6) << '\n';
+
 			aes->prep_AES_REPLY(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf + 11, snd_msg.buf);// prepare the reply
 			snd_msg.clear();																// clear send message
 			send_AES_REPLY(aes->prev_buf);													// and send it
 
 		} else if (rcv_msg.mBody.MSG_CNT == snd_msg.mBody.MSG_CNT) {
-		/* at the moment we need the ACK message only for avoiding resends, so let the send_msg struct know about
-		*  a received ACK/NACK whatever - probably we have to change this function in the future */
+			/* at the moment we need the ACK message only for avoiding resends, so let the send_msg struct know about
+			*  a received ACK/NACK whatever - probably we have to change this function in the future */
+
 			snd_msg.retr_cnt = 0xff;														// check if the message counter is similar and let the send function know
 		}
 
-	} else if (*rcv_by03 == BY03(MSG_TYPE::AES_REPLY)) {
+
+	} else if (rcv_by03 == BY03(MSG_TYPE::AES_REPLY)) {
 		/* we received an AES_REPLY, first we tell the send function that we received an answer. as the receive flag is not cleared, we will come back again */
 		if (snd_msg.active) {
 			snd_msg.retr_cnt = 0xff;														// we received an answer to our request, no need to resend
@@ -301,7 +319,7 @@ void AS::process_message(void) {
 		return;																				// next round to work on the restored message
 
 
-	} else if (*rcv_by03 == BY03(MSG_TYPE::SEND_AES)) {
+	} else if (rcv_by03 == BY03(MSG_TYPE::SEND_AES)) {
 		/* pair starts an key exchange, first message shows our key starting with byte 12 and the keyindex in byte 11 (-2) 
 		*  second message holds the new key starting with byte 12 and the new keyindex in byte 11 (again -2) */
 		pCM = cmm[0];
@@ -315,7 +333,7 @@ void AS::process_message(void) {
 		/* check the message in the aes_key struct, returns are 0 for doesnt fit, 1 key exchange started, 2 new key received */
 		uint8_t new_key = aes->check_SEND_AES_TO_ACTOR(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf);
 		if (new_key) {
-			dbg << "new idx " << aes->new_hmkey_index[0] << ", new key " << _HEX(aes->new_hmkey, 16) << '\n';
+			//dbg << "new idx " << aes->new_hmkey_index[0] << ", new key " << _HEX(aes->new_hmkey, 16) << '\n';
 			memcpy(dev_ident.HMKEY, aes->new_hmkey, 16);									// store the new key
 			dev_ident.HMKEY_INDEX[0] = aes->new_hmkey_index[0];
 			set_eeprom(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));						// write it to the eeprom
@@ -323,15 +341,15 @@ void AS::process_message(void) {
 		send_ACK();																			// send ACK
 
 
-	} else if (*rcv_by03 == BY03(MSG_TYPE::REPLY_MSG)) {
+	} else if (rcv_by03 == BY03(MSG_TYPE::REPLY_MSG)) {
 
 
-	} else if (*rcv_by03 == BY03(MSG_TYPE::INSTRUCTION_MSG)) {
-		//uint8_t by10 = rcv_msg.mBody.BY10;												// short hand to byte 10 in the received string
+	} else if (rcv_by03 == BY03(MSG_TYPE::INSTRUCTION_MSG)) {
+
+		/* some of instruction message are device related, identification is done by the message length */
 		uint8_t mlen = rcv_msg.mBody.MSG_LEN;												// short hand to the message length
-
 		if (mlen == 0x0a) pCM = cmm[0];														// some messages are channel independent, identification by length
-		else pCM = cmm[*rcv_by11];															// short hand to respective channel module instance
+		else pCM = cmm[rcv_by11];															// short hand to respective channel module instance
 
 		/* check if we need to challange the request */
 		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
@@ -339,90 +357,93 @@ void AS::process_message(void) {
 			return;																			// nothing to do any more, wait and see
 		}
 
-		/* check if channel related, there are four messages in this category without a channel value, this will be handled here 
-		*  INSTRUCTION_RESET, INSTRUCTION_ENTER_BOOTLOADER, INSTRUCTION_ENTER_BOOTLOADER2, INSTRUCTION_ADAPTION_DRIVE_SET */
-		if      (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_RESET))              INSTRUCTION_RESET(&rcv_msg.m1104xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER))   INSTRUCTION_ENTER_BOOTLOADER(&rcv_msg.m1183xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_ADAPTION_DRIVE_SET)) INSTRUCTION_ADAPTION_DRIVE_SET(&rcv_msg.m1187xx);
-		else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER2))  INSTRUCTION_ENTER_BOOTLOADER2(&rcv_msg.m11caxx);
-
-		/* everything below is channel related */
-		else pCM->instruction_msg(*rcv_by10, rcv_msg.buf);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))        pCM->INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))         pCM->INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SET))                pCM->INSTRUCTION_SET(&rcv_msg.m1102xx);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_STOP_CHANGE))        pCM->INSTRUCTION_STOP_CHANGE(&rcv_msg.m1103xx);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LED))                pCM->INSTRUCTION_LED(&rcv_msg.m1180xx);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LED_ALL))            pCM->INSTRUCTION_LED_ALL(&rcv_msg.m1181xx);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_LEVEL))              pCM->INSTRUCTION_LEVEL(&rcv_msg.m1181xx);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SLEEPMODE))          pCM->INSTRUCTION_SLEEPMODE(&rcv_msg.m1182xx);
-		//else if (*rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_SET_TEMP))           pCM->INSTRUCTION_SET_TEMP(&rcv_msg.m1186xx);
+		/* there are four messages in this category without a channel value, this will be handled in the main module 
+		*  INSTRUCTION_RESET, INSTRUCTION_ENTER_BOOTLOADER, INSTRUCTION_ENTER_BOOTLOADER2, INSTRUCTION_ADAPTION_DRIVE_SET 
+		*  everything else is forwarded to the channel module */
+		if      (rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_RESET))              INSTRUCTION_RESET(&rcv_msg.m1104xx);
+		else if (rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER))   INSTRUCTION_ENTER_BOOTLOADER(&rcv_msg.m1183xx);
+		else if (rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_ADAPTION_DRIVE_SET)) INSTRUCTION_ADAPTION_DRIVE_SET(&rcv_msg.m1187xx);
+		else if (rcv_by10 == BY10(MSG_TYPE::INSTRUCTION_ENTER_BOOTLOADER2))  INSTRUCTION_ENTER_BOOTLOADER2(&rcv_msg.m11caxx);
+		else pCM->instruction_msg(rcv_by10, rcv_msg.buf);
 
 
-	} else if (*rcv_by03 == BY03(MSG_TYPE::HAVE_DATA)) {
+	} else if (rcv_by03 == BY03(MSG_TYPE::HAVE_DATA)) {
 
 
-	} else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH)) {
-	 /* to process this message we need to load the right list table for the respective peer index into memory
-	 * need also to find the right channel to issue the message, depending on the peer address */
+	} else if (rcv_by03 == BY03(MSG_TYPE::SWITCH)) {
+		/* to process this message we need to get check if the peer in the payload exist and 
+		*  need also to find the right channel to issue the message, depending on the peer address */
+
 		memcpy(rcv_msg.peer, rcv_msg.m3Exxxx.PEER, 3);										// prepare a peer string
 		rcv_msg.peer[3] = rcv_msg.m3Exxxx.P_CNL;
 		rcv_msg.cnl = is_peer_valid(rcv_msg.peer);											// search for the peer channel
 		if (!rcv_msg.cnl) return;															// peer not found in any channel, return
-
 		pCM = cmm[rcv_msg.cnl];																// short hand to the respective channel module
+
 		/* check if we need to challange the request */
 		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
-		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3 with the respective index 
-//		pCM->SWITCH(&rcv_msg.m3Exxxx);
+
+		/* forward to the respective channel function */
 		pCM->peer_action_msg(MSG_TYPE::SWITCH, rcv_msg.buf);
 
 
 	} else if (rcv_msg.intend == MSG_INTENT::PEER) {
-	 /* it is a peer message, which was checked in the receive class, so reload the respective list 3/4 */
+		/* it is a peer message, which was checked in the receive class, so check if we need to challange
+		*  and forward the message into the respective channel module */
 		pCM = cmm[rcv_msg.cnl];																// we remembered on the channel by checking validity of peer
+
 		/* check if we need to challange the request */
-		if ((*cmm[rcv_msg.cnl]->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
+		if ((*pCM->lstC.ptr_to_val(0x08)) && (aes->active != MSG_AES::AES_REPLY_OK)) {		// check if we need AES confirmation
 			send_AES_REQ();																	// send a request
 			return;																			// nothing to do any more, wait and see
 		}
+
 		/* forward to the respective channel function */
-		pCM->lstP.load_list(pCM->peerDB.get_idx(rcv_msg.peer));								// load the respective list 3
-//		if      (*rcv_by03 == BY03(MSG_TYPE::TIMESTAMP))         pCM->TIMESTAMP(&rcv_msg.m3fxxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::REMOTE))            pCM->REMOTE(&rcv_msg.m40xxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_EVENT))      pCM->SENSOR_EVENT(&rcv_msg.m41xxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::SWITCH_LEVEL))      pCM->SWITCH_LEVEL(&rcv_msg.m42xxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::SENSOR_DATA))       pCM->SENSOR_DATA(&rcv_msg.m53xxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::GAS_EVENT))         pCM->GAS_EVENT(&rcv_msg.m54xxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::CLIMATE_EVENT))     pCM->CLIMATE_EVENT(&rcv_msg.m58xxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::SET_TEAM_TEMP))     pCM->SET_TEAM_TEMP(&rcv_msg.m59xxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::THERMAL_CONTROL))   pCM->THERMAL_CONTROL(&rcv_msg.m5axxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT_CYCLE)) pCM->POWER_EVENT_CYCLE(&rcv_msg.m5exxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::POWER_EVENT))       pCM->POWER_EVENT(&rcv_msg.m5fxxxx);
-//		else if (*rcv_by03 == BY03(MSG_TYPE::WEATHER_EVENT))     pCM->WEATHER_EVENT(&rcv_msg.m70xxxx);
-		pCM->peer_action_msg(*rcv_by03, rcv_msg.buf);
+		pCM->peer_action_msg(rcv_by03, rcv_msg.buf);
 
 
 	} else {
-		dbg << F("AS:message not known - please report: ") << _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1) << '\n';
 		DBG(AS, F("AS:message not known - please report: "), _HEX(rcv_msg.buf, rcv_msg.buf[0] + 1), '\n');
+
 	}
 
 	rcv_msg.clear();
-	return;
 
+}
+
+
+void AS::INSTRUCTION_RESET(s_m1104xx *buf) {
+	DBG(AS, F("CM:INSTRUCTION_RESET\n"));
+	send_ACK();																				// prepare an ACK message
+	dev_operate.reset = 2;																	// set the reset flag and wait...
+	//if (snd_msg.active) snd_poll();														// poll to get the ACK message send
+	//clearEEPromBlock(0, 2);																// delete the magic byte in eeprom 
+	//init();																				// call the init function to get the device in factory status
+}
+void AS::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
+	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER\n"));
+}
+void AS::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
+	DBG(AS, F("CM:INSTRUCTION_ADAPTION_DRIVE_SET\n"));
+}
+void AS::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
+	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER2\n"));
 }
 
 
 
 
+/* - send functions ---------------------------------------------------------------------------------------------------
+* @brief Here are the send functions for the device, this library is focused on client communication,
+* so you will find send functions for client communication only. The send functions are sorted by
+* message type and sub type. Only for the peer related messages there is the need to define the receiver.
+* Configuration and status answers send only to HMID, ACK and subtypes are always the response to a received string
+*/
 
-
-/* ------------------------------------------------------------------------------------------------------------------------
-* - send functions --------------------------------------------------------------------------------------------------------
+/* - send functions --------------------------------------------------------------------------------------------------------
 * @brief Here are the send functions for the device, this library is focused on client communication,
 * so you will find send functions for client communication only. The send functions are sorted by
 * message type and sub type. Only for the peer related messages there is the need to define the receiver.
@@ -670,11 +691,6 @@ void AS::process_peer_message_poll(void) {
 
 	//hm.snd_poll();																		// call send poll function direct, otherwise someone could change the snd_msg content
 }
-
-
-
-
-
 
 /*
 * @brief Send device info
@@ -1007,58 +1023,6 @@ void AS::send_WEATHER_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *pt
 
 
 
-/* - device related functions without any relation to a specific channel */
-
-/*
-* @brief Adds one or two peers to a channel
-* CONFIG_PEER_ADD message is send by the HM master to combine two client devices
-* request is forwarded by the AS:processMessage function
-*/
-void AS::CONFIG_PEER_ADD(s_m01xx01 *buf) {
-
-	CM_MASTER *pCM = cmm[buf->MSG_CNL];														// short hand to the respective channel
-	uint8_t temp_peer[4];																	// temp byte array to load peer addresses
-	uint8_t ret_byte = 0;																	// prepare a placeholder for success reporting
-
-	for (uint8_t i = 0; i < 2; i++) {														// standard gives 2 peer channels
-		if (!buf->PEER_CNL[i]) continue;													// if the current peer channel is empty, go to the next entry
-
-		memcpy(temp_peer, buf->PEER_ID, 3);													// copy the peer address into the temp array
-		temp_peer[3] = buf->PEER_CNL[i];													// write the peer channel byte into the array
-
-		uint8_t idx = pCM->peerDB.get_idx(temp_peer);										// search if we have already the peer in the database
-		if (idx == 0xff) idx = pCM->peerDB.get_free_slot();									// not in the in the database, search a free slot
-
-		if (idx != 0xff) {																	// free slot available
-			pCM->peerDB.set_peer(idx, temp_peer);											// write the peer into the database
-			pCM->request_peer_defaults(idx, buf);											// ask the channel module to load the defaults
-			ret_byte++;																		// increase success
-		}
-	}
-
-	DBG(CM, F("CM:CONFIG_PEER_ADD, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
-	check_send_ACK_NACK(ret_byte);
-}
-
-
-void AS::INSTRUCTION_RESET(s_m1104xx *buf) {
-	DBG(AS, F("CM:INSTRUCTION_RESET\n"));
-	send_ACK();																				// prepare an ACK message
-	dev_operate.reset = 2;																	// set the reset flag and wait...
-	//if (snd_msg.active) snd_poll();														// poll to get the ACK message send
-	//clearEEPromBlock(0, 2);																// delete the magic byte in eeprom 
-	//init();																				// call the init function to get the device in factory status
-}
-void AS::INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf) {
-	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER\n"));
-}
-void AS::INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf) {
-	DBG(AS, F("CM:INSTRUCTION_ADAPTION_DRIVE_SET\n"));
-}
-void AS::INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf) {
-	DBG(AS, F("CM:INSTRUCTION_ENTER_BOOTLOADER2\n"));
-}
-
 
 
 /*
@@ -1074,92 +1038,6 @@ uint8_t AS::is_peer_valid(uint8_t *peer) {
 
 
 
-
-/*
- * @brief Process message MESSAGE_KEY_EXCHANGE.
- *
- * Message description:
- *             Sender__ Receiver Decrypted Payload with one key part
- * 0E 08 80 02 1F B7 4A 23 70 D8 81 78 5C 37 30 65 61 93 1A 63 CF 90 44 31 60 4D
-*/
-/*inline void AS::processMessageKeyExchange(void) {
-	memcpy(rcv_msg.prev_buf, rcv_msg.buf, rcv_msg.buf[0]+1);												// remember this message
-//	rcv.prevBufUsed = 1;																		// ToDo: check if we need this here
-
-	aes128_init(dev_ident.HMKEY, &ctx);																// load HMKEY
-	aes128_dec(rcv_msg.buf+10, &ctx);															// decrypt payload width HMKEY first time
-
-	#ifdef AES_DBG
-	dbg << F("decrypted buf: ") << _HEX(rcv_msg.buf+10, 16) << '\n';
-	#endif
-
-	if (rcv_msg.buf[10] == 0x01) {																// the decrypted data must start with 0x01
-		keyPartIndex = (rcv_msg.buf[11] & 1) ? AS_STATUS_KEYCHANGE_ACTIVE2 : AS_STATUS_KEYCHANGE_ACTIVE1;
-	
-		if (keyPartIndex == AS_STATUS_KEYCHANGE_ACTIVE1) {
-			newHmKeyIndex[0] = rcv_msg.buf[11];
-		}
-
-		memcpy(newHmKey + keyPartIndex, rcv_msg.buf+12, 8);
-
-		#ifdef AES_DBG
-		dbg << F("newHmKey: ") << _HEX(newHmKey, 16) << ", keyPartIndex: " << _HEX(keyPartIndex) << '\n';
-		#endif
-
-		sendSignRequest(0);
-	
-	} else {
-		keyPartIndex = AS_STATUS_KEYCHANGE_INACTIVE;
-	}
-}
-
-/*
- * @brief Process message RESPONSE_AES_CHALLANGE.
- *
- * Message description:
- *             Sender__ Receiver By10 By11  Challenge_____ KeyIndex
- * 11 24 80 02 1F B7 4A 63 19 63 02   04 01 02 03 04 05 06 02`
- *
- * The Encryption:
- * 1. The temporarily key was built by XORing the key with the challenge
- * 2. Prepare the payload:
- *    6 Random-Bytes___ The bytes 1-11 of the message to sign
- *    xx xx xx xx xx xx 0A A4 01 23 70 EC 1E 7A AD 02
- * 3. Encrypt the payload width the generated temporarily key first time -> ePL (encrypted Payload)
- * 4. IV (initial vector) was build from bytes 11 - n of the message to sign padded with 0x00
- * 5. The encrypted payload (ePL) was XORed with the IV -> ePl^IV
- * 6. Encrypt the ePl^IV width the generated temporarily again
- */
-/*	inline void AS::processMessageResponseAES_Challenge(void) {
-		uint8_t i;
-
-		snd_msg.clear();																			// cleanup send module data;
-		initPseudoRandomNumberGenerator();
-
-		uint8_t challenge[6];
-		memcpy(challenge, rcv_msg.buf+11, 6);														// get challenge
-
-		makeTmpKey(challenge);																	// Build the temporarily key from challenge
-
-		// Prepare the payload for encryption.
-		uint8_t msgLen = snd_msg.prev_buf[5];														// the message length stored at byte 5
-		for (i = 0; i < 32; i++) {
-			if (i < 6) {
-				snd_msg.prev_buf[i] = (uint8_t)rand();												// fill the first 6 bytes with random data
-			} else if (i > msgLen + 5 ) {
-				snd_msg.prev_buf[i] = 0x00;															// the unused message bytes padded with 0x00
-			}
-		}
-
-		aes128_enc(snd_msg.prev_buf, &ctx);															// encrypt the message first time
-		for (i = 0; i < 16; i++) {
-			snd_msg.prev_buf[i] ^= snd_msg.prev_buf[i+16];												// xor encrypted payload with IV (the bytes 11-27)
-		}
-
-		aes128_enc(snd_msg.prev_buf, &ctx);															// encrypt payload again
-		snd_msg.mBody.MSG_LEN = 0x19;
-	}
-#endif
 
 
 /**

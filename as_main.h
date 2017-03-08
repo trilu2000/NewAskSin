@@ -34,22 +34,9 @@ class AS {
 
 public:  //----------------------------------------------------------------------------------------------------------------
 	AS() {}																					// constructor
-
-	/*
-	 * @brief Initialize the AS module
-	 *
-	 * init() has to be called from the main setup() routine.
-	 */
-	void init(void);
-
-	/**
-	 * @brief Poll routine for regular operation
-	 *
-	 * poll() needs to be called regularily from the main loop(). It takes care of
-	 * all major tasks like sending and receiving messages, device configuration
-	 * and message delegation.
-	 */
+	void init(void);																		// init function for the library
 	void poll(void);
+
 
 
 	/* - receive functions ------------------------------------------------------------------------------------------------
@@ -59,7 +46,14 @@ public:  //---------------------------------------------------------------------
 	*/
 	inline void rcv_poll(void);																// poll function
 	inline void get_intend(void);															// checks the received string if addresses are known
-	inline void process_message(void);
+	inline void process_message(void);														// herein we sort out the message and forward to the respective functions
+
+	inline void INSTRUCTION_RESET(s_m1104xx *buf);
+	inline void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
+	inline void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);
+	inline void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
+
+
 
 	/* - send functions ---------------------------------------------------------------------------------------------------
 	* @brief Here are the send functions for the device, this library is focused on client communication,
@@ -108,7 +102,7 @@ public:  //---------------------------------------------------------------------
 	void send_INFO_ACTUATOR_STATUS(uint8_t chnl, uint8_t stat, uint8_t flag, uint8_t sum = 0xff);
 	void send_INFO_TEMP();
 
-	/*void send_INSTRUCTION_INHIBIT_OFF();													// not needed in client communication to send
+	//void send_INSTRUCTION_INHIBIT_OFF();													// not needed in client communication to send
 	//void send_INSTRUCTION_INHIBIT_ON();													// this type of messages are send by the HM master only
 	//void send_INSTRUCTION_SET();		
 	//void send_INSTRUCTION_STOP_CHANGE();
@@ -120,7 +114,7 @@ public:  //---------------------------------------------------------------------
 	//void send_INSTRUCTION_ENTER_BOOTLOADER();
 	//void send_INSTRUCTION_SET_TEMP();		
 	//void send_INSTRUCTION_ADAPTION_DRIVE_SET();	
-	//void send_INSTRUCTION_ENTER_BOOTLOADER2(); */
+	//void send_INSTRUCTION_ENTER_BOOTLOADER2(); 
 
 	void send_HAVE_DATA();
 
@@ -138,26 +132,6 @@ public:  //---------------------------------------------------------------------
 	void send_POWER_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload);
 	void send_WEATHER_EVENT(uint8_t bidi, CM_MASTER *channel_module, uint8_t *ptr_payload);
 
-
-
-
-	/* - device related functions without the need to be forwarded to a specific channel module */
-	inline void CONFIG_PEER_ADD(s_m01xx01 *buf);	
-	//void CONFIG_PEER_REMOVE(s_m01xx02 *buf);
-	//void CONFIG_PEER_LIST_REQ(s_m01xx03 *buf);
-	//void CONFIG_PARAM_REQ(s_m01xx04 *buf);
-	//void CONFIG_START(s_m01xx05 *buf);
-	//void CONFIG_END(s_m01xx06 *buf);
-	//void CONFIG_WRITE_INDEX1(s_m01xx07 *buf);
-	//void CONFIG_WRITE_INDEX2(s_m01xx08 *buf);
-	//void CONFIG_SERIAL_REQ(s_m01xx09 *buf);
-	//void CONFIG_PAIR_SERIAL(s_m01xx0a *buf);
-	//void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);
-
-	inline void INSTRUCTION_RESET(s_m1104xx *buf);
-	inline void INSTRUCTION_ENTER_BOOTLOADER(s_m1183xx *buf);
-	inline void INSTRUCTION_ADAPTION_DRIVE_SET(s_m1187xx *buf);
-	inline void INSTRUCTION_ENTER_BOOTLOADER2(s_m11caxx *buf);
 
 
 	/* - asksin relevant helpers */
