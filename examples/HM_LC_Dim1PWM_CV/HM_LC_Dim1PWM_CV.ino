@@ -26,7 +26,6 @@ void setup() {
 	hm.init();																				// init the asksin framework
 
 	sei();																					// enable interrupts
-
 }
 
 void loop() {

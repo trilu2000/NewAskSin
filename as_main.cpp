@@ -334,7 +334,7 @@ void AS::process_message(void) {
 		uint8_t new_key = aes->check_SEND_AES_TO_ACTOR(dev_ident.HMKEY, dev_ident.HMKEY_INDEX, rcv_msg.buf);
 		if (new_key) {
 			//dbg << "new idx " << aes->new_hmkey_index[0] << ", new key " << _HEX(aes->new_hmkey, 16) << '\n';
-			memcpy(dev_ident.HMKEY, aes->new_hmkey, 16);									// store the new key
+			memcpy(dev_ident.HMKEY, aes->new_hmkey, 16);										// store the new key
 			dev_ident.HMKEY_INDEX[0] = aes->new_hmkey_index[0];
 			set_eeprom(0, sizeof(dev_ident), ((uint8_t*)&dev_ident));						// write it to the eeprom
 		}
@@ -748,7 +748,7 @@ void AS::send_ACK(void) {
 	} else {
 		snd_msg.type = MSG_TYPE::ACK;														// length and flags are set within the snd_msg struct
 	}
-	aes->active = MSG_AES::NONE;														// no need to remember on the last message
+	aes->active = MSG_AES::NONE;															// no need to remember on the last message
 	snd_msg.active = MSG_ACTIVE::ANSWER;													// for address, counter and to make it active
 }
 /**
@@ -801,7 +801,7 @@ void AS::send_AES_REQ() {
 	aes->prep_AES_REQ(dev_ident.HMKEY, rcv_msg.buf, snd_msg.buf);							// prepare the message, store received string and so on
 	rcv_msg.buf[0] = 0;																		// and terminate the further processing
 
-																							/* create the message */
+	/* create the message */
 	snd_msg.active = MSG_ACTIVE::ANSWER_BIDI;												// for address, counter and to make it active
 	snd_msg.type = MSG_TYPE::AES_REQ;														// length and flags are set within the snd_msg struct
 	snd_msg.buf[17] = dev_ident.HMKEY_INDEX[0];												// the 7th byte is the key index
