@@ -25,13 +25,13 @@ uint8_t AES::check_SEND_AES_TO_ACTOR(uint8_t *hmkey, uint8_t *hmkey_index, uint8
 
 
 /* NO_AES functions to overwrite AES main class */
-NO_AES::NO_AES() {
+NO_AES::NO_AES() : AES() {
 }
 
 
 
 /* HAS_AES functions to overwrite AES main class */
-HAS_AES::HAS_AES() {
+HAS_AES::HAS_AES() : AES() {
 }
 void HAS_AES::prep_AES_REQ(uint8_t *hmkey, uint8_t *rcv_buf, uint8_t *snd_buf) {
 	/* save the initial message for later use */

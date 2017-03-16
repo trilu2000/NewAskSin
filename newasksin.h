@@ -97,7 +97,8 @@ extern const uint8_t HMSerialData[] PROGMEM;
 */
 extern const uint8_t dev_static[] PROGMEM;
 
-template<typename T, typename U, typename... Args> inline T* create(Args... args) { static U ret(args...); return &ret; };
+//template<typename T, typename U, typename... Args> inline T* create(Args... args) { static U ret(args...); return &ret; };
+#define create<x, y, z>(...)    z my_#z(#__VA_ARGS); x y = &my_#z;  
 
 extern AS hm;
 extern AES *aes;

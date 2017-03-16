@@ -47,6 +47,8 @@ public://-----------------------------------------------------------------------
 	*/
 	s_peer_table peerDB;
 
+	s_cm_status *ptr_status;																// pointer to a status struct, needed for config_status_request
+
 	CM_MASTER(const uint8_t peer_max);														// constructor
 
 	void init(void);																		// init function, called after AS initialisation
@@ -88,7 +90,7 @@ public://-----------------------------------------------------------------------
 	void CONFIG_WRITE_INDEX2(s_m01xx08 *buf);
 	void CONFIG_SERIAL_REQ(s_m01xx09 *buf);
 	void CONFIG_PAIR_SERIAL(s_m01xx0a *buf);
-	virtual void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);										// to be overwritten by a user specific channel module
+	void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);												// only for list3 devices needed
 
 	/* ACK related receive functions, not needed in the channel module, while handled in master */
 	/*void ACK(s_m0200xx *buf);																// at the moment we need the ACK only to avoid

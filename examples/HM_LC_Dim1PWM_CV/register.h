@@ -9,37 +9,30 @@
 #include <newasksin.h> 
 #include "hmkey.h"
 
+
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-//AES *aes = create<AES, NO_AES>();
-NO_AES as_aes;
+NO_AES as_aes;															//   60 byte flash,  69 byte sram
+//HAS_AES as_aes;														// 2826 byte flash, 277 byte sram
 AES *aes = &as_aes;
-//AES &aes = *new NO_AES(); //new NO_AES();								//   60 byte flash,  69 byte sram
-//AES *aes = new HAS_AES();												// 2826 byte flash, 277 byte sram
 
-//COM *com = create<COM, CC1101>(pinB4, pinB3, pinB5, pinB2, pinD2);
-CC1101 as_cc1101(pinB4, pinB3, pinB5, pinB2, pinD2);				//  546 byte flash, 124 byte sram
-COM *com = &as_cc1101;													//  546 byte flash, 124 byte sram
-//COM *com = new CC1101(pinB4, pinB3, pinB5, pinB2, pinD2);				//  546 byte flash, 124 byte sram
+CC1101 as_cc1101(pinB4, pinB3, pinB5, pinB2, pinD2);					//  546 byte flash, 124 byte sram
+COM *com = &as_cc1101;
 
-CBN as_cbn(1, pinB0);										//   80 byte flash,  25 byte sram
-CBN *cbn = &as_cbn;										//   80 byte flash,  25 byte sram
-//CBN *cbn = new CBN(1, pinB0);										//   80 byte flash,  25 byte sram
+CBN as_cbn(1, pinB0);													//   80 byte flash,  25 byte sram
+CBN *cbn = &as_cbn;
 
-LED as_led(pinD6, pinD4);										//  150 byte flash,  51 byte sram
-LED *led = &as_led;										//  150 byte flash,  51 byte sram
-//LED *led = new LED(pinD6, pinD4);										//  150 byte flash,  51 byte sram
+LED as_led(pinD6, pinD4);												//  150 byte flash,  51 byte sram
+LED *led = &as_led;	
 
-NO_BAT as_bat;											//   34 byte flash,  22 byte sram
-BAT *bat = &as_bat;											//   34 byte flash,  22 byte sram
-//BAT *bat = new NO_BAT();											//   34 byte flash,  22 byte sram
-//BAT *bat = new INT_BAT(3600000, 30);								//  176 byte flash,  22 byte sram
-//BAT *bat = new EXT_BAT(3600000, 30, pinD7, pinC6, 10, 45);		//  386 byte flash,  56 byte sram
+NO_BAT as_bat;															//   34 byte flash,  22 byte sram
+//INT_BAT as_bat(3600000, 30);											//  176 byte flash,  22 byte sram
+//EXT_BAT as_bat(3600000, 30, pinD7, pinC6, 10, 45);					//  386 byte flash,  56 byte sram
+BAT *bat = &as_bat;
 
-POM as_pom(POWER_MODE_NO_SLEEP);							//   68 byte flash,  19 byte sram
-POM *pom = &as_pom;							//   68 byte flash,  19 byte sram
-//POM *pom = new POM(POWER_MODE_NO_SLEEP);							//   68 byte flash,  19 byte sram
+POM as_pom(POWER_MODE_NO_SLEEP);										//   68 byte flash,  19 byte sram
+POM *pom = &as_pom;
 
 
 /*
@@ -54,23 +47,17 @@ const uint8_t cm_maintenance_ChnlLen = sizeof(cm_maintenance_ChnlReg);
 /*
 *  @brief definition of the device functionallity per channel
 */
-static CM_MAINTENANCE cm_maintenance(0);											//   24 byte flash, 124 byte sram
-static CM_DIMMER cm_dimmer1(10, 0, 0);											// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
+static CM_MAINTENANCE cm_maintenance(0);								//   24 byte flash, 124 byte sram
+static CM_DIMMER cm_dimmer1(10, 0, 0);									// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
 static CM_DIMMER cm_dimmer2(2, 1, 0);
 static CM_DIMMER cm_dimmer3(2, 2, 0);
 
 CM_MASTER *cmm[4] = {
-	&cm_maintenance,											//   24 byte flash, 124 byte sram
-	&cm_dimmer1,											// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
+	&cm_maintenance,
+	&cm_dimmer1,
 	&cm_dimmer2,
 	&cm_dimmer3,
 };
-/*CM_MASTER *cmm[4] = {
-	new CM_MAINTENANCE(0),											//   24 byte flash, 124 byte sram
-	new CM_DIMMER(10,0,0),											// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
-	new CM_DIMMER(2,1,0),
-	new CM_DIMMER(2,2,0),
-};*/
 
 
 /*
@@ -78,7 +65,7 @@ CM_MASTER *cmm[4] = {
 */
 const uint8_t HMSerialData[] PROGMEM = {
 	/* HMID */            0x33,0x11,0x24,
-	/* Serial number */   'H','B','d','i','m','m','e','r','0','1',		// HBswitch01 
+	/* Serial number */   'H','B','d','i','m','m','e','r','0','1',		// HBdimmer01 
 	/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
 	/* Default-Key */     HM_DEVICE_AES_KEY,
 };
@@ -97,7 +84,7 @@ const uint8_t HMSerialData[] PROGMEM = {
 *                  Other bytes not known.
 *                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
 */
-const uint8_t dev_static[] PROGMEM = {             // testID 
+const uint8_t dev_static[] PROGMEM = {            // testID 
 	/* firmwareVersion 1 byte */  0x25,           // or GE 
 	/* modelID         2 byte */  0x00,0x67,
 	/* subTypeID       1 byte */  0x00,           // replace __ by a valid type id 
