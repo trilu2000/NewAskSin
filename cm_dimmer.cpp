@@ -20,19 +20,22 @@
 */
 CM_DIMMER::CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel, uint8_t virtual_group) : CM_MASTER(peer_max) {
 
+	/* allign the local defined channel arrays to the cm_master pointers to make them available */
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_dimmer_ChnlReg;															// pointer to the list1 register definition
 	lstC.def = cm_dimmer_ChnlDef;															// pointer to the list1 defaults definition
 	lstC.val = cm_dimmer_ChnlVal;															// pointer to ram array
 	lstC.len = sizeof(cm_dimmer_ChnlReg);													// evaluating and storing the length of list1
-	//static uint8_t t_lstC[sizeof(cm_dimmer_ChnlReg)];										// allocate the same space in memory as working area
 
 	lstP.lst = 3;																			// setup the peer list (list3) with all dependencies
 	lstP.reg = cm_dimmer_PeerReg;															// same as list1
 	lstP.def = cm_dimmer_PeerDef;
 	lstP.val = cm_dimmer_PeerVal;
 	lstP.len = sizeof(cm_dimmer_PeerReg);
-	//static uint8_t t_lstP[sizeof(cm_dimmer_PeerReg)];
+
+	/* actors needs to answer on config status request messages, this is done in cm_master
+	* so we need to assign our status struct to the pointer in cm_master */
+	ptr_status = &cms;
 
 	/* as the dimmer has virtual channels, we need to take care in the setup */
 	vrt_grp = virtual_group;																// remember the virtual group this instance belong too
@@ -77,7 +80,7 @@ void CM_DIMMER::cm_init(void) {
 	cms.msg_delay.set(cms.status_delay);													// wait some time to settle the device
 	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS;											// send the initial status info
 	
-	DBG(DM, F("DM"), lstC.cnl, F(":CM_INIT-\t\tvrt_grp/cnl: "), vrt_grp, '/', vrt_cnl, F(", send status in: "), cms.msg_delay.remain(), '\n');
+	DBG(DM, F("DM"), lstC.cnl, F(":CM_INIT- vrt_grp/cnl:"), vrt_grp, '/', vrt_cnl, F(", send status in:"), cms.msg_delay.remain(), '\n');
 	//dbg << F("l1: ") << _HEX((uint8_t*)l1, lstC.len) << '\n';
 	//dbg << F("l3: ") << _HEX((uint8_t*)l3, lstP.len/2) << '\n';
 	//dbg << F("jt: ") << _HEX((uint8_t*)jt, 4) << '\n';
@@ -169,10 +172,12 @@ void CM_DIMMER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	}
 
 	lstP.save_list(idx);																	// and save the list, index is important while more choices in the peer table
-	DBG(DM, F("DM"), lstC.cnl, F(":request_peer_defaults CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", idx:"), _HEX(idx), '\n');
+	DBG(DM, F("DM"), lstC.cnl, F(":PEER_DEFAULTS- cnl_a:"), _HEX(buf->PEER_CNL[0]), F(", cnl_b:"), _HEX(buf->PEER_CNL[1]), F(", idx:"), _HEX(idx), '\n');
 }
 
 void CM_DIMMER::instruction_msg(MSG_TYPE::E type, uint8_t *buf) {
+	DBG(DM, F("DM"), lstC.cnl, F(":INSTRUCTION- type:"), type, '\n');
+
 	if      (type == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_OFF))   INSTRUCTION_INHIBIT_OFF(&rcv_msg.m1100xx);
 	else if (type == BY10(MSG_TYPE::INSTRUCTION_INHIBIT_ON))    INSTRUCTION_INHIBIT_ON(&rcv_msg.m1101xx);
 	else if (type == BY10(MSG_TYPE::INSTRUCTION_SET))           INSTRUCTION_SET(&rcv_msg.m1102xx);
@@ -186,6 +191,7 @@ void CM_DIMMER::instruction_msg(MSG_TYPE::E type, uint8_t *buf) {
 }
 
 void CM_DIMMER::peer_action_msg(MSG_TYPE::E type, uint8_t *buf) {
+	DBG(DM, F("DM"), lstC.cnl, F(":PEER_ACTION- type:"), type, '\n');
 
 	lstP.load_list(peerDB.get_idx(rcv_msg.peer));											// load the respective list 3
 
@@ -211,15 +217,6 @@ void CM_DIMMER::peer_action_msg(MSG_TYPE::E type, uint8_t *buf) {
 * ------------------------------------------------------------------------------------------------------------------------- */
 
 /*
-* @brief Received message handling forwarded by AS::processMessage
-*/
-void CM_DIMMER::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
-	cms.msg_type = STA_INFO::SND_ACTUATOR_STATUS_ANSWER;									// send next time a info status message
-	cms.msg_delay.set(5);																	// wait a short time to set status
-
-	DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_STATUS_REQUEST\n"));
-}
-/*
 * @brief INSTRUCTION_SET is called on messages comming from a central device to setup a channel status
 * The message contains at least the value which has to be set, but there a two further 2 byte values which 
 * represents a ramp timer and a duration timer. We differentiate the messages by the len byte
@@ -244,14 +241,15 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 	cms.msg_type = STA_INFO::SND_ACK_STATUS_PAIR;											// ACK should be send
 	cms.msg_delay.set(5);																	// give some time
 
+	DBG(DM, F("\nDM"), lstC.cnl, F(":INSTRUCTION_SET- setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), ' ', _TIME, '\n');
 	//dbg << "msg: " << _HEX((uint8_t*)buf, buf->MSG_LEN + 1) << '\n';
-	DBG(DM, F("\nDM"), lstC.cnl, F(":INSTRUCTION_SET, setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), ' ', _TIME, '\n');
 }
 /*
 * @brief INSTRUCTION_INHIBIT_OFF avoids any status change via Sensor, Remote or set_toogle
 * Answer to a sensor or remote message is an NACK
 */
 void CM_DIMMER::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
+	DBG(DM, F("\nDM"), lstC.cnl, F(":INHIBIT_OFF\n"));
 	cms.inhibit = 0;
 	hm.send_ACK();
 }
@@ -259,6 +257,7 @@ void CM_DIMMER::INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf) {
 * @brief INSTRUCTION_INHIBIT_ON, see INSTRUCTION_INHIBIT_OFF
 **/
 void CM_DIMMER::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
+	DBG(DM, F("\nDM"), lstC.cnl, F(":INHIBIT_ON\n"));
 	cms.inhibit = 1;
 	hm.send_ACK();
 }
@@ -269,7 +268,7 @@ void CM_DIMMER::INSTRUCTION_INHIBIT_ON(s_m1101xx *buf) {
 */
 void CM_DIMMER::SWITCH(s_m3Exxxx *buf) {
 
-	DBG(DM, F("\nDM"), lstC.cnl, F(":SWITCH"), F(", msg_cnt: "), buf->P_CNT, '\n');
+	DBG(DM, F("\nDM"), lstC.cnl, F(":SWITCH- msg_cnt:"), buf->P_CNT, '\n');
 	//REMOTE((s_m40xxxx*)(((uint8_t*)buf) + 4));
 
 	l3 = (s_l3*)lstP.val;																	// set struct portion
@@ -301,7 +300,7 @@ void CM_DIMMER::REMOTE(s_m40xxxx *buf) {
 	}
 	cms.msg_cnt = buf->COUNTER;																// remember message counter
 
-	DBG(DM, F("msg_long: "), buf->BLL.LONG, F(", msg_cnt: "), buf->COUNTER, '\n');
+	DBG(DM, F("msg_long:"), buf->BLL.LONG, F(", msg_cnt:"), buf->COUNTER, '\n');
 	//dbg << F("lst3 val: ") << _HEX(lstP.val, lstP.len) << '\n';
 	//dbg << F("lst3 srt: ") << _HEX((uint8_t*)l3, lstP.len/2) << '\n';
 
@@ -313,7 +312,7 @@ void CM_DIMMER::REMOTE(s_m40xxxx *buf) {
 * @brief Function is called on messages comming from sensors.
 */
 void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
-	DBG(DM, F("\nDM"), lstC.cnl, F(":SENSOR- "), F("msg_long: "), buf->BLL.LONG, F(", msg_cnt: "), buf->COUNTER, F(", msg_val: "), buf->VALUE, F(", "));
+	DBG(DM, F("\nDM"), lstC.cnl, F(":SENSOR- msg_long:"), buf->BLL.LONG, F(", msg_cnt:"), buf->COUNTER, F(", msg_val:"), buf->VALUE, F(", "));
 
 	/* depending on the long flag, we cast the value array into a list3 struct.
 	* we do this, because the struct is seperated in two sections, values for a short key press and a section for long key press */
@@ -327,7 +326,7 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 	else if (cms.sm_stat == DM_JT::OFFDELAY) cond_tbl = l3->CT_OFFDELAY;					// delay off
 	else if (cms.sm_stat == DM_JT::RAMPOFF)  cond_tbl = l3->CT_RAMPOFF;						// ramp off
 	else if (cms.sm_stat == DM_JT::OFF)      cond_tbl = l3->CT_OFF;							// currently off
-	DBG(DM, F("sm_stat: "), cms.sm_stat, F(", cond_tbl: "), cond_tbl, F(", "));
+	DBG(DM, F("sm_stat:"), cms.sm_stat, F(", cond_tbl:"), cond_tbl, F(", "));
 
 
 	/* sort out the condition table */
@@ -352,7 +351,7 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 		if ((buf->VALUE < l3->COND_VALUE_LO) || (buf->VALUE >= l3->COND_VALUE_HI)) true_or_else = 1;
 
 	/* some debug */
-	DBG(DM, F(", true_or_else: "), true_or_else, '\n');
+	DBG(DM, F(", true_or_else:"), true_or_else, '\n');
 	//dbg << F("lst3 val: ") << _HEX(lstP.val, lstP.len) << '\n';
 	//dbg << F("lst3 srt: ") << _HEX((uint8_t*)l3, lstP.len/2) << '\n';
 

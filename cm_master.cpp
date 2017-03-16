@@ -10,9 +10,6 @@
 #include "newasksin.h"
 
 
-
-
-
 //public://------------------------------------------------------------------------------------------------------------------
 CM_MASTER::CM_MASTER(const uint8_t peer_max) {
 	peerDB.max = peer_max;
@@ -26,6 +23,7 @@ CM_MASTER::CM_MASTER(const uint8_t peer_max) {
 * the function here can cover all initialization of channel master modules 
 */
 void CM_MASTER::init(void) {
+	DBG(CM, F("CM"), lstC.cnl, F(":INIT\n"));
 	cm_init();																				// init the virtual poll function
 }
 
@@ -42,6 +40,7 @@ void CM_MASTER::poll(void) {
 * @brief virtual function of init to be overwritten by specialized channel modules 
 */
 void CM_MASTER::cm_init(void) {
+	DBG(CM, F("CM"), lstC.cnl, F(":CM_INIT\n"));
 }
 
 /*
@@ -57,21 +56,21 @@ void CM_MASTER::cm_poll(void) {
 * by the respective channel module
 */
 void CM_MASTER::info_config_change(uint8_t channel) {
-	DBG(CM, F("CM:config_change "), channel, '\n' );
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_CHANGE- cnl:"), channel, '\n');
 }
 
 void CM_MASTER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	lstP.load_default();																	// copy the defaults from progmem into the peer list, index doesn't matter
 	lstP.save_list(idx);																	// and save the list, index is important while more choices in the peer table
-	DBG(CM, F("CM:request_peer_defaults, idx:"), _HEX(idx), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n' );
+	DBG(CM, F("CM"), lstC.cnl, F(":PEER_DEFAULTS- idx:"), _HEX(idx), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n');
 }
 
 void CM_MASTER::instruction_msg(MSG_TYPE::E type, uint8_t *buf) {							// consolidation of ~10 virtual function definitions
-
+	DBG(CM, F("CM"), lstC.cnl, F(":INSTRUCTION\n"));
 }
 
 void CM_MASTER::peer_action_msg(MSG_TYPE::E type, uint8_t *buf) {							// consolidation of ~10 virtual function definitions
-
+	DBG(CM, F("CM"), lstC.cnl, F(":PEER_ACTION\n"));
 }
 
 
@@ -106,7 +105,7 @@ void CM_MASTER::CONFIG_PEER_ADD(s_m01xx01 *buf) {
 		}
 	}
 
-	DBG(CM, F("CM:CONFIG_PEER_ADD, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_PEER_ADD- cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), F(", RET:"), ret_byte, '\n');
 	hm.check_send_ACK_NACK(ret_byte);
 }
 
@@ -131,7 +130,7 @@ void CM_MASTER::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 			ret_byte++;																		// increase success
 		}
 	}
-	DBG(CM, F("CM:CONFIG_PEER_REMOVE, cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n');
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_PEER_REMOVE- cnl:"), buf->MSG_CNL, F(", peer:"), _HEX(buf->PEER_ID, 3), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n');
 	hm.check_send_ACK_NACK(ret_byte);
 }
 
@@ -143,14 +142,13 @@ void CM_MASTER::CONFIG_PEER_REMOVE(s_m01xx02 *buf) {
 * request is forwarded by the AS:processMessage function
 */
 void CM_MASTER::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
-	DBG(CM, F("CM:CONFIG_PEER_LIST_REQ\n"));
 	s_list_msg   *lm = &list_msg;															// short hand to the struct with all information for slice wise send
 
 	lm->active = LIST_ANSWER::PEER_LIST;													// we want to get the peer list
 	lm->peer = &peerDB;																		// pointer to the respective peerDB struct
 	lm->max_slc = peerDB.get_nr_slices();													// get an idea of the total needed slices
 	lm->timer.set(15);																		// some time between last message
-	DBG(CM, F("DM"), lstC.cnl, F(":CONFIG_PEER_LIST_REQ-\t\tnr slices: "), lm->max_slc, '\n');
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_PEER_LIST_REQ- slices:"), lm->max_slc, '\n');
 }
 
 /*
@@ -162,7 +160,7 @@ void CM_MASTER::CONFIG_PEER_LIST_REQ(s_m01xx03 *buf) {
 */
 void CM_MASTER::CONFIG_PARAM_REQ(s_m01xx04 *buf) {
 	//m> 10 1E A0 01 45 FB FA 33 11 24 01 04 33 11 24 01 03 (103556)
-	DBG(CM, F("DM"), lstC.cnl, F(":CONFIG_PARAM_REQ-\t\taddr: "), _HEX(buf->PEER_ID,4), F(", list: "), buf->PARAM_LIST);
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_PARAM_REQ- peer:"), _HEX(buf->PEER_ID,4), F(", list: "), buf->PARAM_LIST);
 	s_list_msg   *lm = &list_msg;															// short hand to the struct with all information for slice wise send
 	s_list_table *ls = list[buf->PARAM_LIST];												// short hand to the respective list table
 
@@ -208,7 +206,7 @@ void CM_MASTER::CONFIG_START(s_m01xx05 *buf) {
 	} else {
 		hm.send_NACK();																	// something wrong
 	}
-	DBG(CM, F("CM:CONFIG_START, cnl:"), buf->MSG_CNL, '/', cm->list->cnl, F(", lst:"), buf->PARAM_LIST, '/', cm->list->lst, F(", peer:"), _HEX(buf->PEER_ID, 4), F(", idx:"), cm->idx_peer, '\n');
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_START- cnl:"), buf->MSG_CNL, '/', cm->list->cnl, F(", lst:"), buf->PARAM_LIST, '/', cm->list->lst, F(", peer:"), _HEX(buf->PEER_ID, 4), F(", idx:"), cm->idx_peer, '\n');
 }
 
 /*
@@ -230,14 +228,14 @@ void CM_MASTER::CONFIG_END(s_m01xx06 *buf) {
 		inform_config_change(lstC.cnl);														// inform the channel module on a change of list0 or 1
 	}
 	// TODO: remove message id flag to config in send module
-	DBG(CM, F("CM:CONFIG_END, cnl:"), buf->MSG_CNL, '\n');
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_END- cnl:"), buf->MSG_CNL, '\n');
 }
 
 /* 
 * todo: implement
 */
 void CM_MASTER::CONFIG_WRITE_INDEX1(s_m01xx07 *buf) {
-	DBG(CM, F("CM:CONFIG_WRITE_INDEX1\n"));
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_WRITE_INDEX1\n"));
 }
 
 /*
@@ -254,7 +252,7 @@ void CM_MASTER::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 	if (cm->active)  {																		// check if config is active, channel fit is checked in AS
 		cm->list->write_array(buf->DATA, buf->MSG_LEN - 11, cm->idx_peer);					// write the array into the list
 		hm.send_ACK();																		// we are fine
-		DBG(CM, F("CM:CONFIG_WRITE_INDEX2, cnl:"), buf->MSG_CNL, F(", lst:"), cm->list->lst, F(", idx:"), cm->idx_peer, '\n');
+		DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_WRITE_INDEX2- cnl:"), buf->MSG_CNL, F(", lst:"), cm->list->lst, F(", idx:"), cm->idx_peer, '\n');
 	} else hm.send_NACK();
 }
 
@@ -267,7 +265,7 @@ void CM_MASTER::CONFIG_WRITE_INDEX2(s_m01xx08 *buf) {
 */
 void CM_MASTER::CONFIG_SERIAL_REQ(s_m01xx09 *buf) {
 	hm.send_INFO_SERIAL();
-	DBG(CM, F("CM:CONFIG_SERIAL_REQ\n"));
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_SERIAL_REQ\n"));
 }
 
 /*
@@ -278,7 +276,7 @@ void CM_MASTER::CONFIG_SERIAL_REQ(s_m01xx09 *buf) {
 * 15 93 B4 01 63 19 63 00 00 00 01 0A 4B 45 51 30 32 33 37 33 39 36
 */
 void CM_MASTER::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
-	DBG(CM, F("CM:CONFIG_PAIR_SERIAL, cnl:"), _HEX(buf->SERIALNO,10), '\n');
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_PAIR_SERIAL- serial:"), _HEX(buf->SERIALNO,10), '\n');
 
 	if (isEqual(buf->SERIALNO, dev_ident.SERIAL_NR, 10)) 									// compare serial and send device info
 		hm.send_DEVICE_INFO(MSG_REASON::ANSWER);
@@ -293,21 +291,21 @@ void CM_MASTER::CONFIG_PAIR_SERIAL(s_m01xx0a *buf) {
 * l> 0B 40 A0 01 63 19 64  23 70 D8  01    0E     
 */
 void CM_MASTER::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
-	DBG(CM, F("CM:CONFIG_STATUS_REQUEST\n"));
+	DBG(CM, F("CM"), lstC.cnl, F(":CONFIG_STATUS_REQ\n"));
+
+	if (!ptr_status) return;																// only actors need the config status, so struct needs to be defined in the respective channel module and alligned to the pointer in the constructor
+
+	/* here will fill the required information in the status struct, 
+	* send is done by the poll function in the respective list3 channel module */
+	//ptr_status->init_answer(STA_INFO::SND_ACTUATOR_STATUS);
+	ptr_status->msg_type = STA_INFO::SND_ACTUATOR_STATUS;
+	ptr_status->msg_delay.set(0);
 }
-
-
-
-
-
 
 
 void CM_MASTER::HAVE_DATA(s_m12xxxx *buf) {
-	DBG(CM, F("CM:HAVE_DATA\n"));
+	DBG(CM, F("CM"), lstC.cnl, F(":HAVE_DATA\n"));
 }
-
-
-
 
 
 /*
@@ -397,8 +395,8 @@ uint16_t cm_prep_default(uint16_t ee_start_addr) {
 		ee_start_addr += (cmm[i]->lstP.len * cmm[i]->peerDB.max);							// create new address by adding the length of the list before but while peer list, multiplied by the amount of possible peers
 
 		// defaults loaded in the AS module init, on every time start
-		DBG(CM, F("CM:prep_defaults, cnl:"), cmm[i]->lstC.cnl, F(", lst:"), cmm[i]->lstC.lst, F(", len:"), cmm[i]->lstC.len, F(", data:"), _HEX(cmm[i]->lstC.val, cmm[i]->lstC.len), '\n');
-		//DBG(CM, F("CM:prep_defaults, list_ptr: "), (uint16_t)cmm[i]->list[0], F(", "), (uint16_t)cmm[i]->list[1], F(", "), (uint16_t)cmm[i]->list[2], F(", "), (uint16_t)cmm[i]->list[3], F(", "), (uint16_t)cmm[i]->list[4], F(", "), (uint16_t)cmm[i]->list[5], F(", "), '\n');
+		DBG(CM, F("CMX:PREP_DEFAULTS- cnl:"), cmm[i]->lstC.cnl, F(", lst:"), cmm[i]->lstC.lst, F(", len:"), cmm[i]->lstC.len, F(", data:"), _HEX(cmm[i]->lstC.val, cmm[i]->lstC.len), '\n');
+		//dbg << F("list_ptr: ") << (uint16_t)cmm[i]->list[0] << F(", ") << (uint16_t)cmm[i]->list[1] << F(", ") << (uint16_t)cmm[i]->list[2] << F(", ") << (uint16_t)cmm[i]->list[3] << F(", ") << (uint16_t)cmm[i]->list[4] << F(", ") << (uint16_t)cmm[i]->list[5] << F(", ") << '\n';
 	}
 
 	for (uint8_t i = 0; i < cnl_max; i++) {													// step through all channels
@@ -426,7 +424,7 @@ uint16_t cm_calc_crc(void) {
 			flashCRC = crc16_P(flashCRC, pList->len, pList->reg);							// and calculate the crc - arrays are in PROGMEM
 			flashCRC = crc16_P(flashCRC, pList->len, pList->def);
 			flashCRC = crc16(flashCRC, pPeer->max);
-			DBG(CM, F("CM:calc_crc cnl:"), i, F(", crc:"), flashCRC, '\n');					// some debug
+			DBG(CM, F("CMX:PREP_DEFAULTS- cnl:"), i, F(", crc:"), flashCRC, '\n');		// some debug
 		}
 	}
 	return flashCRC;

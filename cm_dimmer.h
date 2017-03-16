@@ -267,10 +267,11 @@ public:  //---------------------------------------------------------------------
 
 	/* receive functions to handle requests forwarded by AS:processMessage
 	*  only channel module related requests are forwarded, majority of requests are handled within main channel master */
-	void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);												// master is asking for channel status
+	//void CONFIG_STATUS_REQUEST(s_m01xx0e *buf);												// master is asking for channel status
 	void INSTRUCTION_SET(s_m1102xx *buf);													// master wants to set channel status
 	void INSTRUCTION_INHIBIT_OFF(s_m1100xx *buf);											// deny access to switch, set_toogle and Remote 
 	void INSTRUCTION_INHIBIT_ON(s_m1101xx *buf);											// grant access to switch
+
 	void SWITCH(s_m3Exxxx *buf);															// switch message from master to test a peer setup
 	void REMOTE(s_m40xxxx *buf);															// remote peer message
 	void SENSOR_EVENT(s_m41xxxx *buf);														// sensor peer message

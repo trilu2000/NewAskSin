@@ -24,7 +24,7 @@ CBN as_cbn(1, pinB0);													//   80 byte flash,  25 byte sram
 CBN *cbn = &as_cbn;
 
 LED as_led(pinD6, pinD4);												//  150 byte flash,  51 byte sram
-LED *led = &as_led;
+LED *led = &as_led;	
 
 NO_BAT as_bat;															//   34 byte flash,  22 byte sram
 //INT_BAT as_bat(3600000, 30);											//  176 byte flash,  22 byte sram
@@ -126,126 +126,126 @@ void firstTimeStart(void) {
 */
 
 struct s_cnl0_lst0 {
-	uint8_t : 7;  // 0x02.0, s:7   d:   
-	uint8_t INTERNAL_KEYS_VISIBLE : 1;  // 0x02.7, s:1   d: true  
-	uint8_t MASTER_ID : 24; // 0x0a.0, s:24  d:   
-	uint8_t LOW_BAT_LIMIT : 8;  // 0x12.0, s:8   d: 3 V 
-	uint8_t LOCAL_RESET_DISABLE : 1;  // 0x18.0, s:1   d: false  
-	uint8_t : 7;  // 0x18.1, s:7   d:   
+	uint8_t                          : 7;  // 0x02.0, s:7   d:   
+	uint8_t INTERNAL_KEYS_VISIBLE    : 1;  // 0x02.7, s:1   d: true  
+	uint8_t MASTER_ID                : 24; // 0x0a.0, s:24  d:   
+	uint8_t LOW_BAT_LIMIT            : 8;  // 0x12.0, s:8   d: 3 V 
+	uint8_t LOCAL_RESET_DISABLE      : 1;  // 0x18.0, s:1   d: false  
+	uint8_t                          : 7;  // 0x18.1, s:7   d:   
 }; // 6 byte
 
 struct s_cnl1_lst1 {
-	uint8_t TRANSMIT_TRY_MAX : 8;  // 0x30.0, s:8   d: 6  
-	uint8_t OVERTEMP_LEVEL : 8;  // 0x32.0, s:8   d: 80 °C 
-	uint8_t REDUCE_TEMP_LEVEL : 8;  // 0x34.0, s:8   d: 75 °C 
-	uint8_t REDUCE_LEVEL : 8;  // 0x35.0, s:8   d: 0.4 % 
-	uint8_t POWERUP_ACTION : 1;  // 0x56.0, s:1   d: POWERUP_OFF  
-	uint8_t : 7;  // 0x56.1, s:7   d:   
-			  uint8_t STATUSINFO_MINDELAY : 5;  // 0x57.0, s:5   d: 2.0 s 
-			  uint8_t STATUSINFO_RANDOM : 3;  // 0x57.5, s:3   d: 1.0 s 
-			  uint8_t CHARACTERISTIC : 1;  // 0x58.0, s:1   d: CHARACTERISTIC_SQUARE  
-			  uint8_t : 7;  // 0x58.1, s:7   d:   
-						uint8_t LOGIC_COMBINATION : 5;  // 0x59.0, s:5   d: LOGIC_OR  
-						uint8_t : 3;  // 0x59.5, s:3   d:   
+	uint8_t TRANSMIT_TRY_MAX         : 8;  // 0x30.0, s:8   d: 6  
+	uint8_t OVERTEMP_LEVEL           : 8;  // 0x32.0, s:8   d: 80 °C 
+	uint8_t REDUCE_TEMP_LEVEL        : 8;  // 0x34.0, s:8   d: 75 °C 
+	uint8_t REDUCE_LEVEL             : 8;  // 0x35.0, s:8   d: 0.4 % 
+	uint8_t POWERUP_ACTION           : 1;  // 0x56.0, s:1   d: POWERUP_OFF  
+	uint8_t                          : 7;  // 0x56.1, s:7   d:   
+	uint8_t STATUSINFO_MINDELAY      : 5;  // 0x57.0, s:5   d: 2.0 s 
+	uint8_t STATUSINFO_RANDOM        : 3;  // 0x57.5, s:3   d: 1.0 s 
+	uint8_t CHARACTERISTIC           : 1;  // 0x58.0, s:1   d: CHARACTERISTIC_SQUARE  
+	uint8_t                          : 7;  // 0x58.1, s:7   d:   
+	uint8_t LOGIC_COMBINATION        : 5;  // 0x59.0, s:5   d: LOGIC_OR  
+	uint8_t                          : 3;  // 0x59.5, s:3   d:   
 }; // 8 byte
 
 struct s_cnl1_lst3 {
-	uint8_t SHORT_CT_RAMPON : 4;  // 0x01.0, s:4   d: X GE COND_VALUE_LO  
-	uint8_t SHORT_CT_RAMPOFF : 4;  // 0x01.4, s:4   d: X GE COND_VALUE_LO  
-	uint8_t SHORT_CT_ONDELAY : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO  
-	uint8_t SHORT_CT_OFFDELAY : 4;  // 0x02.4, s:4   d: X GE COND_VALUE_LO  
-	uint8_t SHORT_CT_ON : 4;  // 0x03.0, s:4   d: X GE COND_VALUE_LO  
-	uint8_t SHORT_CT_OFF : 4;  // 0x03.4, s:4   d: X GE COND_VALUE_LO  
-	uint8_t SHORT_COND_VALUE_LO : 8;  // 0x04.0, s:8   d: 50  
-	uint8_t SHORT_COND_VALUE_HI : 8;  // 0x05.0, s:8   d: 100  
-	uint8_t SHORT_ONDELAY_TIME : 8;  // 0x06.0, s:8   d: 0 s 
-	uint8_t SHORT_ON_TIME : 8;  // 0x07.0, s:8   d: 111600.0 s 
-	uint8_t SHORT_OFFDELAY_TIME : 8;  // 0x08.0, s:8   d: 0 s 
-	uint8_t SHORT_OFF_TIME : 8;  // 0x09.0, s:8   d: 111600.0 s 
-	uint8_t SHORT_ACTION_TYPE : 4;  // 0x0a.0, s:4   d: INACTIVE  
-	uint8_t : 2;  // 0x0a.4, s:2   d:   
-			  uint8_t SHORT_OFF_TIME_MODE : 1;  // 0x0a.6, s:1   d: ABSOLUTE  
-			  uint8_t SHORT_ON_TIME_MODE : 1;  // 0x0a.7, s:1   d: ABSOLUTE  
-			  uint8_t SHORT_JT_ON : 4;  // 0x0b.0, s:4   d: ONDELAY  
-			  uint8_t SHORT_JT_OFF : 4;  // 0x0b.4, s:4   d: ONDELAY  
-			  uint8_t SHORT_JT_ONDELAY : 4;  // 0x0c.0, s:4   d: ONDELAY  
-			  uint8_t SHORT_JT_OFFDELAY : 4;  // 0x0c.4, s:4   d: ONDELAY  
-			  uint8_t SHORT_JT_RAMPON : 4;  // 0x0d.0, s:4   d: ONDELAY  
-			  uint8_t SHORT_JT_RAMPOFF : 4;  // 0x0d.4, s:4   d: ONDELAY  
-			  uint8_t SHORT_OFFDELAY_BLINK : 1;  // 0x0e.5, s:1   d: ON  
-			  uint8_t SHORT_ON_LEVEL_PRIO : 1;  // 0x0e.6, s:1   d: HIGH  
-			  uint8_t SHORT_ONDELAY_MODE : 1;  // 0x0e.7, s:1   d: SET_TO_OFF  
-			  uint8_t SHORT_OFF_LEVEL : 8;  // 0x0f.0, s:8   d: 0.0 % 
-			  uint8_t SHORT_ON_MIN_LEVEL : 8;  // 0x10.0, s:8   d: 0.1 % 
-			  uint8_t SHORT_ON_LEVEL : 8;  // 0x11.0, s:8   d: 1.0 % 
-			  uint8_t SHORT_RAMP_START_STEP : 8;  // 0x12.0, s:8   d: 0.05 % 
-			  uint8_t SHORT_RAMPON_TIME : 8;  // 0x13.0, s:8   d: 0 s 
-			  uint8_t SHORT_RAMPOFF_TIME : 8;  // 0x14.0, s:8   d: 0 s 
-			  uint8_t SHORT_DIM_MIN_LEVEL : 8;  // 0x15.0, s:8   d: 0.0 % 
-			  uint8_t SHORT_DIM_MAX_LEVEL : 8;  // 0x16.0, s:8   d: 1.0 % 
-			  uint8_t SHORT_DIM_STEP : 8;  // 0x17.0, s:8   d: 0.0 % 
-			  uint8_t SHORT_OFFDELAY_STEP : 8;  // 0x18.0, s:8   d: 0.05 % 
-			  uint8_t SHORT_OFFDELAY_NEWTIME : 8;  // 0x19.0, s:8   d: 0.5 s 
-			  uint8_t SHORT_OFFDELAY_OLDTIME : 8;  // 0x1a.0, s:8   d: 0.5 s 
-			  uint8_t SHORT_ELSE_ACTION_TYPE : 4;  // 0x26.0, s:4   d: INACTIVE  
-			  uint8_t : 2;  // 0x26.4, s:2   d:   
-						uint8_t SHORT_ELSE_OFF_TIME_MODE : 1;  // 0x26.6, s:1   d: ABSOLUTE  
-						uint8_t SHORT_ELSE_ON_TIME_MODE : 1;  // 0x26.7, s:1   d: ABSOLUTE  
-						uint8_t SHORT_ELSE_JT_ON : 4;  // 0x27.0, s:4   d: ONDELAY  
-						uint8_t SHORT_ELSE_JT_OFF : 4;  // 0x27.4, s:4   d: ONDELAY  
-						uint8_t SHORT_ELSE_JT_ONDELAY : 4;  // 0x28.0, s:4   d: ONDELAY  
-						uint8_t SHORT_ELSE_JT_OFFDELAY : 4;  // 0x28.4, s:4   d: ONDELAY  
-						uint8_t SHORT_ELSE_JT_RAMPON : 4;  // 0x29.0, s:4   d: ONDELAY  
-						uint8_t SHORT_ELSE_JT_RAMPOFF : 4;  // 0x29.4, s:4   d: ONDELAY  
-						uint8_t LONG_CT_RAMPON : 4;  // 0x81.0, s:4   d: X GE COND_VALUE_LO  
-						uint8_t LONG_CT_RAMPOFF : 4;  // 0x81.4, s:4   d: X GE COND_VALUE_LO  
-						uint8_t LONG_CT_ONDELAY : 4;  // 0x82.0, s:4   d: X GE COND_VALUE_LO  
-						uint8_t LONG_CT_OFFDELAY : 4;  // 0x82.4, s:4   d: X GE COND_VALUE_LO  
-						uint8_t LONG_CT_ON : 4;  // 0x83.0, s:4   d: X GE COND_VALUE_LO  
-						uint8_t LONG_CT_OFF : 4;  // 0x83.4, s:4   d: X GE COND_VALUE_LO  
-						uint8_t LONG_COND_VALUE_LO : 8;  // 0x84.0, s:8   d: 50  
-						uint8_t LONG_COND_VALUE_HI : 8;  // 0x85.0, s:8   d: 100  
-						uint8_t LONG_ONDELAY_TIME : 8;  // 0x86.0, s:8   d: 0 s 
-						uint8_t LONG_ON_TIME : 8;  // 0x87.0, s:8   d: 111600.0 s 
-						uint8_t LONG_OFFDELAY_TIME : 8;  // 0x88.0, s:8   d: 0 s 
-						uint8_t LONG_OFF_TIME : 8;  // 0x89.0, s:8   d: 111600.0 s 
-						uint8_t LONG_ACTION_TYPE : 4;  // 0x8a.0, s:4   d: INACTIVE  
-						uint8_t : 1;  // 0x8a.4, s:1   d:   
-								  uint8_t LONG_MULTIEXECUTE : 1;  // 0x8a.5, s:1   d: OFF  
-								  uint8_t LONG_OFF_TIME_MODE : 1;  // 0x8a.6, s:1   d: ABSOLUTE  
-								  uint8_t LONG_ON_TIME_MODE : 1;  // 0x8a.7, s:1   d: ABSOLUTE  
-								  uint8_t LONG_JT_ON : 4;  // 0x8b.0, s:4   d: ONDELAY  
-								  uint8_t LONG_JT_OFF : 4;  // 0x8b.4, s:4   d: ONDELAY  
-								  uint8_t LONG_JT_ONDELAY : 4;  // 0x8c.0, s:4   d: ONDELAY  
-								  uint8_t LONG_JT_OFFDELAY : 4;  // 0x8c.4, s:4   d: ONDELAY  
-								  uint8_t LONG_JT_RAMPON : 4;  // 0x8d.0, s:4   d: ONDELAY  
-								  uint8_t LONG_JT_RAMPOFF : 4;  // 0x8d.4, s:4   d: ONDELAY  
-								  uint8_t LONG_OFFDELAY_BLINK : 1;  // 0x8e.5, s:1   d: ON  
-								  uint8_t LONG_ON_LEVEL_PRIO : 1;  // 0x8e.6, s:1   d: HIGH  
-								  uint8_t LONG_ONDELAY_MODE : 1;  // 0x8e.7, s:1   d: SET_TO_OFF  
-								  uint8_t LONG_OFF_LEVEL : 8;  // 0x8f.0, s:8   d: 0.0 % 
-								  uint8_t LONG_ON_MIN_LEVEL : 8;  // 0x90.0, s:8   d: 0.1 % 
-								  uint8_t LONG_ON_LEVEL : 8;  // 0x91.0, s:8   d: 1.0 % 
-								  uint8_t LONG_RAMP_START_STEP : 8;  // 0x92.0, s:8   d: 0.05 % 
-								  uint8_t LONG_RAMPON_TIME : 8;  // 0x93.0, s:8   d: 0 s 
-								  uint8_t LONG_RAMPOFF_TIME : 8;  // 0x94.0, s:8   d: 0 s 
-								  uint8_t LONG_DIM_MIN_LEVEL : 8;  // 0x95.0, s:8   d: 0.0 % 
-								  uint8_t LONG_DIM_MAX_LEVEL : 8;  // 0x96.0, s:8   d: 1.0 % 
-								  uint8_t LONG_DIM_STEP : 8;  // 0x97.0, s:8   d: 0.0 % 
-								  uint8_t LONG_OFFDELAY_STEP : 8;  // 0x98.0, s:8   d: 0.05 % 
-								  uint8_t LONG_OFFDELAY_NEWTIME : 8;  // 0x99.0, s:8   d: 0.5 s 
-								  uint8_t LONG_OFFDELAY_OLDTIME : 8;  // 0x9a.0, s:8   d: 0.5 s 
-								  uint8_t LONG_ELSE_ACTION_TYPE : 4;  // 0xa6.0, s:4   d: INACTIVE  
-								  uint8_t : 1;  // 0xa6.4, s:1   d:   
-											uint8_t LONG_ELSE_MULTIEXECUTE : 1;  // 0xa6.5, s:1   d: OFF  
-											uint8_t LONG_ELSE_OFF_TIME_MODE : 1;  // 0xa6.6, s:1   d: ABSOLUTE  
-											uint8_t LONG_ELSE_ON_TIME_MODE : 1;  // 0xa6.7, s:1   d: ABSOLUTE  
-											uint8_t LONG_ELSE_JT_ON : 4;  // 0xa7.0, s:4   d: ONDELAY  
-											uint8_t LONG_ELSE_JT_OFF : 4;  // 0xa7.4, s:4   d: ONDELAY  
-											uint8_t LONG_ELSE_JT_ONDELAY : 4;  // 0xa8.0, s:4   d: ONDELAY  
-											uint8_t LONG_ELSE_JT_OFFDELAY : 4;  // 0xa8.4, s:4   d: ONDELAY  
-											uint8_t LONG_ELSE_JT_RAMPON : 4;  // 0xa9.0, s:4   d: ONDELAY  
-											uint8_t LONG_ELSE_JT_RAMPOFF : 4;  // 0xa9.4, s:4   d: ONDELAY  
+	uint8_t SHORT_CT_RAMPON          : 4;  // 0x01.0, s:4   d: X GE COND_VALUE_LO  
+	uint8_t SHORT_CT_RAMPOFF         : 4;  // 0x01.4, s:4   d: X GE COND_VALUE_LO  
+	uint8_t SHORT_CT_ONDELAY         : 4;  // 0x02.0, s:4   d: X GE COND_VALUE_LO  
+	uint8_t SHORT_CT_OFFDELAY        : 4;  // 0x02.4, s:4   d: X GE COND_VALUE_LO  
+	uint8_t SHORT_CT_ON              : 4;  // 0x03.0, s:4   d: X GE COND_VALUE_LO  
+	uint8_t SHORT_CT_OFF             : 4;  // 0x03.4, s:4   d: X GE COND_VALUE_LO  
+	uint8_t SHORT_COND_VALUE_LO      : 8;  // 0x04.0, s:8   d: 50  
+	uint8_t SHORT_COND_VALUE_HI      : 8;  // 0x05.0, s:8   d: 100  
+	uint8_t SHORT_ONDELAY_TIME       : 8;  // 0x06.0, s:8   d: 0 s 
+	uint8_t SHORT_ON_TIME            : 8;  // 0x07.0, s:8   d: 111600.0 s 
+	uint8_t SHORT_OFFDELAY_TIME      : 8;  // 0x08.0, s:8   d: 0 s 
+	uint8_t SHORT_OFF_TIME           : 8;  // 0x09.0, s:8   d: 111600.0 s 
+	uint8_t SHORT_ACTION_TYPE        : 4;  // 0x0a.0, s:4   d: INACTIVE  
+	uint8_t                          : 2;  // 0x0a.4, s:2   d:   
+	uint8_t SHORT_OFF_TIME_MODE      : 1;  // 0x0a.6, s:1   d: ABSOLUTE  
+	uint8_t SHORT_ON_TIME_MODE       : 1;  // 0x0a.7, s:1   d: ABSOLUTE  
+	uint8_t SHORT_JT_ON              : 4;  // 0x0b.0, s:4   d: ONDELAY  
+	uint8_t SHORT_JT_OFF             : 4;  // 0x0b.4, s:4   d: ONDELAY  
+	uint8_t SHORT_JT_ONDELAY         : 4;  // 0x0c.0, s:4   d: ONDELAY  
+	uint8_t SHORT_JT_OFFDELAY        : 4;  // 0x0c.4, s:4   d: ONDELAY  
+	uint8_t SHORT_JT_RAMPON          : 4;  // 0x0d.0, s:4   d: ONDELAY  
+	uint8_t SHORT_JT_RAMPOFF         : 4;  // 0x0d.4, s:4   d: ONDELAY  
+	uint8_t SHORT_OFFDELAY_BLINK     : 1;  // 0x0e.5, s:1   d: ON  
+	uint8_t SHORT_ON_LEVEL_PRIO      : 1;  // 0x0e.6, s:1   d: HIGH  
+	uint8_t SHORT_ONDELAY_MODE       : 1;  // 0x0e.7, s:1   d: SET_TO_OFF  
+	uint8_t SHORT_OFF_LEVEL          : 8;  // 0x0f.0, s:8   d: 0.0 % 
+	uint8_t SHORT_ON_MIN_LEVEL       : 8;  // 0x10.0, s:8   d: 0.1 % 
+	uint8_t SHORT_ON_LEVEL           : 8;  // 0x11.0, s:8   d: 1.0 % 
+	uint8_t SHORT_RAMP_START_STEP    : 8;  // 0x12.0, s:8   d: 0.05 % 
+	uint8_t SHORT_RAMPON_TIME        : 8;  // 0x13.0, s:8   d: 0 s 
+	uint8_t SHORT_RAMPOFF_TIME       : 8;  // 0x14.0, s:8   d: 0 s 
+	uint8_t SHORT_DIM_MIN_LEVEL      : 8;  // 0x15.0, s:8   d: 0.0 % 
+	uint8_t SHORT_DIM_MAX_LEVEL      : 8;  // 0x16.0, s:8   d: 1.0 % 
+	uint8_t SHORT_DIM_STEP           : 8;  // 0x17.0, s:8   d: 0.0 % 
+	uint8_t SHORT_OFFDELAY_STEP      : 8;  // 0x18.0, s:8   d: 0.05 % 
+	uint8_t SHORT_OFFDELAY_NEWTIME   : 8;  // 0x19.0, s:8   d: 0.5 s 
+	uint8_t SHORT_OFFDELAY_OLDTIME   : 8;  // 0x1a.0, s:8   d: 0.5 s 
+	uint8_t SHORT_ELSE_ACTION_TYPE   : 4;  // 0x26.0, s:4   d: INACTIVE  
+	uint8_t                          : 2;  // 0x26.4, s:2   d:   
+	uint8_t SHORT_ELSE_OFF_TIME_MODE : 1;  // 0x26.6, s:1   d: ABSOLUTE  
+	uint8_t SHORT_ELSE_ON_TIME_MODE  : 1;  // 0x26.7, s:1   d: ABSOLUTE  
+	uint8_t SHORT_ELSE_JT_ON         : 4;  // 0x27.0, s:4   d: ONDELAY  
+	uint8_t SHORT_ELSE_JT_OFF        : 4;  // 0x27.4, s:4   d: ONDELAY  
+	uint8_t SHORT_ELSE_JT_ONDELAY    : 4;  // 0x28.0, s:4   d: ONDELAY  
+	uint8_t SHORT_ELSE_JT_OFFDELAY   : 4;  // 0x28.4, s:4   d: ONDELAY  
+	uint8_t SHORT_ELSE_JT_RAMPON     : 4;  // 0x29.0, s:4   d: ONDELAY  
+	uint8_t SHORT_ELSE_JT_RAMPOFF    : 4;  // 0x29.4, s:4   d: ONDELAY  
+	uint8_t LONG_CT_RAMPON           : 4;  // 0x81.0, s:4   d: X GE COND_VALUE_LO  
+	uint8_t LONG_CT_RAMPOFF          : 4;  // 0x81.4, s:4   d: X GE COND_VALUE_LO  
+	uint8_t LONG_CT_ONDELAY          : 4;  // 0x82.0, s:4   d: X GE COND_VALUE_LO  
+	uint8_t LONG_CT_OFFDELAY         : 4;  // 0x82.4, s:4   d: X GE COND_VALUE_LO  
+	uint8_t LONG_CT_ON               : 4;  // 0x83.0, s:4   d: X GE COND_VALUE_LO  
+	uint8_t LONG_CT_OFF              : 4;  // 0x83.4, s:4   d: X GE COND_VALUE_LO  
+	uint8_t LONG_COND_VALUE_LO       : 8;  // 0x84.0, s:8   d: 50  
+	uint8_t LONG_COND_VALUE_HI       : 8;  // 0x85.0, s:8   d: 100  
+	uint8_t LONG_ONDELAY_TIME        : 8;  // 0x86.0, s:8   d: 0 s 
+	uint8_t LONG_ON_TIME             : 8;  // 0x87.0, s:8   d: 111600.0 s 
+	uint8_t LONG_OFFDELAY_TIME       : 8;  // 0x88.0, s:8   d: 0 s 
+	uint8_t LONG_OFF_TIME            : 8;  // 0x89.0, s:8   d: 111600.0 s 
+	uint8_t LONG_ACTION_TYPE         : 4;  // 0x8a.0, s:4   d: INACTIVE  
+	uint8_t                          : 1;  // 0x8a.4, s:1   d:   
+	uint8_t LONG_MULTIEXECUTE        : 1;  // 0x8a.5, s:1   d: OFF  
+	uint8_t LONG_OFF_TIME_MODE       : 1;  // 0x8a.6, s:1   d: ABSOLUTE  
+	uint8_t LONG_ON_TIME_MODE        : 1;  // 0x8a.7, s:1   d: ABSOLUTE  
+	uint8_t LONG_JT_ON               : 4;  // 0x8b.0, s:4   d: ONDELAY  
+	uint8_t LONG_JT_OFF              : 4;  // 0x8b.4, s:4   d: ONDELAY  
+	uint8_t LONG_JT_ONDELAY          : 4;  // 0x8c.0, s:4   d: ONDELAY  
+	uint8_t LONG_JT_OFFDELAY         : 4;  // 0x8c.4, s:4   d: ONDELAY  
+	uint8_t LONG_JT_RAMPON           : 4;  // 0x8d.0, s:4   d: ONDELAY  
+	uint8_t LONG_JT_RAMPOFF          : 4;  // 0x8d.4, s:4   d: ONDELAY  
+	uint8_t LONG_OFFDELAY_BLINK      : 1;  // 0x8e.5, s:1   d: ON  
+	uint8_t LONG_ON_LEVEL_PRIO       : 1;  // 0x8e.6, s:1   d: HIGH  
+	uint8_t LONG_ONDELAY_MODE        : 1;  // 0x8e.7, s:1   d: SET_TO_OFF  
+	uint8_t LONG_OFF_LEVEL           : 8;  // 0x8f.0, s:8   d: 0.0 % 
+	uint8_t LONG_ON_MIN_LEVEL        : 8;  // 0x90.0, s:8   d: 0.1 % 
+	uint8_t LONG_ON_LEVEL            : 8;  // 0x91.0, s:8   d: 1.0 % 
+	uint8_t LONG_RAMP_START_STEP     : 8;  // 0x92.0, s:8   d: 0.05 % 
+	uint8_t LONG_RAMPON_TIME         : 8;  // 0x93.0, s:8   d: 0 s 
+	uint8_t LONG_RAMPOFF_TIME        : 8;  // 0x94.0, s:8   d: 0 s 
+	uint8_t LONG_DIM_MIN_LEVEL       : 8;  // 0x95.0, s:8   d: 0.0 % 
+	uint8_t LONG_DIM_MAX_LEVEL       : 8;  // 0x96.0, s:8   d: 1.0 % 
+	uint8_t LONG_DIM_STEP            : 8;  // 0x97.0, s:8   d: 0.0 % 
+	uint8_t LONG_OFFDELAY_STEP       : 8;  // 0x98.0, s:8   d: 0.05 % 
+	uint8_t LONG_OFFDELAY_NEWTIME    : 8;  // 0x99.0, s:8   d: 0.5 s 
+	uint8_t LONG_OFFDELAY_OLDTIME    : 8;  // 0x9a.0, s:8   d: 0.5 s 
+	uint8_t LONG_ELSE_ACTION_TYPE    : 4;  // 0xa6.0, s:4   d: INACTIVE  
+	uint8_t                          : 1;  // 0xa6.4, s:1   d:   
+	uint8_t LONG_ELSE_MULTIEXECUTE   : 1;  // 0xa6.5, s:1   d: OFF  
+	uint8_t LONG_ELSE_OFF_TIME_MODE  : 1;  // 0xa6.6, s:1   d: ABSOLUTE  
+	uint8_t LONG_ELSE_ON_TIME_MODE   : 1;  // 0xa6.7, s:1   d: ABSOLUTE  
+	uint8_t LONG_ELSE_JT_ON          : 4;  // 0xa7.0, s:4   d: ONDELAY  
+	uint8_t LONG_ELSE_JT_OFF         : 4;  // 0xa7.4, s:4   d: ONDELAY  
+	uint8_t LONG_ELSE_JT_ONDELAY     : 4;  // 0xa8.0, s:4   d: ONDELAY  
+	uint8_t LONG_ELSE_JT_OFFDELAY    : 4;  // 0xa8.4, s:4   d: ONDELAY  
+	uint8_t LONG_ELSE_JT_RAMPON      : 4;  // 0xa9.0, s:4   d: ONDELAY  
+	uint8_t LONG_ELSE_JT_RAMPOFF     : 4;  // 0xa9.4, s:4   d: ONDELAY  
 }; // 60 byte
 
    /*
