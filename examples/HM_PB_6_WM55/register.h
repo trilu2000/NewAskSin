@@ -13,6 +13,8 @@
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
+//NO_AES as_aes;														//   60 byte flash,  69 byte sram
+HAS_AES as_aes;															// 2826 byte flash, 277 byte sram
 AES *aes = &as_aes;
 
 CC1101 as_cc1101(pinB4, pinB3, pinB5, pinB2, pinD2);					//  546 byte flash, 124 byte sram
@@ -45,6 +47,13 @@ const uint8_t cm_maintenance_ChnlLen = sizeof(cm_maintenance_ChnlReg);
 /*
 *  @brief definition of the device functionallity per channel
 */
+CM_MAINTENANCE cm_maintenance(0);										//   24 byte flash, 124 byte sram
+CM_REMOTE cm_remote1(10, pinC0);										//  827 byte flash, 100 byte sram
+CM_REMOTE cm_remote2(10, pinC1);
+CM_REMOTE cm_remote3(10, pinC2);
+CM_REMOTE cm_remote4(10, pinC3);
+CM_REMOTE cm_remote5(10, pinC4);
+CM_REMOTE cm_remote6(10, pinC5); 
 
 CM_MASTER *cmm[7] = {
 	&cm_maintenance,
