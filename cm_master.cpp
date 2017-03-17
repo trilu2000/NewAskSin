@@ -65,6 +65,10 @@ void CM_MASTER::request_peer_defaults(uint8_t idx, s_m01xx01 *buf) {
 	DBG(CM, F("CM"), lstC.cnl, F(":PEER_DEFAULTS- idx:"), _HEX(idx), F(", CNL_A:"), _HEX(buf->PEER_CNL[0]), F(", CNL_B:"), _HEX(buf->PEER_CNL[1]), '\n');
 }
 
+void CM_MASTER::button_action(uint8_t event) {
+	DBG(CM, F("CM"), lstC.cnl, F(":BUTTON_ACTION- event:"), event, '\n');
+}
+
 void CM_MASTER::instruction_msg(MSG_TYPE::E type, uint8_t *buf) {							// consolidation of ~10 virtual function definitions
 	DBG(CM, F("CM"), lstC.cnl, F(":INSTRUCTION\n"));
 }

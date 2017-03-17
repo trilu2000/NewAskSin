@@ -9,17 +9,28 @@
 #include <newasksin.h> 
 #include "hmkey.h"
 
+
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-AES *aes = new HAS_AES();
-COM *com = new CC1101(&pin_B4, &pin_B3, &pin_B5, &pin_B2, &pin_D2);
-CBN *cbn = new CBN(1, &pin_B0);
-LED *led = new LED(&pin_D6, &pin_D4);
-BAT *bat = new NO_BAT();
-//BAT *bat = new INT_BAT(3600000, 30);								// ~170 byte more than no_bat
-//BAT *bat = new EXT_BAT(3600000, 30, &pin_D7, &pin_C6, 10, 45);	// ~320 byte more than no_bat
-POM *pom = new POM(POWER_MODE_NO_SLEEP);
+AES *aes = &as_aes;
+
+CC1101 as_cc1101(pinB4, pinB3, pinB5, pinB2, pinD2);					//  546 byte flash, 124 byte sram
+COM *com = &as_cc1101;
+
+CBN as_cbn(1, pinB0);													//   80 byte flash,  25 byte sram
+CBN *cbn = &as_cbn;
+
+LED as_led(pinD6, pinD4);												//  150 byte flash,  51 byte sram
+LED *led = &as_led;
+
+NO_BAT as_bat;															//   34 byte flash,  22 byte sram
+//INT_BAT as_bat(3600000, 30);											//  176 byte flash,  22 byte sram
+//EXT_BAT as_bat(3600000, 30, pinD7, pinC6, 10, 45);					//  386 byte flash,  56 byte sram
+BAT *bat = &as_bat;
+
+POM as_pom(POWER_MODE_NO_SLEEP);										//   68 byte flash,  19 byte sram
+POM *pom = &as_pom;
 
 
 /*
@@ -27,19 +38,22 @@ POM *pom = new POM(POWER_MODE_NO_SLEEP);
 */
 const uint8_t cm_maintenance_ChnlReg[] PROGMEM = { 0x02,0x08,0x0a,0x0b,0x0c,0x12, };
 const uint8_t cm_maintenance_ChnlDef[] PROGMEM = { 0x80,0x01,0x00,0x00,0x00,0x69, };
-const uint8_t cm_maintenance_ChnlLen = 6;
+uint8_t cm_maintenance_ChnlVal[sizeof(cm_maintenance_ChnlReg)];
+const uint8_t cm_maintenance_ChnlLen = sizeof(cm_maintenance_ChnlReg);
+
 
 /*
 *  @brief definition of the device functionallity per channel
 */
+
 CM_MASTER *cmm[7] = {
-	new CM_MAINTENANCE(0),
-	new CM_REMOTE(11, &pin_C0),
-	new CM_REMOTE(10, &pin_C1),
-	new CM_REMOTE(10, &pin_C2),
-	new CM_REMOTE(10, &pin_C3),
-	new CM_REMOTE(10, &pin_C4),
-	new CM_REMOTE(10, &pin_C5),
+	&cm_maintenance,
+	&cm_remote1,
+	&cm_remote2,
+	&cm_remote3,
+	&cm_remote4,
+	&cm_remote5,
+	&cm_remote6,
 };
 
 

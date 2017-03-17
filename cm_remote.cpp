@@ -7,6 +7,7 @@
 */
 
 #include "newasksin.h"
+#include "cm_remote.h"
 
 
 /**------------------------------------------------------------------------------------------------------------------------
@@ -18,7 +19,6 @@
 *        Constructor of master class is processed first.
 *        Setup of class specific things is done here
 */
-#include "cm_remote.h"
 
 /**
 * @brief This function has to be called to handover all pin information to initialize the hardware port/pin
@@ -29,25 +29,20 @@
 * @param   port/pin information    PIN_C2
 */
 CM_REMOTE::CM_REMOTE(const uint8_t peer_max, uint8_t pin_key) : CM_MASTER(peer_max) {
-	def_key = pin_key;
+	def_key = pin_key;																		// make the pin available within the channel module
 	button_check.configured = 1;															// poll the pin make only sense if it was configured, store result here
 
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_remote_ChnlReg;
 	lstC.def = cm_remote_ChnlDef;
+	lstC.val = cm_remote_ChnlVal;
 	lstC.len = sizeof(cm_remote_ChnlReg);
 
 	lstP.lst = 4;																			// setup the peer list with all dependencies
 	lstP.reg = cm_remote_PeerReg;
 	lstP.def = cm_remote_PeerDef;
+	lstP.val = cm_remote_PeerVal;
 	lstP.len = sizeof(cm_remote_PeerReg);
-
-	static uint8_t lstCval[sizeof(cm_remote_ChnlReg)];
-	lstC.val = lstCval;
-	//lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
-	static uint8_t lstPval[sizeof(cm_remote_PeerReg)];
-	lstP.val = lstPval;
-	//lstP.val = new uint8_t[lstP.len];
 
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
 	l4 = (s_l4*)lstP.val;
@@ -59,33 +54,35 @@ CM_REMOTE::CM_REMOTE(const uint8_t peer_max) : CM_MASTER(peer_max) {
 	lstC.lst = 1;																			// setup the channel list with all dependencies
 	lstC.reg = cm_remote_ChnlReg;
 	lstC.def = cm_remote_ChnlDef;
+	lstC.val = cm_remote_ChnlVal;
 	lstC.len = sizeof(cm_remote_ChnlReg);
 
 	lstP.lst = 4;																			// setup the peer list with all dependencies
 	lstP.reg = cm_remote_PeerReg;
 	lstP.def = cm_remote_PeerDef;
+	lstP.val = cm_remote_PeerVal;
 	lstP.len = sizeof(cm_remote_PeerReg);
 
-	static uint8_t lstCval[sizeof(cm_remote_ChnlReg)];
-	lstC.val = lstCval;
-	//lstC.val = new uint8_t[lstC.len];														// create and allign the value arrays
-	static uint8_t lstPval[sizeof(cm_remote_PeerReg)];
-	lstP.val = lstPval;
-	//lstP.val = new uint8_t[lstP.len];
 
 	l1 = (s_l1*)lstC.val;																	// set list structures to something useful
 	l4 = (s_l4*)lstP.val;
 }
 
 void CM_REMOTE::cm_init() {
+	DBG(RE, F("RE"), lstC.cnl, F(":CM_INIT- "));
+
 	if (button_check.configured) {
-		register_PCINT(def_key);
+		register_PCINT(def_key);															// register the pin interrupt
 		button_ref.status = check_PCINT(def_key, 0);										// get the latest information
-		DBG(RE, F("RE:init_pin, cnl: "), lstC.cnl, F(", pin: "), key_pin->PINBIT, F(", port: "), key_pin->VEC, F(", LONG_PRESS_TIME: "), byteTimeCvt(l1->LONG_PRESS_TIME), F(", DBL_PRESS_TIME: "), byteTimeCvt(l1->DBL_PRESS_TIME), F(", AES_ACTIVE: "), l1->AES_ACTIVE, '\n');
+		DBG(RE, F("pin:"), def_key);
+
+	} else {
+		DBG(RE, F("no_pin"));
+
 	}
 
+	DBG(RE, F(", LONG_PRESS_TIME:"), byteTimeCvt(l1->LONG_PRESS_TIME), F(", DBL_PRESS_TIME:"), byteTimeCvt(l1->DBL_PRESS_TIME), F(", AES_ACTIVE:"), l1->AES_ACTIVE, '\n');
 	initRemote(lstC.cnl);																	// call external init function to set the input pins
-	DBG(RE, F("cmRemote, cnl: "), lstC.cnl, '\n');
 }
 
 /**------------------------------------------------------------------------------------------------------------------------
@@ -103,6 +100,7 @@ void CM_REMOTE::cm_poll(void) {
 		timer.set(byteTimeCvt(l1->LONG_PRESS_TIME));										// set timer to detect a long
 		pom->stayAwake(byteTimeCvt(l1->LONG_PRESS_TIME) + 500);								// stay awake to check button status
 		button_check.armed = 1;																// set it armed
+		DBG(RE, F("RE"), lstC.cnl, F(":CM_POLL-\t\tnew pressed "), _TIME, '\n');
 	}
 	if (!button_check.armed) return;
 
@@ -110,6 +108,7 @@ void CM_REMOTE::cm_poll(void) {
 	if (button_ref.status == 3) {
 		timer.set(byteTimeCvt(l1->DBL_PRESS_TIME));											// set timer to clear the repeated flags
 		pom->stayAwake(byteTimeCvt(l1->DBL_PRESS_TIME) + 500);								// stay awake to check button status
+		DBG(RE, F("RE"), lstC.cnl, F(":CM_POLL-\t\treleased "), _TIME, '\n');
 
 		/* keyLongRelease */
 		if (button_check.last_long) { 	
@@ -136,6 +135,7 @@ void CM_REMOTE::cm_poll(void) {
 		pom->stayAwake(repeatedLong + 500);													// stay awake to check button status
 		timer.set(repeatedLong);															// set timer to detect a repeated long
 		button_check.last_long = 1;															// remember that it was a long
+		DBG(RE, F("RE"), lstC.cnl, F(":CM_POLL-\t\tpressed, timeout "), _TIME, '\n');
 		button_action(3);																	// last key state was a long, now it is a repeated long
 	} 
 	
@@ -144,6 +144,7 @@ void CM_REMOTE::cm_poll(void) {
 		button_check = {};
 		button_check.configured = 1;
 		//button_check.armed = button_check.last_long = button_check.last_short = 0;
+		DBG(RE, F("RE"), lstC.cnl, F(":CM_POLL-\t\treleased, timeout "), _TIME, '\n');
 	}
 }
 
@@ -162,7 +163,7 @@ void CM_REMOTE::button_action(uint8_t event) {
 	// at the moment this channel module will only work for channel > 0 while key for maintanance channel need
 	// some special functionality, like link to toogle and pairing
 
-	DBG(RE, F("RM:buttonAction, cnl: "), lstC.cnl, F(", evt:"), event, '\n');
+	DBG(RE, F("RE"), lstC.cnl, F(":ACTION- event"), event, '\n');
 	if ((event == 1) && (l1->DBL_PRESS_TIME)) return;										// when double press is set, we do not report a key single
 
 	pom->stayAwake(1000);																	// make some time to send the message

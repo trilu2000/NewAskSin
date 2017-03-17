@@ -12,12 +12,6 @@
 #define _DEBUG_FLAG_H
 
 
-#if defined(ARDUINO) && ARDUINO >= 100
-#include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
-
 #include "HAL.h"
 
 
@@ -39,7 +33,7 @@
 //#define MN_DBG					// Maintenance channel module (cmMaintenance.cpp)
 //#define SW_DBG				// Switsch channel module (cmSwitch.cpp)
 //#define DM_DBG					// Dimmer channel module (cmDimmer.cpp)
-//#define RE_DBG					// Remote channel module (cmRemote.cpp)
+#define RE_DBG					// Remote channel module (cmRemote.cpp)
 
 
 /*

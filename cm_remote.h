@@ -22,6 +22,9 @@ const uint8_t cm_remote_PeerDef[] PROGMEM = { 0x00, };
 class CM_REMOTE : public CM_MASTER {
 private:  //---------------------------------------------------------------------------------------------------------------
 
+	uint8_t cm_remote_ChnlVal[sizeof(cm_remote_ChnlReg)];									// the register value store in memory
+	uint8_t cm_remote_PeerVal[sizeof(cm_remote_PeerReg)];
+
 	struct s_l1 {
 		uint8_t                  : 4;  // 0x04.0, s:4   d:   
 		uint8_t LONG_PRESS_TIME  : 4;  // 0x04.4, s:4   d: 0.4 s 
@@ -37,6 +40,8 @@ private:  //--------------------------------------------------------------------
 		uint8_t EXPECT_AES       : 1;  // 0x01.7, s:1   d: false  
 	} *l4; // 1 byte
 
+
+	uint8_t def_key;																		// here we store the key definition
 	waitTimer timer;																		// timer to detect long press and dbl_short
 
 	struct s_button_check {
@@ -59,7 +64,6 @@ private:  //--------------------------------------------------------------------
 		uint8_t counter          : 8;														// will be increased in buttonAction function
 	} button_info;																			// holds the details for the send event message
 
-	uint8_t def_key;
 
 public:  //----------------------------------------------------------------------------------------------------------------
 
@@ -69,13 +73,7 @@ public:  //---------------------------------------------------------------------
 
 	virtual void cm_poll(void);																// poll function, driven by HM loop
 
-	/* register a pc interrupt to the respective pin. definition of the pins are stored in HAL_atmega.h */
-	//virtual void cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC);
-	
 	virtual void button_action(uint8_t event);
-
-	/* receive functions to handle requests forwarded by AS:processMessage
-	*  only channel module related requests are forwarded, majority of requests are handled within main AS class */
 
 };
 

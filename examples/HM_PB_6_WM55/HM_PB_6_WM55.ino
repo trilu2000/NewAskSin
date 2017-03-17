@@ -23,7 +23,7 @@ void setup() {
 
 	// - AskSin related ---------------------------------------
 	init_millis_timer0();																	// init timer0
-	hm->init();																				// init the asksin framework
+	hm.init();																				// init the asksin framework
 
 	DBG_START(SER, F("HM_PB_6_WM55\n"));
 	DBG(SER, F(LIB_VERSION_STRING));
@@ -35,7 +35,7 @@ void setup() {
 
 void loop() {
 	// - AskSin related ---------------------------------------
-	hm->poll();																				// poll the homematic main loop
+	hm.poll();																				// poll the homematic main loop
 
 	// - user related -----------------------------------------
 //	if (xtimer.done()) {

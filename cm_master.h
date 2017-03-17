@@ -62,8 +62,8 @@ public://-----------------------------------------------------------------------
 	virtual void request_peer_defaults(uint8_t idx, s_m01xx01 *buf);						// add peer channel defaults to list3/4
 
 	/* virtual declaration for cmRemote channel module. make pin configuration and button event accessible */
-	virtual void cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC) {}
-	virtual void button_action(uint8_t event) {}
+	//virtual void cm_init_pin(uint8_t PINBIT, volatile uint8_t *DDREG, volatile uint8_t *PORTREG, volatile uint8_t *PINREG, uint8_t PCINR, uint8_t PCIBYTE, volatile uint8_t *PCICREG, volatile uint8_t *PCIMASK, uint8_t PCIEREG, uint8_t VEC) {}
+	virtual void button_action(uint8_t event);
 
 	virtual void instruction_msg(MSG_TYPE::E type, uint8_t *buf);							// consolidation of ~10 virtual function definitions
 	virtual void peer_action_msg(MSG_TYPE::E type, uint8_t *buf);							// consolidation of ~10 virtual function definitions
