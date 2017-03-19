@@ -25,6 +25,19 @@ void setup() {
 	init_millis_timer0();																	// init timer0
 	hm.init();																				// init the asksin framework
 
+	//for (uint8_t i = 0; i < 201; i++) {
+	//	CM_DIMMER::switch_dimmer(0, 0, 1, i);
+	//	dbg << i << ", ";
+	//	_delay_ms(30);
+	//}
+	//dbg << '\n';
+	//for (uint8_t i = 201; i > 0; --i) {
+	//	dbg << i << ", ";
+	//	CM_DIMMER::switch_dimmer(0, 0, 1, i);
+	//	_delay_ms(30);
+	//}
+	//dbg << '\n';
+
 	sei();																					// enable interrupts
 }
 
@@ -53,7 +66,7 @@ void CM_DIMMER::init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint
 
 void CM_DIMMER::switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint8_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
-	//DBG(SER, F("switchDim: "), *virtual_group, *channel, ", ", *status, '\n' );
+	//DBG(SER, F("switchDim: "), virtual_group, channel, ", ", status, '\n' );
 
 	uint16_t x = status * 255;
 	x /= 200;																				// status = 0 to 200, but PWM needs 255 as maximum

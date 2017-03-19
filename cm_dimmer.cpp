@@ -41,6 +41,11 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel, uint8_t vi
 	vrt_grp = virtual_group;																// remember the virtual group this instance belong too
 	vrt_cnl = virtual_channel;																// remember the virtual channel in group this instance belong too
 	cms.sum_value = &dm_sum_cnl_value;														// set the sum value to the pointer in the state machine struct
+
+	/* assign list (list1/3) structs to the list arrays */
+	l1 = (s_l1*)lstC.val;																	// allign arrays with list structures
+	l3 = (s_l3*)lstP.val;																	// reduced l3, description in cm_Dimmer.h at struct declaration
+	jt = (s_jt*)((uint8_t*)l3 + 9);															// assign the jump table pointer to list3 array 
 }
 
 /**------------------------------------------------------------------------------------------------------------------------
@@ -48,10 +53,6 @@ CM_DIMMER::CM_DIMMER(const uint8_t peer_max, uint8_t virtual_channel, uint8_t vi
 * ------------------------------------------------------------------------------------------------------------------------- */
 
 void CM_DIMMER::cm_init(void) {
-	/* assign list (list1/3) structs to the list arrays */
-	l1 = (s_l1*)lstC.val;																	// allign arrays with list structures
-	l3 = (s_l3*)lstP.val;																	// reduced l3, description in cm_Dimmer.h at struct declaration
-	jt = (s_jt*)((uint8_t*)l3 + 9);															// assign the jump table pointer to list3 array 
 
 	/* clear the variables to avoid unexpected activity */
 	jt->ACTION_TYPE = DM_ACTION::INACTIVE;													// and secure that no action will happened in polling function
@@ -108,14 +109,14 @@ void CM_DIMMER::cm_poll(void) {
 
 void CM_DIMMER::info_config_change(uint8_t channel) {
 	if (lstC.cnl != channel) return;
-	DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_CHANGE\n"));
+	DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_CHANGE- logic:"), l1->LOGIC_COMBINATION,'\n');
 
 	/* assign list1 variables and initialize the hardware */
 	dm_sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;								// store the logic combination of the virtual channel in the struct
 	cms.msg_retr = l1->TRANSMIT_TRY_MAX;													// set the max retrie counter flag
 
 	/* set the status message timer, random can be 0 to 7 seconds */
-	get_random((uint8_t*)&cms.status_delay, (uint32_t*)dev_ident.HMID);
+	get_random((uint8_t*)&cms.status_delay, *(uint32_t*)dev_ident.HMID);
 	cms.status_delay %= l1->STATUSINFO_RANDOM * 1000;
 	cms.status_delay += l1->STATUSINFO_MINDELAY * 500;
 	//dbg << F("status_delay: ") << cms.status_delay << F(", l1->STATUSINFO_RANDOM: ") << l1->STATUSINFO_RANDOM << F(", l1->STATUSINFO_MINDELAY: ") << l1->STATUSINFO_MINDELAY << '\n';
@@ -239,7 +240,7 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 	tr11.active = 1;																		// something needs to be set
 
 	cms.msg_type = STA_INFO::SND_ACK_STATUS_PAIR;											// ACK should be send
-	cms.msg_delay.set(5);																	// give some time
+	cms.msg_delay.set(10);																	// give some time
 
 	DBG(DM, F("\nDM"), lstC.cnl, F(":INSTRUCTION_SET- setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), ' ', _TIME, '\n');
 	//dbg << "msg: " << _HEX((uint8_t*)buf, buf->MSG_LEN + 1) << '\n';
@@ -369,11 +370,23 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 void CM_DIMMER::adjust_status(void) {
 
 	/* check if something is to do */
+	if (cms.set_value > 200) cms.set_value = 200;											// value cannot be higher than 200
 	if (cms.value == cms.set_value) return;													// nothing to do, return
+	if (!cms.aj_delay.done()) return;
+
 
 	/* calculate the next step, based on the set_value */
-	if (cms.set_value > 200) cms.set_value = 200;											// value cannot be higher than 200
-	cms.value = cms.set_value;																// no need to enter the function again, value and set_value now similar
+	uint8_t diff_value;
+	if (cms.value > cms.set_value) {
+		diff_value = cms.value - cms.set_value;
+		cms.value--;
+	} else {
+		diff_value = cms.set_value - cms.value;
+		cms.value++;
+	}
+	cms.aj_delay.set(cms.set_time);
+	//DBG(DM, F("DM"), lstC.cnl, F(":ADJUST-\t\tvalue:"), cms.value, F(", set:"), cms.set_value, F(", time:"), cms.set_time, '\n');
+
 
 	/* summerize up in the mixer value by taking care of LOGIC_COMBINATION and call afterwards the external function */
 	//<option id = "LOGIC_INACTIVE", "LOGIC_OR" default = "true", "LOGIC_AND", "LOGIC_XOR", "LOGIC_NOR", "LOGIC_NAND", "LOGIC_ORINVERS"
@@ -450,15 +463,16 @@ void CM_DIMMER::adjust_status(void) {
 		//dbg << "v: " << dm_sum_cnl[vrt_grp].value[vrt_cnl] << ", l: " << dm_sum_cnl[vrt_grp].logic[vrt_cnl] << ", c: " << calc_value << '\n';
 	}
 
+
 	/* check if we have a quadratic approach to follow and call the main sketch to set the value on the HW */
 	//uint16_t calc_value = sum_cnl[vrt_grp].value[vrt_cnl];								// copy value in a bigger variable to calculate the quadratic value
 	if (l1->CHARACTERISTIC) {																// check if we should use quadratic approach
 		calc_value *= calc_value;															// recalculate the value
 		calc_value /= 200;
-		if ((cms.value) && (!calc_value)) calc_value = 1;									// till 15 it is below 1, set to 1
+		if ((cms.value > 9) && (cms.value < 15)) calc_value = 1;							// till 15 it is below 1, set to 1
 	} 
-	switch_dimmer(vrt_grp, vrt_cnl, lstC.cnl, (uint8_t)calc_value);						// calling the external function to make it happen
-	DBG(DM, F("DM"), lstC.cnl, F(":ADJUST-\t\tvalue: "), cms.value, F(", set: "), calc_value, F(", "), (l1->CHARACTERISTIC)?F("sqare"):F("linear"), '\n';)
+	//DBG(DM, F("DM"), lstC.cnl, F(":ADJUST-\t\tvalue: "), cms.value, F(", set: "), calc_value, F(", "), (l1->CHARACTERISTIC)?F("sqare"):F("linear"), '\n';)
+	switch_dimmer(vrt_grp, vrt_cnl, lstC.cnl, (uint8_t)calc_value);							// calling the external function to make it happen
 }
 
 /* trigger 11 poll function, similar to trigger 40 state machine,
@@ -476,21 +490,23 @@ void CM_DIMMER::poll_tr11(void) {
 	if (tr11.active == 1) {																	// set next action based on ramp and dura content
 		cms.sm_delay.set(intTimeCvt(tr11.ramp_time));										// set the ramp timer accordingly, could be 0 or a time
 		tr11.active = 2;
-		cms.sm_stat = cms.sm_set = (cms.value < tr11.value) ? DM_JT::ONDELAY : DM_JT::OFFDELAY;
+		cms.sm_stat = cms.sm_set = (cms.set_value < tr11.value) ? DM_JT::ONDELAY : DM_JT::OFFDELAY;
 		DBG(DM, F("value: "), cms.value, F(", set_value: "), tr11.value, F(", ramp_time: "), intTimeCvt(tr11.ramp_time));
 
 	} else if (tr11.active == 2) {
 		if (tr11.dura_time) {
-			last_value = cms.value;															// remember the current value
+			last_value = cms.set_value;														// remember the current value
 			cms.sm_delay.set(intTimeCvt(tr11.dura_time));									// set the duration timer accordingly, could be 0 or a time
 		}
 		cms.set_value = tr11.value;															// set the tr11 value
+		cms.set_time = 1;
 		cms.sm_stat = cms.sm_set = (tr11.value > 0) ? DM_JT::ON : DM_JT::OFF;				// set the state machine accordingly
 		tr11.active = 3;
 		DBG(DM, F("value: "), cms.value, F(", set_value: "), tr11.value, F(", dura_time: "), intTimeCvt(tr11.dura_time));
 
 	} else if (tr11.active == 3) {
 		if (tr11.dura_time) cms.set_value = last_value;										// restore the initial value while dura time was set and passed
+		cms.set_time = 1;
 		cms.sm_stat = cms.sm_set = (tr11.value > 0) ? DM_JT::ON : DM_JT::OFF;				// set the state machine accordingly
 		tr11.active = 0;
 		DBG(DM,F("done"));
@@ -505,6 +521,7 @@ void CM_DIMMER::poll_tr11(void) {
 void CM_DIMMER::do_jump_table(uint8_t counter, uint8_t bidi) {
 	uint8_t toogle_cnt = counter & 1;
 	DBG(DM, F("DM"), lstC.cnl, F(":DO_JT-\t\t"));
+
 
 	/* check for inhibit flag */
 	if (cms.inhibit) {
@@ -615,23 +632,25 @@ void CM_DIMMER::do_jump_table(uint8_t counter, uint8_t bidi) {
 
 void CM_DIMMER::do_updim(void) {
 	/* increase brightness by DIM_STEP but not over DIM_MAX_LEVEL */
-	if (cms.value < l3->DIM_MAX_LEVEL - l3->DIM_STEP) cms.set_value = cms.value + l3->DIM_STEP;
+	if (cms.set_value < l3->DIM_MAX_LEVEL - l3->DIM_STEP) cms.set_value += l3->DIM_STEP;
 	else cms.set_value = l3->DIM_MAX_LEVEL;
 	if (cms.set_value < l3->ON_MIN_LEVEL) cms.set_value = l3->ON_MIN_LEVEL;					// take care of the on_min_level flag
+	cms.set_time = 15;
 
 	cms.sm_stat = cms.sm_set = DM_JT::ON;
-	DBG(DM, F("DM"), lstC.cnl, F(":UPDIM-\t\t"), F("value: "), cms.value, F(", set_value: "), cms.set_value, F(", dim_step: "), l3->DIM_STEP, '\n');
+	DBG(DM, F("DM"), lstC.cnl, F(":UPDIM-\t\t"), F("value: "), cms.value, F(", set_value: "), cms.set_value, F(", dim_step: "), l3->DIM_STEP, _TIME,'\n');
 }
 void CM_DIMMER::do_downdim(void) {
 	/* decrease brightness by DIM_STEP  but not lower than DIM_MIN_LEVEL */
-	if (cms.value > l3->DIM_MIN_LEVEL + l3->DIM_STEP) cms.set_value = cms.value - l3->DIM_STEP;
+	if (cms.set_value > l3->DIM_MIN_LEVEL + l3->DIM_STEP) cms.set_value -= l3->DIM_STEP;
 	else cms.set_value = l3->DIM_MIN_LEVEL;
+	cms.set_time = 15;
 
 	/* set the state machine accordingly */
 	if (cms.set_value) cms.sm_stat = cms.sm_set = DM_JT::ON;								// set the state machine accordingly
 	else cms.sm_stat = cms.sm_set = DM_JT::OFF;
 
-	DBG(DM, F("DM"), lstC.cnl, F(":DOWNDIM-\t\t"), F("value: "), cms.value, F(", set_value: "), cms.set_value, F(", dim_step: "), l3->DIM_STEP, '\n');
+	DBG(DM, F("DM"), lstC.cnl, F(":DOWNDIM-\t\t"), F("value: "), cms.value, F(", set_value: "), cms.set_value, F(", dim_step: "), l3->DIM_STEP, _TIME, '\n');
 }
 
 /* trigger 3E, 40, 41 state machine functions 
@@ -666,24 +685,26 @@ void CM_DIMMER::poll_rampon(void) {
 	* do_rampon has 5 stati, 0 for off, 1 for set the start step, 2 for set the value, 3 for regular and for done */
 	//static uint8_t target_value;
 
-	if (!cms.aj_delay.done()) return;														// not ready with setting the value
+	//if (!cms.aj_delay.done()) return;														// not ready with setting the value
 
 	/* mode 3 means we decrease brightness over time by checking the remaining time and setting the adj_timer direct */
-	if (cms.sm_active == 3) {
-		uint8_t delta = (l3->ON_LEVEL - cms.value) / l3->DIM_STEP;							// calculate the neccassary steps
-		if (!delta) delta = 1;																// delta needs to be at least one because we use it as divisor
-		cms.set_value = (delta == 1) ? l3->ON_LEVEL : cms.value + l3->DIM_STEP;				// set the next value to be set
-		cms.aj_delay.set(cms.sm_delay.remain() / delta);									// calculate the slots needed to decrease set_value within the remaining rampon time into 
-		DBG(DM, F("\t\t\tA3, value: "), cms.value, F(", set_value: "), cms.set_value, ' ', _TIME, '\n');
-		//dbg << F("\t\t\tA3, value: ") << cms.value << F(", set: ") << cms.set_value << F(", sm_delay: ") << cms.sm_delay.remain() << F(", aj_delay: ") << cms.aj_delay.remain() << F(", delta: ") << delta, ' ' << _TIME << '\n';
-	}
+	//if (cms.sm_active == 3) {
+	//	uint8_t delta = (l3->ON_LEVEL - cms.value) / l3->DIM_STEP;							// calculate the neccassary steps
+	//	if (!delta) delta = 1;																// delta needs to be at least one because we use it as divisor
+	//	cms.set_value = (delta == 1) ? l3->ON_LEVEL : cms.value + l3->DIM_STEP;				// set the next value to be set
+	//	cms.aj_delay.set(cms.sm_delay.remain() / delta);									// calculate the slots needed to decrease set_value within the remaining rampon time into 
+	//	DBG(DM, F("\t\t\tA3, value: "), cms.value, F(", set_value: "), cms.set_value, ' ', _TIME, '\n');
+	//	//dbg << F("\t\t\tA3, value: ") << cms.value << F(", set: ") << cms.set_value << F(", sm_delay: ") << cms.sm_delay.remain() << F(", aj_delay: ") << cms.aj_delay.remain() << F(", delta: ") << delta, ' ' << _TIME << '\n';
+	//}
 
 	if (!cms.sm_delay.done()) return;														// leave while wait timer is active
 	DBG(DM, F("DM"), lstC.cnl, F(":SM_RAMPON-\t\t"), 'A', cms.sm_active, F(", "));
 
 	if (cms.sm_active == 1) {
-		if (cms.value + l3->RAMP_START_STEP < l3->ON_LEVEL) cms.set_value = cms.value + l3->RAMP_START_STEP;
+		if (cms.set_value + l3->RAMP_START_STEP < l3->ON_LEVEL) cms.set_value += l3->RAMP_START_STEP;
 		else cms.set_value = l3->ON_LEVEL;
+		cms.set_time = 1;
+		cms.sm_delay.set(50);
 		cms.sm_active = 2;																	// we will follow up in mode 2
 		DBG(DM, F("value: "), cms.value, F(", set: "), cms.set_value, F(", ramp_start_step: "), l3->RAMP_START_STEP);
 
@@ -694,8 +715,15 @@ void CM_DIMMER::poll_rampon(void) {
 		} else 
 			DBG(DM, F(", set on_level: "), l3->ON_LEVEL);
 
-		if (!l3->DIM_STEP) l3->DIM_STEP = 1;												// dim step needs to be at least 1 while used as dividor
-		cms.sm_delay.set(byteTimeCvt(l3->RAMPON_TIME));										// set the state machine timer
+		/* calculate the set_time by rampon_time/steps needed */
+		uint8_t steps = l3->ON_LEVEL - cms.set_value;
+		if (!steps) steps = 1;
+
+		uint32_t temp_time = byteTimeCvt(l3->RAMPON_TIME);
+		cms.set_time = temp_time / steps;
+		cms.set_value = l3->ON_LEVEL;
+
+		cms.sm_delay.set(temp_time);														// set the state machine timer
 		cms.sm_active = 3;																	// we will follow up in mode 3
 		DBG(DM, F(", rampon_time: "), l3->RAMPON_TIME);
 
@@ -787,9 +815,9 @@ void CM_DIMMER::poll_rampoff(void) {
 
 	/* mode 3 means we decrease brightness over time by checking the remaining time and setting the set_delay direct */
 	if (cms.sm_active == 3) {
-		uint8_t delta = (cms.value - l3->OFF_LEVEL) / l3->DIM_STEP;							// evaluate the delta between current and target value
+		uint8_t delta = (cms.value - l3->OFF_LEVEL);// / l3->DIM_STEP;							// evaluate the delta between current and target value
 		if (!delta) delta = 1;																// if delta is empty, we need at least one step
-		cms.set_value = (delta == 1)? l3->OFF_LEVEL : cms.value - l3->DIM_STEP;				// set the next value to be set
+		cms.set_value = (delta == 1) ? l3->OFF_LEVEL : cms.value - 1;// l3->DIM_STEP;				// set the next value to be set
 		cms.aj_delay.set(cms.sm_delay.remain() / delta);									// calculate the slots needed to decrease set_value within the remaining rampon time into 
 		DBG(DM, F("\t\t\tA3, value: "), cms.value, F(", set: "), cms.set_value, ' ', _TIME, '\n');
 		//dbg << F("\t\t\tA3, value: ") << cms.value << F(", set: ") << cms.set_value << F(", sm_delay: ") << cms.sm_delay.remain() << F(", aj_delay: ") << cms.aj_delay.remain() << F(", delta: ") << delta << ' ' << _TIME << '\n';

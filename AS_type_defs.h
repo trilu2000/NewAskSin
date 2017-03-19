@@ -49,6 +49,7 @@ typedef struct ts_cm_status {
 	// everything value related
 	uint8_t   value;																		// module status byte, needed for list3 modules to answer status requests
 	uint8_t   set_value;																	// status to set on the Relay channel
+	uint32_t  set_time;																		// the time to manage the difference between value and set_value
 	uint8_t   *sum_value = NULL;															// summary value for virtual channels
 
 	// message flag
