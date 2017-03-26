@@ -64,7 +64,7 @@ void CM_DIMMER::init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint
 	OCR2B = 0;
 }
 
-void CM_DIMMER::switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint8_t status) {
+void CM_DIMMER::switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint16_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
 	//DBG(SER, F("switchDim: "), virtual_group, channel, ", ", status, '\n' );
 

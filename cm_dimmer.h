@@ -240,7 +240,7 @@ public:  //---------------------------------------------------------------------
 
 	/* external declaration for functions to be in the user sketch */
 	static void init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel);// gets called while initializing the dimmer channel module
-	static void switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint8_t status);	// gets called if a certain status needs to be set
+	static void switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint16_t status);	// gets called if a certain status needs to be set
 
 	/* definition of 2 structs to drive state machines based on type of message */
 	struct s_tr11 {
