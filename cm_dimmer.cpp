@@ -240,7 +240,7 @@ void CM_DIMMER::INSTRUCTION_SET(s_m1102xx *buf) {
 	tr11.active = 1;																		// something needs to be set
 
 	cms.msg_type = STA_INFO::SND_ACK_STATUS_PAIR;											// ACK should be send
-	cms.msg_delay.set(10);																	// give some time
+	cms.msg_delay.set(20);																	// give some time to set the right status in the poll function
 
 	DBG(DM, F("\nDM"), lstC.cnl, F(":INSTRUCTION_SET- setValue:"), tr11.value, F(", rampTime:"), intTimeCvt(tr11.ramp_time), F(", duraTime:"), intTimeCvt(tr11.dura_time), ' ', _TIME, '\n');
 	//dbg << "msg: " << _HEX((uint8_t*)buf, buf->MSG_LEN + 1) << '\n';
@@ -370,9 +370,9 @@ void CM_DIMMER::SENSOR_EVENT(s_m41xxxx *buf) {
 void CM_DIMMER::adjust_status(void) {
 
 	/* check if something is to do */
-	if (cms.set_value > 200) cms.set_value = 200;											// value cannot be higher than 200
 	if (cms.value == cms.set_value) return;													// nothing to do, return
-	if (!cms.aj_delay.done()) return;
+	if (!cms.aj_delay.done()) return;														// timer not done, return
+	if (cms.set_value > 200) cms.set_value = 200;											// value cannot be higher than 200
 
 
 	/* calculate the next step, based on the set_value */
@@ -384,8 +384,11 @@ void CM_DIMMER::adjust_status(void) {
 		diff_value = cms.set_value - cms.value;
 		cms.value++;
 	}
-	cms.aj_delay.set(cms.set_time);
-	//DBG(DM, F("DM"), lstC.cnl, F(":ADJUST-\t\tvalue:"), cms.value, F(", set:"), cms.set_value, F(", time:"), cms.set_time, '\n');
+	uint32_t curr_delay = cms.set_time / diff_value;
+	cms.set_time -= curr_delay;
+	cms.aj_delay.set(curr_delay);
+	//dbg << cms.value << ", d:" << diff_value << ", t" << cms.set_time << ", c" << curr_delay << _TIME << '\n';
+	//DBG(DM, F("DM"), lstC.cnl, F(":ADJUST-\t\tvalue:"), cms.value, F(", set:"), cms.set_value, F(", time:"), cms.set_time, ' ', _TIME, '\n');
 
 
 	/* summerize up in the mixer value by taking care of LOGIC_COMBINATION and call afterwards the external function */
@@ -479,7 +482,7 @@ void CM_DIMMER::adjust_status(void) {
 * but all required information stored in tr11 struct 
 */
 void CM_DIMMER::poll_tr11(void) {
-	uint8_t last_value;
+	static uint8_t last_value;
 	/* poll tr11 gets polled by the main poll function and takes care of the instruction set message 
 	* tr11.active has x stati, 1 for setting up action and start on/off delay, 2 for set value and start dura delay, 3 dura is done-leave */
 
@@ -489,8 +492,8 @@ void CM_DIMMER::poll_tr11(void) {
 
 	if (tr11.active == 1) {																	// set next action based on ramp and dura content
 		cms.sm_delay.set(intTimeCvt(tr11.ramp_time));										// set the ramp timer accordingly, could be 0 or a time
-		tr11.active = 2;
 		cms.sm_stat = cms.sm_set = (cms.set_value < tr11.value) ? DM_JT::ONDELAY : DM_JT::OFFDELAY;
+		tr11.active = 2;
 		DBG(DM, F("value: "), cms.value, F(", set_value: "), tr11.value, F(", ramp_time: "), intTimeCvt(tr11.ramp_time));
 
 	} else if (tr11.active == 2) {
@@ -499,14 +502,14 @@ void CM_DIMMER::poll_tr11(void) {
 			cms.sm_delay.set(intTimeCvt(tr11.dura_time));									// set the duration timer accordingly, could be 0 or a time
 		}
 		cms.set_value = tr11.value;															// set the tr11 value
-		cms.set_time = 1;
+		cms.set_time = 200;																	// set the value now																
 		cms.sm_stat = cms.sm_set = (tr11.value > 0) ? DM_JT::ON : DM_JT::OFF;				// set the state machine accordingly
 		tr11.active = 3;
 		DBG(DM, F("value: "), cms.value, F(", set_value: "), tr11.value, F(", dura_time: "), intTimeCvt(tr11.dura_time));
 
 	} else if (tr11.active == 3) {
 		if (tr11.dura_time) cms.set_value = last_value;										// restore the initial value while dura time was set and passed
-		cms.set_time = 1;
+		cms.set_time = 200;
 		cms.sm_stat = cms.sm_set = (tr11.value > 0) ? DM_JT::ON : DM_JT::OFF;				// set the state machine accordingly
 		tr11.active = 0;
 		DBG(DM,F("done"));
@@ -635,7 +638,7 @@ void CM_DIMMER::do_updim(void) {
 	if (cms.set_value < l3->DIM_MAX_LEVEL - l3->DIM_STEP) cms.set_value += l3->DIM_STEP;
 	else cms.set_value = l3->DIM_MAX_LEVEL;
 	if (cms.set_value < l3->ON_MIN_LEVEL) cms.set_value = l3->ON_MIN_LEVEL;					// take care of the on_min_level flag
-	cms.set_time = 15;
+	cms.set_time = 200;
 
 	cms.sm_stat = cms.sm_set = DM_JT::ON;
 	DBG(DM, F("DM"), lstC.cnl, F(":UPDIM-\t\t"), F("value: "), cms.value, F(", set_value: "), cms.set_value, F(", dim_step: "), l3->DIM_STEP, _TIME,'\n');
@@ -644,7 +647,7 @@ void CM_DIMMER::do_downdim(void) {
 	/* decrease brightness by DIM_STEP  but not lower than DIM_MIN_LEVEL */
 	if (cms.set_value > l3->DIM_MIN_LEVEL + l3->DIM_STEP) cms.set_value -= l3->DIM_STEP;
 	else cms.set_value = l3->DIM_MIN_LEVEL;
-	cms.set_time = 15;
+	cms.set_time = 200;
 
 	/* set the state machine accordingly */
 	if (cms.set_value) cms.sm_stat = cms.sm_set = DM_JT::ON;								// set the state machine accordingly
@@ -668,9 +671,10 @@ void CM_DIMMER::poll_ondelay(void) {
 		// <option id = "SET_TO_OFF" default = "true" / > value 0
 		// <option id = "NO_CHANGE" / >                   value 1
 		if (l3->ONDELAY_MODE == 0) cms.set_value = l3->OFF_LEVEL;							// check if set_to_off is required 
-		cms.sm_delay.set(byteTimeCvt(l3->ONDELAY_TIME));									// set the respective delay
+		uint32_t temp_time = byteTimeCvt(l3->ONDELAY_TIME);
+		cms.sm_delay.set(temp_time);									// set the respective delay
 		cms.sm_active = 2;																	// next step is cleaning up the function, while delay is passed
-		DBG(DM, F("ondelay_mode: "), (l3->ONDELAY_MODE)? F("no_change") : F("set_to_off") , F(", ondelay_time: "), l3->ONDELAY_TIME);
+		DBG(DM, F("ondelay_mode: "), (l3->ONDELAY_MODE)? F("no_change") : F("set_to_off") , F(", ondelay_time: "), temp_time);
 
 	} else if (cms.sm_active == 2) {
 		cms.process_next(jt->JT_ONDELAY);													// set status based on state machine position and a new target if required
@@ -690,7 +694,7 @@ void CM_DIMMER::poll_rampon(void) {
 	if (cms.sm_active == 1) {
 		if (cms.set_value + l3->RAMP_START_STEP < l3->ON_LEVEL) cms.set_value += l3->RAMP_START_STEP;
 		else cms.set_value = l3->ON_LEVEL;
-		cms.set_time = 1;
+		cms.set_time = 40;
 		cms.sm_delay.set(50);
 		cms.sm_active = 2;																	// we will follow up in mode 2
 		DBG(DM, F("value: "), cms.value, F(", set: "), cms.set_value, F(", ramp_start_step: "), l3->RAMP_START_STEP);
@@ -702,17 +706,13 @@ void CM_DIMMER::poll_rampon(void) {
 		} else 
 			DBG(DM, F(", set on_level: "), l3->ON_LEVEL);
 
-		/* calculate the set_time by rampon_time/steps needed */
-		uint8_t steps = l3->ON_LEVEL - cms.set_value;
-		if (!steps) steps = 1;
-
 		uint32_t temp_time = byteTimeCvt(l3->RAMPON_TIME);
-		cms.set_time = temp_time / steps;
+		cms.set_time = temp_time;
 		cms.set_value = l3->ON_LEVEL;
 
 		cms.sm_delay.set(temp_time);														// set the state machine timer
 		cms.sm_active = 3;																	// we will follow up in mode 3
-		DBG(DM, F(", rampon_time: "), l3->RAMPON_TIME);
+		DBG(DM, F(", rampon_time: "), temp_time);
 
 	} else if (cms.sm_active == 3) {
 		/* mode 3 was processed above, we are here while the rampon time was done */
@@ -730,9 +730,10 @@ void CM_DIMMER::poll_on(void) {
 	DBG(DM, F("DM"), lstC.cnl, F(":SM_ON-\t\t"), 'A', cms.sm_active, F(", "));
 
 	if (cms.sm_active == 1) {
-		if (l3->ON_TIME != NOT_USED) cms.sm_delay.set(byteTimeCvt(l3->ON_TIME));			// set the respective delay, but only if it is not 255
+		uint32_t temp_time = byteTimeCvt(l3->ON_TIME);
+		if (l3->ON_TIME != NOT_USED) cms.sm_delay.set(temp_time);							// set the respective delay, but only if it is not 255
 		cms.sm_active = 2;																	// next time will be entered after the delay
-		DBG(DM, F("on_time: "), l3->ON_TIME);
+		DBG(DM, F("on_time: "), temp_time);
 
 	} else if (cms.sm_active == 2) {
 		cms.process_next(jt->JT_ON, l3->ON_TIME);											// set status based on state machine position and a new target if required
@@ -770,8 +771,8 @@ void CM_DIMMER::poll_offdelay(void) {
 		/* set the blink time and check if we have done all rampoff time */
 		// <conversion type="float_integer_scale" factor="10" offset="-0.1"/>
 		blink_time += 1;
-		rampoff_timer.set(blink_time * 100);
-		DBG(DM, F("\t\t\tA2, value: "), cms.value, F(", set_value: "), cms.set_value, ' ', _TIME, '\n');
+		rampoff_timer.set(blink_time * 10);
+		//DBG(DM, F("\t\t\tA2, value: "), cms.value, F(", set_value: "), cms.set_value, ' ', _TIME, '\n');
 	//	//dbg << F("\t\t\tA2, value: ") << cms.value << F(", set_value: ") << cms.set_value << F(", old_new: ") << old_new_flag << F(", offdelay_step: ") << l3->OFFDELAY_STEP << F(", newtime: ") << l3->OFFDELAY_NEWTIME << F(", oldtime: ") << l3->OFFDELAY_OLDTIME << ' ' << _TIME << '\n';
 	}
 
@@ -779,15 +780,18 @@ void CM_DIMMER::poll_offdelay(void) {
 	DBG(DM, F("DM"), lstC.cnl, F(":SM_OFFDELAY-\t"), 'A', cms.sm_active, F(", "));
 
 	if (cms.sm_active == 1) {
+		/* is there something to do, or are we already on 0? */
+		if (cms.set_value == 0) cms.sm_active = 3;
 		/* there is a special option which let the led blink while in offdelay state, so check the flag and set further procedure accordingly */
-		if ((l3->OFFDELAY_BLINK) && (l3->OFFDELAY_TIME)) cms.sm_active = 2;					// 2 is a special mode, let the led blink while in offdelay
+		else if ((l3->OFFDELAY_BLINK) && (l3->OFFDELAY_TIME)) cms.sm_active = 2;			// 2 is a special mode, let the led blink while in offdelay
 		else cms.sm_active = 3;																// to be entered after the delay is done
 
 		old_new_flag = 0;																	// start offdelay blink from start
 		cms.set_time = 0;																	// make changes in adjust value quick
-		cms.sm_delay.set(byteTimeCvt(l3->OFFDELAY_TIME));									// set the respective delay
+		uint32_t temp_time = byteTimeCvt(l3->OFFDELAY_TIME);
+		cms.sm_delay.set(temp_time);														// set the respective delay
 
-		DBG(DM, F("offdelay_time: "), l3->OFFDELAY_TIME, F(", off_delay_blink: "), l3->OFFDELAY_BLINK);
+		DBG(DM, F("offdelay_time: "), temp_time, F(", off_delay_blink: "), l3->OFFDELAY_BLINK);
 
 	} else if (cms.sm_active == 2) {
 		if (old_new_flag) cms.set_value = old_new_flag;										// restore the initial brightness, if blink was ended with a low phase
@@ -814,24 +818,20 @@ void CM_DIMMER::poll_rampoff(void) {
 		/* first we check what we can set as value for adjust_status */
 		if (cms.set_value > (l3->RAMP_START_STEP + l3->OFF_LEVEL)) cms.set_value -= l3->RAMP_START_STEP;
 		else cms.set_value = l3->OFF_LEVEL;
-		cms.set_time = 1;
+		cms.set_time = 40;
 		cms.sm_delay.set(50);
 		cms.sm_active = 2;																	// we will follow up in mode 2
 		DBG(DM, F("value: "), cms.value, F(", set_value: "), cms.set_value, F(", ramp_start_step: "), l3->RAMP_START_STEP);
 
 	} else if (cms.sm_active == 2) {
-
-		/* calculate the set_time by rampoff_time/steps needed */
-		uint8_t steps = cms.set_value - l3->OFF_LEVEL;
-		if (!steps) steps = 1;
-
+		/* here we are setting the real rampoff */
 		uint32_t temp_time = byteTimeCvt(l3->RAMPOFF_TIME);
-		cms.set_time = temp_time / steps;
+		cms.set_time = temp_time;
 		cms.set_value = l3->OFF_LEVEL;
 
 		cms.sm_delay.set(temp_time);														// set the state machine timer
 		cms.sm_active = 3;																	// we will follow up in mode 3
-		DBG(DM, F("ramp_off_time: "), l3->RAMPOFF_TIME);
+		DBG(DM, F("ramp_off_time: "), temp_time);
 
 	} else if (cms.sm_active == 3) {
 		/* mode 3 was processed above, we are here while the rampoff time was done */
@@ -849,9 +849,10 @@ void CM_DIMMER::poll_off(void) {
 	DBG(DM, F("DM"), lstC.cnl, F(":SM_OFF-\t\t"), 'A', cms.sm_active, F(", "));
 
 	if (cms.sm_active == 1) {
-		if (l3->OFF_TIME != NOT_USED) cms.sm_delay.set(byteTimeCvt(l3->OFF_TIME));			// set the respective delay
+		uint32_t temp_time = byteTimeCvt(l3->OFF_TIME);
+		if (l3->OFF_TIME != NOT_USED) cms.sm_delay.set(temp_time);							// set the respective delay
 		cms.sm_active = 2;																	// next time will be entered after the delay
-		DBG(DM, F("off_time: "), l3->OFF_TIME);
+		DBG(DM, F("off_time: "), temp_time);
 
 	} else if (cms.sm_active == 2) {
 		cms.process_next(jt->JT_OFF, l3->OFF_TIME);											// set status based on state machine position and a new target if required

@@ -301,8 +301,7 @@ void CM_MASTER::CONFIG_STATUS_REQUEST(s_m01xx0e *buf) {
 
 	/* here will fill the required information in the status struct, 
 	* send is done by the poll function in the respective list3 channel module */
-	//ptr_status->init_answer(STA_INFO::SND_ACTUATOR_STATUS);
-	ptr_status->msg_type = STA_INFO::SND_ACTUATOR_STATUS;
+	ptr_status->msg_type = STA_INFO::SND_ACTUATOR_STATUS_ANSWER;
 	ptr_status->msg_delay.set(0);
 }
 
@@ -324,17 +323,17 @@ void process_send_status_poll(s_cm_status *cm, uint8_t cnl) {
 
 	/* prepare message; UP 0x10, DOWN 0x20, ERROR 0x30, DELAY 0x40, LOWBAT 0x80 
 	* enum E : uint8_t { NO_JUMP_IGNORE_COMMAND = 0x00, ONDELAY = 0x01, RAMPON = 0x02, ON = 0x03, OFFDELAY = 0x04, RAMPOFF = 0x05, OFF = 0x06 };*/
-	cm->sf.UP = (cm->sm_set == 0x02) ? 1 : 0;												// RAMPON
-	cm->sf.DOWN = (cm->sm_set == 0x05) ? 1 : 0;												// RAMPOFF
-	cm->sf.DELAY = ((cm->sm_set == 0x01) || (cm->sm_set == 0x04)) ? 1 : 0;					// ON or OFFDELAY
-	//dbg << "up/down/delay: " << cm->sf.UP << '/' << cm->sf.DOWN << '/' << cm->sf.DELAY  << '\n';
+	if		(cm->sm_set == 0x02) snd_msg.buf[13] = 0x10;									// RAMPON;
+	else if (cm->sm_set == 0x05) snd_msg.buf[13] = 0x20;									// RAMPOFF;
+	else if ((cm->sm_set == 0x01) || (cm->sm_set == 0x04)) snd_msg.buf[13] = 0x40;			// On or OFF DELAY;
+	else snd_msg.buf[13] = 0x00;															// or stable
+
+	if (bat->get_status()) snd_msg.buf[13] |= 0x80;											// highest bit is battery flag
+	else snd_msg.buf[13] &= 0x7F;
 
 	/* compose the message, beside flags and type the ack_status and aktuator_status are identical */
 	snd_msg.buf[11] = cnl;																	// add the channel
 	snd_msg.buf[12] = cm->value;															// and the status/value
-	snd_msg.buf[13] = cm->flag;																// flags are prepared in the status poll function
-	if (bat->get_status()) snd_msg.buf[13] |= 0x80;											// highest bit is battery flag
-	else snd_msg.buf[13] &= 0x7F;
 	snd_msg.buf[14] = com->rssi;															// add rssi information
 	snd_msg.buf[15] = *cm->sum_value;														// we can add it to the buffer in any case, while length byte is set below
 	snd_msg.temp_max_retr = cm->msg_retr;													// how often to resend a message
@@ -370,13 +369,14 @@ void process_send_status_poll(s_cm_status *cm, uint8_t cnl) {
 
 	/* check if it is a stable status, otherwise schedule next check */
 	cm->msg_type = STA_INFO::SND_ACTUATOR_STATUS;											// set and actuator status as default, while not activated yet
-	if ((cm->sf.UP) || (cm->sf.DOWN) || (cm->sf.DELAY)) {									// check if we have an status change active
+	if ((snd_msg.buf[13] & 0x70) || (cm->value != cm->set_value)) {							// check if we have an status change active
 
 		if (cm->sm_delay.remain() < cm->status_delay) cm->msg_delay.set(cm->status_delay);	// and choose the next lookup time accordingly
 		else cm->msg_delay.set(cm->sm_delay.remain() + 100);
 
-	} else 
+	} else {
 		cm->msg_type = STA_INFO::NOTHING;													// no need for next time
+	}
 }
 
 

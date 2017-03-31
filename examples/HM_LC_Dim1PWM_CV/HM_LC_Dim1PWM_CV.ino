@@ -22,21 +22,8 @@ void setup() {
 	DBG(SER, freeRam(), ' ', F(LIB_VERSION_STRING));
 
 	// - AskSin related ---------------------------------------
-	init_millis_timer0();																	// init timer0
+	init_millis_timer2();																	// init timer0
 	hm.init();																				// init the asksin framework
-
-	//for (uint8_t i = 0; i < 201; i++) {
-	//	CM_DIMMER::switch_dimmer(0, 0, 1, i);
-	//	dbg << i << ", ";
-	//	_delay_ms(30);
-	//}
-	//dbg << '\n';
-	//for (uint8_t i = 201; i > 0; --i) {
-	//	dbg << i << ", ";
-	//	CM_DIMMER::switch_dimmer(0, 0, 1, i);
-	//	_delay_ms(30);
-	//}
-	//dbg << '\n';
 
 	sei();																					// enable interrupts
 }
@@ -55,22 +42,22 @@ void CM_DIMMER::init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint
 // setting the relay pin as output, could be done also by pinMode(3, OUTPUT)
 	//DBG(SER, F("initDim- vrt_grp: "), *virtual_group, F(", vrt_cnl: "), *virtual_channel, F(", cnl: "), *channel, '\n');
 
-	set_pin_output(pinD3);																	// init the dimmer pin
+	set_pin_output(pinB1);																	// init the dimmer pin, OCR1A
+	power_timer1_enable();																	// enable the timer1 in power management
 
-	power_timer2_enable();																	// enable the timer2 in power management
+	ICR1 = 200;																				// 200 is the max amount
+	TCCR1A = _BV(COM1A1) | _BV(WGM11);														// output on OCR1, non inverted
 
-	TCCR2A = _BV(COM2B1) | _BV(WGM20);
-	TCCR2B = _BV(CS20);																		// configure the PWM for the respective output pin, no prescaler
-	OCR2B = 0;
+	TCCR1B =  _BV(WGM12) | _BV(WGM13);														// fast pwm mode 14
+	TCCR1B |= _BV(CS10);																	// prescaler to 0
+
 }
 
 void CM_DIMMER::switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint16_t status) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
 	//DBG(SER, F("switchDim: "), virtual_group, channel, ", ", status, '\n' );
 
-	uint16_t x = status * 255;
-	x /= 200;																				// status = 0 to 200, but PWM needs 255 as maximum
-	OCR2B = x;																				// set the PWM value to the pin
+	OCR1A = status;																			// set the PWM value to the pin
 
 	//if (status) setPinHigh(PORTD,3);														// here you could switch on an additional power supply
 	//else setPinLow(PORTD,3);
