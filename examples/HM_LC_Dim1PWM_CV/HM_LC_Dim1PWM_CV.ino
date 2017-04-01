@@ -45,22 +45,18 @@ void CM_DIMMER::init_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint
 	set_pin_output(pinB1);																	// init the dimmer pin, OCR1A
 	power_timer1_enable();																	// enable the timer1 in power management
 
-	ICR1 = 200;																				// 200 is the max amount
+	ICR1 = 200;																				// 200 is the default max amount
+	OCR1A = 0;																				// we start with off
 	TCCR1A = _BV(COM1A1) | _BV(WGM11);														// output on OCR1, non inverted
-
-	TCCR1B =  _BV(WGM12) | _BV(WGM13);														// fast pwm mode 14
-	TCCR1B |= _BV(CS10);																	// prescaler to 0
-
+	TCCR1B = _BV(WGM13)  | _BV(CS10);														// PWM, Phase and Frequency Correct, prescaler to 1
 }
 
-void CM_DIMMER::switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint16_t status) {
+void CM_DIMMER::switch_dimmer(uint8_t virtual_group, uint8_t virtual_channel, uint8_t channel, uint8_t status, uint8_t pwm_multi) {
 // switching the relay, could be done also by digitalWrite(3,HIGH or LOW)
 	//DBG(SER, F("switchDim: "), virtual_group, channel, ", ", status, '\n' );
 
-	OCR1A = status;																			// set the PWM value to the pin
-
-	//if (status) setPinHigh(PORTD,3);														// here you could switch on an additional power supply
-	//else setPinLow(PORTD,3);
+	ICR1 = 200 * pwm_multi;																	// pwm multiplier to set the pwm frequency
+	OCR1A = status * pwm_multi;																// set the PWM value to the pin
 }
 
 

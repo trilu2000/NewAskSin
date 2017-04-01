@@ -124,6 +124,6 @@ extern const uint8_t cm_maintenance_ChnlReg[];
 extern const uint8_t cm_maintenance_ChnlDef[];
 extern uint8_t cm_maintenance_ChnlVal[];
 
-
+static uint8_t dummy_byte;
 
 #endif

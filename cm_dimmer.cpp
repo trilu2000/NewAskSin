@@ -108,18 +108,26 @@ void CM_DIMMER::cm_poll(void) {
 }
 
 void CM_DIMMER::info_config_change(uint8_t channel) {
-	if (lstC.cnl != channel) return;
-	DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_CHANGE- logic:"), l1->LOGIC_COMBINATION,'\n');
+	if (channel == 0) {																		// we need the pwm frequency from channel 0
+		/* take care of the pwm frequency */
+		uint8_t *pwm_list0_flag = cmm[0]->lstC.ptr_to_val(0x1E);							// in list0 there should be a flag indicating the pwm frequency
+		if (!pwm_list0_flag) pwm_list0_flag = &dummy_byte;									// if not, we use a dummy byte with value 0
+		memcpy_P(&pwm_multiplier, &pwm_table[*pwm_list0_flag], 1);							// and copy the multiplier from progmem
+		DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_CHANGE- pwm_list0:"), *pwm_list0_flag, F(", multi:"), pwm_multiplier, '\n');
 
-	/* assign list1 variables and initialize the hardware */
-	dm_sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;								// store the logic combination of the virtual channel in the struct
-	cms.msg_retr = l1->TRANSMIT_TRY_MAX;													// set the max retrie counter flag
+	} else if (channel == lstC.cnl) {														// everything for this instance
+		/* copy list1 variables and initialize the hardware */
+		dm_sum_cnl[vrt_grp].logic[vrt_cnl] = l1->LOGIC_COMBINATION;							// store the logic combination of the virtual channel in the struct
+		cms.msg_retr = l1->TRANSMIT_TRY_MAX;												// set the max retrie counter flag
 
-	/* set the status message timer, random can be 0 to 7 seconds */
-	get_random((uint8_t*)&cms.status_delay, *(uint32_t*)dev_ident.HMID);
-	cms.status_delay %= l1->STATUSINFO_RANDOM * 1000;
-	cms.status_delay += l1->STATUSINFO_MINDELAY * 500;
-	//dbg << F("status_delay: ") << cms.status_delay << F(", l1->STATUSINFO_RANDOM: ") << l1->STATUSINFO_RANDOM << F(", l1->STATUSINFO_MINDELAY: ") << l1->STATUSINFO_MINDELAY << '\n';
+		/* set the status message timer, random can be 0 to 7 seconds */
+		get_random((uint8_t*)&cms.status_delay, *(uint32_t*)dev_ident.HMID);
+		cms.status_delay %= l1->STATUSINFO_RANDOM * 1000;
+		cms.status_delay += l1->STATUSINFO_MINDELAY * 500;
+
+		//dbg << F("status_delay: ") << cms.status_delay << F(", l1->STATUSINFO_RANDOM: ") << l1->STATUSINFO_RANDOM << F(", l1->STATUSINFO_MINDELAY: ") << l1->STATUSINFO_MINDELAY << '\n';
+		DBG(DM, F("DM"), lstC.cnl, F(":CONFIG_CHANGE- logic:"), l1->LOGIC_COMBINATION, '\n');
+	}
 }
 
 /**
@@ -474,8 +482,9 @@ void CM_DIMMER::adjust_status(void) {
 		calc_value /= 200;
 		if ((cms.value > 9) && (cms.value < 15)) calc_value = 1;							// till 15 it is below 1, set to 1
 	} 
+
 	//DBG(DM, F("DM"), lstC.cnl, F(":ADJUST-\t\tvalue: "), cms.value, F(", set: "), calc_value, F(", "), (l1->CHARACTERISTIC)?F("sqare"):F("linear"), '\n';)
-	switch_dimmer(vrt_grp, vrt_cnl, lstC.cnl, (uint16_t)calc_value);							// calling the external function to make it happen
+	switch_dimmer(vrt_grp, vrt_cnl, lstC.cnl, (uint8_t)calc_value, pwm_multiplier);			// calling the external function to make it happen
 }
 
 /* trigger 11 poll function, similar to trigger 40 state machine,
