@@ -20,9 +20,11 @@ struct s_sum_cnl {
 static s_sum_cnl dm_sum_cnl[3];															// only once needed, therefore it is defined as static
 static uint8_t dm_sum_cnl_value;														// we need one byte to keep track of the sum value
 
+
 /*	you can choose the pwm frequency, therefore we store a table with multipliers in progmem */
 const uint8_t pwm_table[6] PROGMEM = { 1, 100, 50, 33, 25, 20 };						// multiplier table for pwm frequency
 static uint8_t pwm_multiplier;															// define a byte for the pwm multiplier
+
 
 /* list 1/3 definition for dimmer channel module */
 const uint8_t cm_dimmer_ChnlReg[] PROGMEM = { 0x08,0x30,0x32,0x34,0x35,0x56,0x57,0x58,0x59, };
