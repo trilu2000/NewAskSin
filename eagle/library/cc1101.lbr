@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE eagle SYSTEM "eagle.dtd">
+<eagle version="8.1.0">
+<drawing>
+<settings>
+<setting alwaysvectorfont="no"/>
+<setting verticaltext="up"/>
+</settings>
+<grid distance="0.5" unitdist="mm" unit="mm" style="lines" multiple="1" display="yes" altdistance="0.025" altunitdist="inch" altunit="inch"/>
+<layers>
+<layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="17" name="Pads" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="18" name="Vias" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="19" name="Unrouted" color="6" fill="1" visible="yes" active="yes"/>
+<layer number="20" name="Dimension" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="21" name="tPlace" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="22" name="bPlace" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="23" name="tOrigins" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="24" name="bOrigins" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="25" name="tNames" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="26" name="bNames" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="27" name="tValues" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="28" name="bValues" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="29" name="tStop" color="7" fill="3" visible="no" active="yes"/>
+<layer number="30" name="bStop" color="7" fill="6" visible="no" active="yes"/>
+<layer number="31" name="tCream" color="7" fill="4" visible="no" active="yes"/>
+<layer number="32" name="bCream" color="7" fill="5" visible="no" active="yes"/>
+<layer number="33" name="tFinish" color="6" fill="3" visible="no" active="yes"/>
+<layer number="34" name="bFinish" color="6" fill="6" visible="no" active="yes"/>
+<layer number="35" name="tGlue" color="7" fill="4" visible="no" active="yes"/>
+<layer number="36" name="bGlue" color="7" fill="5" visible="no" active="yes"/>
+<layer number="37" name="tTest" color="7" fill="1" visible="no" active="yes"/>
+<layer number="38" name="bTest" color="7" fill="1" visible="no" active="yes"/>
+<layer number="39" name="tKeepout" color="4" fill="11" visible="yes" active="yes"/>
+<layer number="40" name="bKeepout" color="1" fill="11" visible="yes" active="yes"/>
+<layer number="41" name="tRestrict" color="4" fill="10" visible="yes" active="yes"/>
+<layer number="42" name="bRestrict" color="1" fill="10" visible="yes" active="yes"/>
+<layer number="43" name="vRestrict" color="2" fill="10" visible="yes" active="yes"/>
+<layer number="44" name="Drills" color="7" fill="1" visible="no" active="yes"/>
+<layer number="45" name="Holes" color="7" fill="1" visible="no" active="yes"/>
+<layer number="46" name="Milling" color="3" fill="1" visible="no" active="yes"/>
+<layer number="47" name="Measures" color="7" fill="1" visible="no" active="yes"/>
+<layer number="48" name="Document" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="49" name="Reference" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="51" name="tDocu" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="52" name="bDocu" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="90" name="Modules" color="5" fill="1" visible="yes" active="yes"/>
+<layer number="91" name="Nets" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="92" name="Busses" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="93" name="Pins" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="94" name="Symbols" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="95" name="Names" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="96" name="Values" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="97" name="Info" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="98" name="Guide" color="6" fill="1" visible="yes" active="yes"/>
+</layers>
+<library>
+<packages>
+<package name="CC1101-MODUL">
+<description>CC1101 Modul</description>
+<frame x1="-10" y1="-9" x2="9" y2="8" columns="8" rows="8" layer="21" border-left="no" border-top="no" border-right="no" border-bottom="no"/>
+<pad name="VCC" x="-10" y="6.5" drill="0.8" diameter="1.4224" rot="R180"/>
+<pad name="CSN" x="-10" y="-7.5" drill="0.8" diameter="1.4224" rot="R180"/>
+<pad name="GND" x="-10" y="4.5" drill="0.8" diameter="1.4224" rot="R180"/>
+<pad name="SI" x="-10" y="2.5" drill="0.8" diameter="1.4224" rot="R180"/>
+<pad name="SCLK" x="-10" y="0.5" drill="0.8" diameter="1.4224" rot="R180"/>
+<pad name="SO" x="-10" y="-1.5" drill="0.8" diameter="1.4224" rot="R180"/>
+<pad name="GDO2" x="-10" y="-3.5" drill="0.8" diameter="1.4224" rot="R180"/>
+<pad name="GDO0" x="-10" y="-5.5" drill="0.8" diameter="1.4224" rot="R180"/>
+<pad name="ANT" x="9" y="-0.5" drill="0.8" diameter="1.4224"/>
+<pad name="GNDA2" x="9" y="-3" drill="0.8" diameter="1.4224"/>
+<pad name="GNDA1" x="9" y="2" drill="0.8" diameter="1.4224"/>
+<text x="-3" y="-8" size="1.27" layer="21">CC1101 Modul</text>
+<text x="-9" y="6" size="1.27" layer="21">VCC</text>
+<text x="-9" y="4" size="1.27" layer="21">GND</text>
+<text x="-9" y="2" size="1.27" layer="21">SI</text>
+<text x="-9" y="0" size="1.27" layer="21">SCLK</text>
+<text x="-9" y="-2" size="1.27" layer="21">SO</text>
+<text x="-9" y="-4" size="1.27" layer="21">GDO2</text>
+<text x="-9" y="-6" size="1.27" layer="21">GDO0</text>
+<text x="-9" y="-8" size="1.27" layer="21">CSN</text>
+<text x="4.5" y="1.5" size="1.27" layer="21">GND</text>
+<text x="4.5" y="-3.5" size="1.27" layer="21">GND</text>
+<text x="4.5" y="-1" size="1.27" layer="21">ANT</text>
+</package>
+<package name="CC1101-MODULE-SMD">
+<description>CC1101 Modul</description>
+<text x="-3" y="-8" size="1.27" layer="21">CC1101 Modul</text>
+<text x="-9" y="6" size="1.27" layer="21">VCC</text>
+<text x="-9" y="4" size="1.27" layer="21">GND</text>
+<text x="-9" y="2" size="1.27" layer="21">SI</text>
+<text x="-9" y="0" size="1.27" layer="21">SCLK</text>
+<text x="-9" y="-2" size="1.27" layer="21">SO</text>
+<text x="-9" y="-4" size="1.27" layer="21">GDO2</text>
+<text x="-9" y="-6" size="1.27" layer="21">GDO0</text>
+<text x="-9" y="-8" size="1.27" layer="21">CSN</text>
+<text x="4.5" y="1.5" size="1.27" layer="21">GND</text>
+<text x="4.5" y="-3.5" size="1.27" layer="21">GND</text>
+<text x="4.5" y="-1" size="1.27" layer="21">ANT</text>
+<smd name="VCC" x="-10.5" y="6.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="GND.A1" x="9.5" y="2" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="ANT" x="9.5" y="-0.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="GND.A2" x="9.5" y="-3" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="CSN" x="-10.5" y="-7.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="GDO0" x="-10.5" y="-5.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="GDO2" x="-10.5" y="-3.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="SO" x="-10.5" y="-1.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="SCLK" x="-10.5" y="0.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="SI" x="-10.5" y="2.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<smd name="GND" x="-10.5" y="4.5" dx="2.54" dy="1.27" layer="1" roundness="20"/>
+<wire x1="-10" y1="7" x2="-10" y2="6" width="0.127" layer="21" curve="-180"/>
+<wire x1="-10" y1="5" x2="-10" y2="4" width="0.127" layer="21" curve="-180"/>
+<wire x1="-10" y1="3" x2="-10" y2="2" width="0.127" layer="21" curve="-180"/>
+<wire x1="-10" y1="1" x2="-10" y2="0" width="0.127" layer="21" curve="-180"/>
+<wire x1="-10" y1="-1" x2="-10" y2="-2" width="0.127" layer="21" curve="-180"/>
+<wire x1="-10" y1="-3" x2="-10" y2="-4" width="0.127" layer="21" curve="-180"/>
+<wire x1="-10" y1="-5" x2="-10" y2="-6" width="0.127" layer="21" curve="-180"/>
+<wire x1="-10" y1="-7" x2="-10" y2="-8" width="0.127" layer="21" curve="-180"/>
+<wire x1="9" y1="1.5" x2="9" y2="2.5" width="0.127" layer="21" curve="-180"/>
+<wire x1="9" y1="-1" x2="9" y2="0" width="0.127" layer="21" curve="-180"/>
+<wire x1="9" y1="-3.5" x2="9" y2="-2.5" width="0.127" layer="21" curve="-180"/>
+<wire x1="-10" y1="5" x2="-10" y2="6" width="0.127" layer="21"/>
+<wire x1="-10" y1="3" x2="-10" y2="4" width="0.127" layer="21"/>
+<wire x1="-10" y1="1" x2="-10" y2="2" width="0.127" layer="21"/>
+<wire x1="-10" y1="-1" x2="-10" y2="0" width="0.127" layer="21"/>
+<wire x1="-10" y1="-3" x2="-10" y2="-2" width="0.127" layer="21"/>
+<wire x1="-10" y1="-5" x2="-10" y2="-4" width="0.127" layer="21"/>
+<wire x1="-10" y1="-7" x2="-10" y2="-6" width="0.127" layer="21"/>
+<wire x1="9" y1="-2.5" x2="9" y2="-1" width="0.127" layer="21"/>
+<wire x1="9" y1="0" x2="9" y2="1.5" width="0.127" layer="21"/>
+<wire x1="-10" y1="-8" x2="-10" y2="-9" width="0.127" layer="21"/>
+<wire x1="9" y1="-9" x2="9" y2="-3.5" width="0.127" layer="21"/>
+<wire x1="-10" y1="7" x2="-10" y2="8" width="0.127" layer="21"/>
+<wire x1="-10" y1="8" x2="9" y2="8" width="0.127" layer="21"/>
+<wire x1="9" y1="8" x2="9" y2="2.5" width="0.127" layer="21"/>
+<wire x1="-10" y1="-9" x2="9" y2="-9" width="0.127" layer="21"/>
+</package>
+</packages>
+<symbols>
+<symbol name="CC1101-MODUL">
+<description>CC1101 Modul</description>
+<pin name="VCC" x="-15.24" y="10.16" length="middle" direction="pwr"/>
+<pin name="GND" x="-15.24" y="7.62" length="middle" direction="pwr"/>
+<pin name="SI" x="-15.24" y="5.08" length="middle" direction="in"/>
+<pin name="SCLK" x="-15.24" y="2.54" length="middle" direction="in"/>
+<pin name="SO" x="-15.24" y="0" length="middle" direction="out"/>
+<pin name="GDO2" x="-15.24" y="-2.54" length="middle" direction="out"/>
+<pin name="GDO0" x="-15.24" y="-5.08" length="middle" direction="out"/>
+<pin name="CSN" x="-15.24" y="-7.62" length="middle" direction="in"/>
+<pin name="ANT" x="17.78" y="0" length="middle" rot="R180"/>
+<pin name="GNDA1" x="17.78" y="-2.54" length="middle" rot="R180"/>
+<pin name="GNDA2" x="17.78" y="2.54" length="middle" rot="R180"/>
+<text x="-7.62" y="12.7" size="1.778" layer="94">CC1101 modul</text>
+<wire x1="-10.16" y1="15.24" x2="-10.16" y2="-12.7" width="0.254" layer="94"/>
+<wire x1="12.7" y1="-12.7" x2="12.7" y2="15.24" width="0.254" layer="94"/>
+<wire x1="12.7" y1="15.24" x2="-10.16" y2="15.24" width="0.254" layer="94"/>
+<wire x1="-10.16" y1="-12.7" x2="12.7" y2="-12.7" width="0.254" layer="94"/>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="CC1101-MODULE" uservalue="yes">
+<gates>
+<gate name="G$1" symbol="CC1101-MODUL" x="-2.54" y="-2.54"/>
+</gates>
+<devices>
+<device name="" package="CC1101-MODUL">
+<connects>
+<connect gate="G$1" pin="ANT" pad="ANT"/>
+<connect gate="G$1" pin="CSN" pad="CSN"/>
+<connect gate="G$1" pin="GDO0" pad="GDO0"/>
+<connect gate="G$1" pin="GDO2" pad="GDO2"/>
+<connect gate="G$1" pin="GND" pad="GND"/>
+<connect gate="G$1" pin="GNDA1" pad="GNDA1"/>
+<connect gate="G$1" pin="GNDA2" pad="GNDA2"/>
+<connect gate="G$1" pin="SCLK" pad="SCLK"/>
+<connect gate="G$1" pin="SI" pad="SI"/>
+<connect gate="G$1" pin="SO" pad="SO"/>
+<connect gate="G$1" pin="VCC" pad="VCC"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+<device name="SMD" package="CC1101-MODULE-SMD">
+<connects>
+<connect gate="G$1" pin="ANT" pad="ANT"/>
+<connect gate="G$1" pin="CSN" pad="CSN"/>
+<connect gate="G$1" pin="GDO0" pad="GDO0"/>
+<connect gate="G$1" pin="GDO2" pad="GDO2"/>
+<connect gate="G$1" pin="GND" pad="GND"/>
+<connect gate="G$1" pin="GNDA1" pad="GND.A1"/>
+<connect gate="G$1" pin="GNDA2" pad="GND.A2"/>
+<connect gate="G$1" pin="SCLK" pad="SCLK"/>
+<connect gate="G$1" pin="SI" pad="SI"/>
+<connect gate="G$1" pin="SO" pad="SO"/>
+<connect gate="G$1" pin="VCC" pad="VCC"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
+</drawing>
+</eagle>

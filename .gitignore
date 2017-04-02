@@ -45,3 +45,5 @@ __vm/
 ~$*.docx
 .project
 hmkey.h
+*.b#*
+*.s#*
