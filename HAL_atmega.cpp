@@ -1,5 +1,5 @@
 #include "HAL_atmega.h"
-
+#include "HAL.h"
 
 //-- pin functions --------------------------------------------------------------------------------------------------------
 void set_pin_output(uint8_t pin_def) {
