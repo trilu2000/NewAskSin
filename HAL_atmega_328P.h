@@ -53,6 +53,8 @@ const uint16_t ref_v_external = 1100;															// internal reference voltag
 #define pinC3 (17)
 #define pinC4 (18) 
 #define pinC5 (19)
+#define pinC6 (20)
+#define pinC7 (21)
 
 
 //- -------------------------------------------------------------------------------------------------------------------------

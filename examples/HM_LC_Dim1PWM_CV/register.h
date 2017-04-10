@@ -14,8 +14,8 @@ static waittimer *timer_array[25];
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-NO_AES as_aes;															//   60 byte flash,  69 byte sram
-//HAS_AES as_aes;														// 2826 byte flash, 277 byte sram
+//NO_AES as_aes;															//   60 byte flash,  69 byte sram
+HAS_AES as_aes;														// 2826 byte flash, 277 byte sram
 AES *aes = &as_aes;
 
 CC1101 as_cc1101(pinB4, pinB3, pinB5, pinB2, pinD2);					//  546 byte flash, 124 byte sram
@@ -44,9 +44,9 @@ const uint8_t cm_maintenance_ChnlLen = sizeof(cm_maintenance_ChnlReg);
 *  @brief definition of the device functionallity per channel
 */
 CM_MAINTENANCE cm_maintenance(0);								//   24 byte flash, 124 byte sram
-CM_DIMMER cm_dimmer1(10, 0, 0);									// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
-CM_DIMMER cm_dimmer2(2, 1, 0);
-CM_DIMMER cm_dimmer3(2, 2, 0);
+CM_DIMMER cm_dimmer1(11, 0, 0);									// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
+CM_DIMMER cm_dimmer2(3, 1, 0);
+CM_DIMMER cm_dimmer3(3, 2, 0);
 
 CM_MASTER *cmm[4] = {
 	&cm_maintenance,
@@ -60,8 +60,8 @@ CM_MASTER *cmm[4] = {
 * @brief HMID, Serial number, HM-Default-Key, Key-Index
 */
 const uint8_t HMSerialData[] PROGMEM = {
-	/* HMID */            0x33,0x11,0x24,
-	/* Serial number */   'H','B','d','i','m','m','e','r','0','1',		// HBdimmer01 
+	/* HMID */            0x33,0x12,0x38,
+	/* Serial number */   'H','B','d','i','m','m','e','r','3','8',		// HBdimmer01 
 	/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
 	/* Default-Key */     HM_DEVICE_AES_KEY,
 };
@@ -81,7 +81,7 @@ const uint8_t HMSerialData[] PROGMEM = {
 *                  23:0 0.4, means first four bit of byte 23 reflecting the amount of channels.
 */
 const uint8_t dev_static[] PROGMEM = {            // testID 
-	/* firmwareVersion 1 byte */  0x25,           // or GE 
+	/* firmwareVersion 1 byte */  0x29,           // or GE 
 	/* modelID         2 byte */  0x00,0x67,
 	/* subTypeID       1 byte */  0x00,           // replace __ by a valid type id 
 	/* deviceInfo      3 byte */  0x41,0x01,0x00, // device info not found, replace by valid values 
