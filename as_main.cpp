@@ -14,6 +14,9 @@
 
 
 // public:		//---------------------------------------------------------------------------------------------------------
+AS::AS() {
+}
+
 /*
 * @brief Initialize the AS module
 *
@@ -73,9 +76,10 @@ void AS::init(void) {
 
 	/* - Initialize the hardware. All this functions are defined in HAL.h and HAL_extern.h 	*/
 	com->init();																			// init the rf module
-	cbn->init();																			// init the config button
-	led->init();																			// initialize the leds
-	led->set(LED_STAT::WELCOME);															// show something as status
+
+	cbn.init();																				// init the config button
+	led.init();																				// initialize the leds
+	led.set(LED_STAT::WELCOME);																// show something as status
 
 }
 
@@ -131,15 +135,15 @@ void AS::poll(void) {
 	if (pair_mode.active) { 
 		if (pair_mode.timer.done()) {
 			pair_mode.active = 0;
-			isEmpty(dev_operate.MAID, 3)? led->set(LED_STAT::PAIR_ERROR) : led->set(LED_STAT::PAIR_SUCCESS);
+			isEmpty(dev_operate.MAID, 3)? led.set(LED_STAT::PAIR_ERROR) : led.set(LED_STAT::PAIR_SUCCESS);
 		}
 	}
 
 
-	cbn->poll();																			// poll the config button
-	led->poll();																			// poll the led's
 	bat->poll();																			// poll the battery check
-	pom->poll();																			// poll the power management
+	cbn.poll();																				// poll the config button
+	led.poll();																				// poll the led's
+	pom.poll();																				// poll the power management
 }
 
 
@@ -457,8 +461,8 @@ void AS::snd_poll(void) {
 	/* can only happen while an ack was received and AS:processMessage had send the retr_cnt to 0xff */
 	if (sm->retr_cnt == 0xff) {
 		sm->clear();																		// nothing to do any more
-		led->set(LED_STAT::GOT_ACK);														// fire the status led
-		pom->stayAwake(100);																// and stay awake for a short while
+		led.set(LED_STAT::GOT_ACK);														// fire the status led
+		//pom->stayAwake(100);																// and stay awake for a short while
 		return;
 	}
 
@@ -540,9 +544,11 @@ void AS::snd_poll(void) {
 		com->snd_data(sm->buf, tBurst);														// send to communication module
 		sm->retr_cnt++;																		// remember that we had send the message
 
-		if (sm->mBody.FLAG.BIDI) sm->timer.set(sm->max_time);								// timeout is only needed while an ACK is requested
-		led->set(LED_STAT::SEND_MSG);														// fire the status led
-		pom->stayAwake(100);																// and stay awake for a short while
+		if (sm->mBody.FLAG.BIDI) {															// is an ACK requested?
+			sm->timer.set(sm->max_time);													// timeout is only needed while an ACK is requested
+			pom.stayAwake(100);															// need some time awake to receive the ACK
+		}
+		led.set(LED_STAT::SEND_MSG);														// fire the status led
 
 		DBG(SN, F("<- "), _HEX(sm->buf, sm->buf[0] + 1), ' ', _TIME, '\n');					// some debug
 
@@ -554,8 +560,8 @@ void AS::snd_poll(void) {
 		if (!sm->mBody.FLAG.BIDI) return;													// everything fine, ACK was not required
 
 		sm->timeout = 1;																	// set the time out only while an ACK or answer was requested
-		led->set(LED_STAT::GOT_NACK);														// fire the status led
-		pom->stayAwake(100);																// and stay awake for a short while
+		led.set(LED_STAT::GOT_NACK);														// fire the status led
+		pom.stayAwake(100);																// and stay awake for a short while
 
 		DBG(SN, F("  timed out "), _TIME, '\n');											// some debug
 	}

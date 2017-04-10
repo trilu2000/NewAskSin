@@ -39,18 +39,22 @@
 *
 * @see http://www.gammon.com.au/forum/?id=12127
 */
-class waitTimer {
+class waittimer {
 
-private:		//---------------------------------------------------------------------------------------------------------
-	uint8_t  armed;
-	uint32_t checkTime;
+private:	//---------------------------------------------------------------------------------------------------------
 	uint32_t startTime;
+	uint32_t checkTime;
 
 public:		//---------------------------------------------------------------------------------------------------------
-	waitTimer();
+	waittimer();
 	uint8_t  done(void);
-	void     set(uint32_t ms);
+	void     set(uint32_t wait_millis);
 	uint32_t remain(void);
+	uint8_t  completed(void);
 };
+
+
+extern uint8_t timer_max;																	// counter for registered waittimers
+extern waittimer *timer_array[];															// timer array to have a central reference to all timers for power management
 
 #endif

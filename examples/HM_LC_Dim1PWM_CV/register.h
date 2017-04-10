@@ -2,6 +2,7 @@
 #ifndef _REGISTER_H
 #define _REGISTER_H
 
+static waittimer *timer_array[25];
 
 /*
 *  @brief libraries needed to run AskSin library, everything is defined within the newasksin.h file
@@ -20,19 +21,14 @@ AES *aes = &as_aes;
 CC1101 as_cc1101(pinB4, pinB3, pinB5, pinB2, pinD2);					//  546 byte flash, 124 byte sram
 COM *com = &as_cc1101;
 
-CBN as_cbn(1, pinB0);													//   80 byte flash,  25 byte sram
-CBN *cbn = &as_cbn;
-
-LED as_led(pinD6, pinD4);												//  150 byte flash,  51 byte sram
-LED *led = &as_led;	
-
 NO_BAT as_bat;															//   34 byte flash,  22 byte sram
 //INT_BAT as_bat(3600000, 30);											//  176 byte flash,  22 byte sram
 //EXT_BAT as_bat(3600000, 30, pinD7, pinC6, 10, 45);					//  386 byte flash,  56 byte sram
 BAT *bat = &as_bat;
 
-POM as_pom(POWER_MODE_NO_SLEEP);										//   68 byte flash,  19 byte sram
-POM *pom = &as_pom;
+CBN cbn(1, pinB0);														//   80 byte flash,  25 byte sram
+LED led(pinD6, pinD4);													//  150 byte flash,  51 byte sram
+POM pom(0);
 
 
 /*

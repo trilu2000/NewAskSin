@@ -27,6 +27,5 @@ s_list_msg list_msg;																		// holds information to answer config list
 
 AS hm;																						// the newasksin main class
 uint8_t cnl_max = 0;																		// increased by every instance which is initialized
-//const uint8_t list_max = 5;																// max 5 lists per channel, list 0 to list 4
 
 

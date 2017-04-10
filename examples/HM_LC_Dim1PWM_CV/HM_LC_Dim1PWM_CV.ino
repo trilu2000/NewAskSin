@@ -26,6 +26,7 @@ void setup() {
 	hm.init();																				// init the asksin framework
 
 	sei();																					// enable interrupts
+	//dbg << "timer: " << timer_max << '\n';
 }
 
 void loop() {

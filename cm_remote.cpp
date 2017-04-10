@@ -98,7 +98,7 @@ void CM_REMOTE::cm_poll(void) {
 	/* button was just pressed, start for every option */
 	if (button_ref.status == 2) {
 		timer.set(byteTimeCvt(l1->LONG_PRESS_TIME));										// set timer to detect a long
-		pom->stayAwake(byteTimeCvt(l1->LONG_PRESS_TIME) + 500);								// stay awake to check button status
+		pom.stayAwake(byteTimeCvt(l1->LONG_PRESS_TIME) + 500);								// stay awake to check button status
 		button_check.armed = 1;																// set it armed
 		DBG(RE, F("RE"), lstC.cnl, F(":CM_POLL-\t\tnew pressed "), _TIME, '\n');
 	}
@@ -107,7 +107,7 @@ void CM_REMOTE::cm_poll(void) {
 	/* button was just released, keyShortSingle, keyShortDouble, keyLongRelease */
 	if (button_ref.status == 3) {
 		timer.set(byteTimeCvt(l1->DBL_PRESS_TIME));											// set timer to clear the repeated flags
-		pom->stayAwake(byteTimeCvt(l1->DBL_PRESS_TIME) + 500);								// stay awake to check button status
+		pom.stayAwake(byteTimeCvt(l1->DBL_PRESS_TIME) + 500);								// stay awake to check button status
 		DBG(RE, F("RE"), lstC.cnl, F(":CM_POLL-\t\treleased "), _TIME, '\n');
 
 		/* keyLongRelease */
@@ -132,7 +132,7 @@ void CM_REMOTE::cm_poll(void) {
 
 	/* button is still pressed, but timed out, seems to be a keyLong */
 	if (button_ref.status == 0) {	
-		pom->stayAwake(repeatedLong + 500);													// stay awake to check button status
+		pom.stayAwake(repeatedLong + 500);													// stay awake to check button status
 		timer.set(repeatedLong);															// set timer to detect a repeated long
 		button_check.last_long = 1;															// remember that it was a long
 		DBG(RE, F("RE"), lstC.cnl, F(":CM_POLL-\t\tpressed, timeout "), _TIME, '\n');
@@ -166,7 +166,7 @@ void CM_REMOTE::button_action(uint8_t event) {
 	DBG(RE, F("RE"), lstC.cnl, F(":ACTION- event"), event, '\n');
 	if ((event == 1) && (l1->DBL_PRESS_TIME)) return;										// when double press is set, we do not report a key single
 
-	pom->stayAwake(1000);																	// make some time to send the message
+	pom.stayAwake(1000);																	// make some time to send the message
 	if (event == 255) return;																// was only a wake up message
 
 	if ((event == 3) || (event == 4)) button_info.longpress = 1;							// set the long key flag if requested

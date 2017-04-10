@@ -49,7 +49,7 @@ class CBN  {
 		uint8_t            : 2;
 	} button_check;
 	  
-	waitTimer timer;														// button timer functionality
+	waittimer timer;														// button timer functionality
 	uint8_t status;															// variable to store current status in polling function
 	
 	uint8_t def_key;

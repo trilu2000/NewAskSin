@@ -42,7 +42,7 @@ private:  //--------------------------------------------------------------------
 
 
 	uint8_t def_key;																		// here we store the key definition
-	waitTimer timer;																		// timer to detect long press and dbl_short
+	waittimer timer;																		// timer to detect long press and dbl_short
 
 	struct s_button_check {
 		uint8_t configured       : 1;														// poll the pin make only sense if it was configured, store result here

@@ -33,7 +33,7 @@
 class AS {
 
 public:  //----------------------------------------------------------------------------------------------------------------
-	AS() {}																					// constructor
+	AS(void);																				// constructor
 	void init(void);																		// init function for the library
 	void poll(void);
 

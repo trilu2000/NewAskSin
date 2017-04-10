@@ -754,7 +754,7 @@ void CM_DIMMER::poll_on(void) {
 void CM_DIMMER::poll_offdelay(void) {
 	/* if poll_offdelay is active it gets polled by the main poll function
 	* poll_offdelay has 4 stati, 0 off, 1 set timer, 2 process wait, 3 done */
-	static waitTimer rampoff_timer;															// we need an own time for blink off 
+	static waittimer rampoff_timer;															// we need an own time for blink off 
 	static uint8_t old_new_flag;															// flag to remember the initial value while blink on low level
 
 	if (!rampoff_timer.done()) return;														// leave while wait timer is active

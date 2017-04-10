@@ -84,13 +84,13 @@ typedef struct ts_cm_status {
 	uint8_t   sm_set  : 4;																	// indicates the next position of the state machine
 	uint8_t   inhibit = 0;																	// store for inhibit message
 	uint8_t   msg_cnt;																		// counter store for type 40/41 messages to detect a repeated long
-	waitTimer sm_delay;																		// state machine delay timer
-	waitTimer aj_delay;																		// optional timer to pause between set values
+	waittimer sm_delay;																		// state machine delay timer
+	waittimer aj_delay;																		// optional timer to pause between set values
 
 	// to schedule next message by type and the delay to wait for
 	uint32_t  status_delay;																	// delay for sending a status message
 	uint8_t	  msg_type;																		// indicator for sendStatus function
-	waitTimer msg_delay;																	// message timer for sending status
+	waittimer msg_delay;																	// message timer for sending status
 	uint8_t   msg_retr;																		// how often to send a status or ack message
 
 	void process_next(uint8_t jumptable_flag, uint8_t timer_flag = 0) {
@@ -469,7 +469,7 @@ typedef struct ts_send_message {
 	uint8_t   MSG_CNT;					// message counter for initial sends
 	uint8_t   max_retr;					// how often a message has to be send until ACK - info is set by cmMaintenance
 	uint16_t  max_time;					// max time for message timeout timer - info is set by  cmMaintenance
-	waitTimer timer;					// send mode timeout
+	waittimer timer;					// send mode timeout
 
 	void clear() {						// function to reset flags
 		active = MSG_ACTIVE::NONE;
@@ -493,7 +493,7 @@ typedef struct ts_list_msg {
 	s_list_table *list;					// pointer to the respective list table for answering the request
 	uint8_t peer_idx;					// peer index if a list3 or 4 is requested
 	s_peer_table *peer;					// pointer to the peer table in case in is a PEER_LIST answer
-	waitTimer timer;					// give the master some time, otherwise we need to resend
+	waittimer timer;					// give the master some time, otherwise we need to resend
 } s_list_msg;
 
 
@@ -545,7 +545,7 @@ typedef struct ts_peer_msg {
 */
 typedef struct ts_pair_mode {
 	uint8_t   active;						// indicates status, 1 if config mode is active
-	waitTimer timer;						// pairing mode timeout
+	waittimer timer;						// pairing mode timeout
 } s_pair_mode;
 
 /*
@@ -555,7 +555,7 @@ typedef struct ts_config_mode {
 	uint8_t   active;						// indicates status, 1 if config mode is active
 	uint8_t   idx_peer;						// and the peer index
 	s_list_table *list;						// pointer to the respective list
-	waitTimer timer;						// config mode timeout
+	waittimer timer;						// config mode timeout
 } s_config_mode;
 
 #endif

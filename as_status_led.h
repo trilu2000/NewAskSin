@@ -88,7 +88,7 @@ public:		//---------------------------------------------------------------------
 	uint8_t def_red;														// store the led pins
 	uint8_t def_grn;
 
-	waitTimer timer;														// blink timer functionality
+	waittimer timer;														// blink timer functionality
 
 	struct s_op_pat {
 		LED_STAT::E stat;													// pattern selector

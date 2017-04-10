@@ -41,7 +41,7 @@ void CBN::poll(void) {
 	/* button was just pressed, start for every option */
 	if (status == 2) {
 		timer.set(detectLong);																// set timer to detect a long
-		pom->stayAwake(detectLong + 100);													// stay awake to check button status
+		pom.stayAwake(detectLong + 100);													// stay awake to check button status
 		button_check.armed = 1;																// set it armed
 	}
 	if (!button_check.armed) return;														// nothing to do any more
@@ -49,7 +49,7 @@ void CBN::poll(void) {
 	/* button was just released, keyShortSingle, keyLongRelease, keyDblLongRelease */
 	if (status == 3) {
 		timer.set(timeoutDouble);															// set timer to clear the repeated flags
-		pom->stayAwake(timeoutDouble + 100);													// stay awake to check button status
+		pom.stayAwake(timeoutDouble + 100);													// stay awake to check button status
 
 		if ((button_check.last_long) && (!button_check.check_dbl)) {
 		/* keyLongRelease, could be the start of a keyDblLong */
@@ -73,7 +73,7 @@ void CBN::poll(void) {
 	/* button is still pressed, but timed out, seems to be a keyLong or keyDblLong */
 	if (status == 0) {
 		timer.set(detectLong);																// set timer to detect a long
-		pom->stayAwake(detectLong + 100);													// stay awake to check button status
+		pom.stayAwake(detectLong + 100);													// stay awake to check button status
 		if (button_check.last_long) return;													// we had recognized the status already
 		button_check.last_long = 1;															// remember that it was a long
 		if (button_check.check_dbl) button_action(MSG_CBN::keyDblLong);						// we had already a long, this time it is a double long
@@ -95,14 +95,14 @@ void CBN::button_action(MSG_CBN::E mode) {
 	DBG(CB, F("CBN: "));																	// ...and some information
 	if (mode == MSG_CBN::keyShort) {
 		DBG(CB, F("keyShort"));					
-		led->stop();
-		led->set(LED_STAT::LED_RED_L);
+		led.stop();
+		led.set(LED_STAT::LED_RED_L);
 		if (button_check.scenario == 1) hm.send_DEVICE_INFO(MSG_REASON::INITIAL);				// send pairing string
 //		else if (button_check.scenario == 2) cmm[1]->set_toggle();							// send toggle to user module registered on channel 1
 
 	} else if (mode == MSG_CBN::keyLong) {
 		DBG(CB, F("keyLong"));
-		led->set(LED_STAT::RESET_SLOW);
+		led.set(LED_STAT::RESET_SLOW);
 
 	} else if (mode == MSG_CBN::keyLongRelease) {
 		DBG(CB, F("keyLongRelease"));
@@ -110,7 +110,7 @@ void CBN::button_action(MSG_CBN::E mode) {
 
 	} else if (mode == MSG_CBN::keyDblLong) {
 		DBG(CB, F("keyDblLong"));
-		led->set(LED_STAT::RESET_FAST);
+		led.set(LED_STAT::RESET_FAST);
 
 	} else if (mode == MSG_CBN::keyDblLongRelease) {
 		DBG(CB, F("keyDblLongRelease"));
@@ -120,8 +120,8 @@ void CBN::button_action(MSG_CBN::E mode) {
 
 		DBG(CB, F(", set factory defaults"));
 		dev_operate.reset = 2;																// initiate the factory defaults
-		led->stop();
-		led->set(LED_STAT::LED_RED_L);
+		led.stop();
+		led.set(LED_STAT::LED_RED_L);
 
 	}
 	DBG(CB, '\n');

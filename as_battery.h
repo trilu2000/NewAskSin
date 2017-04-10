@@ -18,7 +18,7 @@ protected:  //------------------------------------------------------------------
 	uint8_t   default_value;												// value to compare the measured value against
 	uint8_t   measure_value;												// measured tenth volt battery value
 	uint32_t  interval;														// duration of the regular check
-	waitTimer timer;														// battery timer for duration check
+	waittimer timer;														// battery timer for duration check
 
 	BAT() {}
 	virtual void do_measure(void) {}
