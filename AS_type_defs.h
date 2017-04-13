@@ -275,6 +275,7 @@ typedef struct ts_peer_table {
 	}
 
 	void clear_all() {											// clear all peers
+		//dbg << "ee:" << ee_addr << ", max:" << max << '\n';
 		clear_eeprom(ee_addr, max * 4);
 	}
 

@@ -46,9 +46,9 @@ const uint8_t cm_maintenance_ChnlLen = sizeof(cm_maintenance_ChnlReg);
 *  @brief definition of the device functionallity per channel
 */
 CM_MAINTENANCE cm_maintenance(0);								//   24 byte flash, 124 byte sram
-CM_DIMMER cm_dimmer1(11, 0, 0);									// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
-CM_DIMMER cm_dimmer2(3, 1, 0);
-CM_DIMMER cm_dimmer3(3, 2, 0);
+CM_DIMMER cm_dimmer1(5, 0, 0);									// 7332 byte flash, 330 byte sram - further 256 byte flash, 173 byte sram
+CM_DIMMER cm_dimmer2(2, 1, 0);
+CM_DIMMER cm_dimmer3(1, 2, 0);
 
 CM_MASTER *cmm[4] = {
 	&cm_maintenance,
