@@ -28,6 +28,8 @@ BAT *bat = &as_bat;
 
 CBN cbn(1, pinB0);														//   80 byte flash,  25 byte sram
 LED led(pinD6, pinD4);													//  150 byte flash,  51 byte sram
+//CBN cbn(1, pinB0);														//   80 byte flash,  25 byte sram
+//LED led(pinD6, pinD4);													//  150 byte flash,  51 byte sram
 POM pom(0);
 
 

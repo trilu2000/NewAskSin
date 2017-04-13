@@ -62,7 +62,7 @@ extern uint8_t get_pin_status(uint8_t pin_def);
 * you can also use the arduino standard timer for a specific hardware by interlinking the function call to getmillis()
 */
 extern void register_PCINT(uint8_t pin_def);
-extern uint8_t check_PCINT(uint8_t pin_def);
+extern uint8_t check_PCINT(uint8_t pin_def, uint8_t debounce);
 extern void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag);
 extern void maintain_PCINT(uint8_t vec);
 //- -----------------------------------------------------------------------------------------------------------------------

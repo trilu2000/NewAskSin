@@ -9,14 +9,25 @@
 #include "00_debug-flag.h"
 #include "HAL.h"
 #include "waittimer.h"
-#include "AS_enum_defs.h"
-#include "AS_message_defs.h"
+#include "as_enum_defs.h"
+#include "as_message_defs.h"
 #include "as_helpers.h"
 
 #ifndef _AS_TYPEDEFS_H
 #define _AS_TYPEDEFS_H
 
 
+
+/*
+* @brief Blink pattern definition, used in led class
+*/
+typedef struct ts_blink_pattern {
+	uint8_t prio;							// 0 can be overwritten, 1 overwritten but restored, 2 cannot be overwritten
+	uint8_t repeat;							// how often the pattern has to be repeated, 0 for endless
+	uint8_t led_red;						// shall the red led blink
+	uint8_t led_grn;						// green, if you like orange, set led_red and led_grn at the same time
+	const uint8_t *pat;						// the pattern it self, pattern starts always with the on time, followed by off time.
+} s_blink_pattern;
 
 
 /* 

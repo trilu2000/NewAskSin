@@ -10,6 +10,24 @@
 #define _AS_ENUMDEFS_H
 
 
+/* DEV_BATTERY     LED blinks 1 x long, 2 x short, break (2 repeats) - battery low
+*  PAIR_WAIT       LED blinks slowly orange - pairing mode, wait for communication with master
+*  PAIR_ACTIVE     LED blinks fast green - pairing mode, communication is active
+*  PAIR_SUCCESS    LED on for 2s green - pair success
+*  PAIR_ERROR      LED on for 2s red - pair failure
+*  SEND_MSG        LED blinks 3 x fast orange - send message
+*  GOT_ACK         LED blinks 2 x fast green - ACK received
+*  GOT_NACK        LED blinks 2 x fast red - NACK or no answer received
+*  RESET_SLOW      LED blinks slowly red - start of device reset seq (wait for another long keypress, or a short keypress to terminate the sequence)
+*  RESET_FAST      LED blinkt schnell rot - reset to factory defaults
+*  WELCOME         LED blinks 3 x slow green - device ready
+*  EEPROM_ERROR    LED 1 x long, 6 x short red - checksum of eeprom wrong, device reset
+*  LED_RED_L       LED 1 x long - key press
+*/
+namespace LED_STAT {
+	enum E : uint8_t { DEV_BATTERY, PAIR_WAIT, PAIR_SUCCESS, PAIR_ERROR, SEND_MSG, GOT_ACK, GOT_NACK, RESET_SLOW, RESET_FAST, WELCOME, EEPROM_ERROR, LED_RED_L, NONE = 0xff, };
+};
+
 /*
 * @brief Intent of message, used for receive and send function
 * Types are, valid for send or receive id
