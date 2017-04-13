@@ -14,30 +14,6 @@
 #include "waittimer.h"
 #include "as_type_defs.h"
 
-/**
-* @brief LED patterns are defined in HAL.h and HAL_extern.h while we use different patterns depending on
-* the LED's connected to the hardware. LED's are defined in hardware.h in user sketch area...
-*
-* DEV_BATTERY     LED blinks 1 x long, 2 x short, break (2 repeats) battery low
-*
-* PAIR_WAIT       LED blinks slowly orange	- pairing mode, wait for communication with master
-* PAIR_ACTIVE     LED blinks fast green - pairing mode, communication is active
-* PAIR_SUCCESS    LED on for 2s green - pair success
-* PAIR_ERROR      LED on for 2s red - pair failure
-*
-* SEND_MSG        LED blinks 3 x fast orange - send message
-* GOT_ACK         LED blinks 2 x fast green - ACK received
-* GOT_NACK        LED blinks 2 x fast red - NACK or no answer received
-*
-* RESET_SLOW      LED blinks slowly red - start of device reset seq (wait for another long keypress, or a short keypress to terminate the sequence).
-* RESET_FAST      LED blinkt schnell rot - reset to factory defaults
-*
-* WELCOME         LED blinks 3 x slow green - device ready
-* EEPROM_ERROR    LED 1 x long, 6 x short red - checksum of eeprom wrong, device reset
-*
-* https://www.homematic-inside.de/tecbase/homematic/generell/item/fehlercodes-und-ihre-bedeutungen
-*/
-
 
 /* definition of blink pattern, first byte indicates the length, followed by a sequence of on, off times; values are multiplied by 10ms */
 // DEV_BATTERY                                  LED blinks 1 x long, 2 x short, break (2 repeats)
@@ -93,6 +69,22 @@ public:		//---------------------------------------------------------------------
 
 	void init(void);														// init function to make hardware ready
 
+	/*
+	*  DEV_BATTERY     LED blinks 1 x long, 2 x short, break (2 repeats) - battery low
+	*  PAIR_WAIT       LED blinks slowly orange - pairing mode, wait for communication with master
+	*  PAIR_ACTIVE     LED blinks fast green - pairing mode, communication is active
+	*  PAIR_SUCCESS    LED on for 2s green - pair success
+	*  PAIR_ERROR      LED on for 2s red - pair failure
+	*  SEND_MSG        LED blinks 3 x fast orange - send message
+	*  GOT_ACK         LED blinks 2 x fast green - ACK received
+	*  GOT_NACK        LED blinks 2 x fast red - NACK or no answer received
+	*  RESET_SLOW      LED blinks slowly red - start of device reset seq (wait for another long keypress, or a short keypress to terminate the sequence)
+	*  RESET_FAST      LED blinkt schnell rot - reset to factory defaults
+	*  WELCOME         LED blinks 3 x slow green - device ready
+	*  EEPROM_ERROR    LED 1 x long, 6 x short red - checksum of eeprom wrong, device reset
+	*  LED_RED_L       LED 1 x long - key press
+	* https://www.homematic-inside.de/tecbase/homematic/generell/item/fehlercodes-und-ihre-bedeutungen
+	*/
 	void set(LED_STAT::E activity);											// function to set the blink pattern
 	void stop(void);														// stop led 
 	void poll(void);														// poll function to process blink pattern

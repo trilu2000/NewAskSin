@@ -33,7 +33,6 @@
 #include "waittimer.h"
 
 
-
 /* forward declarations for all classes and structs needed by asksin; extern is used while majority is depending on device configuration and
 *  therefor defined in register.h in user sketch folder...
 */
