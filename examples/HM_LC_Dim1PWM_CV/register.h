@@ -1,4 +1,3 @@
-
 #ifndef _REGISTER_H
 #define _REGISTER_H
 
@@ -9,16 +8,18 @@ static waittimer *timer_array[25];
 */
 #include <newasksin.h> 
 #include "hmkey.h"
-
+ 
 
 /*
 *  @brief definition of all classes which are necassary to run asksin
 */
-//NO_AES as_aes;															//   60 byte flash,  69 byte sram
-HAS_AES as_aes;														// 2826 byte flash, 277 byte sram
+//NO_AES as_aes;														//   60 byte flash,  69 byte sram
+HAS_AES as_aes;															// 2826 byte flash, 277 byte sram
 AES *aes = &as_aes;
-
-CC1101 as_cc1101(pinB4, pinB3, pinB5, pinB2, pinD2);					//  546 byte flash, 124 byte sram
+	
+CC1101 as_cc1101(pinB3, pinB2, pinB1, pinB0, pinB5);					//  546 byte flash, 124 byte sram; sparkfun micro(32U4)
+//CC1101 as_cc1101(pinB3, pinB2, pinB1, pinB4, pinB5);					//  546 byte flash, 124 byte sram; radino(32U4)
+//CC1101 as_cc1101(pinB4, pinB3, pinB5, pinB2, pinD2);					//  546 byte flash, 124 byte sram; atmega328
 COM *com = &as_cc1101;
 
 NO_BAT as_bat;															//   34 byte flash,  22 byte sram
@@ -26,10 +27,13 @@ NO_BAT as_bat;															//   34 byte flash,  22 byte sram
 //EXT_BAT as_bat(3600000, 30, pinD7, pinC6, 10, 45);					//  386 byte flash,  56 byte sram
 BAT *bat = &as_bat;
 
-CBN cbn(1, pinB0);														//   80 byte flash,  25 byte sram
-LED led(pinD6, pinD4);													//  150 byte flash,  51 byte sram
-//CBN cbn(1, pinB0);														//   80 byte flash,  25 byte sram
-//LED led(pinD6, pinD4);													//  150 byte flash,  51 byte sram
+CBN cbn(1,pinB7);														//   80 byte flash,  25 byte sram; radino(32U4)
+//CBN cbn(1, pinB0);													//   80 byte flash,  25 byte sram; atmega328
+
+LED led(pinF4, pinF5);													//  150 byte flash,  51 byte sram; sparkfun micro(32U4)
+//LED led(pinF5, pinF6);												//  150 byte flash,  51 byte sram; radino(32U4)
+//LED led(pinD6, pinD4);												//  150 byte flash,  51 byte sram; atmega328
+
 POM pom(0);
 
 
@@ -62,8 +66,8 @@ CM_MASTER *cmm[4] = {
 * @brief HMID, Serial number, HM-Default-Key, Key-Index
 */
 const uint8_t HMSerialData[] PROGMEM = {
-	/* HMID */            0x33,0x12,0x38,
-	/* Serial number */   'H','B','d','i','m','m','e','r','3','8',		// HBdimmer01 
+	/* HMID */            0x33,0x12,0x35,
+	/* Serial number */   'H','B','d','i','m','m','e','r','3','5',		// HBdimmer35 
 	/* Key-Index */       HM_DEVICE_AES_KEY_INDEX,
 	/* Default-Key */     HM_DEVICE_AES_KEY,
 };

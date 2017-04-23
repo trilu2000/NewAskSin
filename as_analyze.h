@@ -8,8 +8,7 @@
 */
 
 #include "00_debug-flag.h"
-#include "AS_type_defs.h"
-#include "HAL.h"
+#include "newasksin.h"
 
 #ifndef _EXMSG_H
 #define _EXMSG_H
@@ -17,7 +16,7 @@
 
 extern s_rcv_msg rcv_msg;
 extern s_snd_msg snd_msg;
-
+extern LED led;
 
 void explain_msg(void);
 void serialEvent(void);
@@ -147,18 +146,21 @@ void serialEvent(void) {
 #ifdef SER_DBG
 	static uint8_t i = 0;																	// it is a high byte next time
 	while (Serial.available()) {
-
 		uint8_t inChar = (uint8_t)Serial.read();											// read a byte
 
 		if (inChar == 'x') {
 			dumpEEprom();
-			Serial.flush();
 			i = 0;
 			return;
 		} else if (inChar == 's') {
 			DBG(SER, F("con: "), _HEX(snd_msg.buf, snd_msg.buf[0] + 1), '\n');
 			snd_msg.temp_max_retr = 1;
 			snd_msg.active = MSG_ACTIVE::DEBUG;
+			i = 0;
+			return;
+		} else if (inChar == 'l') {
+			DBG(SER, F("led: "), _HEX(snd_msg.buf, 1), '\n');
+			led.set((LED_STAT::E)snd_msg.buf[0]);
 			i = 0;
 			return;
 		}
@@ -176,6 +178,9 @@ void serialEvent(void) {
 #endif
 }
 
+void serialEventRun(void) {
+	if (Serial.available()) serialEvent();
+}
 
 void dumpEEprom(void) {
 #ifdef DMP_DBG

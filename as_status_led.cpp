@@ -37,6 +37,7 @@ void LED::set(LED_STAT::E activity) {
 
 	/* if anything is active, we need to check if we are able to overrule and/or to remember for later use */
 	uint8_t prio = _PGM_BYTE(pat_table[cur_pat.line].prio);
+	if (activity == LED_STAT::NONE) svd_pat.line = LED_STAT::NONE;
 	if (cur_pat.line) {
 		DBG(CB, F("active, "));
 

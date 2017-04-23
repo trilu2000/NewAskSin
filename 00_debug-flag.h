@@ -21,7 +21,7 @@
 */
 
 #define SER_DBG					// Main sketch debug function and messages
-#define DMP_DBG					// EEprom dump function, only in combination with SER_DBG
+//#define DMP_DBG					// EEprom dump function, only in combination with SER_DBG
 //#define AS_DBG					// AskSin class debug (AS.cpp)
 //#define CC_DBG					// Communication class (AS_communication.cpp)
 #define SN_DBG					// Send function (AS.cpp)
@@ -53,7 +53,7 @@ template<class T> inline Print &operator ,(Print &obj, T arg) { return obj << ar
 #define DBG( MODULE, ...) PRIMITIVE_CAT(DBG_, MODULE, __VA_ARGS__)
 #define DBG_START( MODULE, ...) PRIMITIVE_CAT(DBG_START_, MODULE, __VA_ARGS__)
 
-#define _DBG_START(...)   power_usart0_enable();Serial.begin(57600);Serial ,__VA_ARGS__;
+#define _DBG_START(...)   power_debug_enable(); while (!Serial); Serial, __VA_ARGS__;
 
 /* main sketch */
 #ifdef SER_DBG

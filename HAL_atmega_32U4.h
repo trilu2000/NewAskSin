@@ -1,11 +1,33 @@
-#define power_serial_enable()   power_usb_enable(); pinOutput(DDRB, PINB0);		// pin output, otherwise USB will not work
-#define UCSR                    UCSR1B
-#define RXEN                    RXEN1
+#ifndef _HAL_ATMEGA_32U4_H
+#define _HAL_ATMEGA_32U4_H
+
+#include <avr/sleep.h>
+#include <avr/power.h>
+#include <avr/eeprom.h>
+#include <avr/wdt.h>
+#include <avr/interrupt.h>
+
+
+//- debug specific --------------------------------------------------------------------------------------------------------
+#define power_debug_enable()    power_usb_enable(); power_usart0_enable(); power_timer0_enable(); power_usb_enable();
+//- -------------------------------------------------------------------------------------------------------------------------
 
 
 //- timer definitions -----------------------------------------------------------------------------------------------------
-#define hasTimer0
-#define hasTimer1
+#define hasTimer0																			// timer0 should be enough, while timer1 and 3 are for PWM mode
+//#define hasTimer1
+//#define hasTimer3
+extern volatile uint8_t timer;																// here we store the active timer
+
+static void init_millis_timer0(int16_t correct_ms) {
+	timer = 0;
+	power_timer0_enable();
+
+	TCCR0A = _BV(WGM01);																	// CTC mode
+	TCCR0B = (_BV(CS01) | _BV(CS00));														// prescaler 64; 8.000.000 / 64 = 125.000 / 1000 = 125 
+	TIMSK0 = _BV(OCIE0A);
+	OCR0A = ((F_CPU / 64) / 1000) + correct_ms;
+}
 //- -------------------------------------------------------------------------------------------------------------------------
 
 
@@ -17,94 +39,43 @@
 
 
 //- adc definitions ---------------------------------------------------------------------------------------------------------
-const uint8_t admux_internal = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);					// internal ADMUX register setup
-const uint8_t admux_external = _BV(REFS1) | _BV(REFS0);											// | measurement pin
-const uint16_t ref_v_external = 1100;															// internal reference voltage in 10mv
+const uint8_t admux_internal = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);				// internal ADMUX register setup
+const uint8_t admux_external = _BV(REFS1) | _BV(REFS0);										// | measurement pin
+const uint16_t ref_v_external = 1100;														// internal reference voltage in 10mv
 //- -------------------------------------------------------------------------------------------------------------------------
 
 
 //- pin definition ----------------------------------------------------------------------------------------------------------
-#define PCINT_PCIE_SIZE        1																// amount of pin change interrupt vectors
+#define pc_interrupt_vectors 1																// amount of pin change interrupt vectors
 
-const s_pin_def pin_B0 = { PORTB0, &DDRB, &PORTB, &PINB,  0,  PCINT0, &PCICR, &PCMSK0, PCIE0, 0 };
-const s_pin_def pin_B1 = { PORTB1, &DDRB, &PORTB, &PINB,  1,  PCINT1, &PCICR, &PCMSK0, PCIE0, 0 };
-const s_pin_def pin_B2 = { PORTB2, &DDRB, &PORTB, &PINB,  2,  PCINT2, &PCICR, &PCMSK0, PCIE0, 0 };
-const s_pin_def pin_B3 = { PORTB3, &DDRB, &PORTB, &PINB,  3,  PCINT3, &PCICR, &PCMSK0, PCIE0, 0 };
-const s_pin_def pin_B4 = { PORTB4, &DDRB, &PORTB, &PINB,  4,  PCINT4, &PCICR, &PCMSK0, PCIE0, 0 };
-const s_pin_def pin_B5 = { PORTB5, &DDRB, &PORTB, &PINB,  5,  PCINT5, &PCICR, &PCMSK0, PCIE0, 0 };
-const s_pin_def pin_B6 = { PORTB6, &DDRB, &PORTB, &PINB,  6,  PCINT6, &PCICR, &PCMSK0, PCIE0, 0 };
-const s_pin_def pin_B7 = { PORTB7, &DDRB, &PORTB, &PINB,  7,  PCINT7, &PCICR, &PCMSK0, PCIE0, 0 };
+#define pinD0 (3)		// pinD0, SCL, PWM, INT0
+#define pinD1 (2)		// pinD1, SDA, INT1
+#define pinD2 (0)		// pinD2, UART-RX, INT2
+#define pinD3 (1)		// pinD3, UART-TX, INT3
+#define pinD4 (4)		// pinD4, 
+#define pinD6 (12)		// pinD6, PWM, ADC9
+#define pinD7 (6)		// pinD7, PWM, ADC10
 
-const s_pin_def pin_D0 = { PORTD0, &DDRD, &PORTD, &PIND, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_D1 = { PORTD1, &DDRD, &PORTC, &PINC, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_D2 = { PORTD2, &DDRD, &PORTC, &PINC, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_D3 = { PORTD3, &DDRD, &PORTC, &PINC, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_D4 = { PORTD4, &DDRD, &PORTC, &PINC, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_D5 = { PORTD5, &DDRD, &PORTC, &PINC, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_D6 = { PORTD6, &DDRD, &PORTC, &PINC, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_D7 = { PORTD7, &DDRD, &PORTC, &PINC, NULL, NULL, NULL, NULL, NULL, NULL };
+#define pinC6 (5)		// pinC5, PWM
+#define pinC7 (11)		// pinC7, PWM
 
-const s_pin_def pin_F0 = { PORTF0, &DDRF, &PORTF, &PINF, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_F1 = { PORTF1, &DDRF, &PORTF, &PINF, NULL, NULL, NULL, NULL, NULL, NULL };
-//const s_pin_def pin_F2 = { PORTF2, &DDRF, &PORTF, &PINF, NULL, NULL, NULL, NULL, NULL, NULL };
-//const s_pin_def pin_F3 = { PORTF3, &DDRF, &PORTF, &PINF, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_F4 = { PORTF4, &DDRF, &PORTF, &PINF, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_F5 = { PORTF5, &DDRF, &PORTF, &PINF, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_F6 = { PORTF6, &DDRF, &PORTF, &PINF, NULL, NULL, NULL, NULL, NULL, NULL };
-const s_pin_def pin_F7 = { PORTF7, &DDRF, &PORTF, &PINF, NULL, NULL, NULL, NULL, NULL, NULL };
-//- -------------------------------------------------------------------------------------------------------------------------
+#define pinB0 (17)		// pinB0, RXLED, SS, PCINT0
+#define pinB1 (15)		// pinB1, SCK, PCINT1
+#define pinB2 (16)		// pinB2, MOSI, PCINT2
+#define pinB3 (14)		// pinB3, MISO, PCINT3
+#define pinB4 (8)		// pinB4, Chipselect
+#define pinB5 (9)		// pinB5, GDO0
+#define pinB6 (10)		// pinB6, PWM, PCINT6, ADC13
+#define pinB7 (11)		// pinB7, PWM, PCINT7, UART-RTS
 
+#define pinE6 (7)		// pinE6, GDO2
 
-//- adc definitions ---------------------------------------------------------------------------------------------------------
-/*#define AVR_BANDGAP_VOLTAGE     1100UL											// band gap reference for Atmega328p
+#define pinF0 (23)		// pinF0, ADC0
+#define pinF4 (21)		// pinF4, ADC4
+#define pinF5 (20)		// pinF5, ADC5
+#define pinF6 (19)		// pinF6, ADC6
+#define pinF7 (18)		// pinF7, ADC7
 
 
-//- pin definition ----------------------------------------------------------------------------------------------------------
-#define PCINT_PCIE_SIZE        1																// amount of pin change interrupt vectors
 
-#define PIN_B0   PORTB0, &DDRB, &PORTB, &PINB,  0,  PCINT0, &PCICR, &PCMSK0, PCIE0,0 
-#define PIN_B1   PORTB1, &DDRB, &PORTB, &PINB,  1,  PCINT1, &PCICR, &PCMSK0, PCIE0,0 
-#define PIN_B2   PORTB2, &DDRB, &PORTB, &PINB,  2,  PCINT2, &PCICR, &PCMSK0, PCIE0,0 
-#define PIN_B3   PORTB3, &DDRB, &PORTB, &PINB,  3,  PCINT3, &PCICR, &PCMSK0, PCIE0,0 
-#define PIN_B4   PORTB4, &DDRB, &PORTB, &PINB,  4,  PCINT4, &PCICR, &PCMSK0, PCIE0,0 
-#define PIN_B5   PORTB5, &DDRB, &PORTB, &PINB,  5,  PCINT5, &PCICR, &PCMSK0, PCIE0,0 
-#define PIN_B6   PORTB6, &DDRB, &PORTB, &PINB,  6,  PCINT6, &PCICR, &PCMSK0, PCIE0,0 
-#define PIN_B7   PORTB7, &DDRB, &PORTB, &PINB,  7,  PCINT7, &PCICR, &PCMSK0, PCIE0,0 
-
-#define PIN_C0   PORTC0, &DDRC, &PORTC, &PINC,,,,,,
-#define PIN_C1   PORTC1, &DDRC, &PORTC, &PINC,,,,,, 
-#define PIN_C2   PORTC2, &DDRC, &PORTC, &PINC,,,,,, 
-#define PIN_C3   PORTC3, &DDRC, &PORTC, &PINC,,,,,, 
-#define PIN_C4   PORTC4, &DDRC, &PORTC, &PINC,,,,,, 
-#define PIN_C5   PORTC5, &DDRC, &PORTC, &PINC,,,,,, 
-#define PIN_C6   PORTC6, &DDRC, &PORTC, &PINC,,,,,, 
-#define PIN_C7   PORTC7, &DDRC, &PORTC, &PINC,,,,,, 
-
-#define PIN_D0   PORTD0, &DDRD, &PORTD, &PIND,,,,,,
-#define PIN_D1   PORTD1, &DDRD, &PORTD, &PIND,,,,,, 
-#define PIN_D2   PORTD2, &DDRD, &PORTD, &PIND,,,,,,
-#define PIN_D3   PORTD3, &DDRD, &PORTD, &PIND,,,,,, 
-#define PIN_D4   PORTD4, &DDRD, &PORTD, &PIND,,,,,, 
-#define PIN_D5   PORTD5, &DDRD, &PORTD, &PIND,,,,,,
-#define PIN_D6   PORTD6, &DDRD, &PORTD, &PIND,,,,,, 
-#define PIN_D7   PORTD7, &DDRD, &PORTD, &PIND,,,,,, 
-
-#define PIN_E0   PORTE0, &DDRE, &PORTE, &PINE,,,,,, 
-#define PIN_E1   PORTE1, &DDRE, &PORTE, &PINE,,,,,,
-#define PIN_E2   PORTE2, &DDRE, &PORTE, &PINE,,,,,,
-#define PIN_E3   PORTE3, &DDRE, &PORTE, &PINE,,,,,, 
-#define PIN_E4   PORTE4, &DDRE, &PORTE, &PINE,,,,,, 
-#define PIN_E5   PORTE5, &DDRE, &PORTE, &PINE,,,,,, 
-#define PIN_E6   PORTE6, &DDRE, &PORTE, &PINE,,,,,, 
-#define PIN_E7   PORTE7, &DDRE, &PORTE, &PINE,,,,,, 
-
-#define PIN_F0   PORTF0, &DDRF, &PORTF, &PINF,,,,,,
-#define PIN_F1   PORTF1, &DDRF, &PORTF, &PINF,,,,,, 
-#define PIN_F2   PORTF2, &DDRF, &PORTF, &PINF,,,,,,
-#define PIN_F3   PORTF3, &DDRF, &PORTF, &PINF,,,,,, 
-#define PIN_F4   PORTF4, &DDRF, &PORTF, &PINF,,,,,, 
-#define PIN_F5   PORTF5, &DDRF, &PORTF, &PINF,,,,,, 
-#define PIN_F6   PORTF6, &DDRF, &PORTF, &PINF,,,,,, 
-#define PIN_F7   PORTF7, &DDRF, &PORTF, &PINF,,,,,, */
-
-
+#endif

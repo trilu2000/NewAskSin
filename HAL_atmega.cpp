@@ -1,7 +1,19 @@
-#include "HAL_atmega.h"
+#if defined(__AVR__)
+
+
 #include "HAL.h"
 
-//-- pin functions --------------------------------------------------------------------------------------------------------
+#include <util/atomic.h>
+#include <util/delay.h>
+
+
+/*-- pin functions --------------------------------------------------------------------------------------------------------
+* concept of pin functions is a central definition of pin and interrupt registers as a struct per pin. handover of pin
+* information is done by forwarding a pointer to the specific function and within the function all hardware related
+* setup and switching is done.
+*/
+
+/* set a specific pin as output */
 void set_pin_output(uint8_t pin_def) {
 	uint8_t bit = digitalPinToBitMask(pin_def);
 	uint8_t port = digitalPinToPort(pin_def);
@@ -9,8 +21,8 @@ void set_pin_output(uint8_t pin_def) {
 
 	reg = portModeRegister(port);
 	*reg |= bit;
-//	pinMode(pin_def, OUTPUT);
 }
+/* set the pin as input */
 void set_pin_input(uint8_t pin_def) {
 	uint8_t bit = digitalPinToBitMask(pin_def);
 	uint8_t port = digitalPinToPort(pin_def);
@@ -18,10 +30,9 @@ void set_pin_input(uint8_t pin_def) {
 
 	reg = portModeRegister(port);
 	*reg &= ~bit;
-//	pinMode(pin_def, INPUT);
 }
 
-
+/* set high level on specific pin */
 void set_pin_high(uint8_t pin_def) {
 	uint8_t bit = digitalPinToBitMask(pin_def);
 	uint8_t port = digitalPinToPort(pin_def);
@@ -29,8 +40,8 @@ void set_pin_high(uint8_t pin_def) {
 	volatile uint8_t *out;
 	out = portOutputRegister(port);
 	*out |= bit;
-//	digitalWrite(pin_def,HIGH);
 }
+/* set a low level on a specific pin */
 void set_pin_low(uint8_t pin_def) {
 	uint8_t bit = digitalPinToBitMask(pin_def);
 	uint8_t port = digitalPinToPort(pin_def);
@@ -38,21 +49,23 @@ void set_pin_low(uint8_t pin_def) {
 	volatile uint8_t *out;
 	out = portOutputRegister(port);
 	*out &= ~bit;
-//	digitalWrite(pin_def, LOW);
 }
+/* detect a pin input if it is high or low */
 uint8_t get_pin_status(uint8_t pin_def) {
 	uint8_t bit = digitalPinToBitMask(pin_def);
 	uint8_t port = digitalPinToPort(pin_def);
 
 	if (*portInputRegister(port) & bit) return HIGH;
 	return LOW;
-//	return digitalRead(pin_def);
 }
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
 
-//-- interrupt functions --------------------------------------------------------------------------------------------------
+/*-- interrupt functions --------------------------------------------------------------------------------------------------
+* based on the same concept as the pin functions. everything pin related is defined in a pin struct, handover of the pin
+* is done by forwarding a pointer to the struct. pin definition is done in HAL_<cpu>.h, functions are declared in HAL_<vendor>.h
+*/
 struct  s_pcint_vector {
 	volatile uint8_t *PINREG;
 	uint8_t curr;
@@ -60,16 +73,16 @@ struct  s_pcint_vector {
 	uint8_t mask;
 	uint32_t time;
 };
+volatile s_pcint_vector pcint_vector[pc_interrupt_vectors];									// define a struct for pc int processing
 
-volatile s_pcint_vector pcint_vector[3];
-
+/* function to register a pin interrupt */
 void register_PCINT(uint8_t def_pin) {
 	set_pin_input(def_pin);																	// set the pin as input
 	set_pin_high(def_pin);																	// key is connected against ground, set it high to detect changes
 
 	// need to get vectore 0 - 2, depends on cpu
 	uint8_t vec = digitalPinToPCICRbit(def_pin);											// needed for interrupt handling and to sort out the port
-	uint8_t port = digitalPinToPort(def_pin);													// need the pin port to get further information as port register
+	uint8_t port = digitalPinToPort(def_pin);												// need the pin port to get further information as port register
 	if (port == NOT_A_PIN) return;															// return while port was not found
 
 	pcint_vector[vec].PINREG = portInputRegister(port);										// remember the input register
@@ -82,10 +95,11 @@ void register_PCINT(uint8_t def_pin) {
 	*digitalPinToPCMSK(def_pin) |= _BV(digitalPinToPCMSKbit(def_pin));						// make the pci active
 }
 
+/* period check if a pin interrupt had happend */
 uint8_t check_PCINT(uint8_t def_pin, uint8_t debounce) {
-	// need to get vectore 0 - 2, depends on cpu
+	// need to get vectore 0 - 3, depends on cpu
 	uint8_t vec = digitalPinToPCICRbit(def_pin);											// needed for interrupt handling and to sort out the port
-	uint8_t bit = digitalPinToBitMask(def_pin);
+	uint8_t bit = digitalPinToBitMask(def_pin);												// get the specific bit for the asked pin
 
 	uint8_t status = pcint_vector[vec].curr & bit ? 1 : 0;									// evaluate the pin status
 	uint8_t prev = pcint_vector[vec].prev & bit ? 1 : 0;									// evaluate the previous pin status
@@ -99,9 +113,7 @@ uint8_t check_PCINT(uint8_t def_pin, uint8_t debounce) {
 	else return 2;																			// pin is 0, old was 1
 }
 
-
-void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag) = NULL;								// call back function pointer
-
+/* internal function to handle pin change interrupts */
 void maintain_PCINT(uint8_t vec) {
 	pcint_vector[vec].curr = *pcint_vector[vec].PINREG & pcint_vector[vec].mask;			// read the pin port and mask out only pins registered
 	pcint_vector[vec].time = get_millis();													// store the time, if debounce is asked for
@@ -112,6 +124,7 @@ void maintain_PCINT(uint8_t vec) {
 	}
 }
 
+/* interrupt vectors to catch pin change interrupts */
 #ifdef PCIE0
 ISR(PCINT0_vect) {
 	maintain_PCINT(0);
@@ -139,12 +152,18 @@ ISR(PCINT3_vect) {
 
 
 
-//-- spi functions --------------------------------------------------------------------------------------------------------
+/*-- spi functions --------------------------------------------------------------------------------------------------------
+* spi interface is again vendor related, we need two functions mainly for the communication class in asksin
+* enable spi sets all relevant registers that the spi interface will work with the correct speed
+* the sendbyte function for all communication related thing...
+*/
+
+/* configures the spi port */
 void enable_spi(void) {
 	power_spi_enable();																		// enable only needed functions
 	SPCR = _BV(SPE) | _BV(MSTR);															// SPI enable, master, speed = CLK/4
 }
-
+/* send and receive via spi interface */
 uint8_t spi_send_byte(uint8_t send_byte) {
 	SPDR = send_byte;																		// send byte
 	while (!(SPSR & _BV(SPIF))); 															// wait until transfer finished
@@ -153,21 +172,28 @@ uint8_t spi_send_byte(uint8_t send_byte) {
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-//-- eeprom functions -----------------------------------------------------------------------------------------------------
+/*-- eeprom functions -----------------------------------------------------------------------------------------------------
+* to make the library more hardware independend all eeprom relevant functions are defined at one point
+*/
+
+/* init the eeprom, can be enriched for a serial eeprom as well */
 void init_eeprom(void) {
 	// place the code to init a i2c eeprom
 }
 
+/* read a specific eeprom address */
 void get_eeprom(uint16_t addr, uint8_t len, void *ptr) {
 	eeprom_read_block((void*)ptr, (const void*)addr, len);									// AVR GCC standard function
 }
 
+/* write a block to a specific eeprom address */
 void set_eeprom(uint16_t addr, uint8_t len, void *ptr) {
 	/* update is much faster, while writes only when needed; needs some byte more space
 	* but otherwise we run in timing issues */
 	eeprom_update_block((const void*)ptr, (void*)addr, len);								// AVR GCC standard function
 }
 
+/* and clear the eeprom */
 void clear_eeprom(uint16_t addr, uint16_t len) {
 	uint8_t tB = 0;
 	if (!len) return;
@@ -178,45 +204,21 @@ void clear_eeprom(uint16_t addr, uint16_t len) {
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-//-- timer functions ------------------------------------------------------------------------------------------------------
+/*-- timer functions ------------------------------------------------------------------------------------------------------
+* as i don't want to depend on the arduino timer while it is not possible to add some time after the arduino was sleeping
+* i defined a new timer. to keep it as flexible as possible you can configure the different timers in the arduino by handing
+* over the number of the timer you want to utilize. as timer are very vendor related there is the need to have at least
+* timer 0 available for all different hardware.
+*/
+// https://github.com/zkemble/millis/blob/master/millis/
 static volatile uint32_t milliseconds;
 static volatile uint8_t timer = 255;
 
-#ifdef TIMSK0
-void init_millis_timer0(int16_t correct_ms) {
-	timer = 0;
-	power_timer0_enable();
-
-	TCCR0A = _BV(WGM01);
-	TCCR0B = (_BV(CS01) | _BV(CS00));
-	TIMSK0 = _BV(OCIE0A);
-	OCR0A = ((F_CPU / 64) / 1000) + correct_ms;
+void add_millis(uint32_t ms) {
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		milliseconds += ms;
+	}
 }
-#endif
-
-#ifdef TIMSK1
-void init_millis_timer1(int16_t correct_ms) {
-	timer = 1;
-	power_timer1_enable();
-
-	TCCR1A = 0;
-	TCCR1B = (_BV(WGM12) | _BV(CS10) | _BV(CS11));
-	TIMSK1 = _BV(OCIE1A);
-	OCR1A = ((F_CPU / 64) / 1000) + correct_ms;
-}
-#endif
-
-#ifdef TIMSK2
-void init_millis_timer2(int16_t correct_ms) {
-	timer = 2;
-	power_timer2_enable();
-
-	TCCR2A = _BV(WGM21);
-	TCCR2B = (_BV(CS21) | _BV(CS20));
-	TIMSK2 = _BV(OCIE2A);
-	OCR2A = ((F_CPU / 32) / 1000) + correct_ms;
-}
-#endif
 
 uint32_t get_millis(void) {
 	uint32_t ms;
@@ -226,31 +228,52 @@ uint32_t get_millis(void) {
 	return ms;
 }
 
-void add_millis(uint32_t ms) {
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-		milliseconds += ms;
-	}
-}
-
+#ifdef TIMER0_COMPA_vect
 ISR(TIMER0_COMPA_vect) {
 	if (timer == 0) ++milliseconds;
 }
+#endif
+
+#ifdef TIMER1_COMPA_vect
 ISR(TIMER1_COMPA_vect) {
 	if (timer == 1) ++milliseconds;
 }
+#endif
+
+#ifdef TIMER2_COMPA_vect
 ISR(TIMER2_COMPA_vect) {
 	if (timer == 2) ++milliseconds;
 }
+#endif
+
+#ifdef TIMER3_COMPA_vect
+ISR(TIMER3_COMPA_vect) {
+	if (timer == 3) ++milliseconds;
+}
+#endif
+
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-//-- battery measurement functions ----------------------------------------------------------------------------------------
+/*-- battery measurement functions ----------------------------------------------------------------------------------------
+* for arduino there are two options to measure the battery voltage - internal and external. internal can measure only a
+* directly connected battery, external can measure any voltage via a resistor network.
+* the resistor network is connected with z1 to ground and the measure pin, z2 is connected to measure pin and VCC
+* the external measurement function will enable both pins, measure the voltage and switch back the enable pin to input,
+* otherwise the battery gets drained via the resistor network...
+* http://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
+*/
+#define BAT_NUM_MESS_ADC                  20												// real measures to get the best average measure
+uint16_t get_adc_value(uint8_t reg_admux);													// helper function
+
+/* internal measurement */
 uint8_t get_internal_voltage(void) {
 	uint16_t result = get_adc_value(admux_internal);										// get the adc value on base of the predefined adc register setup
 	result = 11253L / result;																// calculate Vcc (in mV); 11253 = 1.1*1023*10 (*10 while we want to get 10mv)
 	return (uint8_t)result;																	// Vcc in millivolts
 }
 
+/* external measurement */
 uint8_t get_external_voltage(uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2) {
 	/* set the pins to enable measurement */
 	set_pin_output(pin_enable);																// set the enable pin as output
@@ -296,9 +319,14 @@ uint16_t get_adc_value(uint8_t reg_admux) {
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-//-- power management functions --------------------------------------------------------------------------------------------
-// http://donalmorrissey.blogspot.de/2010/04/sleeping-arduino-part-5-wake-up-via.html
-// http://www.mikrocontroller.net/articles/Sleep_Mode#Idle_Mode
+/*-- power saving functions ----------------------------------------------------------------------------------------
+* As power saving is very hardware and vendor related, we need a common scheme which is working similar on all
+* supported hardware - needs to be reworked...
+* http://donalmorrissey.blogspot.de/2010/04/sleeping-arduino-part-5-wake-up-via.html
+* http://www.mikrocontroller.net/articles/Sleep_Mode#Idle_Mode
+*/
+static uint16_t wdtSleep_TIME;																// variable to store the current mode, amount will be added after wakeup to the millis timer
+
 void startWDG32ms(void) {
 	WDTCSR |= (1 << WDCE) | (1 << WDE);
 	WDTCSR = (1 << WDIE) | (1 << WDP0);
@@ -309,12 +337,12 @@ void startWDG64ms(void) {
 	WDTCSR = (1 << WDIE) | (1 << WDP1);
 	wdtSleep_TIME = 64;
 }
-void startWDG250ms(void) {
+void startWDG256ms(void) {
 	WDTCSR |= (1 << WDCE) | (1 << WDE);
 	WDTCSR = (1 << WDIE) | (1 << WDP2);
 	wdtSleep_TIME = 256;
 }
-void startWDG8000ms(void) {
+void startWDG8192ms(void) {
 	WDTCSR |= (1 << WDCE) | (1 << WDE);
 	WDTCSR = (1 << WDIE) | (1 << WDP3) | (1 << WDP0);
 	wdtSleep_TIME = 8192;
@@ -358,3 +386,5 @@ uint16_t freeRam() {
 	int v;
 	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
+
+#endif

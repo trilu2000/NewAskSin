@@ -1,102 +1,4 @@
-/*
-*  AskSin driver implementation
-*  2013-08-03 <trilu@gmx.de> Creative Commons - http://creativecommons.org/licenses/by-nc-sa/3.0/de/
-* - -----------------------------------------------------------------------------------------------------------------------
-* - AskSin vendor hardware abstraction layer  -----------------------------------------------------------------------------
-*  This is the central place where all vendor hardware related functions are defined. 
-*  HAL.h is the main template, all available functions are defined here, majority as external for sure
-*  Based on the hardware, a vendor hal will be included HAL_<vendor>.h
-*  Into the HAL_<vendor>.h there will be a CPU specific template included, HAL_<cpu>.h
-* - -----------------------------------------------------------------------------------------------------------------------
-*/
 
-#ifndef _HAL_ATMEGA_H
-#define _HAL_ATMEGA_H
-
-#if defined(ARDUINO) && ARDUINO >= 100
-	#include "Arduino.h"
-#else
-	#include "WProgram.h"
-#endif
-
-
-#include <avr/sleep.h>
-#include <avr/power.h>
-#include <avr/eeprom.h>
-#include <avr/wdt.h>
-#include <avr/interrupt.h>
-#include <util/atomic.h>
-#include <util/delay.h>
-#include <stdint.h>
-
-
-
-//- -----------------------------------------------------------------------------------------------------------------------
-
-
-#if defined(__AVR_ATmega328P__)
-	#include "HAL_atmega_328P.h"
-#elif defined(__AVR_ATmega32U4__)
-	#include "HAL_atmega_32U4.h"
-#else
-	#error "No HAL definition for current MCU available!"
-#endif
-
-
-#define BAT_NUM_MESS_ADC                  20								// real measures to get the best average measure
-
-
-/*************************************************************************************************************************/
-/*************************************************************************************************************************/
-/* - vendor and cpu specific functions --------------------------------------------------------------------------------- */
-/*************************************************************************************************************************/
-/*************************************************************************************************************************/
-
-/*-- pin functions --------------------------------------------------------------------------------------------------------
-* concept of pin functions is a central definition of pin and interrupt registers as a struct per pin. handover of pin 
-* information is done by forwarding a pointer to the specific function and within the function all hardware related 
-* setup and switching is done.
-*/
-void set_pin_output(uint8_t pin_def);														// set a specific pin as output
-void set_pin_input(uint8_t pin_def);														// set the pin as input
-
-void set_pin_high(uint8_t pin_def);															// set high level on specific pin
-void set_pin_low(uint8_t pin_def);															// set a low level on a specific pin
-uint8_t get_pin_status(uint8_t pin_def);													// detect a pin input if it is high or low
-//- -----------------------------------------------------------------------------------------------------------------------
-
-
-/*-- interrupt functions --------------------------------------------------------------------------------------------------
-* based on the same concept as the pin functions. everything pin related is defined in a pin struct, handover of the pin 
-* is done by forwarding a pointer to the struct. pin definition is done in HAL_<cpu>.h, functions are declared in HAL_<vendor>.h
-*/
-#define DEBOUNCE  5																			// debounce time for periodic check if an interrupt was raised
-
-void register_PCINT(uint8_t def_pin);														// function to register a pin interrupt
-uint8_t check_PCINT(uint8_t pin_def, uint8_t debounce);										// period check if a pin interrupt had happend
-// pointer for callback defined in HAL_<vendor>.cpp											// defined in HAL_<vendor>.cpp, a call back function can be registered, debounce will not work while need a periodic check
-inline void maintain_PCINT(uint8_t vec);													// internal function to handle pin change interrupts 
-//- -----------------------------------------------------------------------------------------------------------------------
-
-
-/*-- spi functions --------------------------------------------------------------------------------------------------------
-* spi interface is again vendor related, we need two functions mainly for the communication class in asksin
-* enable spi sets all relevant registers that the spi interface will work with the correct speed
-* the sendbyte function for all communication related thing...
-*/
-void enable_spi(void);																		// configures the spi port
-uint8_t spi_send_byte(uint8_t send_byte);													// send and receive via spi interface
-//- -----------------------------------------------------------------------------------------------------------------------
-
-
-/*-- eeprom functions -----------------------------------------------------------------------------------------------------
-* to make the library more hardware independend all eeprom relevant functions are defined at one point
-*/
-void init_eeprom(void);																		// init the eeprom, can be enriched for a serial eeprom as well
-void get_eeprom(uint16_t addr, uint8_t len, void *ptr);										// read a specific eeprom address
-void set_eeprom(uint16_t addr, uint8_t len, void *ptr);										// write a block to a specific eeprom address
-void clear_eeprom(uint16_t addr, uint16_t len);												// and clear the eeprom
-//- -----------------------------------------------------------------------------------------------------------------------
 
 
 /*-- timer functions ------------------------------------------------------------------------------------------------------
@@ -106,11 +8,12 @@ void clear_eeprom(uint16_t addr, uint16_t len);												// and clear the eepr
 * timer 0 available for all different hardware.
 */
 // https://github.com/zkemble/millis/blob/master/millis/
-void init_millis_timer0(int16_t correct_ms = 0);												// initialize the respective timer
-void init_millis_timer1(int16_t correct_ms = 0);
-void init_millis_timer2(int16_t correct_ms = 0);
-uint32_t get_millis(void);																	// get the current time in millis
-void add_millis(uint32_t ms);																// add some time to the counter, mainly used while wake up from sleeping
+//extern void init_millis_timer0(int16_t correct_ms = 0);										// initialize the respective timer
+//extern void init_millis_timer1(int16_t correct_ms = 0);
+//extern void init_millis_timer2(int16_t correct_ms = 0);
+//extern void init_millis_timer3(int16_t correct_ms = 0);
+//uint32_t get_millis(void);																	// get the current time in millis
+//void add_millis(uint32_t ms);																// add some time to the counter, mainly used while wake up from sleeping
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -122,9 +25,9 @@ void add_millis(uint32_t ms);																// add some time to the counter, ma
 * otherwise the battery gets drained via the resistor network...
 * http://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
 */
-uint8_t get_internal_voltage(void);															// internal measurement
-uint8_t get_external_voltage(uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2); // external measurement
-inline uint16_t get_adc_value(uint8_t reg_admux);
+//uint8_t get_internal_voltage(void);															// internal measurement
+//uint8_t get_external_voltage(uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2); // external measurement
+//inline uint16_t get_adc_value(uint8_t reg_admux);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -134,19 +37,19 @@ inline uint16_t get_adc_value(uint8_t reg_admux);
 * http://donalmorrissey.blogspot.de/2010/04/sleeping-arduino-part-5-wake-up-via.html
 * http://www.mikrocontroller.net/articles/Sleep_Mode#Idle_Mode
 */
-static uint16_t wdtSleep_TIME;																// variable to store the current mode, amount will be added after wakeup to the millis timer
-void startWDG32ms(void);																	// set watchdog to 32 ms
-void startWDG64ms(void);																	// 64 ms
-void startWDG250ms(void);																	// 256 ms
-void startWDG8000ms(void);																	// 8192 ms
-void setSleep(void);																		// set the cpu in sleep mode
+//static uint16_t wdtSleep_TIME;																// variable to store the current mode, amount will be added after wakeup to the millis timer
+//void startWDG32ms(void);																	// set watchdog to 32 ms
+//void startWDG64ms(void);																	// 64 ms
+//void startWDG250ms(void);																	// 256 ms
+//void startWDG8000ms(void);																	// 8192 ms
+//void setSleep(void);																		// set the cpu in sleep mode
 
-void startWDG();																			// start watchdog timer
-void stopWDG();																				// stop the watchdog timer
-void setSleepMode();																		// set the sleep mode, documentation to follow
+//void startWDG();																			// start watchdog timer
+//void stopWDG();																				// stop the watchdog timer
+//void setSleepMode();																		// set the sleep mode, documentation to follow
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
-uint16_t freeRam(void);
+//uint16_t freeRam(void);
 
-#endif 
+

@@ -28,10 +28,19 @@
 
 //-- MCU dependent HAL definitions ----------------------------------------------------------------------------------------
 #if defined(__AVR__)
-	#include "HAL_atmega.h"
+	//#include "HAL_atmega.h"
+	
+	#if defined(__AVR_ATmega328P__)
+		#include "HAL_atmega_328P.h"
+	#elif defined(__AVR_ATmega32U4__)
+		#include "HAL_atmega_32U4.h"
+	#else
+		#error "No HAL definition for current MCU available!"
+	#endif
 #else
 	#error "No HAL definition for current MCU available!"
 #endif
+
 
 
 
@@ -48,11 +57,11 @@
 * ATMEL hardware, the pin structs are defined in HAL_atmega_<model> while different for each cpu type. here we reference
 * only on the functions defined in HAL_<type>_<model>.
 */
-extern void set_pin_output(uint8_t pin_def);
-extern void set_pin_input(uint8_t pin_def);
-extern void set_pin_high(uint8_t pin_def);
-extern void set_pin_low(uint8_t pin_def);
-extern uint8_t get_pin_status(uint8_t pin_def);
+void set_pin_output(uint8_t pin_def);
+void set_pin_input(uint8_t pin_def);
+void set_pin_high(uint8_t pin_def);
+void set_pin_low(uint8_t pin_def);
+uint8_t get_pin_status(uint8_t pin_def);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -61,10 +70,11 @@ extern uint8_t get_pin_status(uint8_t pin_def);
 * defined in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
 * you can also use the arduino standard timer for a specific hardware by interlinking the function call to getmillis()
 */
-extern void register_PCINT(uint8_t pin_def);
-extern uint8_t check_PCINT(uint8_t pin_def, uint8_t debounce);
-extern void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag);
-extern void maintain_PCINT(uint8_t vec);
+#define DEBOUNCE  5																			// debounce time for periodic check if an interrupt was raised
+static void(*pci_ptr)(uint8_t vec, uint8_t pin, uint8_t flag);
+void register_PCINT(uint8_t pin_def);
+uint8_t check_PCINT(uint8_t pin_def, uint8_t debounce);
+void maintain_PCINT(uint8_t vec);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -72,8 +82,8 @@ extern void maintain_PCINT(uint8_t vec);
 * spi is very hardware supplier related, therefor we define her some external functions which needs to be defined
 * in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
 */
-extern void enable_spi(void);
-extern uint8_t spi_send_byte(uint8_t send_byte);
+void enable_spi(void);
+uint8_t spi_send_byte(uint8_t send_byte);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -81,10 +91,10 @@ extern uint8_t spi_send_byte(uint8_t send_byte);
 * eeprom is very hardware supplier related, therefor we define her some external functions which needs to be defined
 * in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
 */
-extern void init_eeprom(void);
-extern void get_eeprom(uint16_t addr, uint8_t len, void *ptr);
-extern void set_eeprom(uint16_t addr, uint8_t len, void *ptr);
-extern void clear_eeprom(uint16_t addr, uint16_t len);
+void init_eeprom(void);
+void get_eeprom(uint16_t addr, uint8_t len, void *ptr);
+void set_eeprom(uint16_t addr, uint8_t len, void *ptr);
+void clear_eeprom(uint16_t addr, uint16_t len);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -93,11 +103,20 @@ extern void clear_eeprom(uint16_t addr, uint16_t len);
 * in the hardware specific HAL file. for ATMEL it is defined in HAL_atmega.h.
 * you can also use the arduino standard timer for a specific hardware by interlinking the function call to getmillis()
 */
-extern void init_millis_timer0(int16_t correct_ms);
-extern void init_millis_timer1(int16_t correct_ms);
-extern void init_millis_timer2(int16_t correct_ms);
-extern uint32_t get_millis(void);
-extern void add_millis(uint32_t ms);
+#ifdef hasTimer0
+void init_millis_timer0(int16_t correct_ms = 0);
+#endif
+#ifdef hasTimer1
+void init_millis_timer1(int16_t correct_ms = 0);
+#endif
+#ifdef hasTimer2
+void init_millis_timer2(int16_t correct_ms = 0);
+#endif
+#ifdef hasTimer3
+void init_millis_timer3(int16_t correct_ms = 0);
+#endif
+uint32_t get_millis(void);
+void add_millis(uint32_t ms);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -106,27 +125,27 @@ extern void add_millis(uint32_t ms);
 * divider with one pin to enable and another to measure the adc value. both is hardware and vendor related, you will find the
 * code definition in HAL_<vendor>.h
 */
-extern uint8_t get_internal_voltage(void);
-extern void init_external_voltage(uint8_t pin_enable, uint8_t pin_measure);
-extern uint8_t get_external_voltage(const uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2);
+uint8_t get_internal_voltage(void);
+//void init_external_voltage(uint8_t pin_enable, uint8_t pin_measure);
+uint8_t get_external_voltage(const uint8_t pin_enable, uint8_t pin_measure, uint8_t z1, uint8_t z2);
 //- -----------------------------------------------------------------------------------------------------------------------
 
 
 /*-- power saving functions ----------------------------------------------------------------------------------------
 * As power saving is very hardware and vendor related, you will find the code definition in HAL_<vendor>.h
 */
-extern void startWDG32ms(void);
-extern void startWDG64ms(void);
-extern void startWDG250ms(void);
-extern void startWDG8000ms(void);
-extern void setSleep(void);
+void startWDG32ms(void);
+void startWDG64ms(void);
+void startWDG256ms(void);
+void startWDG8192ms(void);
+void setSleep(void);
 
-extern void startWDG();
-extern void stopWDG();
-extern void setSleepMode();
+void startWDG(void);
+void stopWDG(void);
+void setSleepMode(void);
 //- -----------------------------------------------------------------------------------------------------------------------
 
-extern uint16_t freeRam();
+uint16_t freeRam();
 
 
 
